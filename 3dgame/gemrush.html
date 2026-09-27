@@ -1109,7 +1109,7 @@ function tapDrop(){const d=dropState;if(!d||d.phase!=='tap')return;const st=$('d
     else{anim(st,'hit');sparks('#ffffff',8);drawDrop(false);tn(300+d.taps*80,.1,.12,'square')}setTimeout(()=>d.phase==='tap'&&anim(st,'idle'),520);return}
   d.phase='open';$('dropTap').style.display='none';anim(st,'open');tn(400,.7,.14,'sawtooth',1600);
   setTimeout(()=>{$('dropFlash').classList.remove('go');void $('dropFlash').offsetWidth;$('dropFlash').classList.add('go');sparks(DROP[d.r].col,40);nz(.4,.3,3000);
-    $('dropStar').style.display='none';const res=dropReward(d.r);$('dropIcon').innerHTML=res.icon;$('dropMsg').textContent=res.msg;$('dropCard').classList.add('show');$('dropOk').style.display='';SFX.end(true);d.phase='done'},720)}
+    $('dropStar').style.display='none';const res=dropReward(d.r);$('dropIcon').innerHTML=res.icon;$('dropMsg').textContent=res.msg;$('dropCard').classList.add('show');$('dropOk').style.display='inline-block';SFX.end(true);d.phase='done'},720)}
 function dropReward(r){const locked=BT_IDS.filter(id=>!isOwned(id)),ownSk=owned().filter(id=>skinsOwned(id).length<3);
   if(r>=3&&locked.length&&Math.random()<(r===4?1:.5)){const id=locked[Math.floor(Math.random()*locked.length)];const o=owned();o.push(id);JS('gr-own',o);return{icon:portrait(id),msg:'新キャラ「'+BT[id].name+'」！'}}
   if(r>=2&&ownSk.length&&Math.random()<(r===2?.4:.6)){const id=ownSk[Math.floor(Math.random()*ownSk.length)],sk=skinsOwned(id).includes('shadow')?'gold':'shadow';const o=skinsOwned(id);o.push(sk);JS('gr-sk-'+id,o);const S2=SKINS[id].find(k=>k.id===sk);return{icon:portrait(id,S2),msg:BT[id].name+'のスキン「'+S2.name+'」'}}
@@ -1377,7 +1377,8 @@ function drawHome(){const r=rankOf(RPts());$('rankEmb').innerHTML=emblem(r);$('r
     if(done)d.querySelector('button').onclick=()=>questClaim(i);ql.appendChild(d)})}
 $('roadPill').addEventListener('click',()=>{drawRoad();$('roadScr').classList.add('on')});$('roadClose').addEventListener('click',()=>{$('roadScr').classList.remove('on');drawHome()});
 $('passBtn').addEventListener('click',()=>{drawPass();$('passScr').classList.add('on')});$('passClose').addEventListener('click',()=>{$('passScr').classList.remove('on');drawHome()});$('passBuy').addEventListener('click',bpBuy);
-$('dropBtn').addEventListener('click',()=>{openDrop();drawHome()});$('dropStar').addEventListener('click',tapDrop);$('dropOk').addEventListener('click',()=>{$('dropScr').classList.remove('on');dropState=null;lobbyModel();drawHome();if(+LS('gr-sd',0)>0)setTimeout(openDrop,250)});
+$('dropBtn').addEventListener('click',()=>{openDrop();drawHome()});$('dropStar').addEventListener('click',tapDrop);const dropClose=()=>{$('dropScr').classList.remove('on');dropState=null;lobbyModel();drawHome()};$('dropOk').addEventListener('click',e=>{e.stopPropagation();dropClose()});
+$('dropScr').addEventListener('click',e=>{if(dropState&&dropState.phase==='done'&&e.target.id!=='dropStar')dropClose()});
 $('unOk').addEventListener('click',()=>{nextPop();drawHome();lobbyModel()});
 function drawChar(){const h=$('cards');h.innerHTML='';
   for(const id of BT_IDS){const B=BT[id],d=document.createElement('div'),own=isOwned(id),rd=ROAD.find(r=>r.char===id);d.className='card'+(id===PICK?' on':'')+(own?'':' locked');
