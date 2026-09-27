@@ -277,6 +277,33 @@ body.tut #tut{display:flex}body.tut #top,body.tut #feed{display:none}
 .cu{display:inline-block}
 #goBtn{position:relative;overflow:hidden}#goBtn::after{content:'';position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,#fff8,transparent);animation:shine 2.6s ease-in-out infinite}
 @keyframes shine{0%,55%{left:-60%}100%{left:130%}}
+
+/* ===== 観戦 ===== */
+#spec,#specCd,#specExit,#specHint{display:none}
+body.spec #spec{display:flex;position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 54px);transform:translateX(-50%);align-items:center;gap:8px;pointer-events:auto;z-index:3}
+#spec button{width:44px;height:40px;border-radius:10px;background:#ffd84d;color:#2b1c00;font-size:18px;font-weight:900;border:2px solid #000;box-shadow:0 3px 0 #000}
+#spec button:active{transform:translateY(2px);box-shadow:0 1px 0 #000}
+#spec .sp{min-width:150px;text-align:center;background:#000b;border-radius:12px;padding:4px 12px;border:2px solid #ffffff30}#spec .sp small{display:block;font-size:11px;color:#c4c9d8;font-weight:800}#spec .sp b{font-size:16px;font-weight:900}
+body.spec #specCd{display:block;position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;font-weight:900;text-shadow:0 3px 0 #000}
+#specCd small{display:block;font-size:16px;-webkit-text-stroke:3px #000;paint-order:stroke fill}#specCd b{display:block;font-size:64px;font-style:italic;color:#fff;-webkit-text-stroke:4px #000;paint-order:stroke fill;line-height:1}
+body.spec.br #specExit{display:block;position:absolute;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding:12px 22px;border-radius:14px;background:#ffd84d;color:#2b1c00;font-weight:900;font-size:17px;border:3px solid #000;box-shadow:0 4px 0 #000;z-index:3}
+body.spec #specHint{display:block;position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);font-size:12px;font-weight:800;background:#000a;border-radius:10px;padding:4px 12px;white-space:nowrap;pointer-events:none}
+body.spec #supBtn,body.spec #gadBtn,body.spec #hypBtn,body.spec #movHint,body.spec #atkHint,body.spec .stick,body.spec #pinBtn,body.spec #pinTray,body.spec #pcHint{display:none!important}
+body.spec #rot canvas{filter:saturate(.6) brightness(.9)}
+/* ===== ピン ===== */
+#pinBtn{position:absolute;right:calc(env(safe-area-inset-right,0px) + 58px);top:calc(env(safe-area-inset-top,0px) + 6px);width:42px;height:42px;border-radius:50%;padding:0;background:none;z-index:3;--cd:0deg}
+#pinBtn svg{width:100%;height:100%;display:block;filter:drop-shadow(0 3px 0 #0008)}
+#pinBtn.cd{filter:grayscale(1) brightness(.7)}#pinBtn.cd::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(#000a var(--cd),transparent 0)}
+#pinTray{position:absolute;right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);display:none;gap:10px;padding:10px;border-radius:16px;background:#0b1020e6;border:3px solid #000;z-index:4}
+#pinTray.on{display:flex;animation:trayIn .22s cubic-bezier(.2,1.6,.4,1)}@keyframes trayIn{from{transform:scale(.6);opacity:0}}
+#pinTray button{width:74px;padding:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px}#pinTray button svg{width:66px;height:66px;transition:transform .1s}#pinTray button:hover svg{transform:scale(1.1) rotate(-6deg)}#pinTray button:active svg{transform:scale(.9)}
+#pinTray small{font-size:11px;font-weight:900}
+.pin{position:absolute;left:0;top:0;pointer-events:none;z-index:2}
+.pinB{position:absolute;left:0;bottom:44px;transform:translateX(-50%);animation:pinBob 1.1s ease-in-out .55s infinite}
+.pinI{width:62px;height:62px;animation:pinIn .6s cubic-bezier(.25,1.7,.45,1) both;transform-origin:50% 90%}.pinI svg{width:100%;height:100%;display:block}
+@keyframes pinIn{0%{transform:scale(0) rotate(-25deg) translateY(20px)}45%{transform:scale(1.28) rotate(9deg) translateY(-6px)}65%{transform:scale(.88) rotate(-5deg)}82%{transform:scale(1.07) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes pinBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
+.pin.out .pinI{animation:pinOut .3s ease-in forwards}@keyframes pinOut{0%{transform:scale(1)}30%{transform:scale(1.15)}100%{transform:scale(0) translateY(10px);opacity:0}}
 </style></head><body>
 <div id="rot">
 <canvas id="c"></canvas>
@@ -284,10 +311,11 @@ body.tut #tut{display:flex}body.tut #top,body.tut #feed{display:none}
 <div id="hud">
  <div id="top"><div class="gc b"><span id="iB">💎</span><span id="gB">0</span></div><div id="clock">2:30</div><div id="brTop">残り <b id="alive">10</b> 人　<span style="color:#7ee7a0">⚡<span id="myPw">0</span></span></div><div class="gc r"><span id="gR">0</span><span id="iR">💎</span></div></div>
  <div id="cdown"></div><div id="tut"><b id="tutStep">1/5</b><span id="tutText"></span><button id="tutSkip">スキップ</button></div><div id="feed"></div><div id="big"></div><div id="note"></div>
- <button id="pauseBtn">Ⅱ</button>
+ <button id="pauseBtn">Ⅱ</button><button id="pinBtn" title="ピン（T / 1 / 2）"></button><div id="pinTray"><button data-pin="like"></button><button data-pin="bad"></button></div>
+ <div id="spec"><button id="specL">◀</button><div class="sp"><small>👁 観戦中</small><b id="specName"></b></div><button id="specR">▶</button></div><div id="specCd"></div><button id="specExit">結果へ ▶</button><div id="specHint">ドラッグ / WASD でカメラを動かせる・◀▶ で見る人を切りかえ</div>
  <div id="movHint">移動</div><div id="atkHint">攻撃</div><button id="supBtn">必殺技</button><button id="gadBtn">ガジェット<b id="gadN">3</b></button><button id="hypBtn">ハイパー</button>
  <div class="stick" id="stL"><i></i></div><div class="stick" id="stA"><i></i></div><div class="stick" id="stS"><i></i></div>
- <div id="pcHint"><b>WASD</b>移動　<b>マウス</b>ねらう　<b>左クリック</b>攻撃　<b>右クリック / E</b>必殺技<br><b>Space</b>自動でねらって攻撃　<b>F</b>ガジェット　<b>R</b>ハイパーチャージ　<b>P</b>一時停止</div>
+ <div id="pcHint"><b>WASD</b>移動　<b>マウス</b>ねらう　<b>左クリック</b>攻撃　<b>右クリック / E</b>必殺技<br><b>Space</b>自動でねらって攻撃　<b>F</b>ガジェット　<b>R</b>ハイパーチャージ　<b>P</b>一時停止　<b>1 / 2</b>ピン</div>
 </div>
 <div class="scr" id="menu">
  <div class="hTop">
@@ -608,8 +636,8 @@ Object.assign(BT,{
 // 並び順（トロフィーロードの順）
 const ORDER=['rico','yuki','jack','gai','jet','riki','goro','carlo','kachiko','mimi','piko','kagerou','ranran','yotaka','vlad','soda'];
 for(const k of ORDER){const v=BT[k];delete BT[k];BT[k]=v}
-// 射程を全体的に1.3倍（弾速も同じだけ上げて、届くまでの時間は本家と同じ）
-const RMUL=1.3;{const sc=o=>{if(!o||typeof o!=='object')return;const hasR=typeof o.range==='number';for(const k of['range','range2','trange'])if(typeof o[k]==='number')o[k]*=RMUL;if(hasR&&typeof o.speed==='number')o.speed*=RMUL;for(const k in o)if(o[k]&&typeof o[k]==='object')sc(o[k])};for(const k in BT)sc(BT[k])}
+// 射程の倍率（本家どおり＝1）
+const RMUL=1;{const sc=o=>{if(!o||typeof o!=='object')return;const hasR=typeof o.range==='number';for(const k of['range','range2','trange'])if(typeof o[k]==='number')o[k]*=RMUL;if(hasR&&typeof o.speed==='number')o.speed*=RMUL;for(const k in o)if(o[k]&&typeof o[k]==='object')sc(o[k])};for(const k in BT)sc(BT[k])}
 const BT_IDS=Object.keys(BT);
 const TEAMCOL=[0x3aa0ff,0xff4d5a];
 const BOTNAMES=['ソラ','カイ','ミオ','リク','ユイ','タクミ','ハル','ナナ','ケン','アオイ','ルカ','シン','メイ','ユウト','サクラ','レオ'];
@@ -1277,7 +1305,7 @@ function updLabel(u){const L=u.lab;if(u.dead||!u.m.g.visible){L.d.classList.add(
 const DN=[];function dmgNum(u,v,cls){if(!u.m.g.visible&&!u.isMe)return;const d=document.createElement('div');d.className='dmg '+(cls||'');d.textContent=v;OV.appendChild(d);DN.push({d,x:u.x+rr(-.4,.4),z:u.z,t:0});if(DN.length>24){const o=DN.shift();o.d.remove()}}
 function updDN(dt){for(let i=DN.length-1;i>=0;i--){const n=DN[i];n.t+=dt;if(n.t>.9){n.d.remove();DN.splice(i,1);continue}const [sx,sy]=scr(n.x,2.4+n.t*1.6,n.z);n.d.style.transform=`translate(${sx}px,${sy}px) translate(-50%,-50%) scale(${n.t<.1?1+n.t*4:1.4-Math.min(.4,n.t*.5)})`;n.d.style.opacity=1-Math.max(0,n.t-.55)/.35}}
 function feed(a,b){const d=document.createElement('div');const col=t=>t.team?'r':'b';d.innerHTML=a?`<span class="${col(a)}">${a.name}</span> ▶ <span class="${col(b)}">${b.name}</span>`:`<span class="${col(b)}">${b.name}</span> がやられた`;
-  $('feed').prepend(d);setTimeout(()=>d.remove(),4200);while($('feed').children.length>4)$('feed').lastChild.remove();if(b.isMe&&G.mode!=='br')note('やられた…　5秒で復活',2.2)}
+  $('feed').prepend(d);setTimeout(()=>d.remove(),4200);while($('feed').children.length>4)$('feed').lastChild.remove();if(b.isMe&&G.mode!=='br'){const rt=respawnTime();note(rt<1e8?'やられた…　'+(Math.round(rt*10)/10)+'秒で復活':'やられた…　味方を応援しよう',2.2)}}
 let noteT=0;function note(t,s){$('note').textContent=t;noteT=s||2}
 let bigT=0;function big(t,s,col){const b=$('big');b.textContent=t;b.style.color=col||'#fff';b.style.display='block';bigT=s||1;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop')}
 
@@ -1391,7 +1419,7 @@ function startMatch(mode){initAudio();if(!isOwned(PICK))PICK='rico';mode=mode||P
   G.rule=rule;G.mode=rule==='br'?'br':'team';G.ranked=ranked;const rk=rankOf(RPts());G.diff=ranked?Math.min(1,rk.div/20):clamp(totalTr()/2200,0,.55);G.rpBefore=RPts();
   buildArena(mid,rule);hideScreens();document.body.classList.add('playing');document.body.classList.toggle('br',rules==='br');
   const names=BOTNAMES.slice().sort(()=>Math.random()-.5),plv=level(PICK),base=Math.max(plv,1+Math.round(G.diff*10)),blv=()=>clamp(base+Math.round(rr(-1.3,.7)),1,MAXLV),pickBot=ex=>{const pool=BT_IDS.filter(i=>!ex.includes(i));return pool[Math.floor(Math.random()*pool.length)]||BT_IDS[0]};
-  Object.assign(G,{t:0,mineT:3,time:150,cd:null,cdTeam:-1,state:'intro',introT:3.2,over:false,shake:0,endT:0,supWas:false,safeR:999,poisonT:0,place:0});
+  Object.assign(G,{t:0,mineT:3,time:150,cd:null,cdTeam:-1,state:'intro',introT:3.2,over:false,shake:0,endT:0,supWas:false,safeR:999,poisonT:0,place:0,brDead:0,specExit:0});
   if(rules==='gem'){const sp=(t,i)=>{const [c,r]=SPAWN[t][i];return[tx(c),tz(r)]};
     G.me=mkUnit(PICK,0,true,'あなた',sp(0,1),plv,skinOf(PICK),myKit(PICK));G.units.push(G.me);const used=[PICK];
     [0,2].forEach((i,k)=>{const b=pickBot(used);used.push(b);{const lv=blv();G.units.push(mkUnit(b,0,false,names[k],sp(0,i),lv,botSkin(b),botKit(b,lv)))}});
@@ -1399,7 +1427,7 @@ function startMatch(mode){initAudio();if(!isOwned(PICK))PICK='rico';mode=mode||P
   else{const R0=HALFX*.88;for(let i=0;i<10;i++){const a=Math.PI/2+i/10*TAU,[x,z]=nearestOpen(Math.cos(a)*R0,Math.sin(a)*R0);
       const bb=BT_IDS[Math.floor(Math.random()*BT_IDS.length)],lv2=blv(),u=i===0?mkUnit(PICK,0,true,'あなた',[x,z],plv,skinOf(PICK),myKit(PICK)):mkUnit(bb,i,false,names[i-1],[x,z],lv2,botSkin(bb),botKit(bb,lv2));G.units.push(u);if(i===0)G.me=u}
     G.safeR=Math.hypot(HALFX,HALFZ)+2;G.alive=10}
-  for(const u of G.units)mkLabel(u);G.time=MODES[mode].time||150;modeInit();ZOOM=1.12;camP.set(me().x,0,me().z);note(MODES[mode].name+'・'+MAPS[mid].name,2.6)}
+  for(const u of G.units)mkLabel(u);G.time=MODES[mode].time||150;modeInit();ZOOM=1;camP.set(me().x,0,me().z);note(MODES[mode].name+'・'+MAPS[mid].name,2.6)}
 function endMatch(win){if(G.over)return;G.over=true;G.win=win;G.endT=2.4;G.state='end';$('cdown').style.display='none';
   if(G.mode==='br'){const p=G.place;big(p===1?'1位！':p+'位',2.4,p===1?'#ffd84d':p<=4?'#8fe39a':'#fff');SFX.end(p<=4)}
   else{big(win===0?'勝利！':win===1?'敗北…':'引き分け',2.4,win===0?'#ffd84d':win===1?'#ff7b7b':'#fff');SFX.end(win===0)}}
@@ -1530,7 +1558,7 @@ const camP=new THREE.Vector3();
 let LOFF=0;function updCam(dt){const u=me();let tx0=u.x,tz0=u.z;
   if(G.state==='menu'){camP.set(0,0,LZ);const asp=VW()/VH(),back=asp<1?11:8.4,det=asp>=1&&$('charScr').classList.contains('det')&&$('charScr').classList.contains('on');LOFF=lerp(LOFF,det?Math.tan(cam.fov*Math.PI/360)*back*asp*.5:0,1-Math.exp(-dt*9));cam.position.set(LOFF,3.0,LZ+back);cam.lookAt(LOFF,asp<1?2.4:1.95,LZ);return}
   if(G.state==='result'||!G.me){const a=performance.now()/1000*.12;tx0=Math.sin(a)*5;tz0=Math.sin(a*.7)*14}
-  else if(u.dead&&G.mode!=='br'){const [sx,sz]=u.spawn;tx0=lerp(tx0,sx,clamp(1-u.respT/5,0,1));tz0=lerp(tz0,sz,clamp(1-u.respT/5,0,1))}
+  else if(SPEC.on){[tx0,tz0]=specCam()}
   tx0=clamp(tx0,-HALFX+13,HALFX-13);tz0=clamp(tz0,-HALFZ+7,HALFZ-5);camP.x=lerp(camP.x,tx0,1-Math.exp(-dt*6));camP.z=lerp(camP.z,tz0,1-Math.exp(-dt*6));
   const asp=VW()/VH(),z=ZOOM*(asp<1.2?1.25:1)*(G.state==='menu'||G.state==='result'?1.25:1),sh=G.shake;G.shake=Math.max(0,G.shake-dt*1.5);
   cam.position.set(camP.x+rr(-sh,sh)*.4,27*z,camP.z+15*z+rr(-sh,sh)*.4);cam.lookAt(camP.x,0,camP.z-1.5)}
@@ -1559,7 +1587,7 @@ function updHud(dt){const u=me(),b=teamGems(0),r=teamGems(1);const t=Math.max(0,
   $('gadBtn').style.display=u.kit&&u.kit.gad>=0?'':'none';if(u.kit&&u.kit.gad>=0){$('gadN').textContent=u.gadN;$('gadBtn').classList.toggle('off',u.gadN<=0||u.gadCD>0)}
   $('hypBtn').style.display=u.kit&&u.kit.hyper?'':'none';if(u.kit&&u.kit.hyper){$('hypBtn').classList.toggle('ready',u.hyp>=1&&u.sup>=1);$('hypBtn').style.background=u.hyp>=1?'':`conic-gradient(#c264ff ${u.hyp*360}deg,#2a2f3dcc 0)`}
   $('supBtn').classList.toggle('ready',u.sup>=1);$('supBtn').style.background=u.sup>=1?'':`conic-gradient(#ffc53d ${u.sup*360}deg,#2a2f3dcc 0)`;
-  if(noteT>0){noteT-=dt;if(noteT<=0)$('note').textContent=''}if(u.dead&&G.state==='play'&&G.mode!=='br')$('note').textContent='復活まで '+Math.ceil(u.respT);
+  if(noteT>0){noteT-=dt;if(noteT<=0)$('note').textContent=''}
   if(G.mode==='br'){$('alive').textContent=G.units.filter(o=>!o.dead).length;$('myPw').textContent=u.pw||0}
   if(bigT>0){bigT-=dt;if(bigT<=0)$('big').style.display='none'}
   stickEl('stL',STK.L);stickEl('stA',STK.A);stickEl('stS',STK.S)}
@@ -1581,7 +1609,7 @@ function step(dt){updLobby(dt);POISON.material.uniforms.T.value=performance.now(
       if(lead>=0){G.cd-=sdt;if(G.cd<=0)endMatch(lead)}G.time-=sdt;if(G.time<=0)endMatch(b>r?0:r>b?1:-1)}
     if(!G.over&&G.mode==='br'){const R0=Math.hypot(HALFX,HALFZ)+2,k=clamp((G.t-25)/110,0,1);G.safeR=lerp(R0,4.5,k);if(G.t>20&&!G._pw){G._pw=1;note('もうすぐ毒の雲がせまってくる！',2.5)}
       POISON.material.uniforms.R.value=G.safeR;G.poisonT-=sdt;if(G.poisonT<=0){G.poisonT=.5;for(const u of G.units)if(!u.dead&&Math.hypot(u.x,u.z)>G.safeR)hurt(u,(650+G.t*6)*.5,null,true)}
-      const alive=G.units.filter(u=>!u.dead);if(G.me.dead){G.place=G.me.place||alive.length+1;endMatch(-1)}else if(alive.length<=1){G.place=1;endMatch(0)}}
+      const alive=G.units.filter(u=>!u.dead);if(G.me.dead){if(!G.brDead){G.brDead=1;G.place=G.me.place||alive.length+1;$('big').style.display='none'}if(alive.length<=1||G.specExit)endMatch(-1)}else if(alive.length<=1){G.place=1;endMatch(0)}}
     if(G.state==='end'){G.endT-=dt;if(G.endT<=0)showResult()}}
   if(G.state==='intro'||G.state==='play'||G.state==='end'){for(const u of G.units){poseUnit(u,dt);updLabel(u)}for(const t of G.turrets)updLabel(t);for(const h of G.heads)updLabel(h);for(const q of G.pets)updLabel(q);for(const s of G.safes)updLabel(s);updHud(dt);
     const u=me(),keys=new Set();if(u&&!u.dead&&u.inBush){for(let r=cz(u.z)-2;r<=cz(u.z)+2;r++)for(let c=cx(u.x)-2;c<=cx(u.x)+2;c++)if(cell(c,r)==='B'&&Math.hypot(tx(c)-u.x,tz(r)-u.z)<3.2)keys.add(c+','+r)}setBushSee(keys)}
@@ -1641,7 +1669,7 @@ const _hurt=hurt;hurt=function(t,dmg,src,isSup,fx){const alive=!t.dead,hp0=t.hp,
     burst(t.x,1.3,t.z,isSup?16:7,[1,.95,.55],isSup?6:3.5,isSup?.5:.35,.3,true);if(isSup)G.shake=Math.max(G.shake,.4)}
   if(t.isMe&&d>0&&!t.dead&&t.hp<t.maxHp*.35)fxFlash('#ff2030',.35,.4,true);
   if(t.dead&&G.units.includes(t))onKill(t,s0)};
-function onKill(t,s){const [sx,sy]=scr(t.x,1.4,t.z);burst(t.x,1.2,t.z,34,[1,.85,.3],9,.8,.75,true);burst(t.x,.4,t.z,20,[1,1,1],6,.5,.5,true);
+function onKill(t,s){t.killedBy=s;if(s&&!s.isMe&&!s.dead&&Math.random()<.3)setTimeout(()=>{if(G.state==='play')showPin(s,'like')},rr(300,700));if(!t.isMe&&!s?.isMe&&Math.random()<.2){const al=G.units.filter(o=>!o.isMe&&!o.dead&&!o.dummy&&o.team===t.team&&G.mode!=='br');if(al.length)setTimeout(()=>{if(G.state==='play')showPin(al[0],'bad')},rr(400,900))}const [sx,sy]=scr(t.x,1.4,t.z);burst(t.x,1.2,t.z,34,[1,.85,.3],9,.8,.75,true);burst(t.x,.4,t.z,20,[1,1,1],6,.5,.5,true);
   if(s&&s.isMe){streak=G.t-streakT<8?streak+1:1;streakT=G.t;const T=['たおした！','ダブルキル！','トリプルキル！','ウルトラキル！','むそう！！'][Math.min(streak,5)-1];
     fxSlam(T,streak>1?'#ff5ad1':'#ffd84d',t.name+(s.kills>1?'　（'+s.kills+'体目）':''));HS=.16;fxFlash('#ffffff',.3,.25);G.shake=Math.max(G.shake,.75);confetti(sx,sy,26+streak*12);SFX.kill(streak)}
   else if(t.isMe){fxFlash('#ff1a2a',.75,1,true);HS=.22;G.shake=.9}
@@ -1660,7 +1688,57 @@ const _showResult=showResult;showResult=function(){_showResult();const t=$('rTit
   const win=t.className.includes('win');if(win){fxFlash('#fff6b0',.35,.5);confetti(VW()/2,VH()*.25,80);setTimeout(()=>confetti(VW()*.2,VH()*.3,50),350);setTimeout(()=>confetti(VW()*.8,VH()*.3,50),650)}
   document.querySelectorAll('#rSub .cu').forEach((e,j)=>{const to=+e.dataset.v,pre=e.dataset.p||'',t0=performance.now()+300+j*250,D=900;e.textContent=pre+'0';let i=0;
     const f=now=>{const k=clamp((now-t0)/D,0,1),v=Math.round(to*(1-Math.pow(1-k,3)));e.textContent=pre+(to<0?v:v);if(k>0&&k<1&&i++%3===0)SFX.tick(i);if(k<1)requestAnimationFrame(f);else{e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump');if(to>0){const r=e.getBoundingClientRect();if(!ROT)confetti(r.left+r.width/2,r.top,18,{coin:pre.includes('🪙'),spread:150})}}};requestAnimationFrame(f)})};
-window.__A={autoAttack,setPick:id=>{PICK=id},gadget,hyperGo,superAtk2:superAtk,buildArenaTest:id=>{buildArena(id)},rankOf,RPts,quests,questAdd,drawHome,MAPS,aiAct,buildArena,coins,level,upgrade,trophies,LSset,showMenu,G,BT,me,startMatch,step,attack,superAtk,autoAttack,cam,scene,renderer,teamGems,visibleTo,astar,MAP,GRID,endMatch,setZoom:z=>ZOOM=z,K,STK};
+// ================= 観戦（やられている間はカメラを自由に動かせる）=================
+const SPEC={on:false,tgt:null,free:false,x:0,z:0,drag:null};
+const specing=()=>{const u=G.me;return !!u&&u.dead&&(G.state==='play'||G.state==='end')&&G.rule!=='tutorial'};
+function specList(){const u=G.me;return G.units.filter(o=>!o.dead&&!o.isMe&&!o.dummy&&(G.mode==='br'||o.team===u.team))}
+function specStart(){const u=G.me;SPEC.on=true;SPEC.free=false;SPEC.drag=null;SPEC.x=u.x;SPEC.z=u.z;SPEC.tgt=null;
+  const L=specList(),k=u.killedBy;if(respawnTime()>1e8){SPEC.tgt=k&&!k.dead&&L.includes(k)?k:L[0]||null}
+  document.body.classList.add('spec');specDraw()}
+function specStop(){SPEC.on=false;SPEC.tgt=null;SPEC.drag=null;document.body.classList.remove('spec')}
+function specNext(dir){const L=specList();if(!L.length){SPEC.tgt=null;SPEC.free=true;specDraw();return}let i=L.indexOf(SPEC.tgt);i=i<0?(dir>0?0:L.length-1):(i+dir+L.length)%L.length;SPEC.tgt=L[i];SPEC.free=false;tn(700,.05,.1,'square',900);specDraw()}
+function specDraw(){const t=SPEC.tgt;$('specName').textContent=SPEC.free||!t?'フリーカメラ':t.name+(G.mode==='br'?'':t.team===G.me.team?'（味方）':'');$('specName').style.color=!t||SPEC.free?'#fff':t.team===G.me.team?'#8cc8ff':'#ff8b8b'}
+function specTick(dt){const on=specing();if(on&&!SPEC.on)specStart();if(!on&&SPEC.on)specStop();if(!SPEC.on)return;const u=G.me;
+  if(SPEC.tgt&&SPEC.tgt.dead){const L=specList();SPEC.tgt=L[0]||null;if(!SPEC.tgt&&respawnTime()>1e8)SPEC.free=true;specDraw()}
+  const kx=(K.KeyD?1:0)-(K.KeyA?1:0),kz=(K.KeyS?1:0)-(K.KeyW?1:0);if(kx||kz){if(!SPEC.free){SPEC.free=true;specDraw()}SPEC.x+=kx*dt*16;SPEC.z+=kz*dt*16}
+  SPEC.x=clamp(SPEC.x,-HALFX,HALFX);SPEC.z=clamp(SPEC.z,-HALFZ,HALFZ);
+  const rt=respawnTime(),cd=$('specCd');
+  if(G.mode==='br')cd.innerHTML=`<b>${G.place||'-'}位</b><small>やられた… 最後まで観戦できるよ</small>`;
+  else if(rt<1e8)cd.innerHTML=`<small>復活まで</small><b>${Math.max(1,Math.ceil(u.respT))}</b>`;
+  else cd.innerHTML=`<b style="font-size:26px">観戦中</b><small>次のラウンドまで待とう</small>`}
+// カメラの目標（updCam から呼ぶ）
+function specCam(){const u=G.me;if(SPEC.tgt&&!SPEC.free){SPEC.x=SPEC.tgt.x;SPEC.z=SPEC.tgt.z}
+  else if(!SPEC.free&&G.mode!=='br'&&respawnTime()<1e8){const [sx,sz]=u.spawn,k=clamp(1-u.respT/Math.max(1,respawnTime()),0,1);SPEC.x=lerp(u.x,sx,k);SPEC.z=lerp(u.z,sz,k)}
+  return[SPEC.x,SPEC.z]}
+function specPx(){const asp=VW()/VH(),z=ZOOM*(asp<1.2?1.25:1);return 2*Math.tan(cam.fov*Math.PI/360)*Math.hypot(27,15)*z/VH()}
+R.addEventListener('pointerdown',e=>{if(!SPEC.on||e.target.closest('button,.scr,#pause'))return;const p=P(e);SPEC.drag={id:e.pointerId,x:p.x,y:p.y};e.preventDefault();e.stopPropagation();try{R.setPointerCapture(e.pointerId)}catch(_){}},true);
+R.addEventListener('pointermove',e=>{const d=SPEC.drag;if(!d||d.id!==e.pointerId)return;const p=P(e),k=specPx(),dx=p.x-d.x,dy=p.y-d.y;if(!SPEC.free&&Math.hypot(dx,dy)>4){SPEC.free=true;specDraw()}if(SPEC.free){SPEC.x-=dx*k;SPEC.z-=dy*k*1.15}d.x=p.x;d.y=p.y});
+const specUp=e=>{if(SPEC.drag&&SPEC.drag.id===e.pointerId)SPEC.drag=null};R.addEventListener('pointerup',specUp);R.addEventListener('pointercancel',specUp);
+$('specL').addEventListener('click',()=>specNext(-1));$('specR').addEventListener('click',()=>specNext(1));
+$('specExit').addEventListener('click',()=>{G.specExit=1});
+addEventListener('keydown',e=>{if(!SPEC.on||e.repeat)return;if(e.code==='ArrowLeft'||e.code==='ArrowRight'){specNext(e.code==='ArrowRight'?1:-1);e.preventDefault()}else if(e.code==='Enter'&&G.mode==='br')G.specExit=1});
+// ================= ピン（試合中に頭の上に出すエモート）=================
+const PINS={like:{name:'いいね',f:'#2f7df0',f2:'#1b56b8',in:'#4fa3ff',hi:'#bfe0ff',down:false},bad:{name:'バッド',f:'#e83a3a',f2:'#a81c1c',in:'#ff5f5f',hi:'#ffd0d0',down:true}};
+function pinSvg(k){const p=PINS[k];
+  const hand=`<g stroke="#101010" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" paint-order="stroke"><rect x="23" y="46" width="14" height="31" rx="3" fill="#fff"/><path d="M40 48 L50 30 Q53 21 59 24 Q64 27 61 38 L59 46 L73 46 Q80 47 78 54 Q77 57 74 58 Q79 60 77 65 Q75 68 72 68 Q75 71 72 75 Q70 78 66 78 L41 78 Z" fill="#fff"/></g><path d="M63 58 H72 M62 68 H70" stroke="#101010" stroke-width="3" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="46" fill="#0008"/><circle cx="50" cy="50" r="46" fill="#101010"/><circle cx="50" cy="50" r="41.5" fill="${p.f}"/><circle cx="50" cy="52" r="33" fill="${p.f2}"/><circle cx="50" cy="50" r="32" fill="${p.in}"/><ellipse cx="50" cy="31" rx="24" ry="11" fill="${p.hi}" opacity=".45"/><path d="M17 42 A34 34 0 0 1 34 18" stroke="#fff" stroke-opacity=".7" stroke-width="5" fill="none" stroke-linecap="round"/><g transform="${p.down?'rotate(180 50 52) translate(0 -2)':'translate(0 -2)'}">${hand}</g></svg>`}
+const PINL=[];let pinCD=0;
+SFX.pin=()=>{tn(520,.07,.2,'sine',1040);tn(1040,.14,.14,'triangle',0,.06);tn(1560,.1,.07,'sine',0,.12)};
+function showPin(u,k){if(!u||u.dead||!PINS[k])return;const o=PINL.find(p=>p.u===u);if(o){o.d.remove();PINL.splice(PINL.indexOf(o),1)}
+  const d=document.createElement('div');d.className='pin';d.innerHTML=`<div class="pinB"><div class="pinI">${pinSvg(k)}</div></div>`;OV.appendChild(d);PINL.push({u,d,t:0,k});if(u.isMe||visibleTo(0,u))SFX.pin()}
+function updPins(dt){const live=G.state==='play'||G.state==='end'||G.state==='intro';for(let i=PINL.length-1;i>=0;i--){const p=PINL[i],u=p.u;p.t+=dt;
+    if(!live||p.t>2.5||u.dead){p.d.remove();PINL.splice(i,1);continue}if(!u.isMe&&!u.m.g.visible){p.d.style.display='none';continue}p.d.style.display='';
+    const [sx,sy]=scr(u.x,(u.jy||0)+(u.bt==='gai'||u.bt==='riki'?3.6:3.0),u.z);p.d.style.transform=`translate(${sx}px,${sy}px)`;if(p.t>2.2&&!p.out){p.out=1;p.d.classList.add('out')}}
+  pinCD=Math.max(0,pinCD-dt);const b=$('pinBtn');b.classList.toggle('cd',pinCD>0);b.style.setProperty('--cd',(pinCD/2.5*360)+'deg')}
+function usePin(k){const u=G.me;if(!u||u.dead||G.state!=='play'||pinCD>0)return;$('pinTray').classList.remove('on');showPin(u,k);pinCD=2.5;
+  // 味方のボットがときどき返してくれる
+  if(k==='like'){const al=G.units.filter(o=>!o.isMe&&!o.dead&&!o.dummy&&o.team===u.team);if(al.length&&Math.random()<.45){const a=al[Math.floor(Math.random()*al.length)];setTimeout(()=>{if(G.state==='play')showPin(a,'like')},rr(600,1100))}}}
+$('pinBtn').addEventListener('click',e=>{e.stopPropagation();if(G.state!=='play')return;$('pinTray').classList.toggle('on');tn(800,.04,.08,'square')});
+for(const b of document.querySelectorAll('#pinTray button')){b.innerHTML=pinSvg(b.dataset.pin)+`<small>${PINS[b.dataset.pin].name}</small>`;b.addEventListener('click',e=>{e.stopPropagation();usePin(b.dataset.pin)})}
+$('pinBtn').innerHTML=`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#ffd84d" stroke="#101010" stroke-width="7"/><circle cx="36" cy="42" r="6" fill="#101010"/><circle cx="64" cy="42" r="6" fill="#101010"/><path d="M30 60 Q50 80 70 60" stroke="#101010" stroke-width="7" fill="none" stroke-linecap="round"/></svg>`;
+addEventListener('keydown',e=>{if(e.repeat||G.state!=='play'||paused)return;if(e.code==='Digit1')usePin('like');else if(e.code==='Digit2')usePin('bad');else if(e.code==='KeyT')$('pinTray').classList.toggle('on')});
+const _step3=step;step=function(dt){_step3(dt);specTick(dt);updPins(dt)};
+window.__A={hurt:(...a)=>hurt(...a),SPEC,usePin,specNext,autoAttack,setPick:id=>{PICK=id},gadget,hyperGo,superAtk2:superAtk,buildArenaTest:id=>{buildArena(id)},rankOf,RPts,quests,questAdd,drawHome,MAPS,aiAct,buildArena,coins,level,upgrade,trophies,LSset,showMenu,G,BT,me,startMatch,step,attack,superAtk,autoAttack,cam,scene,renderer,teamGems,visibleTo,astar,MAP,GRID,endMatch,setZoom:z=>ZOOM=z,K,STK};
 })();
 </script>
 </body></html>
