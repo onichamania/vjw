@@ -1671,7 +1671,7 @@ const _hurt=hurt;hurt=function(t,dmg,src,isSup,fx){const alive=!t.dead,hp0=t.hp,
   if(t.dead&&G.units.includes(t))onKill(t,s0)};
 function onKill(t,s){t.killedBy=s;if(s&&!s.isMe&&!s.dead&&Math.random()<.3)setTimeout(()=>{if(G.state==='play')showPin(s,'like')},rr(300,700));if(!t.isMe&&!s?.isMe&&Math.random()<.2){const al=G.units.filter(o=>!o.isMe&&!o.dead&&!o.dummy&&o.team===t.team&&G.mode!=='br');if(al.length)setTimeout(()=>{if(G.state==='play')showPin(al[0],'bad')},rr(400,900))}const [sx,sy]=scr(t.x,1.4,t.z);burst(t.x,1.2,t.z,34,[1,.85,.3],9,.8,.75,true);burst(t.x,.4,t.z,20,[1,1,1],6,.5,.5,true);
   if(s&&s.isMe){streak=G.t-streakT<8?streak+1:1;streakT=G.t;const T=['たおした！','ダブルキル！','トリプルキル！','ウルトラキル！','むそう！！'][Math.min(streak,5)-1];
-    fxSlam(T,streak>1?'#ff5ad1':'#ffd84d',t.name+(s.kills>1?'　（'+s.kills+'体目）':''));HS=.16;fxFlash('#ffffff',.3,.25);G.shake=Math.max(G.shake,.75);confetti(sx,sy,26+streak*12);SFX.kill(streak)}
+    HS=.16;fxFlash('#ffffff',.3,.25);G.shake=Math.max(G.shake,.75);confetti(sx,sy,26+streak*12);SFX.kill(streak)}
   else if(t.isMe){fxFlash('#ff1a2a',.75,1,true);HS=.22;G.shake=.9}
   else if(s&&s.team===0)confetti(sx,sy,10,{spread:150})}
 // 自分の攻撃に少し反動
@@ -1695,7 +1695,7 @@ function specList(){const u=G.me;return G.units.filter(o=>!o.dead&&!o.isMe&&!o.d
 function specStart(){const u=G.me;SPEC.on=true;SPEC.free=false;SPEC.drag=null;SPEC.x=u.x;SPEC.z=u.z;SPEC.tgt=null;
   const L=specList(),k=u.killedBy;if(respawnTime()>1e8){SPEC.tgt=k&&!k.dead&&L.includes(k)?k:L[0]||null}
   document.body.classList.add('spec');specDraw()}
-function specStop(){SPEC.on=false;SPEC.tgt=null;SPEC.drag=null;document.body.classList.remove('spec')}
+function specStop(){SPEC.on=false;SPEC.tgt=null;SPEC.drag=null;document.body.classList.remove('spec');$('specCd').innerHTML='';if(/復活|やられた/.test($('note').textContent)){$('note').textContent='';noteT=0}}
 function specNext(dir){const L=specList();if(!L.length){SPEC.tgt=null;SPEC.free=true;specDraw();return}let i=L.indexOf(SPEC.tgt);i=i<0?(dir>0?0:L.length-1):(i+dir+L.length)%L.length;SPEC.tgt=L[i];SPEC.free=false;tn(700,.05,.1,'square',900);specDraw()}
 function specDraw(){const t=SPEC.tgt;$('specName').textContent=SPEC.free||!t?'フリーカメラ':t.name+(G.mode==='br'?'':t.team===G.me.team?'（味方）':'');$('specName').style.color=!t||SPEC.free?'#fff':t.team===G.me.team?'#8cc8ff':'#ff8b8b'}
 function specTick(dt){const on=specing();if(on&&!SPEC.on)specStart();if(!on&&SPEC.on)specStop();if(!SPEC.on)return;const u=G.me;
