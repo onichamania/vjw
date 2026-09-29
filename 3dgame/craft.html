@@ -144,11 +144,11 @@ body.surv #itemName{margin-bottom:calc(var(--hs) * .9)}
 .fcol{display:flex;flex-direction:column;align-items:center;gap:4px}.flame{width:16px;height:16px;background:#555;position:relative;display:flex;align-items:flex-end}.flame i{display:block;width:100%;background:#ff9a2a}
 .ar2 i{position:absolute;left:0;top:50%;height:6px;margin-top:-3px;background:#fff;width:0}
 .is.arm.a0::after,.is.arm.a1::after,.is.arm.a2::after,.is.arm.a3::after{content:'';position:absolute;inset:18%;opacity:.25;background:#555;clip-path:polygon(15% 30%,85% 30%,85% 80%,15% 80%)}
-.rbook{margin-top:8px;border-top:2px solid #8b8b8b;padding-top:4px}.rhead{display:flex;align-items:center;gap:8px;font-size:14px;color:#3f3f3f}.rhead .tab{height:26px;font-size:12px}
-.rlist{display:grid;grid-template-columns:repeat(auto-fill,var(--is));max-height:calc(var(--is) * 2.2);overflow-y:auto;margin-top:4px}.is.dim{opacity:.35}.rnone{font-size:13px;color:#555;padding:6px}
+.rbook{margin-top:8px;border-top:2px solid #8b8b8b;padding-top:4px}.rhead{display:flex;align-items:center;gap:6px;font-size:14px;color:#3f3f3f;white-space:nowrap}.rhead .tab{height:26px;font-size:12px;white-space:nowrap;padding:0 5px}
+.rlist{display:grid;grid-template-columns:repeat(auto-fill,var(--is));max-height:calc(var(--is) * 2.2);overflow-y:auto;margin-top:4px}.is.dim{opacity:.35}.rnone{font-size:13px;color:#555;padding:6px;grid-column:1/-1;white-space:nowrap}
 .tlist{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:3px}.trow{display:flex;align-items:center;gap:4px;padding:2px 4px;background:#b0b0b0;cursor:pointer}.trow:hover{background:#d0d0ff}.trow.dim{opacity:.5}.ta{font-size:20px;color:#555;margin:0 6px}
 .is.ghost{background:transparent;box-shadow:none}
-@media (max-height:520px){.win{--is:min(32px,8vw);padding:4px 8px 6px}.ttl2{margin:2px 0 1px;font-size:12px}.rlist{max-height:calc(var(--is) * 1.2)}.pview{width:44px;height:70px}.pview canvas{width:40px;height:60px}}
+@media (max-height:520px){.win.cw-inv,.win.cw-craft{display:grid;grid-template-columns:auto 162px;column-gap:10px;align-content:start}.win.cw-inv>*,.win.cw-craft>*{grid-column:1}.win.cw-inv>.rbook,.win.cw-craft>.rbook{grid-column:2;grid-row:1 / span 20;margin-top:0;border-top:0;border-left:2px solid #8b8b8b;padding:0 0 0 6px}.win.cw-inv .rlist,.win.cw-craft .rlist{max-height:72vh}.win{--is:min(32px,8vw);padding:4px 8px 6px}.ttl2{margin:2px 0 1px;font-size:12px}.rlist{max-height:calc(var(--is) * 1.2)}.pview{width:44px;height:70px}.pview canvas{width:40px;height:60px}}
 #cont .win{max-height:96vh;overflow-y:auto}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -1693,7 +1693,7 @@ const ARR=buildTextures();
 // 影（太陽から見た深さ）
 let SHADOW=null;
 let DUMMYSH=null;
-function makeShadow(size){if(SHADOW){SHADOW.rt.dispose();SHADOW=null}if(!size){if(!DUMMYSH){DUMMYSH=new THREE.WebGLRenderTarget(1,1,{depthBuffer:true});DUMMYSH.depthTexture=new THREE.DepthTexture(1,1);DUMMYSH.depthTexture.type=THREE.UnsignedIntType;DUMMYSH.depthTexture.compareFunction=THREE.LessEqualCompare}renderer.setRenderTarget(DUMMYSH);renderer.clear();renderer.setRenderTarget(null)}U.uShadowMap.value=DUMMYSH.depthTexture;U.uShadowOn.value=0;return}const rt=new THREE.WebGLRenderTarget(size,size,{depthBuffer:true});
+function makeShadow(size){if(SHADOW){SHADOW.rt.dispose();SHADOW=null}if(!size){if(!DUMMYSH){DUMMYSH=new THREE.WebGLRenderTarget(1,1,{depthBuffer:true});DUMMYSH.depthTexture=new THREE.DepthTexture(1,1);DUMMYSH.depthTexture.type=THREE.UnsignedIntType;DUMMYSH.depthTexture.compareFunction=THREE.LessEqualCompare;renderer.setRenderTarget(DUMMYSH);renderer.clear();renderer.setRenderTarget(null)}U.uShadowMap.value=DUMMYSH.depthTexture;U.uShadowOn.value=0;return}const rt=new THREE.WebGLRenderTarget(size,size,{depthBuffer:true});
   rt.depthTexture=new THREE.DepthTexture(size,size);rt.depthTexture.type=THREE.UnsignedIntType;rt.depthTexture.compareFunction=THREE.LessEqualCompare;
   rt.depthTexture.minFilter=rt.depthTexture.magFilter=THREE.LinearFilter;const cam=new THREE.OrthographicCamera(-1,1,1,-1,1,420);cam.layers.set(1);
   SHADOW={rt,cam,size,R:48};U.uShadowMap.value=rt.depthTexture;U.uShadowTexel.value=1/size;renderer.setRenderTarget(rt);renderer.clear();renderer.setRenderTarget(null)}
@@ -2006,7 +2006,7 @@ function hurtPlayer(dmg,src,kx,kz,who){if(PL.dead||isCreative()&&src!=='void'||d
   if(PL.hp<=0){const t=[0,40].includes(0)&&PL.inv[PL.sel]&&PL.inv[PL.sel].id===IID.totem_of_undying;if(t){PL.inv[PL.sel]=null;PL.hp=1;PL.effects={regeneration:{t:45,a:1},absorption:{t:5,a:1},fire_resistance:{t:40,a:0}};PL.absorb=8;totemFx();return true}
     killPlayer()}return true}
 function healPlayer(n){if(PL.dead)return;PL.hp=Math.min(20,PL.hp+n);invDirty()}
-function addXp(n){PL.xp+=n/xpNeed(PL.lvl);while(PL.xp>=1){PL.xp-=1;PL.lvl++;SFX.levelUp()}invDirty()}
+function addXp(n){let up=false;while(n>0){const need=xpNeed(PL.lvl)*(1-PL.xp);if(n>=need){n-=need;PL.lvl++;PL.xp=0;up=true}else{PL.xp+=n/xpNeed(PL.lvl);n=0}}if(up)SFX.levelUp();invDirty()}
 const xpNeed=l=>l<16?2*l+7:l<31?5*l-38:9*l-158;
 function addEffect(name,sec,amp){const e=PL.effects[name];if(e&&e.a>amp&&e.t>sec)return;PL.effects[name]={t:sec,a:amp||0};if(name==='absorption')PL.absorb=4*((amp||0)+1);invDirty()}
 function eatDone(it){const I=ITEMS[it.id];if(I.food){PL.food=Math.min(20,PL.food+I.food[0]);PL.sat=Math.min(PL.food,PL.sat+I.food[1]);for(const e of I.eff||[])if(Math.random()<(e[3]==null?1:e[3]))addEffect(e[0],e[1],e[2])}
@@ -2779,7 +2779,7 @@ function steer(m,tx,tz,spd){const dx=tx-m.x,dz=tz-m.z,d=Math.hypot(dx,dz);if(d<.
 function dangerAhead(m,dx,dz){if(!dx&&!dz)return false;const l=Math.hypot(dx,dz),ax=Math.floor(m.x+dx/l*.9),az=Math.floor(m.z+dz/l*.9);let drop=0;for(let k=0;k<5;k++){const b=getB(ax,Math.floor(m.y)-1-k,az);if(b===ID.lava||b===ID.fire||b===ID.magma_block&&!MOBDEF[m.type].fireImm)return true;if(b!==0&&!(b>0&&!SOL[b]&&SHP[b]!==6))break;drop++}
   const at=getB(ax,Math.floor(m.y),az);if(at===ID.lava||at===ID.fire||at===ID.cactus)return true;return drop>=4}
 function updMobs(dt){const t=performance.now()/1000;const pcx=PL.x,pcz=PL.z;
-  for(const m of MOBS.slice()){const D=MOBDEF[m.type];const cb=getB(Math.floor(m.x),Math.floor(m.y+.2),Math.floor(m.z));if(cb<0){m.mesh.visible=false;continue}
+  for(const m of MOBS.slice()){const D=MOBDEF[m.type];const cb=getB(Math.floor(m.x),Math.floor(m.y+.2),Math.floor(m.z));if(cb<0&&!D.boss){m.mesh.visible=false;continue}
     const dP=Math.hypot(m.x-pcx,m.z-pcz);m.mesh.visible=dP<Math.max(48,U.uFogEnd.value+8);m.age+=dt;
     if(m.deathT>0){m.deathT-=dt;m.mesh.rotation.z=Math.min(Math.PI/2,(.9-m.deathT)*4);m.mat.uniforms.uE.value.z=1;m.mesh.position.set(m.x,m.y,m.z);if(m.deathT<=0){smoke(m.x,m.y+.5,m.z,14,.25,[.9,.9,.9,.8],1.5);removeMob(m)}continue}
     // 遠くのものは消える（持ち主のいない敵）
@@ -2943,7 +2943,9 @@ function spawnCrystal(x,y,z){const g=new THREE.Group();const a=new THREE.Mesh(ne
 function crystalHit(c){if(c.dead)return;c.dead=true;scene.remove(c.mesh);scene.remove(c.beam);const i=CRYSTALS.indexOf(c);if(i>=0)CRYSTALS.splice(i,1);
   if(DIM==='e'&&WORLD){WORLD.crystalsGone=WORLD.crystalsGone||[];WORLD.crystalsGone.push(Math.round(c.x)+','+Math.round(c.z))}
   const d=MOBS.find(m=>m.type==='ender_dragon'&&!m.dead);if(d&&d.healFrom===c){d.hp-=10;d.healFrom=null}explode(c.x,c.y+1,c.z,6,true,'crystal')}
-function updCrystals(dt){for(const c of CRYSTALS){c.t+=dt;c.parts[0].rotation.set(c.t*1.3,c.t*.9,0);c.parts[1].rotation.set(-c.t,c.t*1.6,c.t*.5);c.parts[2].rotation.set(c.t*2,c.t,0);c.mesh.position.y=c.y+1+Math.sin(c.t*2)*.25;
+function placeExitPortal(){if(DIM!=='e'||!WORLD||!WORLD.needExit)return;const t=GENF.endTop(0,0);if(!t)return;const yc=t[0];if(getB(0,yc,0)<0||getB(3,yc,3)<0||getB(-3,yc,-3)<0)return;
+  for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++){const d=Math.hypot(dx,dz);if(d<=2.6&&!(dx===0&&dz===0))setBlock(dx,yc+1,dz,ID.end_portal,0)}setBlock(0,yc+5,0,ID.dragon_egg,0);flushSets();WORLD.needExit=false}
+function updCrystals(dt){placeExitPortal();for(const c of CRYSTALS){c.t+=dt;c.parts[0].rotation.set(c.t*1.3,c.t*.9,0);c.parts[1].rotation.set(-c.t,c.t*1.6,c.t*.5);c.parts[2].rotation.set(c.t*2,c.t,0);c.mesh.position.y=c.y+1+Math.sin(c.t*2)*.25;
     const d=MOBS.find(m=>m.type==='ender_dragon'&&!m.dead&&m.phase!=='dying');c.beam.visible=false;
     if(d&&d.healFrom===c){const s=new THREE.Vector3(c.x,c.mesh.position.y,c.z),e=new THREE.Vector3(d.x,d.y,d.z),m=s.clone().add(e).multiplyScalar(.5);c.beam.visible=true;c.beam.position.copy(m);c.beam.scale.set(1,s.distanceTo(e),1);c.beam.lookAt(e);c.beam.rotateX(Math.PI/2)}}}
 // ---- ボス共通 ----
@@ -2981,12 +2983,11 @@ function dragonAI(m,dt,t,dP){m.phaseT+=dt;m.roar=Math.max(0,(m.roar||0)-dt);cons
     m.breathT=(m.breathT||0)-dt;if(m.breathT<=0&&alive&&dP<24){m.breathT=4;m.roar=1.5;SFX.dragonBreath();const hx=m.x+Math.sin(m.yaw)*9,hz=m.z+Math.cos(m.yaw)*9;for(let i=0;i<3;i++)acidCloud(hx+Math.sin(m.yaw)*i*2,yc+1.5,hz+Math.cos(m.yaw)*i*2)}
     if(m.phaseT>18||m.perchHp-m.hp>25){m.phase='circle';m.phaseT=0;m.ang=Math.atan2(m.z,m.x);SFX.dragonRoar()}}
   else if(m.phase==='dying'){m.y+=dt*1.2;m.yaw+=dt*.5;SHAKE=Math.max(SHAKE,.3);for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,b=Math.random()*Math.PI-Math.PI/2;PART.add(m.x+Math.cos(a)*Math.cos(b)*6,m.y+Math.sin(b)*6,m.z+Math.sin(a)*Math.cos(b)*6,Math.cos(a)*8,Math.sin(b)*8,Math.sin(a)*8,1.2,251,0,0,.6,[3,2.4,3,1],[1,1],2)}
-    if(m.phaseT%1<dt)SFX.boom(10);if(m.phaseT>9){spawnXp(m.x,yc+4,m.z,WORLD.dragonKilled?500:12000>2000?2000:12000);dragonDefeated(yc);removeMob(m)}return null}
+    if(m.phaseT%1<dt)SFX.boom(10);if(m.phaseT>9){const first=!WORLD.dragonKilled;spawnXp(0,yc+4,0,first?400:200);if(first)addXp(12000);dragonDefeated(yc);removeMob(m)}return null}
   // 体当たり
   if(alive&&m.phase!=='perch'){for(const b of m.hitBoxes||[]){if(PL.x>b[0]-.3&&PL.x<b[3]+.3&&PL.y+1>b[1]&&PL.y<b[4]&&PL.z>b[2]-.3&&PL.z<b[5]+.3){if(m.atkT<=0){m.atkT=1;hurtPlayer(scaleDmg(b[6]==='head'?10:5),'mob',PL.x-m.x,PL.z-m.z,'ender_dragon');PL.vy=10}}}}
   return null}
-function dragonDefeated(yc){WORLD.dragonKilled=true;BOSSBAR.m=null;
-  for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++){const d=Math.hypot(dx,dz);if(d<=2.6&&!(dx===0&&dz===0))setBlock(dx,yc+1,dz,ID.end_portal,0)}setBlock(0,yc+5,0,ID.dragon_egg,0);flushSets();
+function dragonDefeated(yc){WORLD.dragonKilled=true;WORLD.needExit=true;BOSSBAR.m=null;placeExitPortal();
   chat('§dエンダードラゴンを倒した！ §f帰りのポータルが開いた');toast('エンダードラゴンを倒した！');SFX.levelUp();saveWorld()}
 // ---- ウィザー ----
 function witherAI(m,dt,t,dP){m.phaseT-=dt;m.hc=(m.hc||0)+dt;
@@ -3593,17 +3594,18 @@ function perfCheck(dt){if(STATE!=='play')return;perfAcc+=dt;perfN++;if(perfAcc<5
   else if(perfLvl>=4&&CFG.rd>3){CFG.rd--;requestChunks(true)}else return;toast('動きをかるくしました')}
 const playing=()=>STATE==='play'||STATE==='inv'||STATE==='chat'||STATE==='cont';
 function step(dt,t){fpsN++;fpsT+=dt;if(fpsT>=.5){FPS=Math.round(fpsN/fpsT);fpsN=0;fpsT=0}perfCheck(dt);
-  updEnv(dt);
-  if(STATE==='play'){updatePlayer(dt);updTarget();PL.breakCd-=dt;PL.useCd-=dt;PL.atkT+=dt;
+  {const PF=window.__prof,a=PF?performance.now():0;updEnv(dt);if(PF)PF.env=(PF.env||0)+performance.now()-a}
+  if(STATE==='play'){const PF=window.__prof,a=PF?performance.now():0;updatePlayer(dt);if(PF){PF.player=(PF.player||0)+performance.now()-a}const a2=PF?performance.now():0;updTarget();if(PF)PF.target=(PF.target||0)+performance.now()-a2;PL.breakCd-=dt;PL.useCd-=dt;PL.atkT+=dt;
     const breakDown=(mouseL&&lockOn)||TOUCH.breakHold;if(isCreative()){if(mouseL&&PL.breakCd<=0&&lockOn){if(!attackMob())doBreak();PL.breakCd=.25}}else updMining(dt,breakDown&&!TMOB);
     if(!isCreative()&&mouseL&&lockOn&&TMOB&&PL.atkT>.25&&PL.breakCd<=0){attackMob();PL.breakCd=.3}
     if(mouseR&&PL.useCd<=0&&lockOn&&!PL.using)doUse();updUse(dt,(mouseR&&lockOn)||TOUCH.useHold);updTouch(dt);updPortals(dt)}
-  if(playing()||STATE==='dead'||STATE==='sleep'){if(STATE!=='play'&&STATE!=='dead'&&STATE!=='sleep')updatePlayer(dt);updateSurvival(dt);updMobs(dt);updTNT(dt);updDrops(dt);XPO.upd(dt);updProj(dt);updAcid(dt);updCrystals(dt);updSculk(dt);
-    updTicks(dt);updLeaves(dt);updFurnaces(dt);torchFx(dt);netherAmbient(dt);updMusic(dt);spawnTick(dt);saveT-=dt;if(saveT<=0){saveT=45;if(WORLD&&!WORLD.demo){const d=MOBS.find(m=>m.type==='ender_dragon');if(d)WORLD.dragonHp=d.hp;saveWorld()}}}
+  if(playing()||STATE==='dead'||STATE==='sleep'){const PF=window.__prof,tm=PF?(k,f)=>{const a=performance.now();f();PF[k]=(PF[k]||0)+performance.now()-a}:(k,f)=>f();
+    if(STATE!=='play'&&STATE!=='dead'&&STATE!=='sleep')updatePlayer(dt);updateSurvival(dt);tm('mobs',()=>updMobs(dt));updTNT(dt);tm('drops',()=>{updDrops(dt);XPO.upd(dt);updProj(dt)});updAcid(dt);updCrystals(dt);updSculk(dt);
+    tm('ticks',()=>{updTicks(dt);updLeaves(dt);updFurnaces(dt)});tm('fx',()=>{torchFx(dt);netherAmbient(dt)});updMusic(dt);tm('spawn',()=>spawnTick(dt));saveT-=dt;if(saveT<=0){saveT=45;if(WORLD&&!WORLD.demo){const d=MOBS.find(m=>m.type==='ender_dragon');if(d)WORLD.dragonHp=d.hp;saveWorld()}}}
   if(STATE==='sleep')updSleep(dt);
   if(STATE==='loading'){const p=loadProgress();$('loadBar').firstChild.style.width=(p*100|0)+'%';if(performance.now()-loadT>1500&&DIM==='o')$('loadTxt').textContent='ワールドを準備しています…';if(p>=1)finishLoad()}
-  if(STATE!=='boot')requestChunks();
-  PART.upd(dt);RAIN.upd(dt);updAmbient(dt);
+  {const PF=window.__prof,a=PF?performance.now():0;if(STATE!=='boot')requestChunks();if(PF)PF.req=(PF.req||0)+performance.now()-a}
+  {const PF=window.__prof,a=PF?performance.now():0;PART.upd(dt);RAIN.upd(dt);updAmbient(dt);if(PF)PF.part=(PF.part||0)+performance.now()-a}
   // ---- カメラ ----
   const t2=performance.now()/1000;
   if(STATE==='title'){const a=t2*.035;camera.rotation.order='YXZ';camera.rotation.set(-.08+Math.sin(t2*.1)*.03,a,0);camera.position.set(PL.x,Math.max(PL.y,SEA)+10,PL.z)}
@@ -3620,15 +3622,15 @@ function step(dt,t){fpsN++;fpsT+=dt;if(fpsT>=.5){FPS=Math.round(fpsN/fpsT);fpsN=
   if(cb===ID.lava){U.uUnderwater.value=1;U.uWaterFog.value.setRGB(.9,.25,.02)}else U.uWaterFog.value.setRGB(.02,.1,.16);
   // 手に光るものを持つとまわりが明るい
   const hs=held(),it=hs?hs.id:0,em=it===IID.lava_bucket?15:it>0&&!isItem(it)?EMIT[it]:0;U.uDyn.value.set(PL.x,PL.y+1.3,PL.z,playing()?em/15*(.96+.04*Math.sin(t2*11)):0);
-  updOutline();updHand(dt,t2);updPlayerModel();if(DIM==='o')updClouds(t2);else if(cloudMesh)cloudMesh.visible=false;
+  {const PF=window.__prof,a=PF?performance.now():0;updOutline();updHand(dt,t2);updPlayerModel();if(PF)PF.misc=(PF.misc||0)+performance.now()-a}if(DIM==='o')updClouds(t2);else if(cloudMesh)cloudMesh.visible=false;
   if(nameT>0){nameT-=dt;if(nameT<=0)$('itemName').classList.remove('on')}
   body.classList.toggle('flying',PL.fly);
-  if(INVD){INVD=false;drawHotbar()}drawBars();drawEffects();setBossBar();
+  const PFd=window.__prof,ad=PFd?performance.now():0;if(INVD){INVD=false;drawHotbar()}drawBars();drawEffects();setBossBar();
   // 画面の効果（ダメージ・火・ポータル・暗闇）
   $('fxHurt').style.opacity=PL.hurtT>0?PL.hurtT*1.5:PL.hp<=4&&!isCreative()&&!PL.dead?.25+.1*Math.sin(t2*4):0;$('fxFire').style.display=PL.fireT>0&&PL.view===0&&!isCreative()&&!PL.dead?'block':'none';
   $('fxPortal').style.opacity=Math.min(.85,PL.portalT/(isCreative()?.5:4));$('atk').style.display=!isCreative()&&STATE==='play'&&PL.atkT<(held()&&isItem(held().id)&&ITEMS[held().id].aspd?1/ITEMS[held().id].aspd:.25)?'block':'none';
   if($('atk').style.display==='block'){const s=held(),cool=s&&isItem(s.id)&&ITEMS[s.id].aspd?1/ITEMS[s.id].aspd:.25;$('atk').firstChild.style.width=Math.min(100,PL.atkT/cool*100)+'%'}
-  dbgT-=dt;if(dbgT<=0&&body.classList.contains('dbg')){dbgT=.25;drawDebug()}
+  dbgT-=dt;if(dbgT<=0&&body.classList.contains('dbg')){dbgT=.25;drawDebug()}if(PFd)PFd.dom=(PFd.dom||0)+performance.now()-ad;
   // ---- 描く ----
   if(window.__noRender)return;renderShadow();
   if(composer){gradePass.uniforms.uUW.value=uw?1+t2:0;gradePass.uniforms.uHurt.value=PL.inLava&&STATE==='play'?.6:0;composer.render()}
@@ -3648,7 +3650,7 @@ addEventListener('pagehide',()=>{saveWorld()});
   buildPlayerModel();startPanorama();showScr('title');requestAnimationFrame(frame);
   window.__C={PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
     doBreak,doUse,TARGET:()=>TARGET,TMOB:()=>TMOB,updTarget,PART,saveWorld,toTitle,WORLD:()=>WORLD,SH,flushSets,giveItem,IID,ITEMS,DROPS,dropItem,hurtPlayer,switchDim,DIM:()=>DIM,GENF:()=>GENF,CRAFT,clickSlot,CONT:()=>CONT,CUR:()=>CUR,
-    matchRecipe,RECIPES,beMap,chestOf,furnaceOf,updMining,attackMob,held,setMode,killPlayer,respawn,CRYSTALS,explode,tryLightPortal,checkEndPortal,addXp,MODELS,buildModel,PROJ,XPO,rayMob,updUse}})();
+    matchRecipe,RECIPES,beMap,chestOf,furnaceOf,updMining,attackMob,held,setMode,killPlayer,respawn,CRYSTALS,explode,tryLightPortal,checkEndPortal,addXp,MODELS,buildModel,PROJ,XPO,rayMob,updUse,hurtMob,checkWitherSummon,placeBlock,useBed,updSculk,setWarn:v=>{WARN=v},getWarn:()=>WARN,addEffect,eatDone,interact,showCredits,countItem}})();
 
 </script>
 </body></html>
