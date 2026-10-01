@@ -556,9 +556,11 @@ function rayCast(ox,oy,oz,dx,dy,dz,maxT,filt){RAYB=null;let best=maxT;const ix=1
 function losClear(a,b,filt){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,d=Math.hypot(dx,dy,dz);if(d<1e-3)return true;const t=rayCast(a.x,a.y,a.z,dx/d,dy/d,dz/d,d,filt);return t>=d-1e-3}
 // ================= 世界の組み立て =================
 let W=null;  // 今作っているまとまり
+const VISB=window.__nbDebug?[]:null; // テスト用：当たり判定のない見た目の箱
 let NOSOLID=false; // true のあいだは当たり判定を作らない
 function box(x0,y0,z0,x1,y1,z1,mat,o={}){if(x0>x1)[x0,x1]=[x1,x0];if(y0>y1)[y0,y1]=[y1,y0];if(z0>z1)[z0,z1]=[z1,z0];
   const m=typeof mat==='string'?MATS[mat]:mat;if(m)W.box(x0,y0,z0,x1,y1,z1,m,o.f??63,o.uv,o.uo||0,o.vo||0);
+  if(VISB&&m&&(o.solid===false||NOSOLID))VISB.push([x0,y0,z0,x1,y1,z1,typeof mat==='string'?mat:'?']);
   if(o.solid!==false&&!NOSOLID)return addSolid(x0,y0,z0,x1,y1,z1,o.s||'wood',o.tag);return null}
 function rbox(cx,cy,cz,sx,sy,sz,rx,ry,rz,mat,o={}){W.rbox(cx,cy,cz,sx,sy,sz,rx,ry,rz,typeof mat==='string'?MATS[mat]:mat,o.uv,o.f??63)}
 function cyl(x,y,z,r,h,mat,seg=12,o={}){W.cyl(x,y+h/2,z,r,h,typeof mat==='string'?MATS[mat]:mat,seg,o.rt,o.axis,o.rot);if(o.solid&&!NOSOLID)addSolid(x-r,y,z-r,x+r,y+h,z+r,o.s||'metal')}
@@ -1391,17 +1393,18 @@ function buildA1House(){const T=.3,t=.15;
   wallZ(19,21.4,4.2,F1,C1,t,'metal_dark','wp_yellow');wallX(2,4.2,19,F1,C1,t,'wp_yellow','metal_dark');wallX(2,4.2,21.4,F1,C1,t,'metal_dark','wp_teal');
   wallX(4.2,6,21.4,F1,C1,t,'wp_yellow','wp_teal');wallX(6,9.85,21.4,F1,C1,t,'wp_yellow','wp_gstripe');wallZ(21.4,26,6,F1,C1,t,'wp_teal','wp_gstripe');wallZ(26,31.85,6,F1,C1,t,'concrete','tile_b',[[28.52,29.48,F1,2.45]]);
   wallX(2.075,6,26,F1,C1,t,'wp_teal','concrete');wallX(6,9.85,26,F1,C1,t,'wp_gstripe','tile_b',[[8.02,8.98,F1,2.45]]);
-  wallX(-9.85,-7,22,F1,C1,t,'wp_wine','concrete',[[-8.1,-7.1,F1,2.4]]);wallX(-7,-2.075,22,F1,C1,t,'wp_wine','wp_floral');wallZ(22.075,27,-7,F1,PT,t,'concrete','wp_floral');
+  wallX(-9.85,-7,22,F1,C1,t,'wp_wine','concrete',[[-8.1,-7.1,F1,2.4]]);wallX(-7,-2.075,22,F1,C1,t,'wp_wine','wp_floral');wallX(-8.6,-2.075,22,C1,F2,t,'wp_wine','tile_b');wallZ(22.075,27,-7,F1,PT,t,'concrete','wp_floral');
   wallX(-9.85,-7,27,F1,PT,t,'concrete','wp_leafblue');wallX(-7,-2.075,27,F1,PT,t,'wp_floral','wp_leafblue',[[-6.2,-5.4,F1,2.35],[-3.7,-2.9,F1,2.35]]);
   // 幅木
   for(const [a,b,c,d] of[[-9.85,14.15,-2.1,14.22],[-1.9,14.15,1.9,14.22],[2.1,14.15,9.85,14.22],[-6.9,22.08,-2.1,22.15],[-9.85,27.08,-2.1,27.15],[6.1,21.48,9.85,21.55]])box(a,F1,b,c,F1+.1,d,'trim',{solid:false});
   // 1階の天井（水びたしの部屋の下は低い）
-  box(-10.15,C1,14,10.15,C1+.01,22,'white',{solid:false,f:8});box(-2,C1,22,10.15,C1+.01,32.15,'white',{solid:false,f:8});
+  box(-10.15,C1,14,10.15,C1+.01,20.85,'white',{solid:false,f:8});box(-10.15,C1,20.85,-8.6,C1+.01,22,'white',{solid:false,f:8});box(-2,C1,20.85,10.15,C1+.01,22,'white',{solid:false,f:8});box(-2,C1,22,10.15,C1+.01,32.15,'white',{solid:false,f:8});
   // ================= 階段（居間の北の壁ぞい、東から西へ上がる）=================
-  for(let i=0;i<16;i++){const x1=-2.6-.375*i,x0=x1-.375,y=F1+.2*(i+1);const low=y<2.45;box(x0,low?F1:y-.25,20.85,x1,y,21.925,'floor',{uv:1.2});box(x0-.02,y-.03,20.83,x1,y,21.93,'rail_o',{solid:false})}
+  // 下に1mほどの踊り場（南から入って、西へ上る）
+  const SX=-3.1,SR=.34;for(let i=0;i<16;i++){const x1=SX-SR*i,x0=x1-SR,y=F1+.2*(i+1);const low=y<2.45;box(x0,low?F1:y-.25,20.85,x1,y,21.925,'floor',{uv:1.2});box(x0-.02,y-.03,20.83,x1,y,21.93,'rail_o',{solid:false})}
   // 手すり（オレンジ）
-  rbox(-5.6,F1+2,20.85,6.2,.07,.07,0,0,Math.atan2(3.2,6),'rail_o');for(let i=0;i<16;i+=2){const x=-2.8-.375*i;box(x-.03,F1+.2*(i+1),20.84,x+.03,F1+.2*(i+1)+.95,20.9,'rail_o',{solid:false})}
-  box(-2.7,F1,20.8,-2.55,F1+1.2,20.95,'rail_o',{s:'wood'});
+  rbox(SX-SR*8,F1+1.6+.95,20.85,Math.hypot(SR*16,3.2),.07,.07,0,0,Math.atan2(3.2,SR*16),'rail_o');for(let i=1;i<16;i+=2){const x=SX-SR*(i+.5);box(x-.03,F1+.2*(i+1),20.84,x+.03,F1+.2*(i+1)+.95,20.9,'rail_o',{solid:false})}
+  box(SX-.08,F1,20.8,SX+.07,F1+1.2,20.95,'rail_o',{s:'wood'});
   // 地下室のドア（階段の下、EXIT の看板）
   A.base=mkDoor({x:-7.6,z:22,y:F1,w:.96,h:2.1,axis:'x',hinge:-1,swing:1,mat:'doorc',panel:'doorc2',arch:true,name:'地下室のドア'});
   A.exitSign=sign(-7.6,2.52,21.92,.62,.22,'exit',Math.PI);box(-7.95,2.4,21.9,-7.25,2.64,21.925,'black',{solid:false});
@@ -1500,7 +1503,9 @@ function furnishA1(){
   buildSecurityRoom();
   // --- 2階の廊下：3階への階段（家具でふさがれている）---
   for(let i=0;i<12;i++)box(-1.85,F2,14.5+.33*i,-.3,F2+.2*(i+1),14.5+.33*(i+1),'floor_dark',{uv:1.2});box(-1.85,F2+2.4,17.4,-.3,F2+2.9,18.5,'floor_dark');
-  crate(-1.2,F2+2.4,17.8,.7);crate(-.8,F2+2.4,18.3,.5,'patch');sofa(-1.1,F2+1.6,16.6,1,'sofa_r',1.3);invis(-1.9,F2,14.3,-.25,F2+3,18.6,'wood');ceilLamp(0,C2,24);ceilLamp(0,C2,29);picture(1.92,5,27.5,3,.6,.5,63);
+  crate(-1.2,F2+2.4,17.8,.7);crate(-.8,F2+2.4,18.3,.5,'patch');sofa(-1.1,F2+1.6,16.6,1,'sofa_r',1.3);// 板を打ちつけてふさいである（見えるとおりの当たり判定）
+  for(let k=0;k<10;k++){const z=14.42+k*.46;box(-.33,F2,z-.09,-.27,F2+2.3-(k%3)*.12,z+.09,'raw',{solid:false})}for(const y of[.45,1.75])rbox(-.24,F2+y,16.45,.04,.16,4.4,0,0,0,'raw');addSolid(-.34,F2,14.2,-.22,F2+2.5,18.65,'wood');
+  ceilLamp(0,C2,24);ceilLamp(0,C2,29);picture(1.92,5,27.5,3,.6,.5,63);
   // --- 教室 ---
   buildClassroom();
   // --- 射的場 ---
@@ -1957,7 +1962,7 @@ function buildNavA1(){const n=node,L=link;
   // 1階
   n('hall_f',0,.3,15.6);n('hall_m',0,.3,19.5);n('hall_n',0,.3,24.5);n('hall_b',0,.3,29);n('kit_d',1.2,.3,16);n('kit',3,.3,16);n('kit_m',5.2,.3,16.4);n('kit_e',8.6,.3,17.3);
   n('elev1',1.1,.3,20.2);n('cab1',3.1,.3,20.2);n('liv',-3.2,.3,16.3);n('liv_m',-4.8,.3,17.5);n('liv_n',-4.7,.3,20.4);n('liv_base',-7.6,.3,21.2);n('liv_gd',-9.1,.3,17);
-  n('stairs_b',-3.05,.3,20.2);n('stairs_1',-3.05,.7,21.4);n('stairs_t',-9.3,3.5,21.4);
+  n('stairs_b',-2.6,.3,20.2);n('stairs_1',-2.6,.3,21.4);n('stairs_t',-9.3,3.5,21.4);
   n('grave_d',-1.2,.3,24.5);n('grave',-2.8,.3,24.5);n('grave_s',-2.8,.3,22.7);n('din_d',-1.2,.3,29.5);n('din',-3,.3,29.5);n('din_w',-8.8,.3,27.8);
   n('pan_d',1.2,.3,23.5);n('pan',3,.3,23.5);n('pan_m',4.2,.3,24.2);n('boil_d',1.2,.3,29);n('boil',3,.3,29);n('boil_e',5.3,.3,29.2);n('boil_back',4,.3,31.3);
   n('bath1',7,.3,29);n('bath1_s',8.5,.3,27.2);n('bed1_d',8.5,.3,25.4);n('bed1',7.3,.3,22.4);
@@ -2690,7 +2695,7 @@ story.caught=async()=>{if(story.part!=='main')return;story.stats.caught++;STATE=
   const learned=learnFromCatch();for(const d of A.front)d.m.tgt=0;
   PL.stuck=0;$('trapFx').classList.remove('on');resetNeighborAfterCatch();PL.frozen=false;
   if(story.stats.caught===1){STATE='cut';await carnival()}
-  teleportPlayer(3.4,.31,-28,Math.PI*.2);STATE='play';setEnv('day');
+  teleportPlayer(3.4,.31,-28,Math.PI*.2);cutEnd();STATE='play';setEnv('day');
   subtitle(learned==='chair'?'……おとなりさんは、入ってきた所をふさいだようだ':learned==='trap'?'……おとなりさんは、入ってきた窓の下に何かしかけたようだ':story.stats.caught===1?'持っていた物は、つかまった場所に落ちている':'つかまってしまった（'+story.stats.caught+'回目）',3.5);saveGame();await wait(.3);await fadeIn(.8)};
 function fallFaint(){PL.v.set(0,0,0)}
 // ================= 悪夢：遊園地のかくれんぼ =================
@@ -2907,7 +2912,7 @@ addEventListener('message',e=>{const d=e.data||{};const o=d.h3dSet;if(o){if(type
 // テスト用
 window.__N={get STATE(){return STATE},set STATE(v){STATE=v},PL,NB,A,H1,P,ELEV,SHARK,TRAIN,CARN,PROPS,DOORS,WINDOWS,HIDES,ITS,NODES,story,CUT,TRAPS,CAMS,LEARN,teleportPlayer,nbTeleport,step,updTarget,doInteract,pickUp,dropHeld,throwHeld,useHeldOnTarget,held,selSlot,
   toggleDoor,newGame,contGame,skipTutorial,saveGame,loadGame,camera,scene,renderer,setEnv,startMain,runIntro,startMove,napIntro,carnival,startEnding,setFrozen,setPower,turnValve,callElev,showHint,findPath,nearestNode,startChase,investigate,rayCast,propById,propRestAt,propToInv,drawInv,IN,sfx,setMusic,
-  get GT(){return GT},setTV,snapTrap,addBearTrap,addCamera,learnFromCatch,get composer(){return composer},wait,moveObj,boxesInside,shootRange,nearStand,checkBoard,teacherPlaced,digGrave,placeBell,drillBricks,unlockCopper,useDown,useUp,exitHide,enterHide,held,ELEV,SOL,DYN};
+  get GT(){return GT},setTV,snapTrap,addBearTrap,addCamera,learnFromCatch,get composer(){return composer},wait,moveObj,boxesInside,shootRange,nearStand,checkBoard,teacherPlaced,digGrave,placeBell,drillBricks,unlockCopper,useDown,useUp,exitHide,enterHide,held,ELEV,SOL,DYN,THREE,MATS,VISB};
 boot();
 
 </script>
