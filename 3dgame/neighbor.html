@@ -178,7 +178,7 @@ input[type=range]{width:55%;accent-color:#ffcf3a}
 </div>
 <div class="screen" id="help"><div class="panel">
   <h2>あそびかた</h2>
-  <p>引っ越した先のお向かいさんは、どうも様子がおかしい。あの家の<b>地下室</b>には何があるのだろう？ 見つからないように忍びこんで、地下室のドアを開けよう。見つかったら走って逃げ、見えない所でクローゼットやベッドの下に隠れればやりすごせる（目の前で隠れると見つかる）。長く追いかけると、おとなりさんはつかれて見失う。</p>
+  <p>引っ越した先のお向かいさんは、どうも様子がおかしい。あの家の<b>地下室</b>には何があるのだろう？ 見つからないように忍びこんで、地下室のドアを開けよう。見つかったら走って逃げ、見えない所でクローゼットやベッドの下に隠れればやりすごせる（おとなりさんと同じ部屋で隠れると見つかる）。長く追いかけると、おとなりさんはつかれて見失う。</p>
   <table>
     <tr><td>WASD</td><td>移動（Shiftで走る）</td></tr>
     <tr><td>マウス</td><td>見回す</td></tr>
@@ -2217,9 +2217,20 @@ function updChase(dt){NB.chaseT+=dt;const d0=Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.
     NB.yaw=dampAng(NB.yaw,Math.atan2(dx,dz),12,dt);NB.anim='run';NB.speed=sp;
     if(NB.stuck>.6){NB.stuck=0;NB.mode='path';NB.modeT=GT;nbSetPath(tgt)}}
   else{if(NB.mode==='path'&&GT-(NB.modeT||0)>2.5)NB.mode='direct';if(!NB.path.length||NB.pi>=NB.path.length||GT-(NB.pathT||0)>1){nbSetPath(tgt.clone());NB.pathT=GT}followPath(dt,sp)}}
-// プレイヤーが隠れた瞬間に見ていたか（近くではっきり見たらそこを開けにくる。少し遠いと半々）
-function nbNoteHide(h){NB.sawHide=null;if(!NB.active||NB.state==='script'||NB.state==='catch')return;if(!nbCanSee())return;const d=Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.p.z);
-  if(d<3.5||(d<9&&RND()<.35))NB.sawHide=h}
+// 部屋の区切り（おとなりさんの家）。[名前, x0,x1, z0,z1, y0,y1]
+const ROOMS=[['elev',2,4.2,19,21.4,-1,7],
+  // 1階
+  ['hall1',-2,2,14,32,-1,3.3],['living',-10,-2,14,22,-1,3.3],['garage',-17,-10,14,24,-1,3.3],['kitchen',2,10,14,21.4,-1,3.3],['pantry',2,6,21.4,26,-1,3.3],['bed1',6,10,21.4,26,-1,3.3],
+  ['grave',-7,-2,22,27,-1.5,2.85],['basestair',-10,-7,22,27,-1.5,2.85],['dining',-10,-2,27,32,-1,2.85],['boiler',2,6,26,32,-1,3.3],['bath1',6,10,26,32,-1,3.3],
+  // 2階
+  ['flood',-10,-2,22,32,2.85,6.5],['stair2',-10,-2,20.85,22,3.3,6.5],['liv2',-7,-2,14,20.85,3.3,6.5],['ante',-10,-7,17.5,20.85,3.3,6.5],['security',-10,-7,14,17.5,3.3,6.5],
+  ['hall2',-2,2,14,32,3.3,6.5],['class',2,10,14,19,3.3,6.5],['corr',4.2,10,19,21.4,3.3,6.5],['range',2,6,21.4,27,3.3,6.5],['bath2',6,10,21.4,27,3.3,6.5],['storage',2,6,27,32,3.3,6.5],['kids',6,10,27,32,3.3,6.5]];
+function roomAt(x,y,z){for(const r of ROOMS)if(x>=r[1]&&x<r[2]&&z>=r[3]&&z<r[4]&&y>=r[5]&&y<r[6])return r[0];return null}
+// 隠れた瞬間に、おとなりさんが同じ部屋にいたら見つかる（そこを開けにくる）
+function nbNoteHide(h){NB.sawHide=null;if(!NB.active||NB.state==='script'||NB.state==='catch'||!NB.visible)return;
+  const rh=roomAt(h.out.x,h.out.y+.1,h.out.z),rn=roomAt(NB.p.x,NB.p.y+.1,NB.p.z);if(!rh||rh!==rn)return;
+  NB.sawHide=h;NB.sit=null;NB.task=null;NB.path=[];NB.goalHide=null;NB.hideTarget=h;
+  if(NB.state!=='chase'){NB.state='investigate';NB.inv={pos:V3(h.out.x,h.out.y,h.out.z),kind:'hide',t:0,phase:'go'};setNbMode('hunt')}say('hmm')}
 function lostPlayer(){NB.state='search';NB.searchT=0;NB.path=[];NB.hideTarget=null;setNbMode('hunt')}
 function updSearch(dt){NB.searchT+=dt;NB.anim='look';NB.speed=0;if(NB.searchT>3.5){backToRoutine()}}
 // 隠れ場所を開ける
@@ -2917,7 +2928,7 @@ addEventListener('message',e=>{const d=e.data||{};const o=d.h3dSet;if(o){if(type
 // テスト用
 window.__N={get STATE(){return STATE},set STATE(v){STATE=v},PL,NB,A,H1,P,ELEV,SHARK,TRAIN,CARN,PROPS,DOORS,WINDOWS,HIDES,ITS,NODES,story,CUT,TRAPS,CAMS,LEARN,teleportPlayer,nbTeleport,step,updTarget,doInteract,pickUp,dropHeld,throwHeld,useHeldOnTarget,held,selSlot,
   toggleDoor,newGame,contGame,skipTutorial,saveGame,loadGame,camera,scene,renderer,setEnv,startMain,runIntro,startMove,napIntro,carnival,startEnding,setFrozen,setPower,turnValve,callElev,showHint,findPath,nearestNode,startChase,investigate,rayCast,propById,propRestAt,propToInv,drawInv,IN,sfx,setMusic,
-  get GT(){return GT},setTV,snapTrap,addBearTrap,addCamera,learnFromCatch,get composer(){return composer},wait,moveObj,boxesInside,shootRange,nearStand,checkBoard,teacherPlaced,digGrave,placeBell,drillBricks,unlockCopper,useDown,useUp,exitHide,enterHide,held,ELEV,SOL,DYN,THREE,MATS,VISB};
+  get GT(){return GT},setTV,snapTrap,addBearTrap,addCamera,learnFromCatch,get composer(){return composer},wait,moveObj,boxesInside,shootRange,nearStand,checkBoard,teacherPlaced,digGrave,placeBell,drillBricks,unlockCopper,useDown,useUp,exitHide,enterHide,held,ELEV,SOL,DYN,THREE,MATS,VISB,roomAt};
 boot();
 
 </script>
