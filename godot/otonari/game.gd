@@ -4119,8 +4119,19 @@ func wait(s: float) -> Signal:
 func after(s: float, fn: Callable) -> void:
 	var w := Waiter.new(); w.t = GT + s; w.fn = fn; WAITS.append(w)
 # JS の setTimeout（本当の時間で）
+# テストで手動で進めているときは、進めた時間で数える
+var LATERS := []
+var RT := 0.0
 func later(s: float, fn: Callable) -> void:
-	get_tree().create_timer(s, true).timeout.connect(fn)
+	if MANUAL: LATERS.append([RT + s, fn])
+	else: get_tree().create_timer(s, true).timeout.connect(fn)
+func updLaters(dt: float) -> void:
+	RT += dt
+	var i := 0
+	while i < LATERS.size():
+		if RT >= LATERS[i][0]:
+			var f: Callable = LATERS[i][1]; LATERS.remove_at(i); f.call()
+		else: i += 1
 func updWaits() -> void:
 	var i := WAITS.size() - 1
 	while i >= 0:
@@ -5172,6 +5183,7 @@ func _process(delta: float) -> void:
 	if FROZEN: dt = 0.0
 	step(dt)
 func step(dt: float) -> void:
+	if MANUAL: updLaters(dt)
 	if STATE == "load": return
 	var playing := STATE == "play" or STATE == "cut" or STATE == "caught"
 	if playing or STATE == "title" or STATE == "ending": GT += dt

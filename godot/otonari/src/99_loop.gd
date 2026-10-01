@@ -14,6 +14,7 @@ func _process(delta: float) -> void:
 	if FROZEN: dt = 0.0
 	step(dt)
 func step(dt: float) -> void:
+	if MANUAL: updLaters(dt)
 	if STATE == "load": return
 	var playing := STATE == "play" or STATE == "cut" or STATE == "caught"
 	if playing or STATE == "title" or STATE == "ending": GT += dt
