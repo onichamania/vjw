@@ -13,6 +13,7 @@ var FOG := {color = Color("#cfe3f2"), near = 45.0, far = 190.0}
 var EXPOSURE := 1.05
 const ACES_WHITE := 14.26
 const ACES_K := (1.0 / 0.6) / 1.8
+const COMPAT_AMB := 5.2
 var grade_mat: ShaderMaterial
 var grade_rect: ColorRect
 var SKY_SHADER := """shader_type sky;
@@ -125,6 +126,10 @@ func apply_env_uniforms() -> void:
 	sky_mat.set_shader_parameter("hemiSky", _lin(HEMI.color) * HEMI.intensity / PI)
 	sky_mat.set_shader_parameter("hemiGround", _lin(HEMI.ground) * HEMI.intensity / PI)
 	sky_mat.set_shader_parameter("ambCol", _lin(AMB.color) * AMB.intensity / PI)
+	# Web 版（Compatibility）は空からのまわりの光がほとんど届かないので、平らな色の光にする（明るさは見比べて合わせた）
+	if IS_COMPAT:
+		var a: Vector3 = (_lin(HEMI.color) + _lin(HEMI.ground)) * 0.5 * HEMI.intensity / PI + _lin(AMB.color) * AMB.intensity / PI
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR; env.ambient_light_color = Color(a.x, a.y, a.z); env.ambient_light_energy = COMPAT_AMB
 	# three.js は「奥行き」、Godot は「距離」で霧を計算するので、少し遠くからにする
 	env.fog_light_color = FOG.color; env.fog_depth_begin = FOG.near * 1.1; env.fog_depth_end = FOG.far * 1.15
 	env.tonemap_exposure = EXPOSURE * ACES_K

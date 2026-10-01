@@ -17,7 +17,7 @@ func _initialize() -> void:
 	while not g.BOOTED:
 		await process_frame
 	print("boot ms ", Time.get_ticks_msec() - t0)
-	g.MANUAL = true; g.STATE = "shot"; g.setEnv(envm)
+	g.MANUAL = true; g.STATE = "shot"; g.setEnv(envm); g.ui_layer.visible = false
 	var tweak: String = args[3] if args.size() > 3 else ""
 	if "noglow" in tweak: g.env.glow_enabled = false
 	if "nofog" in tweak: g.env.fog_enabled = false
@@ -32,6 +32,10 @@ func _initialize() -> void:
 		if kv == "sunonly": g.env.ambient_light_energy = 0.0
 		if kv == "ambonly": g.sun.light_energy = 0.0
 		if kv.begins_with("ambE="): g.env.ambient_light_energy = float(kv.substr(5))
+		if kv == "ambcolor":
+			var hs: Vector3 = g.sky_mat.get_shader_parameter("hemiSky"); var hg: Vector3 = g.sky_mat.get_shader_parameter("hemiGround"); var ac: Vector3 = g.sky_mat.get_shader_parameter("ambCol")
+			var a := (hs + hg) * 0.5 + ac; print("amb ", a)
+			g.env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR; g.env.ambient_light_color = Color(a.x, a.y, a.z); g.env.ambient_light_energy = 1.0
 		if kv.begins_with("skyamb="):
 			var f := float(kv.substr(7))
 			for u in ["hemiSky", "hemiGround", "ambCol"]: g.sky_mat.set_shader_parameter(u, g.sky_mat.get_shader_parameter(u) * f)
