@@ -178,7 +178,7 @@ input[type=range]{width:55%;accent-color:#ffcf3a}
 </div>
 <div class="screen" id="help"><div class="panel">
   <h2>あそびかた</h2>
-  <p>引っ越した先のお向かいさんは、どうも様子がおかしい。あの家の<b>地下室</b>には何があるのだろう？ 見つからないように忍びこんで、地下室のドアを開けよう。</p>
+  <p>引っ越した先のお向かいさんは、どうも様子がおかしい。あの家の<b>地下室</b>には何があるのだろう？ 見つからないように忍びこんで、地下室のドアを開けよう。見つかったら走って逃げ、見えない所でクローゼットやベッドの下に隠れればやりすごせる（目の前で隠れると見つかる）。長く追いかけると、おとなりさんはつかれて見失う。</p>
   <table>
     <tr><td>WASD</td><td>移動（Shiftで走る）</td></tr>
     <tr><td>マウス</td><td>見回す</td></tr>
@@ -918,8 +918,8 @@ function toolUse(){const H=held();if(!H)return false;if(H.d.tool==='light'){PL.l
 function pourWater(pr){const H=held();H.data.full=false;updCanLook(H);sfx('pour');for(let i=0;i<30;i++)setTimeout(()=>{puff(pr.p.x,pr.p.y+.1,pr.p.z,'#e8eef0',2,.35,1.6,1.4)},i*40);
   setTimeout(()=>{sfx('steam');pr.data.hot=false;setPropHot(pr,false);toast('バールが冷えた');story.onCool&&story.onCool(pr)},500);drawInv()}
 // ---- 隠れる ----
-function enterHide(h){if(PL.stuck>0)return;PL.hide=h;PL.hideT=GT;if(h.cab)for(const L of h.cab.leaves)L.m.tgt=0;sfx(h.under?'cloth':'cab',false);$('hideView').classList.add('on');$('hideView').classList.toggle('under',!!h.under);PL.yaw=h.yaw;PL.pitch=0;story.onHide&&story.onHide(h);noise(PL.p.x,PL.p.y,PL.p.z,2,'cab')}
-function exitHide(){const h=PL.hide;if(!h)return;PL.hide=null;$('hideView').classList.remove('on');teleportPlayer(h.out.x,h.out.y,h.out.z,h.yaw);sfx('cab',true);if(h.cab){for(const L of h.cab.leaves)L.m.tgt=1;setTimeout(()=>{for(const L of h.cab.leaves)L.m.tgt=0},700)}}
+function enterHide(h){if(PL.stuck>0)return;if(typeof nbNoteHide==='function')nbNoteHide(h);PL.hide=h;PL.hideT=GT;if(h.cab)for(const L of h.cab.leaves)L.m.tgt=0;sfx(h.under?'cloth':'cab',false);$('hideView').classList.add('on');$('hideView').classList.toggle('under',!!h.under);PL.yaw=h.yaw;PL.pitch=0;story.onHide&&story.onHide(h);noise(PL.p.x,PL.p.y,PL.p.z,2,'cab')}
+function exitHide(){const h=PL.hide;if(!h)return;PL.hide=null;NB.sawHide=null;$('hideView').classList.remove('on');teleportPlayer(h.out.x,h.out.y,h.out.z,h.yaw);sfx('cab',true);if(h.cab){for(const L of h.cab.leaves)L.m.tgt=1;setTimeout(()=>{for(const L of h.cab.leaves)L.m.tgt=0},700)}}
 // ---- 持ち物の表示 ----
 const ICONS={};
 function drawInv(){const el=$('inv');if(!el.children.length){for(let i=0;i<4;i++){const d=document.createElement('div');d.className='slot';d.innerHTML=`<i>${i+1}</i><img alt="">`;d.onpointerdown=e=>{e.stopPropagation();selSlot(i)};el.appendChild(d)}}
@@ -2106,7 +2106,7 @@ function nbSetPath(targetPos,node){const a=nearestNode(NB.p,true,1.4);const b=no
 function nbTeleport(x,y,z,yaw){NB.p.set(x,y,z);NB.yaw=yaw;NB.path=[];NB.climb=null;NB.jump=null;NB.sit=null;NB.speed=0;NB.anim='idle'}
 // 見えるか
 function nbCanSee(){if(PL.hide||!NB.visible)return false;const ex=NB.p.x,ey=NB.p.y+(NB.sit?1.4:1.82),ez=NB.p.z;const px=PL.p.x,py=PL.p.y+PL.h*.8,pz=PL.p.z;const dx=px-ex,dy=py-ey,dz=pz-ez,d=Math.hypot(dx,dy,dz);
-  const range=(PL.crouch>.5?13:22);if(d>range)return false;
+  const range=NB.blindT>0?4:(PL.crouch>.5?13:22);if(d>range)return false;
   const fa=NB.yaw+(NBM?NBM.head.rotation.y:0);const fx=-Math.sin(fa+Math.PI),fz=-Math.cos(fa+Math.PI);const dot=(dx*fx+dz*fz)/Math.max(.01,Math.hypot(dx,dz));
   if(d>2.2&&dot<(NB.state==='chase'?-.2:.28))return false;
   const filt=b=>b.s!=='trig'&&b.s!=='glass';
@@ -2119,7 +2119,7 @@ function updNeighbor(dt){if(!NBM)return;
   if(!NB.active){animNB(dt);return}
   if(NB.state==='script'){if(NB.script)NB.script(dt);animNB(dt);return}
   if(NB.state==='catch'){updCatch(dt);animNB(dt);return}
-  NB.voiceT-=dt;NB.dt=dt;
+  NB.voiceT-=dt;NB.dt=dt;NB.blindT=Math.max(0,(NB.blindT||0)-dt);
   // 見る
   nbVisionT-=dt;if(nbVisionT<=0){nbVisionT=.1;const sees=nbCanSee();const d=NB.p.distanceTo(PL.p);
     if(sees){nbSeeAcc+=.1*(d<5?6:d<10?3:1.4)*(PL.crouch>.5?.6:1);if(NB.state==='chase'||nbSeeAcc>=.5){NB.lastSeen.copy(PL.p);NB.seeT=GT;if(NB.state!=='chase')startChase()}}
@@ -2138,7 +2138,7 @@ function updNeighbor(dt){if(!NBM)return;
   // 隠れ場所を開けたら中にいた
   animNB(dt);updChaseMusic(dt)}
 function say(k){if(NB.voiceT>0)return;NB.voiceT=3;sfxVoice(k,NB.p)}
-function startChase(){if(NB.state==='chase')return;NB.state='chase';setNbMode('attack');NB.chaseT=0;NB.sit=null;NB.path=[];NB.mode='direct';say('hey');NB.giveUp=0;story.onSpotted&&story.onSpotted()}
+function startChase(){if(NB.state==='chase')return;NB.state='chase';setNbMode('attack');NB.chaseT=0;NB.chaseMax=14+RND()*6;NB.sit=null;NB.path=[];NB.mode='direct';say('hey');NB.giveUp=0;story.onSpotted&&story.onSpotted()}
 function setNbMode(m){if(NB.modeName===m)return;NB.modeName=m;if(m==='attack')MUS.chaseTrack=1+(RND()*3|0)}
 function investigate(pos,kind){if(NB.state==='chase'||NB.state==='catch'||NB.state==='script')return;if(!inHouseArea(pos))return;
   NB.state='investigate';setNbMode('hunt');NB.inv={pos,kind,t:0,phase:'go'};NB.sit=null;if(!nbSetPath(pos))NB.path=[];NB.speed=0;if(kind==='glass'||kind==='alarm'||kind==='trap'||kind==='yell')say('hey');else say('hmm')}
@@ -2193,18 +2193,20 @@ function updInvestigate(dt){const I=NB.inv;I.t+=dt;if(NB.hideTarget){checkHide(N
     return}
   if(I.phase==='look'){I.lt+=dt;NB.anim='look';NB.speed=0;
     if(I.lt>3){// 近くのクローゼットをのぞくことがある
-      const h=HIDES.find(h=>h.nb&&Math.hypot(h.out.x-NB.p.x,h.out.z-NB.p.z)<5&&Math.abs(h.out.y-NB.p.y)<1.5);if(h&&RND()<.35){checkHide(h);return}
+      const h=HIDES.find(h=>h.nb&&Math.hypot(h.out.x-NB.p.x,h.out.z-NB.p.z)<5&&Math.abs(h.out.y-NB.p.y)<1.5&&(h!==PL.hide||NB.sawHide===h));if(h&&RND()<.35){checkHide(h);return}
       backToRoutine()}}}
 function backToRoutine(){if(NB.state==='investigate'||NB.state==='search')NB.goBoiler=true;NB.state='routine';NB.task=null;NB.path=[];NB.inv=null;NB.hideTarget=null;setNbMode('idle')}
 // ---- 追いかける ----
 function updChase(dt){NB.chaseT+=dt;const d0=Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.p.z);
-  // 追いかけているあいだは、壁ごしでもプレイヤーがわかる
-  if(d0<30&&onNProperty(PL.p)||d0<12){NB.lastSeen.copy(PL.p);NB.seeT=GT;NB.giveUp=0}else{NB.giveUp+=dt}
-  if(NB.giveUp>2.5){say('grr');lostPlayer();return}
-  // 追いかけ中は隠れてもむだ
-  if(PL.hide&&!NB.hideTarget){NB.hideTarget=PL.hide}
+  // 見えなくなってすぐ（1.2秒）は、曲がり角の先までついてくる。そのあとは最後に見た所へ
+  const since=GT-(NB.seeT||0);if(!PL.hide&&since<1.2&&d0<20)NB.lastSeen.copy(PL.p);
+  // 長く追いかけるとつかれて見失う（すぐ目の前にいるときは別）
+  if(NB.chaseT>(NB.chaseMax||16)&&d0>2.2){say('grr');NB.blindT=6;lostPlayer();return}
+  // 隠れるところを近くで見られたときだけ、そこを開けにくる
+  if(PL.hide&&NB.sawHide===PL.hide&&!NB.hideTarget)NB.hideTarget=PL.hide;
   if(NB.hideTarget){checkHide(NB.hideTarget);return}
-  const tgt=_v3.set(NB.lastSeen.x+PL.v.x*.5,NB.lastSeen.y,NB.lastSeen.z+PL.v.z*.5);
+  if(since>1.2){const dl=Math.hypot(NB.lastSeen.x-NB.p.x,NB.lastSeen.z-NB.p.z);if(dl<1.1||since>9){say('grr');lostPlayer();return}}
+  const lead=since<1.2?.5:0;const tgt=_v3.set(NB.lastSeen.x+PL.v.x*lead,NB.lastSeen.y,NB.lastSeen.z+PL.v.z*lead);
   const dx=tgt.x-NB.p.x,dz=tgt.z-NB.p.z,d=Math.hypot(dx,dz),dy=tgt.y-NB.p.y;const sp=3.15;
   const direct=Math.abs(dy)<1.1&&d<14&&!NB.climb&&!NB.jump&&losClear(_v1.set(NB.p.x,NB.p.y+1,NB.p.z),_v2.set(PL.p.x,PL.p.y+1,PL.p.z),b=>b.s!=='trig'&&b.s!=='door'&&!(b.ref&&b.ref.type))&&NB.mode!=='path';
   if(direct){NB.path=[];const mx=dx/d*Math.min(d,sp*dt),mz=dz/d*Math.min(d,sp*dt);const ox=NB.p.x,oz=NB.p.z;
@@ -2215,6 +2217,9 @@ function updChase(dt){NB.chaseT+=dt;const d0=Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.
     NB.yaw=dampAng(NB.yaw,Math.atan2(dx,dz),12,dt);NB.anim='run';NB.speed=sp;
     if(NB.stuck>.6){NB.stuck=0;NB.mode='path';NB.modeT=GT;nbSetPath(tgt)}}
   else{if(NB.mode==='path'&&GT-(NB.modeT||0)>2.5)NB.mode='direct';if(!NB.path.length||NB.pi>=NB.path.length||GT-(NB.pathT||0)>1){nbSetPath(tgt.clone());NB.pathT=GT}followPath(dt,sp)}}
+// プレイヤーが隠れた瞬間に見ていたか（近くではっきり見たらそこを開けにくる。少し遠いと半々）
+function nbNoteHide(h){NB.sawHide=null;if(!NB.active||NB.state==='script'||NB.state==='catch')return;if(!nbCanSee())return;const d=Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.p.z);
+  if(d<3.5||(d<9&&RND()<.35))NB.sawHide=h}
 function lostPlayer(){NB.state='search';NB.searchT=0;NB.path=[];NB.hideTarget=null;setNbMode('hunt')}
 function updSearch(dt){NB.searchT+=dt;NB.anim='look';NB.speed=0;if(NB.searchT>3.5){backToRoutine()}}
 // 隠れ場所を開ける
@@ -2233,7 +2238,7 @@ function updCatch(dt){NB.catchT+=dt;const t=NB.catchT;// プレイヤーの方�
   // カメラをおとなりさんの顔に向ける
   const hx=NB.p.x,hy=NB.p.y+1.8,hz=NB.p.z;camPos(_v1);const ty=Math.atan2(-(hx-_v1.x),-(hz-_v1.z)),tp=Math.atan2(hy-_v1.y,Math.hypot(hx-_v1.x,hz-_v1.z));PL.yaw=dampAng(PL.yaw,ty,8,dt);PL.pitch=damp(PL.pitch,tp,8,dt);
   NB.anim='grab';if(t>1.3&&!NB.caughtDone){NB.caughtDone=true;story.caught()}}
-function resetNeighborAfterCatch(){NB.caughtDone=false;NB.state='routine';setNbMode('idle');NB.task=null;NB.path=[];NB.hideTarget=null;NB.inv=null;nbSeeAcc=0;
+function resetNeighborAfterCatch(){NB.caughtDone=false;NB.sawHide=null;NB.blindT=0;NB.state='routine';setNbMode('idle');NB.task=null;NB.path=[];NB.hideTarget=null;NB.inv=null;nbSeeAcc=0;
   const n=NODES.hall_m;nbTeleport(n.p.x,n.p.y,n.p.z,0)}
 // ================= 学習：罠・カメラ・板 =================
 const TRAPS=[],CAMS=[];
