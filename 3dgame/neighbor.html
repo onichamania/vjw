@@ -1274,7 +1274,7 @@ function mkSinkTap(x,y,z){sinkUnit(x,y,z,2);return addIt({box:{x0:x-.32,y0:y+.75
 function mkStove(x,y,z,k){const f=stoveUnit(x,y,z,k);const S={on:false,t:0,x,y,z,fire:0};
   S.it=addIt({box:{x0:x-.34,y0:y,z0:z-.34,x1:x+.34,y1:y+1.2,z1:z+.34},label:()=>({t:S.on?'火を止める':'火をつける',k:'E',n:'コンロ'}),act:()=>{S.on=!S.on;S.t=0;sfx(S.on?'ignite':'click');if(S.on){noise(x,y,z,10,'stove');story.onStove&&story.onStove()}}});
   S.update=dt=>{if(!S.on)return;S.t+=dt;// ベータ1：火がものすごくいきおいよく出る
-    const big=S.t<6?1.6:1;for(let i=0;i<(QUAL?3:1);i++)flame(x+rr(-.25,.25),y+.95,z+rr(-.25,.25),big);if(S.t<6&&RND()<.3)puff(x,y+1.8,z,'#555555',1,.35,1.4,1);if(RND()<dt*2)noise(x,y,z,8,'stove');
+    const big=S.t<6?1.6:1;for(let i=0;i<(QUAL?3:1);i++)if(RND()<dt*60)flame(x+rr(-.25,.25),y+.95,z+rr(-.25,.25),big);if(S.t<6&&RND()<dt*18)puff(x,y+1.8,z,'#555555',1,.35,1.4,1);if(RND()<dt*2)noise(x,y,z,8,'stove');
     NH.fireLight&&(NH.fireLight.intensity=QUAL?2.5+Math.sin(GT*30)*.8:0)};
   const L=new THREE.PointLight('#ff8a30',0,6,1.5);L.position.set(x-.4,y+1.5,z);scene.add(L);NH.fireLight=L;return S}
 function mkHeater(x,y,z){const mb=MB();mb.box(-.35,0,-.6,.35,1.2,.6,MATS.metal_dark);mb.box(-.36,.2,-.5,.36,.9,.5,MATS.rust);for(let i=0;i<6;i++)mb.box(-.37,.25+i*.1,-.45,-.36,.28+i*.1,.45,MATS.black);mb.cyl(0,1.2+.6,-.3,.08,1.2,MATS.metal_dark,8);
@@ -2237,7 +2237,7 @@ function updSearch(dt){NB.searchT+=dt;NB.anim='look';NB.speed=0;if(NB.searchT>3.
 function checkHide(h){if(NB.state!=='chase'&&NB.state!=='investigate')NB.state='investigate';NB.hideTarget=h;const d=Math.hypot(h.out.x-NB.p.x,h.out.z-NB.p.z);
   if(d>1.1||Math.abs(h.out.y-NB.p.y)>1.2){if(!NB.path.length||NB.pi>=NB.path.length||NB.goalHide!==h){nbSetPath(V3(h.out.x,h.out.y,h.out.z));NB.goalHide=h}
     const done=followPath(NB.dt||.016,NB.state==='chase'?3.15:2.6);if(!done)return;
-    if(Math.hypot(h.out.x-NB.p.x,h.out.z-NB.p.z)>1.3){const dx=h.out.x-NB.p.x,dz=h.out.z-NB.p.z,dd=Math.hypot(dx,dz);NB.p.x+=dx/dd*Math.min(dd,3*.016);NB.p.z+=dz/dd*Math.min(dd,3*.016);return}}
+    if(Math.hypot(h.out.x-NB.p.x,h.out.z-NB.p.z)>1.3){const dx=h.out.x-NB.p.x,dz=h.out.z-NB.p.z,dd=Math.hypot(dx,dz);const ee=NB.dt||1/60;NB.p.x+=dx/dd*Math.min(dd,3*ee);NB.p.z+=dz/dd*Math.min(dd,3*ee);return}}
   // 開ける
   NB.goalHide=null;NB.hideTarget=null;if(h.cab)for(const L of h.cab.leaves)L.m.tgt=1;sfx('cab',true);NB.yaw=h.yaw+Math.PI;
   if(PL.hide===h){startCatch(true)}else{setTimeout(()=>{if(h.cab&&PL.hide!==h)for(const L of h.cab.leaves)L.m.tgt=0},900);NB.state='search';NB.searchT=1.5}}
@@ -2689,11 +2689,11 @@ async function napIntro(){const g=story.gen=(story.gen||0)+1;story.part='dream';
 // ================= 地下室の場面（夢）=================
 async function basementDream(){setEnv('night');DREAM.g.visible=true;DREAM.L.intensity=QUAL?4:2;nbVisible(true);NB.active=false;NB.state='off';for(const b of A.boards)b.set(false);A.clock.g.visible=false;A.base.m.t=A.base.m.tgt=0;A.base.m.apply(0);
   nbTeleport(-4.6,F1,17.4,Math.PI);camTo(-3.2,1.55,16.2,-7.4,1.2,21.8,true);await fadeIn(1);
-  const walk=async(x,z,sp=1.4)=>{while(!CUT.skip){const dx=x-NB.p.x,dz=z-NB.p.z,d=Math.hypot(dx,dz);if(d<.08)break;NB.yaw=dampAng(NB.yaw,Math.atan2(dx,dz),8,.02);const st=Math.min(d,sp*.02);NB.p.x+=dx/d*st;NB.p.z+=dz/d*st;NB.anim='walk';NB.speed=sp;await wait(.02)}NB.anim='idle';NB.speed=0};
+  const walk=async(x,z,sp=1.4)=>{let tl=GT;while(!CUT.skip){const e=Math.min(.1,GT-tl);tl=GT;const dx=x-NB.p.x,dz=z-NB.p.z,d=Math.hypot(dx,dz);if(d<.08)break;NB.yaw=dampAng(NB.yaw,Math.atan2(dx,dz),8,e);const st=Math.min(d,sp*e);NB.p.x+=dx/d*st;NB.p.z+=dz/d*st;NB.anim='walk';NB.speed=sp;await wait(0)}NB.anim='idle';NB.speed=0};
   await walk(-5.4,20.2);await walk(-7.6,21.1);NB.anim='reach';await wait(.5);A.base.m.tgt=1;sfx('creak');await wait(1);await walk(-7.6,23.4,1.2);await walk(-8.3,25,1.2);nbVisible(false);
   await wait(.8);sfx('carrev');await wait(1.2);sfx('screech');await wait(.7);sfx('crash');SHAKE=.6;await wait(.8);
   // タイヤが転がって出てくる
-  const W2=DREAM.wheel;W2.visible=true;const t0=GT;while(GT-t0<2.2&&!CUT.skip){const t=(GT-t0)/2.2;W2.position.set(-7.6+Math.sin(t*3)*.2,F1+.36,23.8-t*5.5);W2.rotation.x-=.25;W2.rotation.z=.2;await wait(0)}
+  const W2=DREAM.wheel;W2.visible=true;const t0=GT;let tl=GT;while(GT-t0<2.2&&!CUT.skip){const t=(GT-t0)/2.2;W2.position.set(-7.6+Math.sin(t*3)*.2,F1+.36,23.8-t*5.5);W2.rotation.x-=15*(GT-tl);tl=GT;W2.rotation.z=.2;await wait(0)}
   await wait(.5);nbVisible(true);nbTeleport(-8,F1,24.5,Math.PI);await walk(-7.6,21.3,1.3);NB.yaw=0;NB.anim='reach';await wait(.4);A.base.m.tgt=0;sfx('slam');NB.anim='idle';await wait(.6);NB.yaw=Math.PI;NB.anim='wave';await wait(.8);
   await walk(-5,19.5,1.4);await fadeOut(1.2);DREAM.g.visible=false;DREAM.L.intensity=0;W2.visible=false;CUT.cam=null}
 // ================= 本編 =================
@@ -2724,8 +2724,8 @@ async function carnival(){const ox=CARN.ox,oz=CARN.oz;story.inCarn=true;setEnv('
     NB.anim='idle';sfxVoice('hmm',NB.p);const hid=PL.hide;const other=hid===CARN.bedHide?'ward':'bed';
     const tgt=hid?(other==='bed'?V3(ox-5,0,oz+10.3):V3(ox+5,0,oz+10.8)):PL.p.clone();
     // おとなりさんが探しにくる
-    let caught=false;const t0=GT;while(GT-t0<9){const g=hid?tgt:PL.p;const dx=g.x-NB.p.x,dz=g.z-NB.p.z,d=Math.hypot(dx,dz);if(d>.8){const sp=hid?2.2:3.1;NB.p.x+=dx/d*sp*.02;NB.p.z+=dz/d*sp*.02;NB.yaw=Math.atan2(dx,dz);NB.anim=hid?'walk':'run';NB.speed=sp}else break;
-      if(!hid&&!PL.hide&&Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.p.z)<1.1){caught=true;break}if(!hid&&PL.hide){break}await wait(.02)}
+    let caught=false;const t0=GT;let tl=GT;while(GT-t0<9){const e=Math.min(.1,GT-tl);tl=GT;const g=hid?tgt:PL.p;const dx=g.x-NB.p.x,dz=g.z-NB.p.z,d=Math.hypot(dx,dz);if(d>.8){const sp=hid?2.2:3.1;NB.p.x+=dx/d*sp*e;NB.p.z+=dz/d*sp*e;NB.yaw=Math.atan2(dx,dz);NB.anim=hid?'walk':'run';NB.speed=sp}else break;
+      if(!hid&&!PL.hide&&Math.hypot(PL.p.x-NB.p.x,PL.p.z-NB.p.z)<1.1){caught=true;break}if(!hid&&PL.hide){break}await wait(0)}
     if(hid||PL.hide){// もう一方の場所を調べて、見つけられない
       NB.anim='crouch';if(other==='ward')for(const L of CARN.ward.leaves)L.m.tgt=1;sfx('cab',true);await wait(1.6);NB.anim='look';sfxVoice('grr',NB.p);await wait(1.2);
       if(!hid&&PL.hide){/* 後から隠れても見られていた */caught=true}}
@@ -2744,15 +2744,15 @@ function showHint(){if(story.part==='move'){toast('左上の「やること」�
 // ================= エンディング =================
 async function startEnding(){if(story.part!=='main')return;story.part='end';NB.active=false;setMusic(null);cutStart(false);PL.frozen=true;
   // 扉がゆっくり開いて、まぶしい光
-  const cp=camPos(V3());camTo(cp.x,cp.y,cp.z,-7.6,1.3,23,true);A.baseLight.intensity=0;for(let i=0;i<40;i++){A.baseLight.intensity=i/40*30;await wait(.04)}sfx('sting');await wait(1.2);
+  const cp=camPos(V3());camTo(cp.x,cp.y,cp.z,-7.6,1.3,23,true);A.baseLight.intensity=0;{const t0=GT;while(GT-t0<1.6){A.baseLight.intensity=(GT-t0)/1.6*30;await wait(0)}A.baseLight.intensity=30}sfx('sting');await wait(1.2);
   // おとなりさんが扉をしめて、おそってくる
   nbVisible(true);nbTeleport(-6.6,F1,20.3,-Math.PI/2);NB.anim='reach';await wait(.3);A.base.m.tgt=0;A.baseLight.intensity=0;sfx('slam');SHAKE=.5;await wait(.5);
-  NB.yaw=Math.atan2(PL.p.x-NB.p.x,PL.p.z-NB.p.z);NB.anim='run';camTo(cp.x,cp.y,cp.z,NB.p.x,1.7,NB.p.z);sfxVoice('hey',NB.p);for(let i=0;i<20;i++){const dx=PL.p.x-NB.p.x,dz=PL.p.z-NB.p.z,d=Math.hypot(dx,dz);if(d<.9)break;NB.p.x+=dx/d*.12;NB.p.z+=dz/d*.12;await wait(.02)}
+  NB.yaw=Math.atan2(PL.p.x-NB.p.x,PL.p.z-NB.p.z);NB.anim='run';camTo(cp.x,cp.y,cp.z,NB.p.x,1.7,NB.p.z);sfxVoice('hey',NB.p);{const t0=GT;let tl=GT;while(GT-t0<.6){const e=GT-tl;tl=GT;const dx=PL.p.x-NB.p.x,dz=PL.p.z-NB.p.z,d=Math.hypot(dx,dz);if(d<.9)break;const st=Math.min(d-.9,6*e);NB.p.x+=dx/d*st;NB.p.z+=dz/d*st;await wait(0)}}
   NB.anim='grab';sfx('catch');SHAKE=1;await wait(.35);$('fade').classList.add('on');$('fade').style.transition='none';await wait(1.6);$('fade').style.transition='';
   // 棺の中で目がさめる
   setEnv('evening');renderer.toneMappingExposure=1.15;nbTeleport(GRAVE.ox+1.15,0,GRAVE.oz+.3,-Math.PI/2);NB.anim='look';NB.look=0;camTo(GRAVE.ox-.1,-1.72,GRAVE.oz+.3,GRAVE.ox+.5,1.3,GRAVE.oz+.3,true);CUT.cam.k=1;
   const lid=GRAVE.lid;lid.visible=true;lid.position.set(GRAVE.ox-1.45,.04,GRAVE.oz);lid.rotation.set(0,0,0);await fadeIn(2.5);await wait(1.2);sfxVoice('hmm',NB.p);await wait(1.6);
-  NB.anim='reach';await wait(.4);for(let i=0;i<=40;i++){const t=i/40;lid.position.set(GRAVE.ox-1.45+1.45*t,lerp(.04,-1.465,t*t)+Math.sin(t*Math.PI)*.55,GRAVE.oz);lid.rotation.z=-Math.sin(t*Math.PI)*.5;await wait(.025)}sfx('thud');$('fade').style.transition='none';$('fade').classList.add('on');await wait(.1);$('fade').style.transition='';
+  NB.anim='reach';await wait(.4);{const t0=GT;while(true){const t=Math.min(1,(GT-t0)/1);lid.position.set(GRAVE.ox-1.45+1.45*t,lerp(.04,-1.465,t*t)+Math.sin(t*Math.PI)*.55,GRAVE.oz);lid.rotation.z=-Math.sin(t*Math.PI)*.5;if(t>=1)break;await wait(0)}}sfx('thud');$('fade').style.transition='none';$('fade').classList.add('on');await wait(.1);$('fade').style.transition='';
   await wait(1.8);setMusic('ending');const t=story.stats.time,m=Math.floor(t/60),s=Math.floor(t%60);
   $('endT').textContent='THE END';$('endP').innerHTML=`地下室には、何があったのだろう……<br>（アルファ1はここでおしまい）<br><br>かかった時間：${m}分${s}秒　つかまった回数：${story.stats.caught}回`;
   $('ending').classList.add('on');STATE='ending';cutEnd();STATE='ending';unlockPointer();try{localStorage.removeItem('otonari-a1-save');localStorage.setItem('otonari-a1-clear','1')}catch(e){}}

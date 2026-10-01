@@ -1157,7 +1157,7 @@ function aiAct(u,dt){const A=u.ai,B=BT[u.bt];A.think-=dt;if(A.think<=0){A.think=
   if(u.bt==='ranran'&&u.form==='bonnie'&&u.sup>=1&&(!t||u.hp<u.maxHp*.45)){superAtk(u,0,0);return}
   if(!t||G.t-A.see<lerp(.7,.2,G.diff))return;const dx=t.x-u.x,dz=t.z-u.z,d=Math.hypot(dx,dz),ang0=Math.atan2(dx,dz);
   // ハイパーチャージ・ガジェット
-  if(u.hyp>=1&&u.sup>=1&&d<R*1.2&&Math.random()<.05)hyperGo(u);
+  if(u.hyp>=1&&u.sup>=1&&d<R*1.2&&Math.random()<dt*3)hyperGo(u);
   if(u.kit.gad>=0&&u.gadCD<=0&&Math.random()<dt*.45){const g=BT[u.bt].gad[u.kit.gad].id,def=['hardcore','hurrah','powershield'].includes(g);if(def?u.hp<u.maxHp*.55&&G.t-u.lastHurt<1:d<R*1.1)gadget(u,ang0)}
   // 必殺技
   if(u.sup>=1){const s=u.bt==='ranran'&&u.form==='bonnie'?BT.ranran.sup2:BT[u.bt].sup,SR=supRange(u),ty=s.type;let go=false;

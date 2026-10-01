@@ -1509,7 +1509,7 @@ function honkTick(dt){if(!G.running||G.curStop||Math.abs(G.v)>.3){G.idleT=0;retu
   G.idleT=(G.idleT||0)+dt;if(G.idleT>5&&!(G.honkT>0)){G.honkT=12;tone(415,0,.18,'sawtooth',.07);tone(415,.26,.28,'sawtooth',.07);toast('後ろの車にクラクションを鳴らされました',true,1800)}
   G.honkT=Math.max(0,(G.honkT||0)-dt)}
 // ---- バスとほかの車の接触 ----
-function carCollide(){
+function carCollide(dt=1/60){
   const f=fwd(),l=left(),bs=nearest(G.x,G.z,G.hint).s;let hit=null;
   for(const c of TRAF){if(Math.abs(wd(c.s,bs))>16||c.ghost>0)continue;
     const p=sampleAt(c.s),cx=p.x+p.lx*c.d,cz=p.z+p.lz*c.d,hx=p.tx*c.dir,hz=p.tz*c.dir;
@@ -1525,7 +1525,7 @@ function carCollide(){
   if(hit){if(!(G.crashT>0)){G.crash=(G.crash||0)+1;G.comfort=Math.max(0,G.comfort-15);hiss(.35,.35,500);tone(180,0,.25,'square',.12);toast('ほかの車にぶつかりました！',true,2400);
       G.v*=.25;hit.v=0;hit.stun=1.2;hit.ghost=6}
     G.crashT=1.5}
-  else G.crashT=Math.max(0,(G.crashT||0)-1/60)}
+  else G.crashT=Math.max(0,(G.crashT||0)-dt)}
 // ---- 高速道路の車 ----
 const expIM=(()=>{const g=carGeo('sedan'),m=new THREE.InstancedMesh(g.body,new THREE.MeshPhongMaterial({shininess:60,specular:0x444444}),EXPCARS.length);
   EXPCARS.forEach((c,i)=>m.setColorAt(i,new THREE.Color(c.c)));m.frustumCulled=false;m.castShadow=true;scene.add(m);
@@ -1967,7 +1967,7 @@ function physics(dt){
   if(bump>.02){G.v*=Math.pow(.2,dt*4);if(G.scrapeT<=0){G.scrapeT=.6;hiss(.2,.25,600);toast('止まっているバスに接触しています',true,1200)}}
   if(hit>.02){G.v*=Math.pow(.35,dt*4);if(G.scrapeT<=0){G.scrapeT=.5;hiss(.25,.2,900);if(G.onboard.length)G.comfort=Math.max(0,G.comfort-3);toast('縁石にこすっています',true,1000)}}
   G.scrapeT-=dt;
-  carCollide();
+  carCollide(dt);
   G.hint=nearest(G.x,G.z,G.hint).i;
   // comfort
   const lat=G.v*yaw;const pain=Math.max(0,Math.abs(G.aSm)-1.9)+Math.max(0,Math.abs(lat)-2.0);
