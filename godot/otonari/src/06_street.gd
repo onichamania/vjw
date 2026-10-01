@@ -98,7 +98,7 @@ func mkDoorBoard(x: float, y: float, z: float, ang: float) -> Dictionary:
 	for s in [-1, 1]:
 		var n := mesh(G.cylinder(0.015, 0.015, 0.03, 6), MATS.metal_dark); n.rotation.x = PI / 2; n.position = Vector3(x + s * 0.58 * cos(ang), y + s * 0.58 * sin(ang), z - 0.03); scene.add_child(n); nails.append(n)
 	var B := {m = m, nails = nails, on = false, x = x, y = y, z = z, it = null}
-	B.set = func(on: bool) -> void:
+	B.setOn = func(on: bool) -> void:
 		B.on = on; m.visible = on
 		for n in nails: n.visible = on
 	B.it = addIt({box = Box.new(x - 0.62, y - 0.3, z - 0.08, x + 0.62, y + 0.3, z + 0.04), label = func(_it): return {t = "板が打ちつけてある", k = "", n = "板"} if B.on else null,
@@ -109,10 +109,10 @@ func mkDoorBoard(x: float, y: float, z: float, ang: float) -> Dictionary:
 				pryBoard(B); return true
 			return false,
 		useLabel = func(it): return "バールで板をはがす" if B.on and it.type == "crowbar" else "ハンマーで板をはがす" if B.on and it.type == "hammer" else null})
-	B.set.call(false)
+	B.setOn.call(false)
 	return B
 func pryBoard(B: Dictionary) -> void:
 	sfx("pry"); PL.swing = 0.5; noise(B.x, B.y, B.z, 9, "pry")
 	after(0.45, func():
-		B.set.call(false); sfx("boardfall"); var p := spawnProp("board", B.x, B.y - 0.1, B.z - 0.25, 0); propDropAt(p, B.x, B.y - 0.1, B.z - 0.3, PI / 2, Vector3(0, 1, -1.2))
+		B.setOn.call(false); sfx("boardfall"); var p := spawnProp("board", B.x, B.y - 0.1, B.z - 0.25, 0); propDropAt(p, B.x, B.y - 0.1, B.z - 0.3, PI / 2, Vector3(0, 1, -1.2))
 		if story.get("onBoard"): story.onBoard.call(B))

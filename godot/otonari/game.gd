@@ -375,6 +375,18 @@ class G:
 				var a := k * (radial + 1) + j; var b := (k + 1) * (radial + 1) + j
 				g.i.append_array([a, b, a + 1, b, b + 1, a + 1])
 		return g
+	static func torus(radius: float, tube: float, rs := 8, ts := 6, arc := TAU) -> Geo:
+		var g := Geo.new()
+		for j in rs + 1:
+			for i in ts + 1:
+				var u := float(i) / ts * arc; var v := float(j) / rs * TAU
+				var p := Vector3((radius + tube * cos(v)) * cos(u), (radius + tube * cos(v)) * sin(u), tube * sin(v))
+				g.p.append(p); g.n.append((p - Vector3(radius * cos(u), radius * sin(u), 0)).normalized()); g.u.append(Vector2(float(i) / ts, float(j) / rs))
+		for j in range(1, rs + 1):
+			for i in range(1, ts + 1):
+				var a := (ts + 1) * j + i - 1; var b := (ts + 1) * (j - 1) + i - 1; var c := (ts + 1) * (j - 1) + i; var d := (ts + 1) * j + i
+				g.i.append_array([a, b, d, b, c, d])
+		return g
 	static func capsule(r: float, l: float, cap_seg := 4, rad_seg := 8) -> Geo:
 		# 円柱＋半球（向きは Y）
 		var g := Geo.new(); var rows := []
@@ -1429,7 +1441,7 @@ func updTarget() -> void:
 	showPrompt()
 var lastPrompt := ""
 func showPrompt() -> void:
-	var s := ""; var T = PL.target; var H = held(); var touch := TOUCH
+	var s := ""; var T = PL.target; var H = held(); var touch: bool = BODY.touch
 	if PL.hide: s = ""
 	elif T:
 		if T.k == "prop":
@@ -1825,7 +1837,7 @@ func mkDoorBoard(x: float, y: float, z: float, ang: float) -> Dictionary:
 	for s in [-1, 1]:
 		var n := mesh(G.cylinder(0.015, 0.015, 0.03, 6), MATS.metal_dark); n.rotation.x = PI / 2; n.position = Vector3(x + s * 0.58 * cos(ang), y + s * 0.58 * sin(ang), z - 0.03); scene.add_child(n); nails.append(n)
 	var B := {m = m, nails = nails, on = false, x = x, y = y, z = z, it = null}
-	B.set = func(on: bool) -> void:
+	B.setOn = func(on: bool) -> void:
 		B.on = on; m.visible = on
 		for n in nails: n.visible = on
 	B.it = addIt({box = Box.new(x - 0.62, y - 0.3, z - 0.08, x + 0.62, y + 0.3, z + 0.04), label = func(_it): return {t = "板が打ちつけてある", k = "", n = "板"} if B.on else null,
@@ -1836,12 +1848,12 @@ func mkDoorBoard(x: float, y: float, z: float, ang: float) -> Dictionary:
 				pryBoard(B); return true
 			return false,
 		useLabel = func(it): return "バールで板をはがす" if B.on and it.type == "crowbar" else "ハンマーで板をはがす" if B.on and it.type == "hammer" else null})
-	B.set.call(false)
+	B.setOn.call(false)
 	return B
 func pryBoard(B: Dictionary) -> void:
 	sfx("pry"); PL.swing = 0.5; noise(B.x, B.y, B.z, 9, "pry")
 	after(0.45, func():
-		B.set.call(false); sfx("boardfall"); var p := spawnProp("board", B.x, B.y - 0.1, B.z - 0.25, 0); propDropAt(p, B.x, B.y - 0.1, B.z - 0.3, PI / 2, Vector3(0, 1, -1.2))
+		B.setOn.call(false); sfx("boardfall"); var p := spawnProp("board", B.x, B.y - 0.1, B.z - 0.25, 0); propDropAt(p, B.x, B.y - 0.1, B.z - 0.3, PI / 2, Vector3(0, 1, -1.2))
 		if story.get("onBoard"): story.onBoard.call(B))
 
 # ================= おとなりさんの家（アルファ1）=================
@@ -2786,29 +2798,1316 @@ func updCamera(dt: float) -> void:
 	if on:
 		flash.position = camera.position; var d := lookDir(); flash.look_at(camera.position + d * 5, Vector3.UP if absf(d.y) < 0.99 else Vector3.FORWARD)
 
-# ---- 仮の部品（あとで本物に入れかえる）----
-var TOUCH := false
-var story := {part = "", step = 0, flags = {}, stats = {time = 0, caught = 0, sleeps = 0}, usedEntry = null, obj = "",
-	canSleep = func(): return false, sleepMsg = func(): return "", sleep = func(): pass}
+# ================= アルファ1の仕掛け =================
+# ---- 新しい持ち物 ----
+func initPropDefsA1() -> void:
+	pdef("key_red", {name = "赤い取っ手の鍵", hx = 0.08, h = 0.03, hz = 0.04, w = 0.1, mk = func(b: MB): b.box(-0.08, 0, -0.03, -0.02, 0.025, 0.03, M("red")); b.box(-0.02, 0.005, -0.007, 0.08, 0.02, 0.007, M("brass")); b.box(0.05, 0.005, 0.007, 0.06, 0.02, 0.02, M("brass")); b.box(0.07, 0.005, 0.007, 0.075, 0.02, 0.016, M("brass"))})
+	pdef("bell", {name = "ベル", hx = 0.07, h = 0.16, hz = 0.07, w = 0.4, mk = func(b: MB): b.cyl(0, 0.02, 0, 0.07, 0.1, M("brass"), 14, {rt = 0.035}); b.sphere(0, 0.12, 0, 0.035, M("brass")); b.cyl(0, 0.14, 0, 0.012, 0.03, M("wood_d"), 6); b.sphere(0, 0.005, 0, 0.02, M("metal_dark"))})
+	pdef("shovel", {name = "シャベル", hx = 0.13, h = 1.1, hz = 0.05, w = 1.2, mk = func(b: MB):
+		b.cyl(0, 0.32, 0, 0.018, 0.72, M("wood_m"), 6); b.box(-0.1, 1.02, -0.012, 0.1, 1.06, 0.012, M("black")); b.box(-0.1, 1.02, -0.01, -0.085, 1.1, 0.01, M("black")); b.box(0.085, 1.02, -0.01, 0.1, 1.1, 0.01, M("black")); b.box(-0.1, 1.08, -0.01, 0.1, 1.1, 0.01, M("black"))
+		b.rbox(0, 0.14, 0, 0.22, 0.26, 0.02, 0, 0, 0, M("metal")); b.rbox(0, 0.02, 0, 0.16, 0.06, 0.02, 0, 0, 0, M("metal"))})
+	pdef("mannequin", {name = "先生のマネキン", hx = 0.25, h = 1.65, hz = 0.2, w = 3, solid = true, mk = func(b: MB):
+		b.cyl(0, 0, 0, 0.2, 0.04, M("wood_d"), 12); b.cyl(0, 0.04, 0, 0.025, 0.45, M("wood_d"), 6); b.cyl(0, 0.45, 0, 0.25, 0.5, M("brown"), 14, {rt = 0.18}); b.cyl(0, 0.95, 0, 0.19, 0.45, M("fab_w"), 14, {rt = 0.2})
+		b.sphere(0, 1.46, 0, 0.1, M("skinm"), 1, 1.2, 1); b.sphere(0, 1.54, -0.06, 0.07, M("black")); b.cyl(0, 1.36, 0, 0.04, 0.08, M("skinm"), 6)
+		for s in [-1, 1]:
+			b.rbox(s * 0.24, 1.1, 0, 0.07, 0.4, 0.07, 0, 0, s * 0.25, M("fab_w")); b.rbox(s * 0.29, 0.85, 0.08, 0.06, 0.3, 0.06, -0.6, 0, s * 0.1, M("skinm"))})
+	for cc in [["0", "#e04030"], ["1", "#30a050"], ["2", "#e0a020"], ["3", "#3070d0"], ["4", "#9040c0"], ["5", "#40c0c0"], ["6", "#e06090"], ["7", "#30a050"], ["8", "#e04030"], ["9", "#e0a020"], ["A", "#e04030"], ["F", "#e0a020"]]:
+		var ch: String = cc[0]
+		pdef("mag_" + ch, {name = "マグネット「" + ch + "」", hx = 0.09, h = 0.03, hz = 0.11, w = 0.15, digit = int(ch) if ch.is_valid_int() else null, ch = ch, mk = func(b: MB):
+			var tm := digitMat(ch)
+			# 上の面だけ数字の絵（three.js の箱の6面の素材のかわり）
+			b.box(-0.09, 0, -0.11, 0.09, 0.03, 0.11, MATS.cab, 1 | 2 | 8 | 16 | 32)
+			var g := G.plane(0.18, 0.22)
+			b.geo(g, Transform3D(Basis(Vector3.RIGHT, -PI / 2), Vector3(0, 0.0301, 0)), tm, 1, 1)})
+	pdef("toyrifle", {name = "おもちゃの銃", hx = 0.5, h = 0.12, hz = 0.06, w = 1, mk = func(b: MB): b.box(-0.5, 0.02, -0.035, -0.1, 0.1, 0.035, M("orange")); b.box(-0.1, 0.04, -0.02, 0.45, 0.08, 0.02, M("can_g")); b.box(-0.3, -0.06, -0.02, -0.22, 0.04, 0.02, M("orange")); b.cyl(0.45, 0.06, 0, 0.02, 0.04, M("red"), 8, {axis = "x"})})
+	pdef("silverkey", {name = "銀の鍵", hx = 0.08, h = 0.02, hz = 0.04, w = 0.1, key = true, mk = func(b: MB): b.cyl(-0.05, 0, 0, 0.03, 0.012, M("silver"), 12); b.box(-0.02, 0, -0.008, 0.08, 0.012, 0.008, M("silver")); b.box(0.05, 0, 0.008, 0.06, 0.012, 0.022, M("silver"))})
+	pdef("copperkey", {name = "ハートの銅の鍵", hx = 0.08, h = 0.02, hz = 0.05, w = 0.1, key = true, mk = func(b: MB):
+		for s in [-1, 1]: b.cyl(-0.05, 0, s * 0.018, 0.026, 0.012, M("copper"), 12)
+		b.rbox(-0.03, 0.006, 0, 0.04, 0.012, 0.04, 0, PI / 4, 0, M("copper")); b.box(-0.01, 0, -0.008, 0.08, 0.012, 0.008, M("copper")); b.box(0.05, 0, 0.008, 0.06, 0.012, 0.022, M("copper"))})
+	pdef("lockpick", {name = "ピッキング道具", hx = 0.1, h = 0.02, hz = 0.03, w = 0.1, mk = func(b: MB): b.box(-0.1, 0, -0.02, -0.02, 0.02, 0.02, M("black")); b.box(-0.02, 0.008, -0.004, 0.1, 0.012, 0.004, M("chrome")); b.box(-0.02, 0.004, 0.008, 0.08, 0.008, 0.012, M("chrome"))})
+	pdef("hammer", {name = "ハンマー", hx = 0.16, h = 0.05, hz = 0.08, w = 0.7, mk = func(b: MB): b.box(-0.16, 0.01, -0.015, 0.12, 0.04, 0.015, M("wood_m")); b.box(0.1, 0, -0.07, 0.16, 0.05, 0.05, M("metal_dark")); b.rbox(0.13, 0.025, 0.07, 0.04, 0.04, 0.05, 0, 0, 0, M("metal_dark"))})
+	pdef("jackhammer", {name = "削岩機", hx = 0.2, h = 0.95, hz = 0.12, w = 2, mk = func(b: MB): b.cyl(0, 0.05, 0, 0.015, 0.25, M("chrome"), 6); b.cyl(0, 0.3, 0, 0.09, 0.4, M("red"), 12); b.box(-0.07, 0.7, -0.08, 0.07, 0.78, 0.08, M("black")); b.cyl(0, 0.84, 0, 0.02, 0.35, M("black"), 6, {axis = "x"}); b.box(-0.2, 0.8, -0.02, -0.15, 0.88, 0.02, M("black")); b.box(0.15, 0.8, -0.02, 0.2, 0.88, 0.02, M("black"))})
+	pdef("alarm", {name = "目覚まし時計", hx = 0.07, h = 0.15, hz = 0.05, w = 0.3, tool = "alarm", mk = PDEF.clock.mk})
+	pdef("paper", {name = "紙くず", hx = 0.04, h = 0.07, hz = 0.04, w = 0.05, mk = func(b: MB): b.sphere(0, 0.035, 0, 0.035, M("cream"), 1, 1, 1, 6)})
+	pdef("tire", {name = "タイヤ", hx = 0.35, h = 0.25, hz = 0.35, w = 1.5, bouncy = true, mk = func(b: MB): b.cyl(0, 0, 0, 0.35, 0.25, M("tire"), 14); b.cyl(0, -0.01, 0, 0.16, 0.27, M("chrome"), 10)})
+	pdef("broom", {name = "ほうき", hx = 0.12, h = 1.3, hz = 0.05, w = 0.6, mk = func(b: MB): b.cyl(0, 0.35, 0, 0.015, 0.95, M("wood_m"), 6); b.box(-0.12, 0, -0.03, 0.12, 0.35, 0.03, M("straw"))})
+	pdef("bulb_w", {name = "電球（長い白）", hx = 0.03, h = 0.3, hz = 0.03, w = 0.1, glass = true, mk = func(b: MB): b.cyl(0, 0.03, 0, 0.025, 0.27, M("bulbw"), 8); b.cyl(0, 0, 0, 0.02, 0.04, M("chrome"), 8)})
+	pdef("bulb_r", {name = "電球（赤）", hx = 0.03, h = 0.2, hz = 0.03, w = 0.1, glass = true, mk = func(b: MB): b.cyl(0, 0.03, 0, 0.025, 0.17, M("bulbr"), 8); b.cyl(0, 0, 0, 0.02, 0.04, M("chrome"), 8)})
+var _dig := {}
+func digitMat(ch: String) -> Material:
+	if not _dig.has(ch): _dig[ch] = std_mat({map = load("res://assets/canvas/dig_%s.png" % ch), rough = 0.6})
+	return _dig[ch]
+# ================= 水とサメトロン =================
+var SHARK := {p = Vector3(-6, WS - 0.25, 27), yaw = 0.0, ang = 0.0, g = null, prop = null, mode = "circle", cool = 0.0}
+func buildShark() -> void:
+	var g := Node3D.new(); var mb := MB.new() # 機械の胴体（水の下）
+	mb.cyl(0, 0, 0, 0.36, 1.6, MATS.shark, 14, {axis = "z", rt = 0.24}); mb.sphere(0, 0, 0.8, 0.3, MATS.shark, 1, 0.9, 1.2); mb.box(-0.4, -0.08, -0.3, 0.4, 0.08, 0.3, MATS.metal_dark)
+	# ひれ（水の上に出る）
+	mb.rbox(0, 0.55, -0.1, 0.06, 0.7, 0.55, 0.45, 0, 0, MATS.shark); mb.rbox(0, 0.12, -0.95, 0.05, 0.5, 0.35, -0.5, 0, 0, MATS.shark)
+	# 目（赤いランプ）
+	mb.sphere(-0.18, 0.12, 1, 0.05, MATS.bulbr); mb.sphere(0.18, 0.12, 1, 0.05, MATS.bulbr); g.add_child(mb.build())
+	# 前のトラバサミ
+	var tr := MB.new(); tr.cyl(0, 0, 1.18, 0.22, 0.03, MATS.metal_dark, 14, null, "z")
+	for i in 9:
+		var a := i / 8.0 * PI; tr.box(cos(a) * 0.2 - 0.012, -0.04, 1.2 - 0.012, cos(a) * 0.2 + 0.012, 0.04 + sin(a) * 0.14, 1.2 + 0.012, MATS.metal)
+	g.add_child(tr.build())
+	# プロペラ
+	var pr := Node3D.new(); var pm := MB.new()
+	for i in 3: pm.rbox(0, 0, 0, 0.05, 0.42, 0.02, 0, 0, i * TAU / 3, MATS.brass)
+	pr.add_child(pm.build()); pr.position.z = -1.05; g.add_child(pr); SHARK.prop = pr
+	g.position = SHARK.p; scene.add_child(g); SHARK.g = g
+const POOL := {x0 = -10.0, x1 = -2.0, z0 = 22.0, z1 = 32.0}
+func inPool(x: float, z: float, m := 0.0) -> bool: return x > POOL.x0 + m and x < POOL.x1 - m and z > POOL.z0 + m and z < POOL.z1 - m
+func playerInWater() -> bool: return not A.water.frozen and inPool(PL.p.x, PL.p.z) and PL.p.y < WS - 0.05 and PL.p.y > 2.5
+func updShark(dt: float) -> void:
+	if not SHARK.g: return
+	var S := SHARK
+	if A.water.frozen:
+		S.g.position.y = damp(S.g.position.y, WS - 0.12, 3, dt); return
+	S.prop.rotation.z += dt * 14; S.cool -= dt; var inW := playerInWater()
+	var near: bool = not inW and absf(PL.p.y - F2) < 0.6 and Vector2(clampf(PL.p.x, POOL.x0, POOL.x1) - PL.p.x, clampf(PL.p.z, POOL.z0, POOL.z1) - PL.p.z).length() < 1.5 and inPool(PL.p.x, PL.p.z, -1.6)
+	var tx: float; var tz: float; var sp: float
+	if inW:
+		tx = PL.p.x; tz = PL.p.z; sp = 4.6
+		if S.mode != "hunt":
+			S.mode = "hunt"; sfx("sharkgo")
+	elif near:
+		S.ang += dt * 1.6; tx = clampf(PL.p.x, POOL.x0 + 1, POOL.x1 - 1) + cos(S.ang * 2.3) * 1.2; tz = clampf(PL.p.z, POOL.z0 + 1, POOL.z1 - 1) + sin(S.ang * 1.7) * 1.2; sp = 3.2; S.mode = "near"
+	else:
+		S.ang += dt * 0.55; tx = -6 + cos(S.ang) * 2.6; tz = 27 + sin(S.ang) * 3.3; sp = 2.3; S.mode = "circle"
+	var dx: float = tx - S.p.x; var dz: float = tz - S.p.z; var d := Vector2(dx, dz).length()
+	if d > 0.05:
+		var ty := atan2(dx, dz); S.yaw = damp_ang(S.yaw, ty, 6.0 if S.mode == "hunt" else 2.5, dt); var st := minf(d, sp * dt); S.p.x += sin(S.yaw) * st; S.p.z += cos(S.yaw) * st
+	S.p.x = clampf(S.p.x, POOL.x0 + 0.7, POOL.x1 - 0.7); S.p.z = clampf(S.p.z, POOL.z0 + 0.9, POOL.z1 - 0.9); S.g.position = Vector3(S.p.x, WS - 0.3 + sin(GT * 3) * 0.03, S.p.z); S.g.rotation.y = S.yaw
+	if RND() < dt * 6: part("n", S.p.x - sin(S.yaw) * 1.1, WS + 0.02, S.p.z - cos(S.yaw) * 1.1, rr(-0.3, 0.3), 0.4, rr(-0.3, 0.3), 0.6, 0.12, "#dff4ff", 0.7, 0, 1)
+	if inW and Vector2(PL.p.x - S.p.x, PL.p.z - S.p.z).length() < 1.1 and S.cool <= 0 and STATE == "play":
+		S.cool = 3.0; sharkCatch()
+func sharkCatch() -> void:
+	sfx("trap"); sfx("splash"); PL.frozen = true; ui_cls("trapFx", "on", true); toast("サメトロンにつかまった！", 2.5); await wait(0.8); await fadeOut(0.4); ui_cls("trapFx", "on", false)
+	# おとなりさんの家から追い出される
+	teleportPlayer(0, 0.07, 9.2, PI); PL.frozen = false; await wait(0.3); await fadeIn(0.5)
+# 凍らせる
+func setFrozen(f: bool) -> void:
+	A.water.frozen = f; A.water.m.mesh.surface_set_material(0, MATS.ice2 if f else MATS.wtr); A.water.ice.on = f
+	if f and playerInWater(): PL.p.y = 3.5
+	if f: toast("水が凍った！ サメトロンが動けなくなった", 3)
+	else: toast("氷がとけていく……")
+# ================= エレベーター =================
+var ELEV := {y = F1, floor = 1, tgt = 1, state = "idle", t = 0.0, g = null, col = null, doors = [], openT = 0.0, busy = false, calls = [], panelIt = null}
+func buildElevator() -> void:
+	var g := Node3D.new(); var mb := MB.new(); mb.box(2.1, 0, 19.1, 4.1, 0.1, 21.3, MATS.metal_dark); mb.box(4.05, 0.1, 19.1, 4.1, 2.4, 21.3, MATS.wood_d); mb.box(2.1, 0.1, 19.1, 4.1, 2.4, 19.15, MATS.wood_d); mb.box(2.1, 0.1, 21.25, 4.1, 2.4, 21.3, MATS.wood_d); mb.box(2.1, 2.4, 19.1, 4.1, 2.45, 21.3, MATS.wood_d)
+	mb.box(4.02, 1.1, 20.9, 4.05, 1.5, 21.15, MATS.brass); var lg := mb.build(); g.add_child(lg)
+	var lamp := mesh(G.box(0.5, 0.03, 0.5), MATS.bulb); lamp.position = Vector3(3.1, 2.39, 20.2); g.add_child(lamp)
+	# ボタン
+	var panel := mesh(G.plane(0.2, 0.3), std_mat({map = tex("c91"), emissive = "#403010", ei = 1.0})); panel.position = Vector3(4.015, 1.3, 21.02); panel.rotation.y = -PI / 2; g.add_child(panel)
+	g.position.y = F1 - 0.1; scene.add_child(g); ELEV.g = g; ELEV.col = dyn_box(2.1, F1 - 0.1, 19.1, 4.1, F1, 21.3, "metal", null)
+	# 各階の戸（引き戸）
+	for fy in [[1, F1], [2, F2]]:
+		var fl: int = fy[0]; var y: float = fy[1]
+		var d := mesh(G.box(0.06, 2.25, 1.2), MATS.metal, true); d.position = Vector3(2.02, y + 1.125, 20.2); scene.add_child(d)
+		var col := dyn_box(1.98, y, 19.6, 2.06, y + 2.25, 20.8, "metal", null); ELEV.doors.append({fl = fl, y = y, d = d, col = col, open = 0.0})
+		# 呼びボタン
+		box(1.9, y + 1.1, 20.95, 1.93, y + 1.4, 21.15, "brass", {solid = false})
+		addIt({box = Box.new(1.7, y + 1, 20.85, 1.95, y + 1.5, 21.25), label = func(_it): return {t = "エレベーターを呼ぶ", k = "E", n = "%d階" % fl}, act = func():
+			callElev(fl); sfx("click")})
+		signp(1.93, y + 2.45, 20.2, 0.3, 0.18, "yellow", -PI / 2)
+	ELEV.panelIt = addIt({box = Box.new(3.8, 0, 20.8, 4.1, 0, 21.25), label = func(_it): return {t = ("2" if ELEV.floor == 1 else "1") + "階へ", k = "E", n = "エレベーターのボタン"} if ELEV.state == "idle" else null,
+		act = func():
+			if ELEV.state == "idle":
+				callElev(2 if ELEV.floor == 1 else 1); sfx("click")})
+func callElev(fl: int) -> void:
+	if ELEV.tgt == fl and ELEV.state != "idle": return
+	if ELEV.floor == fl and ELEV.state == "idle":
+		ELEV.openT = 4.0; return
+	ELEV.tgt = fl; ELEV.state = "closing"; ELEV.t = 0.0
+func updElevator(dt: float) -> void:
+	var E := ELEV
+	if not E.g: return
+	if E.state == "closing":
+		E.t += dt
+		if E.t > 0.7:
+			E.state = "moving"; sfx("elev")
+	elif E.state == "moving":
+		var ty := F1 if E.tgt == 1 else F2; var d: float = ty - E.y; var st := 1.1 * dt
+		E.y = ty if absf(d) <= st else E.y + sgn(d) * st
+		if E.y == ty:
+			E.floor = E.tgt; E.state = "idle"; E.openT = 5.0; sfx("ding")
+	elif E.state == "idle": E.openT -= dt
+	E.g.position.y = E.y - 0.1; set_box(E.col, 2.1, E.y - 0.1, 19.1, 4.1, E.y, 21.3); E.panelIt.box.y0 = E.y + 1; E.panelIt.box.y1 = E.y + 1.6
+	for D in E.doors:
+		var want := 1.0 if E.state == "idle" and E.floor == D.fl else 0.0
+		D.open = damp(D.open, want, 6, dt); D.d.position.z = 20.2 - D.open * 1.15; D.col.on = D.open < 0.6
+# ================= 汽車（家のまわりを回る）=================
+var TRAIN := {cars = [], s = 0.0, path = [], len = 0.0, seg = [], chuff = 0.0}
+func buildTrain() -> void: # 線路（角の丸い四角）
+	var x0 := -19.5; var x1 := 19.5; var z0 := 8.2; var z1 := 38.0; var r := 3.0; var P := []
+	var arc := func(cx: float, cz: float, a0: float) -> void:
+		for i in 7:
+			var a := a0 + i / 6.0 * PI / 2; P.append(Vector3(cx + cos(a) * r, 0, cz + sin(a) * r))
+	arc.call(x1 - r, z0 + r, -PI / 2); arc.call(x1 - r, z1 - r, 0); arc.call(x0 + r, z1 - r, PI / 2); arc.call(x0 + r, z0 + r, PI); P.append(P[0])
+	TRAIN.path = P; var L := 0.0; TRAIN.seg = []
+	for i in P.size() - 1:
+		var l: float = P[i].distance_to(P[i + 1]); TRAIN.seg.append({a = P[i], b = P[i + 1], l = l, s = L}); L += l
+	TRAIN.len = L
+	for s in TRAIN.seg:
+		var dx: float = s.b.x - s.a.x; var dz: float = s.b.z - s.a.z; var yaw := atan2(dx, dz); var n := maxi(1, roundi(s.l / 0.6))
+		for i in n:
+			var t := (i + 0.5) / n; rbox(s.a.x + dx * t, 0.04, s.a.z + dz * t, 1.2, 0.06, 0.16, 0, yaw, 0, "beam")
+		var px := cos(yaw); var pz := -sin(yaw)
+		for o in [-0.35, 0.35]: rbox((s.a.x + s.b.x) / 2 + px * o, 0.1, (s.a.z + s.b.z) / 2 + pz * o, 0.05, 0.06, s.l + 0.05, 0, yaw, 0, "metal_dark")
+	var mk := func(kind: String) -> Dictionary:
+		var g := Node3D.new(); var mb := MB.new()
+		if kind == "loco":
+			mb.box(-0.45, 0.25, -0.8, 0.45, 0.75, 0.8, MATS.red); mb.cyl(0, 0.9, 0.25, 0.35, 1.1, MATS.black, 12, {axis = "z"}); mb.box(-0.45, 0.75, -0.8, 0.45, 1.45, -0.2, MATS.red); mb.box(-0.5, 1.45, -0.85, 0.5, 1.52, -0.15, MATS.black); mb.cyl(0, 1.35, 0.55, 0.1, 0.35, MATS.black, 8); mb.box(-0.3, 0.9, -0.21, 0.3, 1.2, -0.19, MATS.glassd); mb.box(-0.5, 0.2, 0.8, 0.5, 0.35, 0.9, MATS.black)
+		else:
+			mb.box(-0.45, 0.25, -0.7, 0.45, 0.85, 0.7, MATS[kind]); mb.box(-0.47, 0.85, -0.72, 0.47, 0.9, 0.72, MATS.wood_d)
+		for z in [-0.45, 0.45]:
+			for x in [-0.47, 0.47]: mb.cyl(x, 0.2, z, 0.18, 0.08, MATS.black, 10, null, "x")
+		g.add_child(mb.build()); set_cast(g, true); scene.add_child(g)
+		return {g = g, col = dyn_box(0, 0, 0, 0, 0, 0, "metal", null)}
+	TRAIN.cars = [mk.call("loco"), mk.call("yellow"), mk.call("blue")]
+func trainAt(s: float) -> Vector2:
+	s = fposmod(s, TRAIN.len)
+	for g in TRAIN.seg:
+		if s <= g.s + g.l:
+			var t: float = (s - g.s) / g.l
+			return Vector2(g.a.x + (g.b.x - g.a.x) * t, g.a.z + (g.b.z - g.a.z) * t)
+	return Vector2()
+func updTrain(dt: float) -> void:
+	if not TRAIN.cars.size(): return
+	TRAIN.s += dt * 2.3
+	for i in TRAIN.cars.size():
+		var c = TRAIN.cars[i]; var s: float = TRAIN.s - i * 1.9; var a := trainAt(s + 0.6); var b := trainAt(s - 0.6); var x := (a.x + b.x) / 2; var z := (a.y + b.y) / 2
+		c.g.position = Vector3(x, 0, z); c.g.rotation.y = atan2(a.x - b.x, a.y - b.y); set_box(c.col, x - 0.6, 0, z - 0.6, x + 0.6, 1.5, z + 0.6)
+	var L: Vector3 = TRAIN.cars[0].g.position; TRAIN.chuff += dt
+	if TRAIN.chuff > 0.45:
+		TRAIN.chuff = 0.0; sfxTrain(L)
+	if RND() < dt * 0.03: sfxWhistle(L)
+# ================= 教室：数字パズルと紙くず =================
+func putSlot(S: Dictionary, it: Dictionary) -> void:
+	PL.inv[PL.sel] = null; drawInv(); S.v = it; it.st = "att"; it.noPick = true; it.grp.visible = true; it.p = Vector3(9.74, S.y - 0.11, S.z); it.grp.position = Vector3(9.74, S.y, S.z); it.grp.rotation_order = EULER_ORDER_XYZ; it.grp.rotation = Vector3(0, 0, PI / 2)
+	for c in it.grp.get_children(): c.position = Vector3()
+	sfx("pick"); checkBoard()
+func takeSlot(S: Dictionary) -> void:
+	var it = S.v; S.v = null; it.noPick = false; it.st = "rest"; detachProp(it); pickUp(it)
+func teacherPlaced() -> bool:
+	var m = P.get("teacher")
+	return m != null and m.st == "rest" and Vector2(m.p.x - A.teachSpot.x, m.p.z - A.teachSpot.z).length() < 2.6 and absf(m.p.y - F2) < 0.4
+func slotsAll(fn: Callable) -> bool:
+	for S in A.slots:
+		if not fn.call(S): return false
+	return true
+func checkBoard() -> void:
+	if A.get("rifleGiven"): return
+	var ok := slotsAll(func(S): return S.v != null and S.v.d.digit == S.ans)
+	if ok and teacherPlaced():
+		A.rifleGiven = true; sfx("ding"); toast("正解！ ……先生の机に何か出てきた"); var r = P.rifle; setPropHidden(r, false); r.noPick = false; propRestAt(r, 8.55, F2 + 0.78, 16.5, PI / 2)
+		if story.get("onBoard2"): story.onBoard2.call()
+	elif slotsAll(func(S): return S.v != null):
+		if not ok:
+			sfx("deny"); toast("ちがうみたいだ……")
+		else: toast("先生がいないと、答え合わせしてくれないみたいだ")
+var paperT := 2.0
+func updClassroom(dt: float) -> void:
+	if not inClass(PL.p): return
+	if not A.get("rifleGiven") and teacherPlaced():
+		if slotsAll(func(S): return S.v != null): checkBoard()
+	if teacherPlaced(): return
+	paperT -= dt
+	if paperT <= 0: # 紙くずが飛んでくる
+		paperT = rr(1.2, 2.4)
+		var sx := rr(3.2, 6.4); var sz := rr(14.8, 18); var sy := F2 + 1; var pr := spawnPaper(sx, sy, sz)
+		var dx: float = PL.p.x - sx; var dy: float = PL.p.y + 1.3 - sy; var dz: float = PL.p.z - sz; var d := Vector2(dx, dz).length(); var T := d / 8
+		propDropAt(pr, sx, sy, sz, 0, Vector3(dx / T, dy / T + 9 * T, dz / T)); pr.thrown = true; sfx("throw", 0.2)
+func inClass(p: Vector3) -> bool: return p.x > 2 and p.x < 10 and p.z > 14 and p.z < 19 and p.y > 3.2 and p.y < 6.3
+var PAPERS := []
+func spawnPaper(x: float, y: float, z: float) -> Dictionary:
+	var pr = null
+	for p in PAPERS:
+		if p.st == "rest" and p.get("pooled"):
+			pr = p; break
+	if pr == null:
+		if PAPERS.size() >= 10: pr = PAPERS.pop_front()
+		else:
+			pr = spawnProp("paper", x, y, z, 0); pr.pooled = true
+		PAPERS.append(pr)
+	return pr
+# ================= 射的場 =================
+func nearStand() -> bool:
+	return A.get("stand") != null and A.stand.has and absf(PL.p.y - F2) < 0.5 and PL.p.x > 2 and PL.p.x < 3.3 and absf(PL.p.z - 24.2) < 1.6
+func updRange(dt: float) -> void:
+	if not A.get("stand"): return
+	for T in A.targets:
+		if not A.stand.on: T.up = damp(T.up, 0, 5, dt)
+		else:
+			T.t -= dt
+			if T.t <= 0:
+				if T.get("state") == "up":
+					T.state = "down"; T.t = rr(1, 3)
+				else:
+					T.state = "up"; T.hit = false; T.t = rr(1.4, 2.4); sfx("clack")
+			T.up = damp(T.up, 1.0 if T.get("state") == "up" and not T.hit else 0.0, 10, dt)
+		T.g.rotation.z = (1 - T.up) * PI / 2 * 0.98
+func shootRange() -> void:
+	if not A.stand.on:
+		toast("電気が来ていない。分電盤を見てみよう"); return
+	sfx("pop"); PL.swing = 0.3; var ro := camPos(); var rd := lookDir()
+	if rd.x <= 0: return
+	var t := (5.4 - ro.x) / rd.x; var y := ro.y + rd.y * t; var z := ro.z + rd.z * t
+	for T in A.targets:
+		if T.up > 0.8 and not T.hit and absf(z - T.z) < 0.24 and y > F2 + 0.2 and y < F2 + 1.18:
+			T.hit = true; T.t = 0.6; A.stand.score += 100; drawScore(A.stand.score); sfx("ding"); part("n", 5.4, y, z, rr(-1, 0), 1, rr(-0.5, 0.5), 0.5, 0.05, "#e8c070", 1, 6)
+			if A.stand.score >= 300 and not A.get("keyDropped"):
+				A.keyDropped = true
+				after(0.7, func():
+					var k = P.skey; setPropHidden(k, false); k.noPick = false; propDropAt(k, 2.35, C2 - 1.3, 21.75, 0, Vector3(0, -1, 0.2)); sfx("clink"); toast("パイプから銀の鍵が落ちてきた！"))
+			return
+# ================= れんがの壁 =================
+func buildBricks() -> void:
+	var g := Node3D.new()
+	for r in 7:
+		for c in 5:
+			var p := Vector3(6, F2 + 0.15 + r * 0.3, 28.95 + c * 0.28 + (0.14 if r % 2 else 0.0))
+			if p.z > 30.15: continue
+			var m := mesh(G.box(0.14, 0.28, 0.28), MATS.brick, true); m.position = p; g.add_child(m)
+	scene.add_child(g)
+	var B := {g = g, broken = false, t = 0.0, drilling = false, col = null, it = null}
+	B.col = dyn_box(5.93, F2, 28.8, 6.07, F2 + 2.1, 30.2, "stone", B)
+	B.it = addIt({box = Box.new(5.8, F2, 28.8, 6.2, F2 + 2.1, 30.2), label = func(_it): return null if B.broken else {t = "れんががむき出しの壁", k = "", n = "壁"},
+		act = func():
+			if not B.broken: toast("何か強い道具があれば、こわせそうだ"),
+		use = func(it):
+			if not B.broken and it.type == "jackhammer":
+				drillBricks(B); return true
+			return false,
+		useLabel = func(it): return "削岩機でこわす" if not B.broken and it.type == "jackhammer" else null})
+	A.bricks = B
+func drillBricks(B: Dictionary) -> void:
+	if B.drilling: return
+	B.drilling = true; PL.frozen = true; sfx("drill")
+	for i in 14:
+		noise(6, F2, 29.5, 22, "drill"); puff(5.9, F2 + rr(0.2, 1.8), rr(28.9, 30.1), "#b86a4a", 2, 0.2, 0.6, 0.4); PL.swing = 0.2; await wait(0.12)
+	B.broken = true; B.g.visible = false; B.col.on = false
+	for i in 30: part("n", 6, F2 + rr(0, 2), rr(28.8, 30.2), rr(-2, 2), rr(0, 2), rr(-1, 1), 1.2, 0.07, "#a8583a", 1, 9)
+	PL.frozen = false; toast("壁に穴があいた！")
+	if story.get("onBricks"): story.onBricks.call()
+# ================= 地下室のドア：板2枚と銅の錠 =================
+func buildBaseLock() -> void:
+	A.boards = [mkDoorBoard(-7.6, 1.0, 21.88, 0.35), mkDoorBoard(-7.6, 1.8, 21.88, -0.3)]
+	for b in A.boards: b.setOn.call(true)
+	var g := Node3D.new(); var mb := MB.new(); mb.box(-0.07, -0.09, -0.03, 0.07, 0.07, 0.03, MATS.copper); mb.cyl(0, 0.09, 0, 0.05, 0.02, MATS.copper, 10, null, "z"); g.add_child(mb.build()); g.position = Vector3(-7.2, 1.35, 21.85); scene.add_child(g)
+	var L := {g = g, locked = true, it = null}
+	L.it = addIt({box = Box.new(-7.35, 1.2, 21.75, -7.05, 1.5, 21.95), label = func(_it): return {t = "銅の錠がかかっている", k = "", n = "地下室のドア"} if L.locked else null,
+		act = func():
+			if L.locked:
+				toast("銅の錠がかかっている"); sfx("locked"),
+		use = func(it):
+			if L.locked and (it.type == "copperkey" or it.type == "lockpick"):
+				unlockCopper(it); return true
+			return false,
+		useLabel = func(it): return "銅の鍵で開ける" if L.locked and it.type == "copperkey" else "ピッキングで開ける" if L.locked and it.type == "lockpick" else null})
+	A.clock = L
+	A.base.blockers = [func():
+		for b in A.boards:
+			if b.on: return "板が打ちつけてあって開かない"
+		return null, func(): return "銅の錠がかかっている" if A.clock.locked else null]
+func unlockCopper(it: Dictionary) -> void:
+	if it.type == "lockpick":
+		PL.frozen = true; toast("カチャ……カチャ……", 1.5)
+		for i in 5:
+			sfx("click"); await wait(0.3)
+		PL.frozen = false
+	A.clock.locked = false; A.clock.g.visible = false; sfx("unlock"); toast("銅の錠が開いた！")
+	if it.type == "copperkey": consumeHeld()
+	if story.get("onCopper"): story.onCopper.call()
+# ================= 棺のふた・マネキン =================
+func updCoffin(dt: float) -> void:
+	var C = A.get("coffin")
+	if not C or not C.open or C.lidT >= 1: return
+	C.lidT = minf(1, C.lidT + dt * 1.2); C.lid.position = Vector3(C.x - 0.95 * C.lidT, C.y + 0.53 + sin(C.lidT * PI) * 0.4, C.z); C.lid.rotation.z = C.lidT * 1.1
+# ================= ベッドの下に隠れる =================
+func mkBedHide(x: float, y: float, z: float, yaw: float, bx, out, name := "", onEnter = null) -> Dictionary:
+	var h := {pos = Vector3(x, y + 0.28, z), yaw = yaw, box = bx, out = out, name = name if name else "ベッドの下", under = true, cab = null, nb = null, it = null}
+	h.it = addIt({box = bx, label = func(_it): return {t = "ベッドの下に隠れる", k = "E", n = name if name else "ベッド"}, act = func():
+		enterHide(h)
+		if onEnter: onEnter.call()})
+	HIDES.append(h)
+	return h
+# ================= 目覚まし時計 =================
+var ALARMS := []
+func armAlarm(pr: Dictionary) -> void:
+	if pr.data.get("armed"): return
+	pr.data.armed = true; pr.data.t = 5.0; ALARMS.append(pr); sfx("click"); toast("目覚ましをセットした（5秒後に鳴る）")
+func updAlarms(dt: float) -> void:
+	for i in range(ALARMS.size() - 1, -1, -1):
+		var pr = ALARMS[i]; pr.data.t -= dt; var pos: Vector3 = PL.p if pr.st == "inv" else pr.p
+		if pr.data.t > 0:
+			if floori(pr.data.t * 2) != floori((pr.data.t + dt) * 2): sfxTick(pos)
+		elif pr.data.t > -6:
+			if floori(pr.data.t * 8) != floori((pr.data.t + dt) * 8): sfxRing(pos)
+			if floori(pr.data.t) != floori(pr.data.t + dt): noise(pos.x, pos.y, pos.z, 26, "alarm")
+		else:
+			pr.data.armed = false; ALARMS.remove_at(i)
+# ================= バナナ（すべる）=================
+var slipT := 0.0
+func updBananas(dt: float) -> void:
+	slipT -= dt
+	if slipT > 0:
+		PL.slip = slipT; return
+	PL.slip = 0.0
+	if not PL.onGround or Vector2(PL.v.x, PL.v.z).length() < 1.5: return
+	for pr in PROPS:
+		if pr.type != "banana" or pr.st != "rest": continue
+		if Vector2(pr.p.x - PL.p.x, pr.p.z - PL.p.z).length() < 0.3 and absf(pr.p.y - PL.p.y) < 0.3:
+			slipT = 0.9; sfx("slip"); noise(PL.p.x, PL.p.y, PL.p.z, 8, "slip"); PL.v *= 1.6; toast("つるっ！", 1); propDropAt(pr, pr.p.x, pr.p.y + 0.1, pr.p.z, 0, Vector3(PL.v.x * 0.5, 1.5, PL.v.z * 0.5)); break
+# ================= 監視カメラ（電気が必要）=================
+func buildCamerasA1() -> void:
+	for c in [[1.8, 3, 14.35, 0, 0.3, 19, "hall"], [-9.8, 2.95, 14.3, -7.6, 0.3, 21, "liv"], [1.8, 6.1, 31.7, 0, 3.5, 20, "hall2"], [-2.3, 6.1, 22.3, -7, 3, 29, "flood"], [9.8, 6.1, 18.8, 4, 3.5, 15.5, "class"], [-2.3, C1 - 0.2, 31.7, -2, 0.3, 23, "hallb"]]:
+		addCamera(c.slice(0, 6), c[6])
+	buildCamPanel()
+# ================= 監視室：カメラのスイッチと、カメラの映像が映るモニター =================
+var CAMV := {live = [], i = 0, t = 0.0, noSig = null}
+const CAM_NAMES := ["1階のろうか", "居間", "2階のろうか", "水びたしの部屋", "教室", "1階のおく"]
+const MON_LAYER := 1 << 10   # モニターだけの描画レイヤー（カメラの映像には写さない）
+func camsWorking() -> bool: return A.get("power") != null and A.power.on and not A.get("camsOff")
+func buildCamPanel() -> void:
+	var CP := {}; A.camPanel = CP; var x := -7.075 # 東の壁（2階の居間側）に取りつける
+	box(x - 0.13, F2 + 0.92, 14.75, x, F2 + 2.08, 16.55, "metal_dark", {solid = false}); box(x - 0.15, F2 + 2.02, 14.72, x - 0.1, F2 + 2.1, 16.58, "dgrey", {solid = false})
+	# 文字の板
+	signp(x - 0.135, F2 + 1.53, 15.35, 0.62, 0.93, std_mat({map = tex("c92"), rough = 0.7}), -PI / 2, {noShadow = true})
+	# ランプ（カメラごと）
+	CP.mG = std_mat({color = "#30ff60", emissive = "#20ff40", ei = 2.4}); CP.mOff = std_mat({color = "#1a1d20"}); CP.mR = std_mat({color = "#ff3020", emissive = "#ff2010", ei = 2.4})
+	CP.leds = []
+	for i in CAM_NAMES.size():
+		var m := mesh(G.sphere(0.026, 10, 8), CP.mG); m.position = Vector3(x - 0.145, F2 + 1.53 + 0.465 - (100 + i * 46 - 8) / 384.0 * 0.93, 15.35 + 0.31 - 36 / 256.0 * 0.62); scene.add_child(m); CP.leds.append(m)
+	# 大きなレバー
+	var lv := Node3D.new(); var lm := MB.new(); lm.box(-0.3, -0.025, -0.025, 0, 0.025, 0.025, MATS.chrome); lm.sphere(-0.31, 0, 0, 0.05, MATS.red); lv.add_child(lm.build()); lv.position = Vector3(x - 0.14, F2 + 1.4, 16.15); scene.add_child(lv); CP.lever = lv
+	box(x - 0.16, F2 + 1.18, 16.0, x - 0.13, F2 + 1.62, 16.3, "black", {solid = false})
+	signp(x - 0.135, F2 + 1.74, 16.15, 0.3, 0.11, std_mat({map = tex("c93"), basic = true}), -PI / 2, {noShadow = true})
+	CP.it = addIt({box = Box.new(x - 0.5, F2 + 1.1, 15.95, x, F2 + 1.7, 16.38), label = func(_it): return {t = "監視カメラを入れる" if A.get("camsOff") else "監視カメラを切る", k = "E", n = "（家の電気が切れている）" if A.get("power") and not A.power.on else "レバー"}, act = func(): setCamsOff(not A.get("camsOff"), "pl")})
+	# 映らないときの画面
+	CAMV.noSig = std_mat({map = tex("c94"), basic = true})
+	# カメラの映像（画質がいちばん低いときは使わない）
+	var mons := [A.mon0, A.mon1, A.mon2, A.mon3, A.monU[0], A.monU[1]]
+	for m in A.monU + [A.mon0, A.mon1, A.mon2, A.mon3]: m.layers = MON_LAYER
+	for i in mons.size():
+		var mon = mons[i]
+		if i >= CAMS.size(): continue
+		var C = CAMS[i]; var L := {mon = mon, C = C, rt = null, cam = null, mat = null, fresh = false}
+		if QUAL > 0:
+			var vp := SubViewport.new(); vp.size = Vector2i(176, 132); vp.render_target_update_mode = SubViewport.UPDATE_DISABLED; vp.msaa_3d = Viewport.MSAA_DISABLED
+			var cam := Camera3D.new(); cam.fov = 74; cam.near = 0.08; cam.far = 30; cam.cull_mask = 0xFFFFF & ~MON_LAYER
+			vp.add_child(cam); add_child(vp)
+			cam.position = Vector3(C.x + C.dx * 0.22, C.y + C.dy * 0.22, C.z + C.dz * 0.22); cam.look_at(Vector3(C.x + C.dx * 4, C.y + C.dy * 4, C.z + C.dz * 4))
+			var mt := StandardMaterial3D.new(); mt.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED; mt.albedo_texture = vp.get_texture(); mt.albedo_color = Color("#dcefff")
+			L.rt = vp; L.cam = cam; L.mat = mt
+		CAMV.live.append(L)
+	A.camsOff = false; A.camsCheckAt = 0.0; updCamLeds()
+func updCamLeds() -> void:
+	var on := camsWorking()
+	for C in CAMS:
+		if C.get("led"): C.led.visible = on and not C.broken
+	var CP = A.get("camPanel")
+	if not CP: return
+	for i in CP.leds.size():
+		var C = CAMS[i] if i < CAMS.size() else null
+		CP.leds[i].mesh.surface_set_material(0, CP.mOff if not C else CP.mR if C.broken else CP.mG if on else CP.mOff)
+	CP.lever.rotation.z = 0.65 if A.camsOff else -0.65
+	for L in CAMV.live:
+		L.mon.mesh.surface_set_material(0, CAMV.noSig if not on else MATS.monitor if L.C.broken or not L.mat else L.mat); L.fresh = false
+	if A.monU.size() > 2: A.monU[2].mesh.surface_set_material(0, MATS.monitor if on else CAMV.noSig)
+func setCamsOff(off: bool, who: String) -> void:
+	if not A.get("camPanel"): return
+	A.camsOff = off
+	if who == "pl":
+		sfx("click"); sfx("genoff" if off else "genon"); noise(-7.4, F2, 16, 6, "switch")
+		if off:
+			A.camsCheckAt = GT + rr(40, 70); toast("監視カメラを切った。……そのうち、おとなりさんが入れ直しに来るかも", 3.5)
+		else:
+			A.camsCheckAt = 0.0; toast("監視カメラを入れた", 2)
+	elif who == "nb":
+		sfx("genon"); A.camsCheckAt = 0.0
+	updCamLeds()
+	if story.get("onCams"): story.onCams.call(off)
+# 監視室にいるときだけ、カメラの映像を順番に描く
+func updCamFeeds(dt: float) -> void:
+	if not CAMV.live.size() or NORENDER: return
+	var r := roomAt(PL.p.x, PL.p.y + 0.1, PL.p.z)
+	if r != "security" and r != "ante": return
+	if not camsWorking(): return
+	CAMV.t -= dt
+	if CAMV.t > 0: return
+	CAMV.t = 1.0 / 30
+	for k in CAMV.live.size():
+		var L = CAMV.live[CAMV.i % CAMV.live.size()]; CAMV.i += 1
+		if not L.rt or L.C.broken: continue
+		L.rt.render_target_update_mode = SubViewport.UPDATE_ONCE
+		if not L.fresh:
+			L.fresh = true; L.mon.mesh.surface_set_material(0, L.mat)
+		break
+# ================= 毎フレームの仕掛け =================
+func a1Update(dt: float) -> void:
+	updShark(dt); updCamFeeds(dt)
+	# はじめて監視室に入ったとき
+	if story.part == "main" and not story.flags.get("secSeen") and roomAt(PL.p.x, PL.p.y + 0.1, PL.p.z) == "security":
+		story.flags.secSeen = 1; toast("監視室：右の壁のレバーで、家じゅうの監視カメラを切れる", 4.5)
+	updElevator(dt); updTrain(dt); updRange(dt); updClassroom(dt); updCoffin(dt); updAlarms(dt); updBananas(dt)
+	# 温度計の針と、凍る・とける
+	if A.get("furn"):
+		var F: Dictionary = A.furn; var tgtN := -1.9 if F.cold else 1.2
+		F.needle.rotation.z = damp(F.needle.rotation.z, -tgtN, 0.8, dt); F.valve.rotation.z += ((1.0 if F.cold else 0.0) * 3 - F.valve.rotation.z) * minf(1, dt * 2); F.t += dt
+		if F.cold and not A.water.frozen and F.t > 3: setFrozen(true)
+		if not F.cold and A.water.frozen and F.t > 6: setFrozen(false)
+	# 地下室のドアの明かり
+	if A.get("exitLight"): li(A.exitLight, 0.8 if QUAL else 0.0)
+	# 監視室のモニター（ちらつき）
+	if A.get("mon0") and RND() < dt * 3: MATS.monitor.uv1_offset = Vector3(RND(), RND(), 0)
+
+# ================= おとなりさん（モデル・動き・AI）=================
+var NB := {p = Vector3(), yaw = 0.0, state = "off", anim = "idle", ph = 0.0, animT = 0.0, path = [], pi = 0, task = null, taskT = 0.0, speed = 0.0, seeT = -99.0, lastSeen = Vector3(), alert = 0.0, stuck = 0.0, mode = "path",
+	doorWait = 0.0, climb = null, jump = null, look = 0.0, voiceT = 0.0, stepD = 0.0, sit = null, hideTarget = null, catchT = 0.0, trapQ = [], repairQ = [], visible = true, lastNoiseT = 0.0, chaseT = 0.0, giveUp = 0.0, active = false, routineN = 0,
+	blindT = 0.0, chaseMax = 16.0, sawHide = null, goalHide = null, goal = null, goalNode = null, goalOK = false, climbed = -1, inv = null, script = null, caughtDone = false, modeName = "", modeT = 0.0, pathT = 0.0, searchT = 0.0, dt = 0.016,
+	goBoiler = false, noDoors = false, tq = null, tt = 0.0}
+const NBH := 1.95
+const NBR := 0.33
+var NBM = null # モデル
+func nbMats() -> Dictionary:
+	var sm := func(col: String, rough: float) -> StandardMaterial3D: return std_mat({color = col, rough = rough})
+	var vest := std_mat({map = tex("c90"), rough = 0.9}); vest.uv1_scale = Vector3(2, 2, 1)
+	return {skin = sm.call("#eab494", 0.7), shirt = sm.call("#eec24a", 0.85), vest = vest, glove = sm.call("#18181c", 0.35), pants = sm.call("#b4502e", 0.85), shoe = sm.call("#5a3220", 0.5), hair = sm.call("#6a4028", 0.9),
+		must = sm.call("#3a2618", 1.0), eye = sm.call("#ffffff", 0.3), pupil = sm.call("#1a1410", 0.2), belt = sm.call("#2a1a10", 0.5), nose = sm.call("#d89a78", 0.6)}
+func nbg() -> Node3D:
+	var n := Node3D.new(); n.rotation_order = EULER_ORDER_XYZ
+	return n
+func nbmesh(g: Geo, m: Material, x := 0.0, y := 0.0, z := 0.0, sx := 1.0, sy := 1.0, sz := 1.0) -> MeshInstance3D:
+	var o := mesh(g, m, true); o.rotation_order = EULER_ORDER_XYZ; o.position = Vector3(x, y, z); o.scale = Vector3(sx, sy, sz)
+	return o
+func buildNeighbor() -> Dictionary:
+	var Mt := nbMats()
+	var S := func(r: float, s := 14) -> Geo: return G.sphere(r, s, maxi(8, int(s * 0.7)))
+	var C := func(r: float, h: float, rt = null, s := 12) -> Geo: return G.cylinder(rt if rt != null else r, r, h, s)
+	var B := func(w: float, h: float, d: float) -> Geo: return G.box(w, h, d)
+	var CP := func(r: float, l: float) -> Geo: return G.capsule(r, l, 4, 10)
+	var root := nbg(); var body := nbg(); root.add_child(body)
+	var pelvis := nbg(); pelvis.position.y = 0.98; body.add_child(pelvis)
+	pelvis.add_child(nbmesh(CP.call(0.2, 0.12), Mt.pants, 0, -0.02, 0, 1.05, 0.9, 0.8)); pelvis.add_child(nbmesh(C.call(0.215, 0.07, 0.215, 16), Mt.belt, 0, 0.1, 0, 1.02, 1, 0.82)); pelvis.add_child(nbmesh(B.call(0.07, 0.05, 0.02), Mt.nose, 0, 0.1, 0.18))
+	var leg := func(s: float) -> Dictionary:
+		var hip := nbg(); hip.position = Vector3(s * 0.11, -0.02, 0); pelvis.add_child(hip); hip.add_child(nbmesh(CP.call(0.085, 0.34), Mt.pants, 0, -0.24, 0)); var knee := nbg(); knee.position.y = -0.47; hip.add_child(knee)
+		knee.add_child(nbmesh(CP.call(0.075, 0.34), Mt.pants, 0, -0.23, 0)); var foot := nbmesh(CP.call(0.07, 0.16), Mt.shoe, 0, -0.47, 0.06); foot.rotation.x = PI / 2; foot.scale = Vector3(1.1, 1, 0.8); knee.add_child(foot)
+		return {hip = hip, knee = knee}
+	var L: Dictionary = leg.call(-1); var R: Dictionary = leg.call(1)
+	var spine := nbg(); spine.position.y = 1.04; body.add_child(spine)
+	spine.add_child(nbmesh(CP.call(0.24, 0.28), Mt.vest, 0, 0.28, 0, 1.05, 1, 0.78)); spine.add_child(nbmesh(C.call(0.2, 0.12, 0.14, 14), Mt.shirt, 0, 0.64, 0, 1, 1, 0.8)) # 胸・肩
+	spine.add_child(nbmesh(B.call(0.1, 0.26, 0.02), Mt.shirt, 0, 0.44, 0.19)) # えり元
+	for s in [-1, 1]:
+		var col := nbmesh(B.call(0.08, 0.05, 0.03), Mt.shirt, s * 0.05, 0.58, 0.17); col.rotation.z = s * 0.5; spine.add_child(col)
+	var neck := nbg(); neck.position.y = 0.66; spine.add_child(neck); neck.add_child(nbmesh(C.call(0.075, 0.12), Mt.skin, 0, 0.05, 0))
+	var head := nbg(); head.position.y = 0.24; neck.add_child(head)
+	head.add_child(nbmesh(S.call(0.17, 18), Mt.skin, 0, 0, 0, 1, 1.12, 1.02)); head.add_child(nbmesh(B.call(0.25, 0.13, 0.2), Mt.skin, 0, -0.13, 0.035)); head.add_child(nbmesh(S.call(0.12, 12), Mt.skin, 0, -0.16, 0.05, 1.05, 0.7, 0.9)) # あご
+	head.add_child(nbmesh(S.call(0.055, 12), Mt.nose, 0, -0.02, 0.18, 1, 1.15, 1.35)) # 鼻
+	var mu := nbmesh(CP.call(0.035, 0.16), Mt.must, 0, -0.09, 0.17, 1, 1, 1); mu.rotation.z = PI / 2; head.add_child(mu)
+	for s in [-1, 1]: head.add_child(nbmesh(S.call(0.04, 10), Mt.must, s * 0.1, -0.11, 0.155, 1, 0.9, 0.8))
+	var brow := nbmesh(B.call(0.25, 0.045, 0.05), Mt.must, 0, 0.07, 0.16); brow.rotation.x = -0.2; head.add_child(brow)
+	for s in [-1, 1]:
+		head.add_child(nbmesh(S.call(0.028, 10), Mt.eye, s * 0.062, 0.02, 0.155, 1, 0.8, 0.6)); head.add_child(nbmesh(S.call(0.015, 8), Mt.pupil, s * 0.062, 0.02, 0.172)); head.add_child(nbmesh(S.call(0.045, 10), Mt.skin, s * 0.17, -0.01, 0, 0.45, 1, 0.8))
+	# 髪（まわりだけ。てっぺんははげ）
+	for i in 9:
+		var a := PI * 0.2 + i / 8.0 * PI * 1.6; head.add_child(nbmesh(S.call(0.07, 10), Mt.hair, sin(a) * 0.15, 0.04 - absf(cos(a)) * 0.02, -cos(a) * 0.14, 1, 1.1, 0.9))
+	head.add_child(nbmesh(S.call(0.16, 14), Mt.hair, 0, 0.1, -0.03, 1, 0.45, 1.02)) # 上の髪
+	var curl := nbmesh(G.torus(0.045, 0.018, 6, 12, PI * 1.5), Mt.hair, 0, 0.2, 0.04); curl.rotation = Vector3(0, PI / 2, 0.5); head.add_child(curl)
+	var arm := func(s: float) -> Dictionary:
+		var sh := nbg(); sh.position = Vector3(s * 0.3, 0.56, 0); spine.add_child(sh); sh.add_child(nbmesh(S.call(0.1, 10), Mt.vest, 0, 0, 0, 1.1, 1, 1)); sh.add_child(nbmesh(CP.call(0.075, 0.2), Mt.shirt, 0, -0.17, 0)); sh.add_child(nbmesh(C.call(0.082, 0.06, 0.082, 10), Mt.shirt, 0, -0.31, 0))
+		var el := nbg(); el.position.y = -0.33; sh.add_child(el); el.add_child(nbmesh(CP.call(0.062, 0.2), Mt.skin, 0, -0.15, 0)); el.add_child(nbmesh(C.call(0.085, 0.12, 0.07, 10), Mt.glove, 0, -0.27, 0))
+		var hand := nbmesh(S.call(0.1, 10), Mt.glove, 0, -0.4, 0.02, 0.95, 1.2, 0.75); el.add_child(hand); el.add_child(nbmesh(S.call(0.045, 8), Mt.glove, s * -0.07, -0.36, 0.06))
+		for i in 3: el.add_child(nbmesh(CP.call(0.022, 0.07), Mt.glove, -0.05 + i * 0.05, -0.52, 0.03))
+		return {sh = sh, el = el, hand = hand}
+	var AL: Dictionary = arm.call(-1); var AR: Dictionary = arm.call(1)
+	scene.add_child(root)
+	NBM = {root = root, body = body, pelvis = pelvis, spine = spine, neck = neck, head = head, L = L, R = R, AL = AL, AR = AR, M = Mt}
+	return NBM
+# ---- 動き ----
+func animNB(dt: float) -> void:
+	var m = NBM
+	if not m: return
+	var a: String = NB.anim; NB.animT += dt; var t: float = NB.animT; var sp: float = NB.speed; var run := sp > 3.6
+	# 初期の姿勢
+	var pY := 0.98; var bY := 0.0; var lean := 0.0; var thL := 0.0; var thR := 0.0; var kL := 0.0; var kR := 0.0; var shL := 0.08; var shR := 0.08; var shLz := 0.12; var shRz := -0.12; var elL := -0.25; var elR := -0.25; var hY := 0.0; var hX := 0.0; var spX := 0.0; var spZ := 0.0
+	if a == "walk" or a == "run":
+		NB.ph += dt * sp * (1.55 if run else 2.15); var ph: float = NB.ph; var am := 0.75 if run else 0.5
+		thL = sin(ph) * am; thR = -sin(ph) * am; kL = maxf(0, -cos(ph)) * am * 1.6 + 0.1; kR = maxf(0, cos(ph)) * am * 1.6 + 0.1
+		shL = -sin(ph) * am * 1.1; shR = sin(ph) * am * 1.1; elL = -0.4 - (0.9 if run else 0.1); elR = -0.4 - (0.9 if run else 0.1); bY = absf(cos(ph)) * (0.07 if run else 0.035); lean = 0.28 if run else 0.05; hX = -0.18 if run else 0.0
+		if NB.state == "chase":
+			shL = -1.2 + sin(ph) * 0.35; shR = -1.2 - sin(ph) * 0.35; elL = -0.3; elR = -0.3
+	elif a == "idle":
+		var b := sin(t * 1.8); bY = b * 0.006; shLz = 0.1 + b * 0.02; shRz = -0.1 - b * 0.02; hY = sin(t * 0.4) * 0.2
+	elif a == "look":
+		hY = sin(t * 1.3) * 0.9; spZ = sin(t * 1.3) * 0.08; hX = -0.1
+	elif a == "reach":
+		shL = -1.45; shR = -1.45; elL = -0.2; elR = -0.2; lean = 0.3; hX = -0.25; thL = 0.2; thR = -0.35; kL = 0.3; kR = 0.5
+	elif a == "climb":
+		NB.ph += dt * 3.2; var c: float = NB.ph; shL = -2.7 + sin(c) * 0.35; shR = -2.7 - sin(c) * 0.35; elL = -0.5 - maxf(0, sin(c)) * 0.6; elR = -0.5 - maxf(0, -sin(c)) * 0.6; thL = -0.7 + sin(c) * 0.5; thR = -0.7 - sin(c) * 0.5; kL = 0.9; kR = 0.9; hX = -0.3
+	elif a == "crouch":
+		pY = 0.55; thL = -1.25; thR = -1.25; kL = 2.0; kR = 2.0; lean = 0.55; shL = -0.9; shR = -0.9; elL = -0.4; elR = -0.4; var c := sin(t * 6); shR = -0.9 + c * 0.25
+	elif a == "sit":
+		pY = 0.5; thL = -1.5; thR = -1.5; kL = 1.45; kR = 1.45; shL = -0.5; shR = -0.5; elL = -1; elR = -1; lean = -0.1; hY = sin(t * 0.3) * 0.15
+	elif a == "water":
+		shR = -1.1; elR = -0.2; shL = -0.3; lean = 0.08; hX = 0.2; hY = sin(t * 0.5) * 0.3
+	elif a == "cook":
+		shL = -0.9; shR = -0.9; elL = -0.8 + sin(t * 5) * 0.15; elR = -0.8; lean = 0.12; hX = 0.35
+	elif a == "work":
+		shR = -1.5 + sin(t * 9) * 0.6; elR = -0.6; shL = -0.7; lean = 0.25; hX = 0.3
+	elif a == "wave":
+		shR = -2.7; shRz = -0.3 + sin(t * 7) * 0.3; elR = -0.3
+	elif a == "check":
+		shR = -1.2; elR = -0.5; hX = 0.25; lean = 0.15
+	elif a == "binoc":
+		shL = -2.2; shR = -2.2; shLz = 0.55; shRz = -0.55; elL = -1.9; elR = -1.9; hX = 0.05
+	elif a == "cover":
+		shL = -2.3; shR = -2.3; shLz = 0.45; shRz = -0.45; elL = -2.1; elR = -2.1; hX = 0.35; lean = 0.12; spZ = sin(t * 2) * 0.04
+	elif a == "grab":
+		shL = -1.55; shR = -1.55; elL = -0.05; elR = -0.05; lean = 0.35; hX = -0.35; shLz = 0.35; shRz = -0.35
+	if NB.sit: pY = 0.5
+	# 見ている方へ頭を向ける
+	hY += NB.look
+	m.pelvis.position.y = pY + bY; m.spine.position.y = pY + 0.06 + bY; m.body.rotation.x = 0.0; m.spine.rotation.x = lean + spX; m.spine.rotation.z = spZ; m.pelvis.rotation.x = 0.0
+	m.L.hip.rotation.x = -thL; m.R.hip.rotation.x = -thR; m.L.knee.rotation.x = kL; m.R.knee.rotation.x = kR
+	m.AL.sh.rotation.x = shL; m.AR.sh.rotation.x = shR; m.AL.sh.rotation.z = shLz; m.AR.sh.rotation.z = shRz; m.AL.el.rotation.x = elL; m.AR.el.rotation.x = elR
+	m.head.rotation.y = clampf(hY, -1.2, 1.2); m.head.rotation.x = hX
+	m.root.position = NB.p; m.root.rotation.y = NB.yaw
+	# 足音
+	if (a == "walk" or a == "run") and NB.visible:
+		NB.stepD += sp * dt
+		if NB.stepD > (1.3 if run else 0.95):
+			NB.stepD = 0.0; sfxNbStep(NB.p, run)
+# ================= 道すじ（ナビ）=================
+var NODES := {}
+var NLIST := []
+func node(id: String, x: float, y: float, z: float) -> Dictionary:
+	var n := {id = id, p = Vector3(x, y, z), e = [], pool = false, i = NLIST.size()}
+	NODES[id] = n; NLIST.append(n)
+	return n
+func link(a: String, b: String, type := "w", door = null) -> void:
+	var An = NODES.get(a); var Bn = NODES.get(b)
+	if not An or not Bn:
+		push_warning("link %s %s" % [a, b]); return
+	var c: float = An.p.distance_to(Bn.p) * (2.5 if type == "l" else 1.0)
+	An.e.append({to = Bn, type = type, door = door, c = c}); Bn.e.append({to = An, type = type, door = door, c = c})
+func nav_filt(b) -> bool: return b.s != "trig" and b.s != "door" and not (b.ref is Dictionary and b.ref.has("type") and b.ref.has("d"))
+func nearestNode(p: Vector3, los := true, maxDy := 1.3):
+	var best = null; var bd := 1e9
+	for n in NLIST:
+		var dy: float = absf(n.p.y - p.y)
+		if dy > maxDy: continue
+		var d: float = Vector2(n.p.x - p.x, n.p.z - p.z).length() + dy * 3
+		if d >= bd: continue
+		if los and not los_clear(Vector3(p.x, p.y + 0.9, p.z), Vector3(n.p.x, n.p.y + 0.9, n.p.z), nav_filt): continue
+		bd = d; best = n
+	if not best and los: return nearestNode(p, false, maxDy + 2)
+	return best
+func findPath(a, b):
+	if not a or not b: return null
+	if is_same(a, b): return [a]
+	var N := NLIST.size()
+	var g := {}; var f := {}; var from := {}; var closed := {}; var open := [a]; var inopen := {a.i: true}
+	g[a.i] = 0.0; f[a.i] = a.p.distance_to(b.p)
+	while open.size():
+		var bi := 0
+		for i in range(1, open.size()):
+			if f[open[i].i] < f[open[bi].i]: bi = i
+		var cur = open[bi]; open.remove_at(bi); inopen.erase(cur.i)
+		if is_same(cur, b):
+			var P := [cur]; var c = cur
+			while from.has(c.i):
+				c = from[c.i]; P.push_front(c)
+			return P
+		closed[cur.i] = true
+		for e in cur.e:
+			if closed.has(e.to.i): continue
+			if e.type == "d" and NB.noDoors: continue
+			var ng: float = g[cur.i] + e.c
+			if ng < g.get(e.to.i, 1e9):
+				from[e.to.i] = cur; g[e.to.i] = ng; f[e.to.i] = ng + e.to.p.distance_to(b.p)
+				if not inopen.has(e.to.i):
+					open.append(e.to); inopen[e.to.i] = true
+	return null
+func edgeBetween(a, b):
+	for e in a.e:
+		if is_same(e.to, b): return e
+	return null
+# ================= おとなりさんの道すじ（アルファ1の家）=================
+func buildNavA1() -> void:
+	var n := func(id: String, x: float, y: float, z: float) -> void: node(id, x, y, z)
+	var L := func(a: String, b: String, type := "w", door = null) -> void: link(a, b, type, door)
+	# 外
+	n.call("st_w", -20, 0.02, 1.5); n.call("st_c", 0, 0.02, 1.5); n.call("st_e", 20, 0.02, 1.5); n.call("gate", 0, 0.06, 6.6); n.call("path", 0, 0.06, 10.4); n.call("porch", 0, 0.3, 12.9); n.call("yard_fw", -7, 0, 10.4); n.call("yard_fe", 7, 0, 10.4); n.call("drive", -11, 0.05, 8.6)
+	n.call("west_f", -18.2, 0, 9.2); n.call("west_m", -18.2, 0, 20.5); n.call("west_b", -18.2, 0, 33); n.call("gar_side", -18.2, 0, 20.5); n.call("east_f", 14.5, 0, 12); n.call("east_m", 14.5, 0, 24); n.call("east_b", 14.5, 0, 35); n.call("back_e", 9, 0, 35); n.call("back_door", 4, 0.15, 33.4); n.call("back_c", -2, 0, 35.5); n.call("back_w", -12, 0, 35.5)
+	L.call("st_w", "st_c"); L.call("st_c", "st_e"); L.call("st_c", "gate"); L.call("gate", "path"); L.call("path", "porch"); L.call("path", "yard_fw"); L.call("path", "yard_fe"); L.call("yard_fw", "drive"); L.call("drive", "st_w"); L.call("drive", "west_f"); L.call("west_f", "west_m"); L.call("west_m", "west_b")
+	L.call("west_b", "back_w"); L.call("back_w", "back_c"); L.call("back_c", "back_door"); L.call("back_door", "back_e"); L.call("back_e", "east_b"); L.call("east_b", "east_m"); L.call("east_m", "east_f"); L.call("east_f", "yard_fe")
+	# ガレージ
+	n.call("gar_in", -16, 0.1, 20.5); n.call("gar_m", -13.5, 0.1, 18.5); n.call("gar_ld", -10.8, 0.1, 17); L.call("west_m", "gar_in", "d", func(): return A.garageSide); L.call("gar_in", "gar_m"); L.call("gar_m", "gar_ld")
+	# 1階
+	n.call("hall_f", 0, 0.3, 15.6); n.call("hall_m", 0, 0.3, 19.5); n.call("hall_n", 0, 0.3, 24.5); n.call("hall_b", 0, 0.3, 29); n.call("kit_d", 1.2, 0.3, 16); n.call("kit", 3, 0.3, 16); n.call("kit_m", 5.2, 0.3, 16.4); n.call("kit_e", 8.6, 0.3, 17.3)
+	n.call("elev1", 1.1, 0.3, 20.2); n.call("cab1", 3.1, 0.3, 20.2); n.call("liv", -3.2, 0.3, 16.3); n.call("liv_m", -4.8, 0.3, 17.5); n.call("liv_n", -4.7, 0.3, 20.4); n.call("liv_base", -7.6, 0.3, 21.2); n.call("liv_gd", -9.1, 0.3, 17)
+	n.call("stairs_b", -2.6, 0.3, 20.2); n.call("stairs_1", -2.6, 0.3, 21.4); n.call("stairs_t", -9.3, 3.5, 21.4)
+	n.call("grave_d", -1.2, 0.3, 24.5); n.call("grave", -2.8, 0.3, 24.5); n.call("grave_s", -2.8, 0.3, 22.7); n.call("din_d", -1.2, 0.3, 29.5); n.call("din", -3, 0.3, 29.5); n.call("din_w", -8.8, 0.3, 27.8)
+	n.call("pan_d", 1.2, 0.3, 23.5); n.call("pan", 3, 0.3, 23.5); n.call("pan_m", 4.2, 0.3, 24.2); n.call("boil_d", 1.2, 0.3, 29); n.call("boil", 3, 0.3, 29); n.call("boil_e", 5.3, 0.3, 29.2); n.call("boil_back", 4, 0.3, 31.3)
+	n.call("bath1", 7, 0.3, 29); n.call("bath1_s", 8.5, 0.3, 27.2); n.call("bed1_d", 8.5, 0.3, 25.4); n.call("bed1", 7.3, 0.3, 22.4)
+	L.call("porch", "hall_f", "d", func(): return A.front[0]); L.call("hall_f", "hall_m"); L.call("hall_m", "hall_n"); L.call("hall_n", "hall_b"); L.call("hall_f", "liv"); L.call("hall_f", "kit_d"); L.call("kit_d", "kit", "d", func(): return A.kitDoor); L.call("kit", "kit_m"); L.call("kit_m", "kit_e")
+	L.call("hall_m", "elev1"); L.call("elev1", "cab1", "ew")
+	L.call("liv", "liv_m"); L.call("liv_m", "liv_n"); L.call("liv_n", "liv_base"); L.call("liv_m", "liv_gd"); L.call("liv_gd", "gar_ld", "d", func(): return A.garageDoor); L.call("liv_m", "stairs_b"); L.call("stairs_b", "stairs_1"); L.call("stairs_1", "stairs_t")
+	L.call("hall_n", "grave_d"); L.call("grave_d", "grave", "d", func(): return A.graveDoor); L.call("grave", "grave_s"); L.call("hall_b", "din_d"); L.call("din_d", "din", "d", func(): return A.dinDoor); L.call("din", "din_w")
+	L.call("hall_n", "pan_d"); L.call("pan_d", "pan", "d", func(): return A.panDoor); L.call("pan", "pan_m"); L.call("hall_b", "boil_d"); L.call("boil_d", "boil", "d", func(): return A.boilDoor); L.call("boil", "boil_back"); L.call("boil_back", "back_door", "d", func(): return A.back)
+	L.call("boil", "boil_e"); L.call("boil_e", "bath1", "d", func(): return A.bathDoor); L.call("bath1", "bath1_s"); L.call("bath1_s", "bed1_d", "d", func(): return A.bedDoor); L.call("bed1_d", "bed1")
+	# 2階
+	n.call("cab2", 3.1, 3.5, 20.2); n.call("h2_e", 1.1, 3.5, 20.2); n.call("h2_s", 0.8, 3.5, 15.5); n.call("h2_n", 0.4, 3.5, 24.5); n.call("h2_b", 0, 3.5, 30.9)
+	n.call("liv2_d", -1.2, 3.5, 19.8); n.call("liv2", -3, 3.5, 19.8); n.call("liv2_m", -4.6, 3.5, 17.6); n.call("ante_d", -6.2, 3.5, 19.7); n.call("ante", -7.8, 3.5, 19.7); n.call("sec_d", -8.55, 3.5, 18.2); n.call("sec", -8.55, 3.5, 16.2); n.call("sec_panel", -7.75, 3.5, 15.75)
+	n.call("class_d", 1.2, 3.5, 15.5); n.call("class", 2.7, 3.5, 15.5); n.call("class_n", 2.7, 3.5, 18.5); n.call("class_front", 7.8, 3.5, 18.5); n.call("class_d2", 9, 3.5, 18.5); n.call("corr", 9, 3.5, 20.2); n.call("corr_w", 5, 3.5, 20.2); n.call("bath2", 9, 3.5, 22.4)
+	n.call("range_d", 1.2, 3.5, 23.5); n.call("range", 2.6, 3.5, 23.5)
+	n.call("flood_x", -1.2, 3.5, 30.9); n.call("flood_exit", -2.7, 3.5, 30.9); n.call("pool_e", -4.6, 2.95, 30.4); n.call("pool_m", -4.8, 2.95, 25.8); n.call("pool_w", -9.2, 2.95, 24.4); n.call("flood_land", -9.3, 3.5, 22.6)
+	for k in ["pool_e", "pool_m", "pool_w"]: NODES[k].pool = true
+	L.call("cab1", "cab2", "e"); L.call("cab2", "h2_e", "ew"); L.call("h2_e", "h2_s"); L.call("h2_e", "h2_n"); L.call("h2_n", "h2_b"); L.call("h2_s", "class_d"); L.call("class_d", "class", "d", func(): return A.classDoor); L.call("class", "class_n"); L.call("class_n", "class_front"); L.call("class_front", "class_d2"); L.call("class_d2", "corr", "d", func(): return A.classDoor2); L.call("corr", "corr_w"); L.call("corr", "bath2", "d", func(): return A.bath2Door)
+	L.call("h2_e", "liv2_d"); L.call("liv2_d", "liv2", "d", func(): return A.liv2Door); L.call("liv2", "liv2_m"); L.call("liv2", "ante_d"); L.call("ante_d", "ante", "d", func(): return A.anteDoor); L.call("ante", "sec_d"); L.call("sec_d", "sec", "d", func(): return A.secDoor); L.call("sec", "sec_panel")
+	L.call("h2_n", "range_d"); L.call("range_d", "range", "d", func(): return A.rangeDoor)
+	L.call("stairs_t", "flood_land"); L.call("flood_land", "pool_w"); L.call("pool_w", "pool_m"); L.call("pool_m", "pool_e"); L.call("pool_e", "flood_exit"); L.call("flood_exit", "flood_x", "d", func(): return A.floodDoor); L.call("flood_x", "h2_b")
+# 切られた監視カメラを入れ直しにいく（ふだんは選ばない）
+const TASK_CAMS := {node = "sec_panel", dur = 2.4, anim = "work", face = PI / 2, w = 0, camsOn = true}
+var TASKS_A1 := [
+	{node = "hall_m", dur = 3, anim = "look", w = 2}, {node = "liv_m", dur = 4, anim = "look", w = 2}, {node = "liv_m", dur = 12, anim = "sit", sit = {x = -6.15, z = 19.2, yaw = -PI / 2}, w = 2.5}, {node = "kit_e", dur = 7, anim = "cook", face = PI / 2, w = 2.5}, {node = "kit_m", dur = 4, anim = "idle", w = 1.5},
+	{node = "din", dur = 5, anim = "look", w = 1.5}, {node = "grave", dur = 6, anim = "crouch", face = -PI / 2, w = 1.5}, {node = "pan_m", dur = 4, anim = "check", w = 1}, {node = "boil", dur = 6, anim = "check", face = PI / 2, w = 2.5, boil = true}, {node = "bed1", dur = 5, anim = "look", w = 1.5}, {node = "bath1", dur = 3, anim = "idle", w = 1},
+	{node = "gar_m", dur = 7, anim = "work", face = -PI / 2, w = 1.5}, {node = "liv2_m", dur = 5, anim = "look", w = 1.5}, {node = "class_front", dur = 5, anim = "look", w = 1}, {node = "h2_n", dur = 3, anim = "look", w = 1}, {node = "range", dur = 4, anim = "look", w = 1}, {node = "sec", dur = 6, anim = "check", face = PI, w = 1.5},
+	{node = "yard_fw", dur = 6, anim = "water", face = 0, w = 1.5}, {node = "yard_fe", dur = 5, anim = "look", w = 1}, {node = "back_c", dur = 5, anim = "look", w = 1}, {node = "back_e", dur = 4, anim = "idle", w = 1}, {node = "drive", dur = 4, anim = "look", w = 0.8}, {node = "flood_exit", dur = 3, anim = "look", w = 0.8}]
+# ================= AI =================
+# 家の中か（プレイヤー用）
+func onNProperty(p) -> bool: return p.x > -20 and p.x < 20 and p.z > 6.2 and p.z < 48
+func inNHouse(p: Vector3) -> bool: return (p.x > -10 and p.x < 10 and p.z > 14 and p.z < 32 and p.y > -3 and p.y < 6.5) or (p.x > -17 and p.x < -10 and p.z > 14 and p.z < 24 and p.y < 3.4)
+func nodeY(n) -> float: return (3.47 if A.get("water") and A.water.frozen else 2.95) if n.pool else n.p.y
+func nbSetPath(targetPos, nd = null) -> bool:
+	var a = nearestNode(NB.p, true, 1.4); var b = nd if nd else nearestNode(targetPos, true, 1.6); var P = findPath(a, b)
+	NB.path = P if P else []; NB.pi = 0; NB.climbed = -1; NB.goal = targetPos if targetPos != null else (b.p if b else null); NB.goalNode = b
+	NB.goalOK = targetPos != null and b != null and los_clear(Vector3(b.p.x, b.p.y + 0.8, b.p.z), Vector3(targetPos.x, targetPos.y + 0.8, targetPos.z), nav_filt)
+	return P != null
+func nbTeleport(x: float, y: float, z: float, yaw: float) -> void:
+	NB.p = Vector3(x, y, z); NB.yaw = yaw; NB.path = []; NB.climb = null; NB.jump = null; NB.sit = null; NB.speed = 0.0; NB.anim = "idle"
+# 見えるか
+func nbCanSee() -> bool:
+	if PL.hide or not NB.visible: return false
+	var ex: float = NB.p.x; var ey: float = NB.p.y + (1.4 if NB.sit else 1.82); var ez: float = NB.p.z
+	var px: float = PL.p.x; var py: float = PL.p.y + PL.h * 0.8; var pz: float = PL.p.z
+	var dx := px - ex; var dy := py - ey; var dz := pz - ez; var d := Vector3(dx, dy, dz).length()
+	var range := 4.0 if NB.blindT > 0 else (13.0 if PL.crouch > 0.5 else 22.0)
+	if d > range: return false
+	var fa: float = NB.yaw + (NBM.head.rotation.y if NBM else 0.0); var fx := -sin(fa + PI); var fz := -cos(fa + PI)
+	var dot := (dx * fx + dz * fz) / maxf(0.01, Vector2(dx, dz).length())
+	if d > 2.2 and dot < (-0.2 if NB.state == "chase" else 0.28): return false
+	var filt := func(b): return b.s != "trig" and b.s != "glass"
+	if ray_cast(ex, ey, ez, dx / d, dy / d, dz / d, d - 0.3, filt) < d - 0.35: # 体のまん中も見る
+		var py2: float = PL.p.y + PL.h * 0.45; var dy2 := py2 - ey; var d2 := Vector3(dx, dy2, dz).length()
+		if ray_cast(ex, ey, ez, dx / d2, dy2 / d2, dz / d2, d2 - 0.3, filt) < d2 - 0.35: return false
+	return true
+# ---- 毎フレーム ----
+var nbSeeAcc := 0.0
+var nbVisionT := 0.0
+func updNeighbor(dt: float) -> void:
+	if not NBM: return
+	if not NB.active:
+		animNB(dt); return
+	if NB.state == "script":
+		if NB.script: NB.script.call(dt)
+		animNB(dt); return
+	if NB.state == "catch":
+		updCatch(dt); animNB(dt); return
+	NB.voiceT -= dt; NB.dt = dt; NB.blindT = maxf(0, NB.blindT - dt)
+	# 見る
+	nbVisionT -= dt
+	if nbVisionT <= 0:
+		nbVisionT = 0.1; var sees := nbCanSee(); var d: float = NB.p.distance_to(PL.p)
+		if sees:
+			nbSeeAcc += 0.1 * (6.0 if d < 5 else 3.0 if d < 10 else 1.4) * (0.6 if PL.crouch > 0.5 else 1.0)
+			if NB.state == "chase" or nbSeeAcc >= 0.5:
+				NB.lastSeen = PL.p; NB.seeT = GT
+				if NB.state != "chase": startChase()
+		else: nbSeeAcc = maxf(0, nbSeeAcc - 0.05)
+	# 聞く
+	for n in NOISES:
+		if n.t <= NB.lastNoiseT: continue
+		NB.lastNoiseT = maxf(NB.lastNoiseT, n.t)
+		if NB.state == "chase": continue
+		var d := Vector3(n.x - NB.p.x, n.y - NB.p.y, n.z - NB.p.z).length(); var r: float = n.r
+		# 壁ごしは聞こえにくい
+		if not los_clear(Vector3(NB.p.x, NB.p.y + 1.7, NB.p.z), Vector3(n.x, n.y + 0.3, n.z), bodyFilt): r *= 0.55
+		if d < r and (n.kind != "step" or inNHouse(PL.p) or onNProperty(PL.p)): investigate(Vector3(n.x, n.y, n.z), n.kind)
+	NOISES.clear()
+	# 状態ごと
+	if NB.state == "routine": updRoutine(dt)
+	elif NB.state == "investigate": updInvestigate(dt)
+	elif NB.state == "chase": updChase(dt)
+	elif NB.state == "search": updSearch(dt)
+	elif NB.state == "trap": updTrapTask(dt)
+	# 捕まえる
+	var dd := Vector2(PL.p.x - NB.p.x, PL.p.z - NB.p.z).length(); var dy: float = absf(PL.p.y - NB.p.y)
+	if not PL.hide and NB.state == "chase" and dd < 1.15 and dy < 1.4 and not NB.climb and not NB.jump: startCatch()
+	animNB(dt); updChaseMusic(dt)
+func say(k: String) -> void:
+	if NB.voiceT > 0: return
+	NB.voiceT = 3.0; sfxVoice(k, NB.p)
+func startChase() -> void:
+	if NB.state == "chase": return
+	NB.state = "chase"; setNbMode("attack"); NB.chaseT = 0.0; NB.chaseMax = 14 + RND() * 6; NB.sit = null; NB.path = []; NB.mode = "direct"; say("hey"); NB.giveUp = 0.0
+	if story.get("onSpotted"): story.onSpotted.call()
+func setNbMode(m: String) -> void:
+	if NB.modeName == m: return
+	NB.modeName = m
+	if m == "attack": MUS.chaseTrack = 1 + int(RND() * 3)
+func investigate(pos: Vector3, kind: String) -> void:
+	if NB.state == "chase" or NB.state == "catch" or NB.state == "script": return
+	if not inHouseArea(pos): return
+	NB.state = "investigate"; setNbMode("hunt"); NB.inv = {pos = pos, kind = kind, t = 0.0, phase = "go", lt = 0.0}; NB.sit = null
+	if not nbSetPath(pos): NB.path = []
+	NB.speed = 0.0
+	if kind == "glass" or kind == "alarm" or kind == "trap" or kind == "yell": say("hey")
+	else: say("hmm")
+func inHouseArea(p: Vector3) -> bool: return p.x > -22 and p.x < 22 and p.z > -1 and p.z < 42
+# 道にそって進む（もどり値：着いたら true）
+func followPath(dt: float, spd: float) -> bool:
+	if NB.jump:
+		var J = NB.jump; J.t += dt / 0.55; var t := minf(1, J.t); NB.p = J.a.lerp(J.b, t); NB.p.y += sin(t * PI) * 0.7
+		if t >= 1:
+			NB.jump = null; NB.pi += 1
+		NB.anim = "walk"; NB.speed = 3.0; return false
+	if NB.climb:
+		var C = NB.climb; var dir := sgn(C.b.y - C.a.y); NB.p.y += dir * 2.1 * dt; NB.p.x = damp(NB.p.x, C.lx, 8, dt); NB.p.z = damp(NB.p.z, C.lz, 8, dt); NB.yaw = damp_ang(NB.yaw, C.yaw, 10, dt); NB.anim = "climb"; NB.speed = 0.0
+		if RND() < dt * 3: sfx("ladderN")
+		if (dir > 0 and NB.p.y >= C.b.y) or (dir < 0 and NB.p.y <= C.b.y):
+			NB.p.y = C.b.y; NB.climb = null; NB.climbed = NB.pi
+		return false
+	if NB.doorWait > 0:
+		NB.doorWait -= dt; NB.anim = "reach"; NB.speed = 0.0; return false
+	var P: Array = NB.path
+	if not P.size() or NB.pi >= P.size(): # 最後はまっすぐ目的の場所へ
+		var Gl = NB.goal
+		if Gl != null and NB.goalOK:
+			var dx: float = Gl.x - NB.p.x; var dz: float = Gl.z - NB.p.z; var d := Vector2(dx, dz).length()
+			if d > 0.4 and d < 9 and absf(Gl.y - NB.p.y) < 1:
+				var st := minf(d, spd * dt); NB.p.x += dx / d * st; NB.p.z += dz / d * st; NB.yaw = damp_ang(NB.yaw, atan2(dx, dz), 10, dt); NB.anim = "run" if spd > 3.6 else "walk"; NB.speed = spd; return false
+		return true
+	var cur = P[NB.pi]; var prev = P[NB.pi - 1] if NB.pi > 0 else null; var e = edgeBetween(prev, cur) if prev else null
+	# 特別な道
+	if e and e.type == "j" and not NB.jump:
+		NB.jump = {a = prev.p, b = cur.p, t = 0.0}; NB.yaw = atan2(-(cur.p.x - prev.p.x), -(cur.p.z - prev.p.z)); return false
+	# エレベーター
+	if e and (e.type == "ew" or e.type == "e"):
+		var fl := 2 if prev.p.y > 2 else 1; var tf := 2 if cur.p.y > 2 else 1
+		if e.type == "ew":
+			var cabFl: int = (2 if cur.p.y > 2 else 1) if cur.id.begins_with("cab") else fl
+			if not (ELEV.state == "idle" and ELEV.floor == cabFl):
+				if ELEV.state == "idle": callElev(cabFl)
+				NB.anim = "idle"; NB.speed = 0.0; return false
+			ELEV.openT = maxf(ELEV.openT, 2)
+		else:
+			if ELEV.state == "idle" and ELEV.floor == fl:
+				callElev(tf); NB.anim = "idle"; NB.speed = 0.0; NB.p.y = ELEV.y; return false
+			if ELEV.state != "idle" or ELEV.floor != tf:
+				NB.p.y = ELEV.y; NB.anim = "idle"; NB.speed = 0.0; return false
+			NB.p.y = cur.p.y; NB.pi += 1; return false
+	# ドア
+	if e and e.type == "d":
+		var dr = e.door.call()
+		if dr and dr.m.tgt < 0.5:
+			var dd := Vector2(dr.hx - NB.p.x, dr.hz - NB.p.z).length()
+			if dd < 1.9:
+				toggleDoor(dr, "npc", true); NB.doorWait = 0.45; return false
+	var tx: float = cur.p.x; var tz: float = cur.p.z; var dx: float = tx - NB.p.x; var dz: float = tz - NB.p.z; var d := Vector2(dx, dz).length()
+	if d < 0.25:
+		NB.p.y = nodeY(cur); NB.pi += 1; return NB.pi >= P.size()
+	var step := minf(d, spd * dt); NB.p.x += dx / d * step; NB.p.z += dz / d * step
+	# 高さ（階段など）は道にそって
+	if prev:
+		var tot := Vector2(cur.p.x - prev.p.x, cur.p.z - prev.p.z).length()
+		if tot == 0: tot = 1.0
+		var f := 1 - clampf(Vector2(tx - NB.p.x, tz - NB.p.z).length() / tot, 0, 1); NB.p.y = lerpf(nodeY(prev), nodeY(cur), f)
+	NB.yaw = damp_ang(NB.yaw, atan2(-dx, -dz) + PI, 10, dt); NB.anim = "run" if spd > 3.6 else "walk"; NB.speed = spd; return false
+# ---- ふだんの暮らし ----
+func pickTask() -> Dictionary:
+	if A.get("camsOff") and A.get("camsCheckAt") and GT > A.camsCheckAt and story.part == "main":
+		A.camsCheckAt = GT + 30; return TASK_CAMS
+	if NB.goBoiler:
+		NB.goBoiler = false
+		for t in TASKS_A1:
+			if t.get("boil"): return t
+	var tot := 0.0
+	for t in TASKS_A1:
+		if not is_same(t, NB.task): tot += t.w
+	var r := RND() * tot
+	for t in TASKS_A1:
+		if is_same(t, NB.task): continue
+		r -= t.w
+		if r <= 0: return t
+	return TASKS_A1[0]
+func updRoutine(dt: float) -> void:
+	if not NB.task:
+		var t := pickTask()
+		if NB.state != "routine": return
+		NB.task = t; NB.taskT = 0.0; NB.sit = null
+		if not nbSetPath(null, NODES[t.node]):
+			NB.task = null; return
+	var T = NB.task
+	if NB.pi < NB.path.size():
+		followPath(dt, 1.75); return
+	# 着いた
+	if T.get("sit") and not NB.sit:
+		NB.sit = T.sit; NB.p.x = T.sit.x; NB.p.z = T.sit.z; NB.yaw = T.sit.yaw
+	if T.get("face") != null: NB.yaw = damp_ang(NB.yaw, T.face, 4, dt)
+	NB.anim = T.anim; NB.speed = 0.0; NB.taskT += dt
+	if NB.taskT > T.dur:
+		if T.get("camsOn") and A.get("camsOff"): setCamsOff(false, "nb")
+		if NB.sit:
+			var n = NODES[T.node]; NB.p.x = n.p.x; NB.p.z = n.p.z; NB.sit = null
+		NB.task = null; NB.routineN += 1
+# ---- 物音を調べる ----
+func updInvestigate(dt: float) -> void:
+	var I = NB.inv; I.t += dt
+	if NB.hideTarget:
+		checkHide(NB.hideTarget); return
+	if I.phase == "go":
+		var done := followPath(dt, 2.6); var d := Vector2(I.pos.x - NB.p.x, I.pos.z - NB.p.z).length()
+		if done or d < 1.2 or I.t > 25:
+			I.phase = "look"; I.lt = 0.0
+			# 何の音だったか
+			if I.kind == "alarm":
+				for pr in ALARMS:
+					if pr.p.distance_to(NB.p) < 3: pr.data.t = -7.0
+		return
+	if I.phase == "look":
+		I.lt += dt; NB.anim = "look"; NB.speed = 0.0
+		if I.lt > 3: # 近くのクローゼットをのぞくことがある
+			var h = null
+			for hh in HIDES:
+				if hh.nb and Vector2(hh.out.x - NB.p.x, hh.out.z - NB.p.z).length() < 5 and absf(hh.out.y - NB.p.y) < 1.5 and (not is_same(hh, PL.hide) or is_same(NB.sawHide, hh)):
+					h = hh; break
+			if h and RND() < 0.35:
+				checkHide(h); return
+			backToRoutine()
+func backToRoutine() -> void:
+	if NB.state == "investigate" or NB.state == "search": NB.goBoiler = true
+	NB.state = "routine"; NB.task = null; NB.path = []; NB.inv = null; NB.hideTarget = null; setNbMode("idle")
+# ---- 追いかける ----
+func updChase(dt: float) -> void:
+	NB.chaseT += dt; var d0 := Vector2(PL.p.x - NB.p.x, PL.p.z - NB.p.z).length()
+	# 見えなくなってすぐ（1.2秒）は、曲がり角の先までついてくる。そのあとは最後に見た所へ
+	var since: float = GT - NB.seeT
+	if not PL.hide and since < 1.2 and d0 < 20: NB.lastSeen = PL.p
+	# 長く追いかけるとつかれて見失う（すぐ目の前にいるときは別）
+	if NB.chaseT > NB.chaseMax and d0 > 2.2:
+		say("grr"); NB.blindT = 6.0; lostPlayer(); return
+	# 隠れるところを近くで見られたときだけ、そこを開けにくる
+	if PL.hide and is_same(NB.sawHide, PL.hide) and not NB.hideTarget: NB.hideTarget = PL.hide
+	if NB.hideTarget:
+		checkHide(NB.hideTarget); return
+	if since > 1.2:
+		var dl := Vector2(NB.lastSeen.x - NB.p.x, NB.lastSeen.z - NB.p.z).length()
+		if dl < 1.1 or since > 9:
+			say("grr"); lostPlayer(); return
+	var lead := 0.5 if since < 1.2 else 0.0; var tgt := Vector3(NB.lastSeen.x + PL.v.x * lead, NB.lastSeen.y, NB.lastSeen.z + PL.v.z * lead)
+	var dx: float = tgt.x - NB.p.x; var dz: float = tgt.z - NB.p.z; var d := Vector2(dx, dz).length(); var dy: float = tgt.y - NB.p.y; var sp := 3.15
+	var direct: bool = absf(dy) < 1.1 and d < 14 and not NB.climb and not NB.jump and los_clear(Vector3(NB.p.x, NB.p.y + 1, NB.p.z), Vector3(PL.p.x, PL.p.y + 1, PL.p.z), nav_filt) and NB.mode != "path"
+	if direct:
+		NB.path = []; var mx := dx / d * minf(d, sp * dt); var mz := dz / d * minf(d, sp * dt); var ox: float = NB.p.x; var oz: float = NB.p.z
+		var nf := func(b): return b.s != "trig" and not (b.ref is Dictionary and b.ref.has("type") and b.ref.has("d"))
+		NB.p = move_body(NB.p, NBR, NBH, NBR, 0, -0.3, 0, null, nf); var gy: float = NB.p.y; NB.p = move_body(NB.p, NBR, NBH, NBR, mx, 0, mz, null, nf)
+		if HIT.x or HIT.z:
+			var hb = HIT.box
+			if hb != null and hb.ref is Dictionary and hb.ref.has("m") and hb.ref.has("o") and hb.ref.m.tgt < 0.5:
+				toggleDoor(hb.ref, "npc", true); NB.doorWait = 0.4
+			var p2 := move_body(Vector3(ox, gy, oz), NBR, NBH, NBR, 0, 0.46, 0, null, nf); p2 = move_body(p2, NBR, NBH, NBR, mx, 0, mz, null, nf); p2 = move_body(p2, NBR, NBH, NBR, 0, -0.5, 0, null, nf)
+			if Vector2(p2.x - ox, p2.z - oz).length() > Vector2(NB.p.x - ox, NB.p.z - oz).length() + 0.01: NB.p = p2
+		var moved := Vector2(NB.p.x - ox, NB.p.z - oz).length()
+		if moved < sp * dt * 0.3: NB.stuck += dt
+		else: NB.stuck = 0.0
+		NB.yaw = damp_ang(NB.yaw, atan2(dx, dz), 12, dt); NB.anim = "run"; NB.speed = sp
+		if NB.stuck > 0.6:
+			NB.stuck = 0.0; NB.mode = "path"; NB.modeT = GT; nbSetPath(tgt)
+	else:
+		if NB.mode == "path" and GT - NB.modeT > 2.5: NB.mode = "direct"
+		if not NB.path.size() or NB.pi >= NB.path.size() or GT - NB.pathT > 1:
+			nbSetPath(tgt); NB.pathT = GT
+		followPath(dt, sp)
+# 部屋の区切り（おとなりさんの家）。[名前, x0,x1, z0,z1, y0,y1]
+const ROOMS := [["elev", 2, 4.2, 19, 21.4, -1, 7],
+	# 1階
+	["hall1", -2, 2, 14, 32, -1, 3.3], ["living", -10, -2, 14, 22, -1, 3.3], ["garage", -17, -10, 14, 24, -1, 3.3], ["kitchen", 2, 10, 14, 21.4, -1, 3.3], ["pantry", 2, 6, 21.4, 26, -1, 3.3], ["bed1", 6, 10, 21.4, 26, -1, 3.3],
+	["grave", -7, -2, 22, 27, -1.5, 2.85], ["basestair", -10, -7, 22, 27, -1.5, 2.85], ["dining", -10, -2, 27, 32, -1, 2.85], ["boiler", 2, 6, 26, 32, -1, 3.3], ["bath1", 6, 10, 26, 32, -1, 3.3],
+	# 2階
+	["flood", -10, -2, 22, 32, 2.85, 6.5], ["stair2", -10, -2, 20.85, 22, 3.3, 6.5], ["liv2", -7, -2, 14, 20.85, 3.3, 6.5], ["ante", -10, -7, 17.5, 20.85, 3.3, 6.5], ["security", -10, -7, 14, 17.5, 3.3, 6.5],
+	["hall2", -2, 2, 14, 32, 3.3, 6.5], ["class", 2, 10, 14, 19, 3.3, 6.5], ["corr", 4.2, 10, 19, 21.4, 3.3, 6.5], ["range", 2, 6, 21.4, 27, 3.3, 6.5], ["bath2", 6, 10, 21.4, 27, 3.3, 6.5], ["storage", 2, 6, 27, 32, 3.3, 6.5], ["kids", 6, 10, 27, 32, 3.3, 6.5]]
+func roomAt(x: float, y: float, z: float) -> String:
+	for r in ROOMS:
+		if x >= r[1] and x < r[2] and z >= r[3] and z < r[4] and y >= r[5] and y < r[6]: return r[0]
+	return ""
+# 隠れた瞬間に、おとなりさんが同じ部屋にいたら見つかる（そこを開けにくる）
+func nbNoteHide(h: Dictionary) -> void:
+	NB.sawHide = null
+	if not NB.active or NB.state == "script" or NB.state == "catch" or not NB.visible: return
+	var rh := roomAt(h.out.x, h.out.y + 0.1, h.out.z); var rn := roomAt(NB.p.x, NB.p.y + 0.1, NB.p.z)
+	if not rh or rh != rn: return
+	NB.sawHide = h; NB.sit = null; NB.task = null; NB.path = []; NB.goalHide = null; NB.hideTarget = h
+	if NB.state != "chase":
+		NB.state = "investigate"; NB.inv = {pos = Vector3(h.out.x, h.out.y, h.out.z), kind = "hide", t = 0.0, phase = "go", lt = 0.0}; setNbMode("hunt")
+	say("hmm")
+func lostPlayer() -> void:
+	NB.state = "search"; NB.searchT = 0.0; NB.path = []; NB.hideTarget = null; setNbMode("hunt")
+func updSearch(dt: float) -> void:
+	NB.searchT += dt; NB.anim = "look"; NB.speed = 0.0
+	if NB.searchT > 3.5: backToRoutine()
+# 隠れ場所を開ける
+func checkHide(h: Dictionary) -> void:
+	if NB.state != "chase" and NB.state != "investigate": NB.state = "investigate"
+	NB.hideTarget = h; var d := Vector2(h.out.x - NB.p.x, h.out.z - NB.p.z).length()
+	if d > 1.1 or absf(h.out.y - NB.p.y) > 1.2:
+		if not NB.path.size() or NB.pi >= NB.path.size() or not is_same(NB.goalHide, h):
+			nbSetPath(Vector3(h.out.x, h.out.y, h.out.z)); NB.goalHide = h
+		var done := followPath(NB.dt if NB.dt else 0.016, 3.15 if NB.state == "chase" else 2.6)
+		if not done: return
+		if Vector2(h.out.x - NB.p.x, h.out.z - NB.p.z).length() > 1.3:
+			var dx: float = h.out.x - NB.p.x; var dz: float = h.out.z - NB.p.z; var dd := Vector2(dx, dz).length(); var ee: float = NB.dt if NB.dt else 1.0 / 60
+			NB.p.x += dx / dd * minf(dd, 3 * ee); NB.p.z += dz / dd * minf(dd, 3 * ee); return
+	# 開ける
+	NB.goalHide = null; NB.hideTarget = null
+	if h.cab:
+		for L in h.cab.leaves: L.m.tgt = 1.0
+	sfx("cab", true); NB.yaw = h.yaw + PI
+	if is_same(PL.hide, h): startCatch(true)
+	else:
+		later(0.9, func():
+			if h.cab and not is_same(PL.hide, h):
+				for L in h.cab.leaves: L.m.tgt = 0.0)
+		NB.state = "search"; NB.searchT = 1.5
+# ---- つかまえる ----
+func startCatch(fromHide := false) -> void:
+	if NB.state == "catch": return
+	NB.state = "catch"; NB.catchT = 0.0; NB.anim = "grab"; NB.speed = 0.0; PL.frozen = true
+	if fromHide: exitHideForCatch()
+	say("gotcha"); sfx("catch")
+	if story.get("onCaughtStart"): story.onCaughtStart.call()
+func exitHideForCatch() -> void:
+	var h = PL.hide
+	if not h: return
+	PL.hide = null; ui_cls("hideView", "on", false); teleportPlayer(h.out.x - sin(h.yaw) * 0.1, h.out.y, h.out.z - cos(h.yaw) * 0.1, h.yaw + PI); PL.frozen = true
+func updCatch(dt: float) -> void:
+	NB.catchT += dt; var t: float = NB.catchT # プレイヤーの方へ
+	var dx: float = PL.p.x - NB.p.x; var dz: float = PL.p.z - NB.p.z; var d := Vector2(dx, dz).length(); NB.yaw = damp_ang(NB.yaw, atan2(-dx, -dz) + PI, 12, dt)
+	if d > 0.9:
+		NB.p.x += dx / d * minf(d - 0.9, 4 * dt); NB.p.z += dz / d * minf(d - 0.9, 4 * dt)
+	# カメラをおとなりさんの顔に向ける
+	var hx: float = NB.p.x; var hy: float = NB.p.y + 1.8; var hz: float = NB.p.z; var c := camPos()
+	var ty := atan2(-(hx - c.x), -(hz - c.z)); var tp := atan2(hy - c.y, Vector2(hx - c.x, hz - c.z).length()); PL.yaw = damp_ang(PL.yaw, ty, 8, dt); PL.pitch = damp(PL.pitch, tp, 8, dt)
+	NB.anim = "grab"
+	if t > 1.3 and not NB.caughtDone:
+		NB.caughtDone = true; story.caught.call()
+func resetNeighborAfterCatch() -> void:
+	NB.caughtDone = false; NB.sawHide = null; NB.blindT = 0.0; NB.state = "routine"; setNbMode("idle"); NB.task = null; NB.path = []; NB.hideTarget = null; NB.inv = null; nbSeeAcc = 0.0
+	var n = NODES.hall_m; nbTeleport(n.p.x, n.p.y, n.p.z, 0)
+# ================= 学習：罠・カメラ・板 =================
+var TRAPS := []
+var CAMS := []
+# アルファ1：入ってきた所を覚えて、つかまえたあと「いす」でふさぐ（窓の下にはトラバサミ）
+var ENTRY := {front = {box = [-1.2, 0, 13.5, 1.2, 2.7, 14.6], chair = [0, 0.3, 15.2, PI], doors = func(): return A.front}, back = {box = [3.4, 0, 31.4, 4.6, 2.6, 32.6], chair = [4, 0.3, 31.1, 0], doors = func(): return [A.back]},
+	garageSide = {box = [-17.5, 0, 19.9, -16.5, 2.4, 21.1], chair = [-16.3, 0.1, 20.5, -PI / 2], doors = func(): return [A.garageSide]},
+	winLiv = {box = [-8.6, 0.9, 13.5, -5.9, 2.4, 14.6], trap = [-7.2, 0.3, 14.8]}, winLiv2 = {box = [-5.1, 0.9, 13.5, -2.9, 2.4, 14.6], trap = [-4, 0.3, 14.8]}, winKit = {box = [3.9, 0.9, 13.5, 6.1, 2.4, 14.6], trap = [5, 0.3, 15.3]}, winKit2 = {box = [7.1, 0.9, 13.5, 9.3, 2.4, 14.6], trap = [8.2, 0.3, 15.3]},
+	winKitE = {box = [9.5, 0.9, 15.9, 10.6, 2.4, 18.1], trap = [8.7, 0.3, 17]}, winBedE = {box = [9.5, 0.9, 22.7, 10.6, 2.4, 24.7], trap = [9.3, 0.3, 25.2]}, winDinN = {box = [-8.1, 0.9, 31.4, -4.9, 2.3, 32.6], trap = [-6.5, 0.3, 31.4]}, winDinW = {box = [-10.6, 0.9, 28.4, -9.5, 2.3, 30.6], trap = [-9.3, 0.3, 29.5]}}
+var LEARN := {}
+var lastEntry = null
+var lastEntryT := -9.0
+var wasInside := false
+func updLearning(dt: float) -> void:
+	if not NB.active: return
+	var p: Vector3 = PL.p
+	for k in ENTRY:
+		var b: Array = ENTRY[k].box
+		if p.x > b[0] and p.x < b[3] and p.y + 0.5 > b[1] and p.y < b[4] and p.z > b[2] and p.z < b[5]:
+			lastEntry = k; lastEntryT = GT
+	var ins := inNHouse(p)
+	if ins and not wasInside and lastEntry and GT - lastEntryT < 3:
+		LEARN[lastEntry] = LEARN.get(lastEntry, 0) + 1; story.usedEntry = lastEntry
+	wasInside = ins
+	# トラバサミ
+	for T in TRAPS:
+		if not T.armed: continue
+		if Vector2(p.x - T.x, p.z - T.z).length() < 0.38 and absf(p.y - T.y) < 0.3 and not PL.climb: snapTrap(T, true)
+	# 監視カメラ（電気が入っているときだけ）
+	if not A.get("power") or not A.power.on or A.get("camsOff"): return
+	for C in CAMS:
+		if C.broken or C.k == "carn": continue
+		C.cool -= dt
+		if C.cool > 0: continue
+		var dx: float = p.x - C.x; var dy: float = p.y + 1.2 - C.y; var dz: float = p.z - C.z; var d := Vector3(dx, dy, dz).length()
+		if d > 13 or PL.hide: continue
+		var dot: float = (dx * C.dx + dy * C.dy + dz * C.dz) / d
+		if dot < 0.74: continue
+		if ray_cast(C.x, C.y, C.z, dx / d, dy / d, dz / d, d - 0.2, func(b): return b.s != "trig" and b.s != "glass") < d - 0.25: continue
+		C.cool = 6.0; sfx("alarm"); ui_cls("alarm", "on", true); later(1.8, func(): ui_cls("alarm", "on", false)); NB.lastSeen = p
+		if NB.state != "chase" and NB.state != "catch" and NB.active and NB.state != "script":
+			NB.state = "investigate"; setNbMode("hunt"); NB.inv = {pos = p, kind = "alarm", t = 0.0, phase = "go", lt = 0.0}; nbSetPath(p); say("hmm")
+# つかまえたあと：最後に入ってきた所をふさぐ
+func learnFromCatch():
+	var k = story.usedEntry
+	if not k: return null
+	var E: Dictionary = ENTRY[k]; story.usedEntry = null
+	if E.get("chair"):
+		for d in E.doors.call(): d.m.tgt = 0.0
+		if E.get("chairProp") and E.chairProp.st != "gone": propRestAt(E.chairProp, E.chair[0], E.chair[1], E.chair[2], E.chair[3])
+		else: E.chairProp = spawnProp("chair", E.chair[0], E.chair[1], E.chair[2], E.chair[3], {id = "bchair_" + k})
+		if not E.get("blk"):
+			E.blk = true
+			for d in E.doors.call():
+				var dd = d
+				d.blockers.append(func():
+					var c = E.get("chairProp")
+					if c and c.st == "rest" and Vector2(c.p.x - E.chair[0], c.p.z - E.chair[2]).length() < 0.8 and not doorInside(dd, PL.p.x, PL.p.z): return "何かが中でつっかえていて開かない"
+					return null)
+		return "chair"
+	if E.get("trap"):
+		for t in TRAPS:
+			if t.k == k: return null
+		addBearTrap(E.trap[0], E.trap[1], E.trap[2], k); return "trap"
+	return null
+func updTrapTask(dt: float) -> void:
+	if NB.pi < NB.path.size():
+		followPath(dt, 2.4); return
+	NB.tt += dt; NB.anim = "work" if NB.tq.kind == "cam" else "crouch"; NB.speed = 0.0
+	if RND() < dt * 4: sfx("hammer", 0.5)
+	if NB.tt > 2.2:
+		placeTrapNow(NB.tq); NB.trapQ.pop_front(); backToRoutine()
+func placeTrapNow(q: Dictionary) -> void:
+	if q.kind == "repair":
+		var C = q.cam; C.broken = false; C.led.visible = true; C.g.rotate_object_local(Vector3.RIGHT, -0.6); return
+	if q.kind == "board":
+		boardWindow(q.win, true); sfx("hammer")
+	elif q.kind == "trap": addBearTrap(q.pos[0], q.pos[1], q.pos[2], q.k)
+	elif q.kind == "cam": addCamera(q.cam, q.k)
+func placeAllPendingTraps() -> void: NB.trapQ.clear()
+func addBearTrap(x: float, y: float, z: float, k) -> Dictionary:
+	var g := Node3D.new(); var mb := MB.new(); mb.cyl(0, 0, 0, 0.26, 0.02, MATS.metal_dark, 16); mb.box(-0.04, 0.02, -0.04, 0.04, 0.05, 0.04, MATS.metal); g.add_child(mb.build())
+	var jaw := func(s: float) -> Node3D:
+		var j := Node3D.new(); var jm := MB.new()
+		for i in 7:
+			var a := i / 6.0 * PI; jm.box(cos(a) * 0.24 - 0.015, 0, sin(a) * 0.24 * s - 0.015, cos(a) * 0.24 + 0.015, 0.09, sin(a) * 0.24 * s + 0.015, MATS.metal)
+		j.add_child(jm.build()); g.add_child(j)
+		return j
+	var j1: Node3D = jaw.call(1); var j2: Node3D = jaw.call(-1); g.position = Vector3(x, y + 0.005, z); scene.add_child(g)
+	var T := {x = x, y = y, z = z, k = k, g = g, j1 = j1, j2 = j2, armed = true}; j1.rotation.x = -1.3; j2.rotation.x = 1.3; TRAPS.append(T)
+	return T
+func snapTrap(T: Dictionary, player: bool) -> void:
+	T.armed = false; T.j1.rotation.x = -0.05; T.j2.rotation.x = 0.05; sfx("trap"); noise(T.x, T.y, T.z, 24, "trap")
+	if player:
+		PL.stuck = 3.2; PL.v = Vector3(); ui_cls("trapFx", "on", true); toast("トラバサミだ！ 動けない！"); sfx("hurt")
+		if story.get("onTrap"): story.onTrap.call()
+func addCamera(c: Array, k) -> Dictionary:
+	var x: float = c[0]; var y: float = c[1]; var z: float = c[2]; var tx: float = c[3]; var ty: float = c[4]; var tz: float = c[5]
+	var g := Node3D.new(); var mb := MB.new(); mb.box(-0.07, -0.07, -0.18, 0.07, 0.07, 0.12, MATS.fridge); mb.cyl(0, 0, 0.14, 0.045, 0.05, MATS.black, 10, null, "z"); mb.box(-0.02, -0.02, -0.3, 0.02, 0.02, -0.18, MATS.dgrey); g.add_child(mb.build())
+	var led := mesh(G.sphere(0.018, 6, 4), std_mat({color = "#ff2010", emissive = "#ff1000", ei = 3})); led.position = Vector3(0.04, 0.05, 0.1); g.add_child(led)
+	scene.add_child(g); g.position = Vector3(x, y, z)
+	# three.js の lookAt（物は +Z を向ける）と同じ向き
+	var fwd := Vector3(tx - x, ty - y, tz - z).normalized()
+	g.basis = Basis.looking_at(-fwd, Vector3.UP if absf(fwd.y) < 0.99 else Vector3.FORWARD)
+	var d := Vector3(tx - x, ty - y, tz - z).length()
+	var C := {x = x, y = y, z = z, dx = (tx - x) / d, dy = (ty - y) / d, dz = (tz - z) / d, g = g, led = led, broken = false, cool = 0.0, k = k, box = Box.new(x - 0.2, y - 0.2, z - 0.2, x + 0.2, y + 0.2, z + 0.2)}
+	CAMS.append(C)
+	return C
+func breakCamera(C: Dictionary) -> void:
+	if C.broken: return
+	C.broken = true; C.led.visible = false; updCamLeds(); C.g.rotate_object_local(Vector3.RIGHT, 0.6); sfx("spark")
+	for i in 14: part("a", C.x, C.y, C.z, rr(-2, 2), rr(0, 2), rr(-2, 2), 0.5, 0.04, "#ffd060", 1, 9)
+	noise(C.x, C.y, C.z, 14, "impact")
+	later(15.0, func():
+		if C.broken and NB.active: NB.repairQ.append(C))
+# 投げた物がおとなりさん・カメラ・トラバサミに当たったか
+func nbPropHit(pr, hx: float, hz: float) -> bool:
+	for C in CAMS:
+		if C.broken: continue
+		var b: Box = C.box
+		if pr.p.x + hx > b.x0 and pr.p.x - hx < b.x1 and pr.p.y + pr.d.h > b.y0 and pr.p.y < b.y1 and pr.p.z + hz > b.z0 and pr.p.z - hz < b.z1:
+			breakCamera(C); pr.v *= -0.3; return false
+	for T in TRAPS:
+		if T.armed and Vector2(pr.p.x - T.x, pr.p.z - T.z).length() < 0.35 and absf(pr.p.y - T.y) < 0.25:
+			snapTrap(T, false); return false
+	if NB.active and NB.visible and NBM and pr.v.length() > 4:
+		var dx: float = pr.p.x - NB.p.x; var dz: float = pr.p.z - NB.p.z
+		if Vector2(dx, dz).length() < 0.45 and pr.p.y > NB.p.y and pr.p.y < NB.p.y + 2.05:
+			pr.v = Vector3(-pr.v.x * 0.2, 1, -pr.v.z * 0.2); sfx("bonk"); say("ow")
+			if NB.state != "chase" and NB.state != "catch" and NB.state != "script":
+				NB.lastSeen = PL.p; NB.seeT = GT; startChase()
+			return false
+	return false
+# ---- 姿を見せる・かくす ----
+func nbVisible(v: bool) -> void:
+	NB.visible = v
+	if NBM: NBM.root.visible = v
+
+# ================= 音 =================
+# three.js 版は WebAudio でその場で作っていた音を、前もって WAV にしてある（tools の書き出し道具で作成）。
+# ここでは それを鳴らすだけ。位置のある音は距離で小さくし、左右は Godot が決める。
+var AU := {ready = false, streams = {}, players = {}, pool3d = [], loops = {}}
+const LOOP_PEAK := {furn = 2.456, hum = 1.779, fire = 1.428, tvnoise = 1.0, wind = 1.0}
+const SFX_GAIN := 1.0          # 効果音（書き出しのときに 0.9 をかけてある）
+const AMB_GAIN := 0.5 / 0.9    # まわりの音
+const MUS_GAIN := 0.55 / 0.9   # 音楽
+func au_stream(name: String) -> AudioStream:
+	if AU.streams.has(name): return AU.streams[name]
+	var p := "res://assets/audio/%s.wav" % name
+	var s: AudioStream = load(p) if ResourceLoader.exists(p) else null
+	AU.streams[name] = s
+	return s
+func initAudio() -> void:
+	if AU.ready: return
+	AU.ready = true
+	var master := AudioServer.get_bus_index("Master")
+	var comp := AudioEffectCompressor.new(); comp.threshold = -10; comp.ratio = 4
+	AudioServer.add_bus_effect(master, comp)
+	applyVol()
+func applyVol() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	var v: float = S3.vol if S3.sound else 0.0
+	AudioServer.set_bus_volume_db(master, linear_to_db(maxf(v, 0.0001)))
+	AudioServer.set_bus_mute(master, v <= 0.0)
+func ok() -> bool: return S3.sound
+# ---- 位置のない音 ----
+func play2d(name: String, vol := 1.0, pitch := 1.0) -> void:
+	if not ok() or vol <= 0.0005: return
+	var s := au_stream(name)
+	if s == null: return
+	var p: AudioStreamPlayer = AU.players.get(name)
+	if p == null:
+		p = AudioStreamPlayer.new(); p.stream = s; p.max_polyphony = 6; add_child(p); AU.players[name] = p
+	p.volume_db = linear_to_db(vol); p.pitch_scale = pitch; p.play()
+# ---- 位置のある音（距離で小さく）----
+func spatialV(pos: Vector3, near := 2.0, far := 30.0) -> float:
+	var c := camPos(); var d := pos.distance_to(c)
+	var v := 1.0 if d < near else maxf(0.0, 1.0 - (d - near) / (far - near))
+	return v * v
+func play3d(name: String, pos: Vector3, vol := 1.0, near := 2.0, far := 30.0, pitch := 1.0) -> void:
+	if not ok(): return
+	var v := spatialV(pos, near, far) * vol
+	if v < 0.003: return
+	var s := au_stream(name)
+	if s == null: return
+	var pl: AudioStreamPlayer3D = null
+	for q in AU.pool3d:
+		if not q.playing:
+			pl = q; break
+	if pl == null:
+		if AU.pool3d.size() >= 24: pl = AU.pool3d[0]
+		else:
+			pl = AudioStreamPlayer3D.new(); pl.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED; pl.panning_strength = 0.8; pl.max_db = 6; pl.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_DISABLED
+			scene.add_child(pl); AU.pool3d.append(pl)
+	pl.stream = s; pl.global_position = pos; pl.volume_db = linear_to_db(v); pl.pitch_scale = pitch; pl.play()
+func rnd3() -> int: return randi() % 3
+# ---- 効果音 ----
+func sfxStep(s: String, v := 0.6) -> void:
+	var k := "wood"
+	if s == "grass" or s == "metal" or s == "carpet" or s == "water" or s == "ice" or s == "dirt": k = s
+	elif s == "stone" or s == "tile": k = "stone"
+	play2d("step_%s_%d" % [k, rnd3()], v * 0.9)
+func sfxNbStep(pos: Vector3, run: bool) -> void:
+	var grass := groundAt(pos.x, pos.y + 0.2, pos.z) <= -1
+	play3d("nbstep_wood_%s_%d" % ["run" if run else "walk", randi() % 2], pos, 1.0 if not grass else 0.8, 2, 32, 1.6 if grass else 1.0)
+func sfxDoor(d: Dictionary, open: bool) -> void:
+	play3d("door_%s_%d" % ["open" if open else "close", randi() % 2], Vector3(d.hx, d.y + 1, d.hz), 1.0, 2, 25)
+func sfxGlass(pos: Vector3, v := 1.0) -> void: play3d("glass_%d" % (randi() % 2), pos, v, 3, 40)
+func sfxImpact(pr: Dictionary, sp: float, s: String) -> void:
+	var v := clampf(sp / 10, 0.15, 1) * (1.0 if pr.d.w > 1 else 0.7); var t: String = pr.type; var k := "soft_grass" if s == "grass" else "soft"
+	if t == "trashcan" or t == "lid" or t == "crowbar" or t == "pot" or t == "can" or t == "watering_can": k = "metal"
+	elif pr.d.glass or t == "plate" or t == "cup": k = "glass"
+	elif t == "ball": k = "ball"
+	play3d("impact_%s_%d" % [k, randi() % 2], pr.p, v, 2, 30)
+func sfxVoice(k: String, pos: Vector3) -> void: play3d("voice_" + k, pos, 1.0, 3, 40)
+func sfxTrain(pos: Vector3) -> void: play3d("train", pos, 1.0, 3, 34)
+func sfxWhistle(pos: Vector3) -> void: play3d("whistle", pos, 1.0, 4, 60)
+func sfxTick(pos: Vector3) -> void: play3d("tickpos", pos, 1.0, 1.5, 14)
+func sfxRing(pos: Vector3) -> void: play3d("ring", pos, 1.0, 2, 30)
+func sfx(k: String, a = null) -> void:
+	if not ok(): return
+	match k:
+		"throw": play2d("throw", (0.18 + (a if a != null else 0.0) * 0.2) / 0.28)
+		"hammer": play2d("hammer", a if a != null else 1.0)
+		"drawer": play2d("drawer_o" if a else "drawer_c")
+		"cab": play2d("cab_c" if a is bool and a == false else "cab_o")
+		"ladder": play2d("ladder_%d" % rnd3())
+		"ladderN": play3d("ladder_%d" % rnd3(), NB.p, 0.12 / 0.07, 2, 25, 0.9)
+		"crash": play2d("crash", 1.241)
+		_: play2d(k)
+# ---- ずっと鳴る音（発電機・冷蔵庫・火・テレビ）----
+func setLoop(key: String, pos, vol: float, near := 2.0, far := 22.0, dt := 0.016) -> void:
+	var L = AU.loops.get(key)
+	if L == null:
+		var s := au_stream("loop_" + key)
+		if s == null: return
+		var pl
+		if pos == null:
+			pl = AudioStreamPlayer.new()
+		else:
+			pl = AudioStreamPlayer3D.new(); pl.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED; pl.panning_strength = 0.7; pl.max_db = 12
+		pl.stream = s; pl.volume_db = -80
+		if pos == null: add_child(pl)
+		else: scene.add_child(pl)
+		L = {pl = pl, v = 0.0}; AU.loops[key] = L
+	var v := vol
+	if pos != null and vol > 0:
+		L.pl.global_position = pos; v *= spatialV(pos, near, far)
+	v *= LOOP_PEAK.get(key, 1.0)
+	L.v = L.v + (v - L.v) * (1.0 - exp(-dt / 0.15))
+	if not ok(): L.v = 0.0
+	if L.v > 0.0005:
+		if not L.pl.playing: L.pl.play()
+		L.pl.volume_db = linear_to_db(L.v)
+	elif L.pl.playing: L.pl.stop()
+func updLoops(dt: float) -> void:
+	var furn = A.get("furn")
+	setLoop("furn", Vector3(5, 1.2, 27.2), 0.03 if furn and furn.cold else 0.12, 2, 14, dt); setLoop("fire", Vector3(5, 0.8, 27.2), 0.12 if furn and not furn.cold else 0.0, 1.5, 10, dt)
+	setLoop("hum", null, 0.05 if PL.inHouse and STATE == "play" else 0.0, 2, 22, dt); setLoop("tvnoise", Vector3(-9.5, 1, 19.2), 0.25 if A.get("tvOn") else 0.0, 2, 18, dt)
+# ---- まわりの音 ----
+var birdT := 0.0
+func updAmbience(dt: float) -> void:
+	if not ok(): return
+	birdT -= dt; var outside: bool = not PL.inHouse
+	if birdT <= 0:
+		birdT = 1.5 + randf() * 4; var T: String = ENV.mode
+		if T == "day" and outside: play2d("amb_bird_%d" % (randi() % 4), AMB_GAIN, 1.0 + randf() * 0.2)
+		elif T == "night": play2d("amb_night", AMB_GAIN)
+		elif T == "dusk":
+			play2d("amb_dusk", AMB_GAIN)
+			if randf() < 0.3: play2d("amb_dusk2", AMB_GAIN)
+	setLoop("wind", null, (0.12 if outside else 0.03) * AMB_GAIN, 2, 22, dt)
+# ================= 音楽 =================
+# 曲は1周ぶんを録音してあり、つなぎ目なくくり返す
+var MUS := {cur = null, want = null, vol = 0.0, chaseTrack = 1, players = {}}
+func setMusic(name) -> void: MUS.want = name
+func updMusic(dt: float) -> void:
+	if MUS.want != MUS.cur: # フェードして切りかえ
+		MUS.vol = maxf(0, MUS.vol - dt * (0.8 if MUS.cur == "chase" else 1.5))
+		if MUS.vol <= 0 or MUS.cur == null:
+			if MUS.cur != null and MUS.players.has(MUS.cur): MUS.players[MUS.cur].stop()
+			MUS.cur = MUS.want
+			if MUS.cur != null:
+				var p: AudioStreamPlayer = MUS.players.get(MUS.cur)
+				if p == null:
+					p = AudioStreamPlayer.new(); p.stream = au_stream("music_" + MUS.cur); add_child(p); MUS.players[MUS.cur] = p
+				if p.stream: p.play(0.0)
+	else: MUS.vol = minf(1, MUS.vol + dt * (4.0 if MUS.cur == "chase" else 0.5))
+	if MUS.cur != null and MUS.players.has(MUS.cur):
+		var v: float = MUS.vol * (0.8 if MUS.cur == "sneak" else 1.0) * MUS_GAIN
+		MUS.players[MUS.cur].volume_db = linear_to_db(maxf(v, 0.00001))
+func updChaseMusic(_dt: float) -> void: pass
+func updAudio(dt: float) -> void:
+	if not AU.ready: return
+	updMusic(dt); updLoops(dt); updAmbience(dt)
+
+# ================= お話（アルファ1）=================
+# イントロ（車で到着・双眼鏡）→ 引っ越し（電気・赤い鍵・箱・昼寝）→ 地下室の場面（夢）→ 本編 → エンディング（棺）
 var P := {}
+var story := {part = "", step = 0, flags = {}, stats = {time = 0.0, caught = 0, sleeps = 0}, usedEntry = null, obj = "", gen = 0, ht = [], boxN = -1, nearT = 0.0, inCarn = false,
+	canSleep = null, sleepMsg = null, sleep = null, caught = null}
 var CUT := {on = false, cam = null, skip = false}
-var NB := {state = "idle", anim = "idle", look = 0.0, sawHide = null, p = Vector3()}
-func sfx(_k: String, _a = null) -> void: pass
-func sfxStep(_s: String, _v := 0.6) -> void: pass
-func sfxGlass(_p: Vector3, _v := 1.0) -> void: pass
-func sfxImpact(_pr, _sp, _s) -> void: pass
-func sfxDoor(_d, _o) -> void: pass
-func toast(s: String, _t := 2.2) -> void: print("TOAST ", s)
-func ui_cls(_id: String, _c: String, _on: bool) -> void: pass
-func ui_prompt(_s: String) -> void: pass
-func ui_iname(_s: String) -> void: pass
-func drawInv() -> void: pass
-func setLoad(_p: float) -> void: pass
-func setup_ui() -> void: pass
-func showScreen(_n: String, _on: bool) -> void: pass
-func toTitle() -> void: STATE = "title"
-func newGame() -> void: pass
-func contGame() -> void: pass
+# ---- 待つ（ゲームの時間で）----
 class Waiter extends RefCounted:
 	signal done
 	var t := 0.0
@@ -2819,53 +4118,1044 @@ func wait(s: float) -> Signal:
 	return w.done
 func after(s: float, fn: Callable) -> void:
 	var w := Waiter.new(); w.t = GT + s; w.fn = fn; WAITS.append(w)
+# JS の setTimeout（本当の時間で）
 func later(s: float, fn: Callable) -> void:
 	get_tree().create_timer(s, true).timeout.connect(fn)
 func updWaits() -> void:
-	for i in range(WAITS.size() - 1, -1, -1):
-		if i >= WAITS.size(): continue
-		if GT >= WAITS[i].t or CUT.skip:
+	var i := WAITS.size() - 1
+	while i >= 0:
+		if i < WAITS.size() and (GT >= WAITS[i].t or CUT.skip):
 			var w = WAITS[i]; WAITS.remove_at(i)
 			if w.fn: w.fn.call()
 			else: w.done.emit()
-func updTexts(_dt: float) -> void: pass
-func updStory(_dt: float) -> void: pass
-func updNeighbor(_dt: float) -> void: pass
-func updLearning(_dt: float) -> void: pass
-func updCutCam(_dt: float) -> void: pass
-func updCharge(_dt: float) -> void: pass
-func updCamLeds() -> void: pass
-func updAudio(_dt: float) -> void: pass
-func updTrain(_dt: float) -> void: pass
-func animNB(_dt: float) -> void: pass
-func a1Update(_dt: float) -> void: pass
-func toggleSuitcase(_pr) -> void: pass
-func takeSlot(_s) -> void: pass
-func putSlot(_s, _it) -> void: pass
+		i -= 1
+# ---- カットシーン ----
+func cutStart(skippable := true) -> void:
+	CUT.on = true; CUT.skip = false; STATE = "cut"; ui_body("cut", true); ui_cls("skipCut", "on", skippable); ui_prompt(""); unlockPointer()
+func cutEnd() -> void:
+	CUT.on = false; CUT.cam = null; CUT.skip = false; STATE = "play"; ui_body("cut", false); ui_cls("skipCut", "on", false); lockPointer()
+func camTo(px: float, py: float, pz: float, lx: float, ly: float, lz: float, snap := false) -> void:
+	CUT.cam = {p = Vector3(px, py, pz), l = Vector3(lx, ly, lz), k = 3.0}
+	if snap:
+		camera.position = CUT.cam.p; camera.look_at(CUT.cam.l)
+func updCutCam(dt: float) -> void:
+	if not CUT.cam: return
+	camera.position = camera.position.lerp(CUT.cam.p, 1 - exp(-CUT.cam.k * dt))
+	if camera.position.distance_to(CUT.cam.l) < 0.001: return
+	var want := Transform3D().looking_at(CUT.cam.l - camera.position, Vector3.UP).basis.get_rotation_quaternion()
+	var q := camera.quaternion.slerp(want, 1 - exp(-4 * dt))
+	camera.quaternion = q
+# ================= 物を置く =================
+func placeA1Props() -> void:
+	# --- 自分の庭（引っ越し）---
+	P.keyRed = spawnProp("key_red", -4.4, 0.02, -13.2, 0.4, {id = "key_red"})
+	P.boxes = []
+	for q in [[-2.6, -13.4, 0, 0.1], [-2, -12.8, 0, -0.2], [-2.9, -12.6, 0, 0.3], [-2.4, -13, 0.42, 0], [-1.4, -13.6, 0, 0.5]]: P.boxes.append(spawnProp("box", q[0], q[2], q[1], q[3], {id = "mbox%d" % P.boxes.size()}))
+	spawnProp("broom", -1.2, 0, -12.3, 0.4); spawnProp("radio", -3.4, 0.42, -12.8, 0.2); P.binoc = spawnProp("binoculars", -3.6, 0, -14.2, 1, {id = "binoc"}); spawnProp("chair", 4, 0, -14.5, -0.4); spawnProp("suitcase", 3.4, 0, -13.2, 0.3)
+	P.flash = spawnProp("flashlight", 5.3, 0.9, -22.8, 0, {id = "flash"})
+	# --- おとなりさんの前庭のがらくた（窓を割るのに使う）---
+	for q in [["tire", -4, 11.5], ["can", 3, 11], ["bottle", -6.5, 12], ["ball", 8, 10.8], ["can", -8.5, 10.4], ["trashcan", 10.6, 12.8], ["tire", 12.2, 12.6], ["can", 9.3, 11.8]]: spawnProp(q[0], q[1], 0, q[2], rr(0, 3))
+	# --- 大事な物 ---
+	P.hammer = spawnProp("hammer", -16.3, 1.01, 16.5, 0.4, {id = "hammer"}); P.hammer2 = spawnProp("hammer", 0, 0, 0, 0, {id = "hammer2", att = A.nstand.dr, lp = Vector3(0, 0.04, -0.2)})
+	P.crowbar = spawnProp("crowbar", 8.7, F1 + 0.02, 24.3, PI / 2, {id = "crowbar"}); setPropHidden(P.crowbar, true)
+	P.lockpick = spawnProp("lockpick", -8.3, F2 + 0.78, 14.5, 0.3, {id = "lockpick"})
+	P.bell = spawnProp("bell", 0, 0, 0, 0, {id = "bell", att = A.floodDrawer, lp = Vector3(0, 0.04, -0.2)}); P.bell2 = spawnProp("bell", 9.5, F2 + 0.87, 22.3, 0, {id = "bell2"})
+	P.shovel = spawnProp("shovel", -6.74, F1 + 0.44, 23.7, 0, {id = "shovel", noPick = true})
+	P.teacher = spawnProp("mannequin", -4.5, -0.67, 25.3, 0, {id = "teacher", noPick = true}); P.teacher.lying = true; refreshSolid(P.teacher); placeProp(P.teacher)
+	P.jack = spawnProp("jackhammer", 6.6, F2, 22.2, 0.3, {id = "jack"}); P.ckey = spawnProp("copperkey", 8, F2 + 0.46, 29.8, 0.5, {id = "ckey"})
+	P.rifle = spawnProp("toyrifle", 8.55, F2 + 0.78, 16.5, PI / 2, {id = "rifle", noPick = true}); setPropHidden(P.rifle, true)
+	P.skey = spawnProp("silverkey", 2.35, F2, 21.75, 0, {id = "skey", noPick = true}); setPropHidden(P.skey, true)
+	# 数字のマグネット（先生の机の上と引き出し）
+	P.mags = []
+	var put := func(ch: String, x: float, y: float, z: float, att = null, lp = Vector3()) -> void:
+		var pr: Dictionary
+		if att: pr = spawnProp("mag_" + ch, 0, 0, 0, 0, {id = "mag%d" % P.mags.size(), att = att, lp = lp})
+		else: pr = spawnProp("mag_" + ch, x, y, z, rr(-0.4, 0.4), {id = "mag%d" % P.mags.size()})
+		P.mags.append(pr)
+	put.call("5", 8.45, F2 + 0.78, 16.1); put.call("A", 8.6, F2 + 0.78, 16.9); put.call("F", 8.4, F2 + 0.78, 17.1); put.call("2", 8.7, F2 + 0.78, 15.9); put.call("3", 0, 0, 0, A.tdraw[0], Vector3(-0.1, 0.04, -0.2)); put.call("1", 0, 0, 0, A.tdraw[0], Vector3(0.1, 0.04, -0.25)); put.call("8", 0, 0, 0, A.tdraw[1], Vector3(0, 0.04, -0.2)); put.call("7", 0, 0, 0, A.tdraw[1], Vector3(0.12, 0.04, -0.3)); put.call("9", 3.4, F2 + 0.72, 15.2)
+	# 目覚まし時計・バナナ・トラバサミ
+	for q in [[-8.4, F2 + 0.9, 20.1], [9, F1 + 0.6, 22.3], [3, F1 + 0.9, 25.5], [-9.4, F1 + 0.9, 29]]: spawnProp("alarm", q[0], q[1], q[2], rr(0, 3))
+	for q in [[6.4, 18.3], [5.9, 18.4], [6.8, 18.1]]: spawnProp("banana", q[0], F1 + 0.78, q[1], rr(0, 3))
+	spawnProp("banana", 0.3, F1, 26.8, 1); spawnProp("banana", -4, F2, 24.8, 0)
+	addBearTrap(-0.6, F1, 27.8, "pre1"); addBearTrap(-7, F2, 15.7, "pre2"); addBearTrap(4.8, F2, 15.3, "pre3")
+	# 小物
+	var deco := [["cup", 9.5, 1.2, 15.2], ["plate", 9.5, 1.2, 15.6], ["pot", 6.6, 1.22, 14.5], ["bottle", 9.5, 1.2, 19.6], ["plate", 6.4, 1.08, 18.1], ["cup", 5.8, 1.08, 18.5], ["book", -7.9, 0.72, 19.2], ["vase", 1.5, 1.2, 14.7], ["can", 3.5, 1.12, 25.6], ["can", 4.5, 1.12, 25.6], ["bottle", 4, 1.52, 25.6],
+		["plate", -6.8, 1.08, 29.5], ["plate", -5.2, 1.08, 29.5], ["cup", -6, 1.08, 29.2], ["book", -4.6, F2 + 0.6, 15.2], ["clock", -9.5, F2 + 0.6, 16.8], ["duck", 9.3, F2 + 0.6, 25.8], ["ball", 8.8, F2, 31], ["can", -12, 0.1, 22], ["bottle", -16.2, 1.01, 17.2], ["can", 4.8, F2 + 0.9, 31.5], ["tire", -14, 0.1, 22.5]]
+	for q in deco: spawnProp(q[0], q[1], q[2], q[3], rr(-0.3, 0.3))
+	for q in [[5.6, 18.3, PI / 2], [6.8, 18.3, -PI / 2]]: spawnProp("chair", q[0], F1, q[1], q[2])
+	# 墓の部屋の中のいす（2つのドアをふさぐ）
+	P.gchair1 = spawnProp("chair", -5.8, F1, 26.4, 0, {id = "gch1"}); P.gchair2 = spawnProp("chair", -3.3, F1, 26.4, 0, {id = "gch2"})
+	var gb := func(pr: Dictionary, x: float) -> Callable:
+		return func():
+			if pr.st == "rest" and Vector2(pr.p.x - x, pr.p.z - 26.4).length() < 0.7 and PL.p.z > 27: return "何かが中でつっかえていて開かない"
+			return null
+	A.gdin1.blockers.append(gb.call(P.gchair1, -5.8)); A.gdin2.blockers.append(gb.call(P.gchair2, -3.3))
+# ================= いろいろ =================
 func setPropHot(_pr, _on) -> void: pass
-func playerInWater() -> bool: return false
-func placeA1Props() -> void: pass
-func onNProperty(_o) -> bool: return false
-func nbNoteHide(_h) -> void: pass
-func initPropDefsA1() -> void: pass
-func fallFaint() -> void: pass
-func buildTrain() -> void: pass
-func buildShark() -> void: pass
-func buildNeighbor() -> void: pass
-func buildNavA1() -> void: pass
-func buildElevator() -> void: pass
-func buildCamerasA1() -> void: pass
-func buildBricks() -> void: pass
-func buildBaseLock() -> void: pass
-func armAlarm(_pr) -> void: pass
-func underBedFind() -> void: pass
-func mkBedHide(x: float, y: float, z: float, yaw: float, bx, out, name := "", onEnter = null) -> Dictionary:
-	var h := {pos = Vector3(x, y + 0.28, z), yaw = yaw, box = bx, out = out, name = name if name else "ベッドの下", under = true, cab = null, nb = null, it = null}
-	h.it = addIt({box = bx, label = func(_it): return {t = "ベッドの下に隠れる", k = "E", n = name if name else "ベッド"}, act = func():
-		enterHide(h)
-		if onEnter: onEnter.call()})
-	HIDES.append(h)
-	return h
+func toggleSuitcase(_pr) -> void: pass
+func setup_story_hooks() -> void:
+	story.canSleep = func(): return story.step >= 3 if story.part == "move" else story.part == "main"
+	story.sleepMsg = func(): return "まだやることがある" if story.part == "move" else ""
+	story.sleep = func():
+		if story.part == "move": napIntro()
+		elif story.part == "main": napMain()
+	story.onPower = func():
+		if story.part == "move" and story.step == 0:
+			toast("家に電気が通った！"); nextStep()
+	story.onPick = func(pr):
+		if story.part == "move":
+			if is_same(pr, P.keyRed) and story.step == 1: toast("鍵を持って、玄関のドアに左クリック")
+		if story.part == "main":
+			var m := {lockpick = "ピッキング道具を手に入れた！", hammer = "ハンマーを手に入れた", hammer2 = "ハンマーを手に入れた", crowbar = "バールを手に入れた", bell = "ベルを手に入れた", bell2 = "ベルを手に入れた", shovel = "シャベルを手に入れた", teacher = "先生のマネキンを手に入れた", rifle = "おもちゃの銃を手に入れた", skey = "銀の鍵を手に入れた", jack = "削岩機を手に入れた", ckey = "ハートの銅の鍵を手に入れた！"}
+			if m.has(pr.id): toast(m[pr.id])
+			saveGame()
+	story.onDrop = func(pr):
+		if is_same(pr, P.teacher) and teacherPlaced():
+			toast("先生が黒板の前に立った。紙くずが止まった"); sfx("ding")
+	story.onBell = func(): saveGame()
+	story.onDug = func(): saveGame()
+	story.onCoffin = func():
+		P.teacher.noPick = false; toast("中に先生のマネキンが入っている"); saveGame()
+	story.onBoard = func(_b):
+		var any := false
+		for b in A.boards:
+			if b.on: any = true
+		toast("板を1枚はがした" if any else "板を全部はがした！"); saveGame()
+	for k in ["onCopper", "onBricks", "onGate", "onRifle", "onBoard2"]: story[k] = func(): saveGame()
+	story.onValve = func(_cold):
+		if story.part == "main":
+			NB.goBoiler = true; saveGame()
+	story.caught = func(): caughtStory()
+# 寝室のベッドの下に隠れると、バールが見つかる
+func underBedFind() -> void:
+	if story.part == "main" and P.crowbar.hidden and P.crowbar.st != "inv":
+		later(0.7, func():
+			if not PL.hide: return
+			setPropHidden(P.crowbar, false); P.crowbar.noPick = false; var slot: int = PL.inv.find(null)
+			if slot >= 0:
+				propToInv(P.crowbar); PL.inv[slot] = P.crowbar; drawInv(); toast("ベッドの下にバールがあった！")
+			else: toast("ベッドの下にバールがある（持ち物がいっぱい）"))
+func nextStep() -> void:
+	story.step += 1; moveObj(); saveGame()
+# ================= イントロ =================
+func runIntro() -> void:
+	story.gen += 1; var g: int = story.gen; story.part = "intro"; cutStart(true); setEnv("evening"); homeLights(false); nbVisible(true); NB.active = false
+	# 車が通りを走ってくる
+	ui_fade_now(true); parkMyCar(-60, -2, PI / 2); await wait(0.2); ui_fade_now(false)
+	camTo(-44, 2.2, -8.5, -40, 1.2, -2, true); sfx("car")
+	await introDrive(-60, -12, -2, true)
+	if not CUT.skip:
+		camTo(9, 2.4, -7.5, 3, 1, -8); await introDrive(-12, 4, -2, false)
+	# 車よせに入る
+	if not CUT.skip:
+		var t0 := GT
+		while GT - t0 < 2.2 and not CUT.skip:
+			var t := smooth((GT - t0) / 2.2); var a := PI / 2 + t * PI / 2; parkMyCar(4 + 1.6 * sin(t * PI / 2), -2 - 10 * t, a); await wait(0)
+	parkMyCar(5.6, -12, PI); sfx("thud")
+	# そのころ、おとなりさんは……双眼鏡で見ている
+	if not CUT.skip:
+		await fadeOut(0.5); nbTeleport(-7, F1, 15.2, PI); NB.anim = "look"; camTo(-4, 1.7, 16.8, -7, 1.7, 14.5, true); await fadeIn(0.5); subtitle("……", 1.5); await wait(1.6); NB.anim = "binoc"; nbBinoc(true); await wait(1.4)
+		await fadeOut(0.5); nbTeleport(0, 13.6, 18.7, PI); NB.anim = "binoc"; li(A.peepL, 3.0 if QUAL else 1.5); camTo(0.8, 14.9, 16.4, 0, 15, 18.7, true); await fadeIn(0.5); sfxVoice("hmm", Vector3(0, 14, 18)); await wait(2.6)
+		camTo(-2, 1.8, -9, 0, 14, 18); await wait(2.2)
+	await fadeOut(0.6)
+	if g != story.gen: return
+	nbBinoc(false); li(A.peepL, 0); nbTeleport(0, 13.6, 20, 0); nbVisible(false); teleportPlayer(4.2, 0.02, -10.2, PI * 0.95); startMove(); CUT.cam = null; await fadeIn(0.8); cutEnd()
+func introDrive(x0: float, x1: float, z: float, follow: bool) -> void:
+	var t0 := GT
+	while true:
+		var t := minf(1, (GT - t0) / ((x1 - x0) / 10)); var xx := x0 + (x1 - x0) * smooth(t); parkMyCar(xx, z, PI / 2)
+		if follow: camTo(xx + 10, 2, -9, xx, 1.2, -2)
+		if t >= 1 or CUT.skip: break
+		await wait(0)
+func nbBinoc(on: bool) -> void:
+	if not NBM: return
+	if on and not NBM.get("binoc"):
+		var m := mkModel(PDEF.binoculars.mk); m.scale = Vector3(1.3, 1.3, 1.3); m.position = Vector3(0, 0.02, 0.16); m.rotation.y = PI; NBM.head.add_child(m); NBM.binoc = m
+	if NBM.get("binoc"): NBM.binoc.visible = on
+# ================= 引っ越し（チュートリアル）=================
+func startMove() -> void:
+	story.part = "move"; story.step = 0; setEnv("evening"); NB.active = false; nbVisible(false); objective(""); moveObj()
+	for s in HINTTXT: s.queue_free()
+	HINTTXT.clear()
+	story.ht = [floatText("E で動かす", 1.9, 1.95, -21.3, 1, 1), floatText("E で拾う", -4.4, 0.9, -13.2, 0, 0.9), floatText("箱を家の中へ", -2.2, 1.5, -13, 0, 1), floatText("ここで昼寝", 4.6, 1.6, -28.6, 0, 0.9)]
+	H1.front.lock = "key:key_red"
+	H1.front.onUnlock = func():
+		if story.part == "move" and story.step == 1:
+			toast("鍵が開いた"); nextStep()
+	H1.front.blockers = [func(): return "電気が来ていない……先に電気をつけよう" if story.part == "move" and story.step < 1 else null]
+	moveObj(); saveGame()
+func boxesInside() -> int:
+	var n := 0
+	for b in P.boxes:
+		if b.st == "rest" and b.p.x > -6 and b.p.x < 6 and b.p.z > -30 and b.p.z < -22.1 and b.p.y < 2: n += 1
+	return n
+func moveObj() -> void:
+	var s: int = story.step
+	if story.part != "move": return
+	var Hs: Array = story.ht
+	for i in Hs.size(): Hs[i].visible = i == s or (s == 2 and i == 2)
+	if s == 0: objective("ポーチの電気の箱で、電気をつける", "引っ越し")
+	if s == 1: objective("庭の赤い取っ手の鍵を拾って、玄関の鍵を開ける", "引っ越し")
+	if s == 2: objective("庭の箱をぜんぶ家の中に運ぶ（%d/5）" % boxesInside(), "引っ越し")
+	if s == 3: objective("右のドアの寝室のベッドで昼寝する", "引っ越し")
+func napIntro() -> void:
+	story.gen += 1; var g: int = story.gen; story.part = "dream"; objective("")
+	for s in HINTTXT: s.visible = false
+	cutStart(true); await fadeOut(1.2); subtitle("……", 1.5, true); await wait(1.2); await basementDream()
+	if g != story.gen: return
+	startMain(false); await fadeIn(1.2); cutEnd(); subtitle("次の日", 2.5, true)
+# ================= 地下室の場面（夢）=================
+func dreamWalk(x: float, z: float, sp := 1.4) -> void:
+	var tl := GT
+	while not CUT.skip:
+		var e := minf(0.1, GT - tl); tl = GT; var dx: float = x - NB.p.x; var dz: float = z - NB.p.z; var d := Vector2(dx, dz).length()
+		if d < 0.08: break
+		NB.yaw = damp_ang(NB.yaw, atan2(dx, dz), 8, e); var st := minf(d, sp * e); NB.p.x += dx / d * st; NB.p.z += dz / d * st; NB.anim = "walk"; NB.speed = sp; await wait(0)
+	NB.anim = "idle"; NB.speed = 0.0
+func basementDream() -> void:
+	setEnv("night"); DREAM.g.visible = true; li(DREAM.L, 4.0 if QUAL else 2.0); nbVisible(true); NB.active = false; NB.state = "off"
+	for b in A.boards: b.setOn.call(false)
+	A.clock.g.visible = false; A.base.m.t = 0.0; A.base.m.tgt = 0.0; A.base.m.apply.call(0.0)
+	nbTeleport(-4.6, F1, 17.4, PI); camTo(-3.2, 1.55, 16.2, -7.4, 1.2, 21.8, true); await fadeIn(1)
+	await dreamWalk(-5.4, 20.2); await dreamWalk(-7.6, 21.1); NB.anim = "reach"; await wait(0.5); A.base.m.tgt = 1.0; sfx("creak"); await wait(1); await dreamWalk(-7.6, 23.4, 1.2); await dreamWalk(-8.3, 25, 1.2); nbVisible(false)
+	await wait(0.8); sfx("carrev"); await wait(1.2); sfx("screech"); await wait(0.7); sfx("crash"); SHAKE = 0.6; await wait(0.8)
+	# タイヤが転がって出てくる
+	var W2: Node3D = DREAM.wheel; W2.visible = true; W2.rotation_order = EULER_ORDER_XYZ; var t0 := GT; var tl := GT
+	while GT - t0 < 2.2 and not CUT.skip:
+		var t := (GT - t0) / 2.2; W2.position = Vector3(-7.6 + sin(t * 3) * 0.2, F1 + 0.36, 23.8 - t * 5.5); W2.rotation.x -= 15 * (GT - tl); tl = GT; W2.rotation.z = 0.2; await wait(0)
+	await wait(0.5); nbVisible(true); nbTeleport(-8, F1, 24.5, PI); await dreamWalk(-7.6, 21.3, 1.3); NB.yaw = 0.0; NB.anim = "reach"; await wait(0.4); A.base.m.tgt = 0.0; sfx("slam"); NB.anim = "idle"; await wait(0.6); NB.yaw = PI; NB.anim = "wave"; await wait(0.8)
+	await dreamWalk(-5, 19.5, 1.4); await fadeOut(1.2); DREAM.g.visible = false; li(DREAM.L, 0); W2.visible = false; CUT.cam = null
+# ================= 本編 =================
+func startMain(load: bool) -> void:
+	story.part = "main"; setEnv("day"); homeLights(true); H1.front.lock = null; H1.front.blockers = []
+	for s in HINTTXT: s.visible = false
+	if not load:
+		for b in A.boards: b.setOn.call(true)
+		A.clock.locked = true; A.clock.g.visible = true; A.base.m.t = 0.0; A.base.m.tgt = 0.0; A.base.m.apply.call(0.0); teleportPlayer(3.4, 0.31, -28, PI * 0.2); var n = NODES.liv_m; nbTeleport(n.p.x, n.p.y, n.p.z, 0)
+	PL.spawn = Vector3(3.4, 0.31, -27.5); nbVisible(true); NB.active = true; NB.state = "routine"; setNbMode("idle"); NB.task = null; NB.path = []; objective("となりの家の地下室に入る", "もくひょう"); ui_body("main", true)
+	if not load:
+		later(3.2, func():
+			if story.part == "main": toast("こまったら「？ヒント」（Hキー）" if CFG.hints else "地下室には何がある……？", 3.5))
+	saveGame()
+func napMain() -> void:
+	story.stats.sleeps += 1; cutStart(false); await fadeOut(1); var carn: bool = story.stats.sleeps % 3 == 0
+	if carn: await carnival()
+	else:
+		subtitle("少し眠った……", 1.8, true); await wait(1.5); resetNeighborAfterCatch(); NB.goBoiler = false
+	teleportPlayer(3.4, 0.31, -28, PI * 0.2); setEnv("day"); await fadeIn(1); cutEnd(); saveGame()
+# ---- つかまった ----
+func caughtStory() -> void:
+	if story.part != "main": return
+	story.stats.caught += 1; STATE = "caught"; showScreen("caught", true); await wait(1.4); await fadeOut(0.5); showScreen("caught", false)
+	# 持っていた物はつかまった場所に落ちる
+	var dp: Vector3 = PL.p
+	for i in 4:
+		var it = PL.inv[i]
+		if it:
+			PL.inv[i] = null; propDropAt(it, dp.x + rr(-0.4, 0.4), dp.y + 0.3, dp.z + rr(-0.4, 0.4), rr(0, TAU), Vector3(rr(-1, 1), 1, rr(-1, 1))); it.thrown = false
+	drawInv()
+	var learned = learnFromCatch()
+	for d in A.front: d.m.tgt = 0.0
+	PL.stuck = 0.0; ui_cls("trapFx", "on", false); resetNeighborAfterCatch(); PL.frozen = false
+	if story.stats.caught == 1:
+		STATE = "cut"; await carnival()
+	teleportPlayer(3.4, 0.31, -28, PI * 0.2); cutEnd(); STATE = "play"; setEnv("day")
+	subtitle("……おとなりさんは、入ってきた所をふさいだようだ" if learned == "chair" else "……おとなりさんは、入ってきた窓の下に何かしかけたようだ" if learned == "trap" else "持っていた物は、つかまった場所に落ちている" if story.stats.caught == 1 else "つかまってしまった（%d回目）" % story.stats.caught, 3.5)
+	saveGame(); await wait(0.3); await fadeIn(0.8)
+func fallFaint() -> void: PL.v = Vector3()
+# ================= 悪夢：遊園地のかくれんぼ =================
+func carnival() -> void:
+	var ox: float = CARN.ox; var oz: float = CARN.oz; story.inCarn = true; setEnv("night")
+	for L in CARN.lights: li(L, 9.0 if QUAL else 6.0)
+	setMusic("carnival")
+	var nbWas: bool = NB.active; NB.active = true; NB.state = "script"; NB.script = null; nbVisible(true); nbTeleport(ox, 0, oz + 22, 0); NB.anim = "cover"
+	for tries in 5:
+		teleportPlayer(ox, 0.02, oz - 1.5, PI); PL.hide = null; ui_cls("hideView", "on", false)
+		for L in CARN.ward.leaves: L.m.tgt = 0.0
+		nbTeleport(ox + 7, 0, oz + 22, PI * 0.75); NB.anim = "cover"; await fadeIn(0.8); cutEnd(); STATE = "play"; CARN.active = true; subtitle("かくれろ！（ベッドの下か、たんすの中）", 3)
+		for i in range(1, 6):
+			subtitle("%d……" % i, 0.9, true); sfxVoice("count", NB.p); await wait(1)
+		# 数え終わった
+		NB.anim = "idle"; sfxVoice("hmm", NB.p); var hid = PL.hide; var other := "ward" if is_same(hid, CARN.bedHide) else "bed"
+		var tgt: Vector3 = (Vector3(ox - 5, 0, oz + 10.3) if other == "bed" else Vector3(ox + 5, 0, oz + 10.8)) if hid else PL.p
+		# おとなりさんが探しにくる
+		var caught := false; var t0 := GT; var tl := GT
+		while GT - t0 < 9:
+			var e := minf(0.1, GT - tl); tl = GT; var gp: Vector3 = tgt if hid else PL.p; var dx: float = gp.x - NB.p.x; var dz: float = gp.z - NB.p.z; var d := Vector2(dx, dz).length()
+			if d > 0.8:
+				var sp := 2.2 if hid else 3.1; NB.p.x += dx / d * sp * e; NB.p.z += dz / d * sp * e; NB.yaw = atan2(dx, dz); NB.anim = "walk" if hid else "run"; NB.speed = sp
+			else: break
+			if not hid and not PL.hide and Vector2(PL.p.x - NB.p.x, PL.p.z - NB.p.z).length() < 1.1:
+				caught = true; break
+			if not hid and PL.hide: break
+			await wait(0)
+		if hid or PL.hide: # もう一方の場所を調べて、見つけられない
+			NB.anim = "crouch"
+			if other == "ward":
+				for L in CARN.ward.leaves: L.m.tgt = 1.0
+			sfx("cab", true); await wait(1.6); NB.anim = "look"; sfxVoice("grr", NB.p); await wait(1.2)
+			if not hid and PL.hide: caught = true # 後から隠れても見られていた
+		if not caught:
+			cutStart(false); await fadeOut(1.2, true); break
+		# 見つかった：もう一度
+		cutStart(false); sfx("catch"); NB.anim = "grab"; await wait(1); subtitle("見つかった……もう一度", 2, true); await fadeOut(0.8)
+	CARN.active = false; story.inCarn = false
+	for L in CARN.lights: li(L, 0)
+	setMusic(null); ui_cls("hideView", "on", false); PL.hide = null; NB.active = nbWas; NB.state = "routine"; setNbMode("idle"); var n = NODES.hall_m; nbTeleport(n.p.x, n.p.y, n.p.z, 0); ui_fade_white(false)
+# ================= ヒント =================
+func hintDone(i: int) -> bool:
+	match i:
+		0: return A.water.frozen or P.lockpick.st == "inv" or not A.clock.locked
+		1: return P.lockpick.st == "inv" or not A.clock.locked
+		2:
+			for b in A.boards:
+				if b.on:
+					for p in [P.hammer, P.hammer2, P.crowbar]:
+						if p.st == "inv": return true
+					return false
+			return true
+	return false
+const HINTS := ["裏口からボイラー室に入って、大きなかまどの赤いバルブを回してみよう（E）",
+	"居間の階段を上ると水びたしの部屋。凍っていればわたれる（エレベーターでも2階へ行ける）。2階の居間の左のドア、さらにその先のドアが監視室。机にピッキング道具",
+	"ハンマーはガレージの作業台か、寝室のナイトテーブルの引き出し。バールは寝室のベッドの下に隠れると見つかる",
+	"居間の階段の下、EXITの看板の地下室のドア：ハンマーかバールで板をはがし（左クリック）、ピッキング道具で銅の錠を開けよう。もうひとつの方法は、ベル→墓の部屋→教室→射的場→子ども部屋の「銅の鍵」"]
+func showHint() -> void:
+	if story.part == "move":
+		toast("左上の「やること」をしよう"); return
+	if story.part != "main": return
+	for i in HINTS.size():
+		if not hintDone(i):
+			subtitle("ヒント：" + HINTS[i], 7); return
+# ================= エンディング =================
+func startEnding() -> void:
+	if story.part != "main": return
+	story.part = "end"; NB.active = false; setMusic(null); cutStart(false); PL.frozen = true
+	# 扉がゆっくり開いて、まぶしい光
+	var cp := camPos(); camTo(cp.x, cp.y, cp.z, -7.6, 1.3, 23, true); li(A.baseLight, 0)
+	var t0 := GT
+	while GT - t0 < 1.6:
+		li(A.baseLight, (GT - t0) / 1.6 * 30); await wait(0)
+	li(A.baseLight, 30); sfx("sting"); await wait(1.2)
+	# おとなりさんが扉をしめて、おそってくる
+	nbVisible(true); nbTeleport(-6.6, F1, 20.3, -PI / 2); NB.anim = "reach"; await wait(0.3); A.base.m.tgt = 0.0; li(A.baseLight, 0); sfx("slam"); SHAKE = 0.5; await wait(0.5)
+	NB.yaw = atan2(PL.p.x - NB.p.x, PL.p.z - NB.p.z); NB.anim = "run"; camTo(cp.x, cp.y, cp.z, NB.p.x, 1.7, NB.p.z); sfxVoice("hey", NB.p)
+	t0 = GT; var tl := GT
+	while GT - t0 < 0.6:
+		var e := GT - tl; tl = GT; var dx: float = PL.p.x - NB.p.x; var dz: float = PL.p.z - NB.p.z; var d := Vector2(dx, dz).length()
+		if d < 0.9: break
+		var st := minf(d - 0.9, 6 * e); NB.p.x += dx / d * st; NB.p.z += dz / d * st; await wait(0)
+	NB.anim = "grab"; sfx("catch"); SHAKE = 1.0; await wait(0.35); ui_fade_now(true); await wait(1.6)
+	# 棺の中で目がさめる
+	setEnv("evening"); EXPOSURE = 1.15; apply_env_uniforms(); nbTeleport(GRAVE.ox + 1.15, 0, GRAVE.oz + 0.3, -PI / 2); NB.anim = "look"; NB.look = 0.0
+	camTo(GRAVE.ox - 0.1, -1.72, GRAVE.oz + 0.3, GRAVE.ox + 0.5, 1.3, GRAVE.oz + 0.3, true); CUT.cam.k = 1.0
+	var lid: Node3D = GRAVE.lid; lid.visible = true; lid.position = Vector3(GRAVE.ox - 1.45, 0.04, GRAVE.oz); lid.rotation = Vector3(); await fadeIn(2.5); await wait(1.2); sfxVoice("hmm", NB.p); await wait(1.6)
+	NB.anim = "reach"; await wait(0.4)
+	t0 = GT
+	while true:
+		var t := minf(1, (GT - t0) / 1.0); lid.position = Vector3(GRAVE.ox - 1.45 + 1.45 * t, lerpf(0.04, -1.465, t * t) + sin(t * PI) * 0.55, GRAVE.oz); lid.rotation.z = -sin(t * PI) * 0.5
+		if t >= 1: break
+		await wait(0)
+	sfx("thud"); ui_fade_now(true); await wait(0.1)
+	await wait(1.8); setMusic("ending"); var tt: float = story.stats.time; var m := floori(tt / 60); var s := floori(fmod(tt, 60))
+	ui_ending("THE END", "地下室には、何があったのだろう……\n（アルファ1はここでおしまい）\n\nかかった時間：%d分%d秒　つかまった回数：%d回" % [m, s, story.stats.caught])
+	showScreen("ending", true); STATE = "ending"; cutEnd(); STATE = "ending"; unlockPointer(); store_set(SAVEKEY, null); store_set("otonari-a1-clear", "1")
+# ================= 毎フレーム =================
+var autoSaveT := 15.0
+func updStory(dt: float) -> void:
+	if story.part == "main" and STATE == "play": story.stats.time += dt
+	PL.inHouse = (PL.p.x > -6 and PL.p.x < 6 and PL.p.z > -30 and PL.p.z < -22) or inNHouse(PL.p)
+	if story.part == "move":
+		if story.step == 2:
+			var n := boxesInside()
+			if n != story.boxN:
+				story.boxN = n; moveObj()
+			if n >= 5:
+				toast("荷物を運び終えた！"); nextStep()
+		if story.step == 1 and not H1.front.lock: nextStep()
+	if story.part == "main":
+		var anyBoard := false
+		for b in A.boards:
+			if b.on: anyBoard = true
+		if A.base.m.tgt > 0.5 and not anyBoard and not A.clock.locked: startEnding()
+		# 音楽：追いかけられているとき
+		if NB.state == "chase": setMusic("chase%d" % MUS.chaseTrack)
+		elif MUS.want != null and str(MUS.want).begins_with("chase") and GT - NB.seeT > 3: setMusic(null)
+		# おとなりさんが近い（口笛のような音）
+		story.nearT -= dt
+		if NB.state != "chase" and story.nearT <= 0 and NB.p.distance_to(PL.p) < 9 and inNHouse(PL.p):
+			story.nearT = 9.0; sfx("near")
+		autoSaveT -= dt
+		if autoSaveT <= 0:
+			autoSaveT = 15.0; saveGame()
+# ================= セーブ =================
+const SAVEKEY := "otonari-a1-save"
+func r3(v: float) -> float: return snappedf(v, 0.001)
+func saveGame() -> void:
+	if STATE == "title" or not (story.part == "move" or story.part == "main"): return
+	var d := {v = 2, part = story.part, step = story.step, flags = story.flags, stats = story.stats}
+	if story.part == "main":
+		d.pl = {x = PL.p.x, y = PL.p.y, z = PL.p.z, yaw = PL.yaw}; d.inv = PL.inv.map(func(p): return p.id if p else null); d.props = {}
+		var re := RegEx.new(); re.compile("^p\\d+$")
+		for p in PROPS:
+			if not p.id or re.search(p.id) != null and not p.get("moved"): continue
+			d.props[p.id] = {x = r3(p.p.x), y = r3(p.p.y), z = r3(p.p.z), yaw = r3(p.yaw), st = p.st, h = p.hidden, np = p.noPick, ly = not not p.lying, data = p.data}
+		d.doors = DOORS.map(func(x): return [1 if x.m.tgt > 0.5 else 0, x.lock]); d.win = WINDOWS.map(func(w): return [1 if w.broken else 0, 1 if w.boarded else 0]); d.traps = TRAPS.map(func(t): return [t.x, t.y, t.z, t.k, 1 if t.armed else 0]); d.cams = CAMS.map(func(c): return 1 if c.broken else 0)
+		var chairs := []
+		for k in ENTRY:
+			if ENTRY[k].get("chairProp"): chairs.append(k)
+		d.m = {cold = A.furn.cold, power = A.power.on, camsOff = not not A.get("camsOff"), camsLeft = maxf(5, A.camsCheckAt - GT) if A.get("camsCheckAt") else 0.0, bell = (A.pole.bell.id if A.pole.bell else "bell") if A.pole.has else false, dirt = A.dirt.level, coffin = A.coffin.open,
+			slots = A.slots.map(func(S): return S.v.id if S.v else null), rifleGiven = not not A.get("rifleGiven"), stand = A.stand.has, score = A.stand.score, keyDropped = not not A.get("keyDropped"), gate = [A.gate.locked, A.gate.open], bricks = A.bricks.broken, boards = A.boards.map(func(b): return b.on), clock = A.clock.locked, learn = LEARN, chairs = chairs}
+	store_set(SAVEKEY, JSON.stringify(d))
+func hasSave() -> bool: return store_get(SAVEKEY) != null
+func loadGame() -> bool:
+	var raw = store_get(SAVEKEY)
+	if raw == null: return false
+	var d = JSON.parse_string(raw)
+	if not d is Dictionary: return false
+	story.flags = d.get("flags", {}); story.stats = {time = 0.0, caught = 0, sleeps = 0}; story.stats.merge(d.get("stats", {}), true)
+	story.stats.caught = int(story.stats.caught); story.stats.sleeps = int(story.stats.sleeps)
+	if d.part == "move":
+		teleportPlayer(4.2, 0.02, -10.2, PI * 0.95); parkMyCar(5.6, -12, PI); startMove(); return true
+	parkMyCar(5.6, -12, PI)
+	for b in P.boxes: propRestAt(b, rr(-4, -1), 0.31, rr(-27, -24), 0)
+	H1.ebox.on = true; H1.ebox.open = true; H1.eboxLid.m.tgt = 1.0; H1.ebox.sw.rotation.x = -0.7
+	var Mm: Dictionary = d.get("m", {})
+	for k in Mm.get("chairs", []):
+		if ENTRY.has(k):
+			story.usedEntry = k; learnFromCatch()
+	for id in d.get("props", {}):
+		var pr = propById(id)
+		if not pr: continue
+		var s: Dictionary = d.props[id]; pr.data.merge(s.get("data", {}), true); pr.noPick = not not s.get("np"); pr.lying = not not s.get("ly")
+		if s.st == "inv" or s.st == "att":
+			if s.get("h") != null: setPropHidden(pr, s.h)
+			continue
+		detachProp(pr); propRestAt(pr, s.x, s.y, s.z, s.yaw)
+		if s.get("h") != null: setPropHidden(pr, s.h)
+	PL.inv = [null, null, null, null]
+	var inv: Array = d.get("inv", [])
+	for i in inv.size():
+		var pr = propById(inv[i]) if inv[i] else null
+		if pr:
+			detachProp(pr); propToInv(pr); PL.inv[i] = pr
+	var ds: Array = d.get("doors", [])
+	for i in ds.size():
+		if i >= DOORS.size(): break
+		var x = DOORS[i]; x.lock = ds[i][1]; x.m.t = float(ds[i][0]); x.m.tgt = float(ds[i][0]); x.m.apply.call(float(ds[i][0]))
+	var ws: Array = d.get("win", [])
+	for i in ws.size():
+		if i >= WINDOWS.size(): break
+		if ws[i][0]: setBroken(WINDOWS[i], true)
+		if ws[i][1]: boardWindow(WINDOWS[i], true)
+	for t in d.get("traps", []):
+		var T = null
+		for x in TRAPS:
+			if x.k == t[3]: T = x
+		if not T: T = addBearTrap(t[0], t[1], t[2], t[3])
+		if not t[4] and T.armed: snapTrap(T, false)
+	var cs: Array = d.get("cams", [])
+	for i in cs.size():
+		if cs[i] and i < CAMS.size(): breakCamera(CAMS[i])
+	if Mm.get("cold"):
+		A.furn.cold = true; A.furn.t = 9.0; setFrozen(true)
+	setPower(Mm.get("power", true) != false, false)
+	if Mm.get("camsOff"):
+		A.camsOff = true; A.camsCheckAt = GT + (Mm.get("camsLeft", 40) if Mm.get("camsLeft", 0) else 40)
+	updCamLeds()
+	if Mm.get("bell") and not A.pole.has:
+		var b = propById(Mm.bell if Mm.bell is String else "bell"); P.shovel.noPick = false; b.p = Vector3(A.pole.x, A.pole.y - 0.12, A.pole.z); A.pole.has = true; A.pole.bell = b; b.st = "att"; b.noPick = true; b.grp.position = b.p
+		A.boxDoor.m.t = 1.0; A.boxDoor.m.tgt = 1.0; A.boxDoor.m.apply.call(1.0)
+	var dl: int = int(Mm.get("dirt", 3))
+	while A.dirt.level > dl:
+		A.dirt.level -= 1; var lv: float = A.dirt.level / 3.0; A.dirt.m.position.y = -1 + 1.3 * lv - 0.65; A.dirt.col.y1 = -1 + 1.3 * lv; A.dirt.m.visible = A.dirt.level > 0
+		if A.dirt.level <= 0: A.dirt.col.on = false
+	if Mm.get("coffin"):
+		A.coffin.open = true; A.coffin.lidT = 1.0; A.coffin.lidCol.on = false; A.coffin.lid.position = Vector3(A.coffin.x - 0.95, A.coffin.y + 0.53, A.coffin.z); A.coffin.lid.rotation.z = 1.1
+	var sl: Array = Mm.get("slots", [])
+	for i in sl.size():
+		var pr = propById(sl[i]) if sl[i] else null
+		if pr:
+			var S = A.slots[i]; S.v = pr; pr.st = "att"; pr.noPick = true; pr.grp.visible = true; pr.grp.position = Vector3(9.74, S.y, S.z); pr.grp.rotation_order = EULER_ORDER_XYZ; pr.grp.rotation = Vector3(0, 0, PI / 2)
+	A.rifleGiven = Mm.get("rifleGiven", false)
+	if Mm.get("stand"):
+		var r = propById("rifle"); A.stand.has = true; A.stand.rifle = r; r.st = "att"; r.noPick = true; r.grp.visible = true; r.grp.position = Vector3(3.4, F2 + 1.3, 24.2); r.grp.rotation = Vector3(0, PI / 2, 0)
+	A.stand.score = int(Mm.get("score", 0)); drawScore(A.stand.score); A.keyDropped = Mm.get("keyDropped", false); updRangePower()
+	if Mm.get("gate"):
+		if not Mm.gate[0]:
+			A.gate.locked = false; A.gate.lock.visible = false
+		if Mm.gate[1]: setGate(A.gate, true)
+	if Mm.get("bricks"):
+		A.bricks.broken = true; A.bricks.g.visible = false; A.bricks.col.on = false
+	var bo: Array = Mm.get("boards", [])
+	for i in bo.size():
+		if i < A.boards.size(): A.boards[i].setOn.call(bo[i])
+	A.clock.locked = Mm.get("clock", true) != false; A.clock.g.visible = A.clock.locked; LEARN.merge(Mm.get("learn", {}), true)
+	startMain(true)
+	if d.get("pl"): teleportPlayer(d.pl.x, d.pl.y + 0.02, d.pl.z, d.pl.yaw)
+	drawInv()
+	return true
+
+# ================= 画面（HUD・メニュー）と操作 =================
+# three.js 版の HTML/CSS の画面を、Godot の Control で作りなおしたもの
+var UI := {}
+var ui_layer: CanvasLayer
+var BODY := {play = false, main = false, cut = false, touch = false, nohint = false}
+var FONT_R: Font
+var FONT_B: Font
+var FONT_H: Font
+const YEL := Color("#ffcf3a")
+func _font(path: String) -> Font:
+	if ResourceLoader.exists(path): return load(path)
+	return ThemeDB.fallback_font
+func lset(size: int, col := Color.WHITE, font: Font = null, shadow := true) -> LabelSettings:
+	var s := LabelSettings.new(); s.font = font if font else FONT_B; s.font_size = size; s.font_color = col
+	if shadow:
+		s.shadow_color = Color(0, 0, 0, 0.55); s.shadow_offset = Vector2(0, 2); s.shadow_size = 2
+	return s
+func sbox(bg: Color, radius := 12, border := Color(0, 0, 0, 0), bw := 0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new(); s.bg_color = bg; s.set_corner_radius_all(radius)
+	if bw > 0:
+		s.border_color = border; s.set_border_width_all(bw)
+	return s
+func mklabel(parent: Control, text: String, settings: LabelSettings, align := HORIZONTAL_ALIGNMENT_CENTER) -> Label:
+	var l := Label.new(); l.text = text; l.label_settings = settings; l.horizontal_alignment = align; l.mouse_filter = Control.MOUSE_FILTER_IGNORE; parent.add_child(l)
+	return l
+# 画面のどこに置くか（中心 cx,cy は 0..1、大きさ w,h）
+func place(c: Control, ax: float, ay: float, ox: float, oy: float, w := -1.0, h := -1.0, grow_x := Control.GROW_DIRECTION_BOTH) -> void:
+	c.anchor_left = ax; c.anchor_right = ax; c.anchor_top = ay; c.anchor_bottom = ay
+	c.offset_left = ox; c.offset_top = oy
+	if w >= 0: c.offset_right = ox + w
+	if h >= 0: c.offset_bottom = oy + h
+	c.grow_horizontal = grow_x
+	c.grow_vertical = Control.GROW_DIRECTION_END if ay == 0 else Control.GROW_DIRECTION_BEGIN if ay == 1 else Control.GROW_DIRECTION_BOTH
+func mkbtn(parent: Control, text: String, kind := "", cb = null) -> Button:
+	var b := Button.new(); b.text = text; b.focus_mode = Control.FOCUS_NONE
+	var bg := YEL; var fg := Color("#2a1a08"); var sh := Color("#7a4e10")
+	if kind == "sub":
+		bg = Color("#fff5dc"); sh = Color("#8a7a5a")
+	elif kind == "red":
+		bg = Color("#e0503c"); fg = Color.WHITE; sh = Color("#7a2012")
+	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var s := sbox(bg if st != "hover" else bg.lightened(0.08), 14, Color("#2a1a08"), 3)
+		s.shadow_color = sh; s.shadow_size = 0; s.shadow_offset = Vector2(0, 5) if st != "pressed" else Vector2(0, 2)
+		s.content_margin_top = 12; s.content_margin_bottom = 12; s.content_margin_left = 18; s.content_margin_right = 18
+		if st == "disabled": s.bg_color.a = 0.45
+		b.add_theme_stylebox_override(st, s)
+	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]: b.add_theme_color_override(c, fg)
+	b.add_theme_color_override("font_disabled_color", Color(fg, 0.5))
+	b.add_theme_font_override("font", FONT_H); b.add_theme_font_size_override("font_size", 19)
+	if cb: b.pressed.connect(cb)
+	parent.add_child(b)
+	return b
+func shader_rect(code: String) -> ColorRect:
+	var r := ColorRect.new(); r.set_anchors_preset(Control.PRESET_FULL_RECT); r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var m := ShaderMaterial.new(); var s := Shader.new(); s.code = "shader_type canvas_item;\n" + code; m.shader = s; r.material = m
+	return r
+func setup_ui() -> void:
+	FONT_R = _font("res://fonts/ui_500.ttf"); FONT_B = _font("res://fonts/ui_800.ttf"); FONT_H = _font("res://fonts/ui_900.ttf")
+	var th := Theme.new(); th.default_font = FONT_B; th.default_font_size = 16
+	ui_layer = CanvasLayer.new(); ui_layer.layer = 5; add_child(ui_layer)
+	var root := Control.new(); root.set_anchors_preset(Control.PRESET_FULL_RECT); root.mouse_filter = Control.MOUSE_FILTER_IGNORE; root.theme = th; ui_layer.add_child(root); UI.root = root
+	# ---------- HUD ----------
+	var hud := Control.new(); hud.set_anchors_preset(Control.PRESET_FULL_RECT); hud.mouse_filter = Control.MOUSE_FILTER_IGNORE; root.add_child(hud); UI.hud = hud; hud.visible = false
+	var hm := Control.new(); hm.set_anchors_preset(Control.PRESET_FULL_RECT); hm.mouse_filter = Control.MOUSE_FILTER_IGNORE; hud.add_child(hm); UI.hudMain = hm
+	var hide := shader_rect("""uniform float under = 0.0;
+void fragment(){
+	vec2 uv = UV; vec4 c;
+	if (under < 0.5) {
+		float px = uv.y * 540.0; float m = mod(px, 34.0);
+		c = m < 22.0 ? vec4(0.094, 0.055, 0.024, 0.97) : vec4(0.0);
+		float e = length(max(abs(uv - 0.5) * 2.0 - 0.55, 0.0)) * 1.6; c = mix(c, vec4(0.07, 0.04, 0.016, 1.0), clamp(e, 0.0, 1.0));
+	} else {
+		c = uv.y < 0.38 ? vec4(0.078, 0.055, 0.031, 0.98) : uv.y < 0.42 ? mix(vec4(0.078, 0.055, 0.031, 0.98), vec4(0.078, 0.055, 0.031, 0.6), (uv.y - 0.38) / 0.04) : uv.y < 0.55 ? mix(vec4(0.078, 0.055, 0.031, 0.6), vec4(0.0), (uv.y - 0.42) / 0.13) : vec4(0.0);
+		c.a = max(c.a, smoothstep(0.8, 1.0, uv.y) * 0.7);
+	}
+	COLOR = c;
+}"""); hm.add_child(hide); UI.hideView = hide; hide.visible = false
+	UI.hideTip = mklabel(hm, "隠れています　E / 手ボタンで出る", lset(17)); place(UI.hideTip, 0.5, 0.82, -200, -12, 400, 24); UI.hideTip.visible = false
+	var binoc := shader_rect("""void fragment(){
+	vec2 p = (UV - 0.5) * vec2(1.0 / SCREEN_PIXEL_SIZE.x * SCREEN_PIXEL_SIZE.y, 1.0);
+	float r = 0.26; float a = length(p - vec2(-0.13 * (1.0 / SCREEN_PIXEL_SIZE.x * SCREEN_PIXEL_SIZE.y) * 0.0 - 0.0, 0.0));
+	vec2 asp = vec2(SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x, 1.0);
+	vec2 q = (UV - 0.5) * vec2((1.0 / SCREEN_PIXEL_SIZE.x) / (1.0 / SCREEN_PIXEL_SIZE.y), 1.0);
+	float w = (1.0 / SCREEN_PIXEL_SIZE.x) / (1.0 / SCREEN_PIXEL_SIZE.y);
+	float d1 = length(q - vec2((0.37 - 0.5) * w, 0.0)); float d2 = length(q - vec2((0.63 - 0.5) * w, 0.0));
+	float inside = max(1.0 - smoothstep(0.26, 0.263, d1), 1.0 - smoothstep(0.26, 0.263, d2));
+	COLOR = vec4(0.0, 0.0, 0.0, 1.0 - inside);
+}"""); hm.add_child(binoc); UI.binoc = binoc; binoc.visible = false
+	var hurt := shader_rect("""void fragment(){ float d = length((UV - 0.5) * vec2(1.0, 1.0)) * 2.0; COLOR = vec4(1.0, 0.235, 0.078, smoothstep(0.45, 1.0, d) * 0.55); }"""); hm.add_child(hurt); UI.hurt = hurt; hurt.modulate.a = 0
+	var trap := shader_rect("""void fragment(){ vec2 e = min(UV, 1.0 - UV); float d = min(e.x * 1.6, e.y); COLOR = vec4(0.63, 0.078, 0.04, (1.0 - smoothstep(0.0, 0.22, d)) * 0.7); }"""); hm.add_child(trap); UI.trapFx = trap; trap.modulate.a = 0
+	var cross := Panel.new(); cross.add_theme_stylebox_override("panel", sbox(Color(1, 1, 1, 0.85), 5, Color(0, 0, 0, 0.35), 1)); place(cross, 0.5, 0.5, -4, -4, 8, 8); cross.pivot_offset = Vector2(4, 4); cross.mouse_filter = Control.MOUSE_FILTER_IGNORE; hm.add_child(cross); UI.cross = cross
+	var pr := RichTextLabel.new(); pr.bbcode_enabled = true; pr.fit_content = true; pr.scroll_active = false; pr.autowrap_mode = TextServer.AUTOWRAP_OFF; pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pr.add_theme_font_override("normal_font", FONT_B); pr.add_theme_font_override("bold_font", FONT_H); pr.add_theme_font_size_override("normal_font_size", 18); pr.add_theme_font_size_override("bold_font_size", 18)
+	pr.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6)); pr.add_theme_constant_override("shadow_offset_y", 2); pr.add_theme_constant_override("shadow_offset_x", 0); pr.add_theme_constant_override("line_separation", 2)
+	place(pr, 0.5, 0.5, -300, 30, 600, 80); pr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; hm.add_child(pr); UI.prompt = pr
+	var ch := Panel.new(); ch.add_theme_stylebox_override("panel", sbox(Color(0, 0, 0, 0.4), 4)); place(ch, 0.5, 0.5, -42, 21, 84, 7); hm.add_child(ch); UI.charge = ch; ch.visible = false
+	var chf := ColorRect.new(); chf.color = Color("#ffb04a"); chf.position = Vector2(0, 0); chf.size = Vector2(0, 7); ch.add_child(chf); UI.chargeFill = chf
+	# やること
+	var obj := PanelContainer.new(); var os := sbox(Color(0.078, 0.1, 0.133, 0.55), 12); os.border_color = YEL; os.border_width_left = 5; os.content_margin_left = 14; os.content_margin_right = 14; os.content_margin_top = 9; os.content_margin_bottom = 9
+	obj.add_theme_stylebox_override("panel", os); place(obj, 0, 0, 64, 14, -1, -1, Control.GROW_DIRECTION_END); obj.custom_minimum_size = Vector2(0, 0); hm.add_child(obj); UI.obj = obj; obj.visible = false
+	var ov := VBoxContainer.new(); ov.add_theme_constant_override("separation", 0); obj.add_child(ov)
+	UI.objSm = mklabel(ov, "やること", lset(13, Color(1, 1, 1, 0.8), FONT_R), HORIZONTAL_ALIGNMENT_LEFT)
+	UI.objT = mklabel(ov, "", lset(17), HORIZONTAL_ALIGNMENT_LEFT)
+	UI.toast = mklabel(hm, "", lset(20)); place(UI.toast, 0.5, 0.22, -400, -14, 800, 30); UI.toast.modulate.a = 0
+	UI.alarm = mklabel(hm, "● 監視カメラに見つかった！", lset(18, Color("#ff5a4a"), FONT_H)); place(UI.alarm, 0.5, 0.12, -300, -12, 600, 26); UI.alarm.visible = false
+	UI.iname = mklabel(hm, "", lset(15), HORIZONTAL_ALIGNMENT_LEFT); place(UI.iname, 0, 1, 20, -112, 400, 22); UI.iname.modulate.a = 0
+	# 持ち物
+	var inv := HBoxContainer.new(); inv.add_theme_constant_override("separation", 9); place(inv, 0, 1, 18, -86, -1, 70, Control.GROW_DIRECTION_END); hm.add_child(inv); UI.inv = inv; UI.slots = []
+	for i in 4:
+		var sl := Panel.new(); sl.custom_minimum_size = Vector2(66, 66); sl.add_theme_stylebox_override("panel", sbox(Color(0.118, 0.118, 0.133, 0.62), 13, Color(1, 1, 1, 0.12), 2)); inv.add_child(sl)
+		var img := TextureRect.new(); img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; img.position = Vector2(4, 4); img.size = Vector2(58, 58); img.mouse_filter = Control.MOUSE_FILTER_IGNORE; sl.add_child(img)
+		var n := mklabel(sl, str(i + 1), lset(12, Color(1, 1, 1, 0.7), FONT_B, false), HORIZONTAL_ALIGNMENT_LEFT); n.position = Vector2(6, 2)
+		var ii := i
+		sl.gui_input.connect(func(ev):
+			if (ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT) or (ev is InputEventScreenTouch and ev.pressed):
+				selSlot(ii); sl.accept_event())
+		UI.slots.append({p = sl, img = img, key = ""})
+	# ボタン
+	UI.hintBtn = mkpill(hm, "？ ヒント", func(): showHint()); place(UI.hintBtn, 1, 0, -170, 12, -1, -1, Control.GROW_DIRECTION_BEGIN); UI.hintBtn.visible = false
+	UI.pauseBtn = mkpill(hm, "II", func():
+		if STATE == "play": pauseGame()
+		elif STATE == "pause": resumeGame()); place(UI.pauseBtn, 1, 0, -56, 10, 46, 46, Control.GROW_DIRECTION_BEGIN)
+	# タッチ操作
+	var touch := Control.new(); touch.set_anchors_preset(Control.PRESET_FULL_RECT); touch.mouse_filter = Control.MOUSE_FILTER_IGNORE; hm.add_child(touch); UI.touch = touch; touch.visible = false
+	var stick := Panel.new(); stick.add_theme_stylebox_override("panel", sbox(Color(1, 1, 1, 0.1), 64, Color(1, 1, 1, 0.28), 2)); stick.size = Vector2(128, 128); place(stick, 0, 1, 34, -170, 128, 128); stick.mouse_filter = Control.MOUSE_FILTER_IGNORE; touch.add_child(stick); UI.stick = stick
+	var knob := Panel.new(); knob.add_theme_stylebox_override("panel", sbox(Color(1, 1, 1, 0.35), 27, Color(1, 1, 1, 0.55), 2)); knob.size = Vector2(54, 54); knob.position = Vector2(37, 37); knob.mouse_filter = Control.MOUSE_FILTER_IGNORE; stick.add_child(knob); UI.knob = knob
+	UI.tbtns = {}
+	for b in [["tRun", "走る", 0, 1, 176, -94, 56], ["tJump", "ジャンプ", 1, 1, -96, -176, 66], ["tCrouch", "しゃが\nむ", 1, 1, -178, -194, 66], ["tUse", "手", 1, 1, -188, -122, 80], ["tThrow", "使う\n投げる", 1, 1, -100, -104, 80], ["tDrop", "置く", 1, 1, -240, -80, 56]]:
+		var tb := Button.new(); tb.text = b[1]; tb.focus_mode = Control.FOCUS_NONE; var sz: int = b[6]
+		tb.add_theme_stylebox_override("normal", sbox(Color(0.078, 0.1, 0.133, 0.45), int(sz / 2.0), Color(1, 1, 1, 0.45), 2)); tb.add_theme_stylebox_override("pressed", sbox(Color(1, 0.81, 0.23, 0.55), int(sz / 2.0), Color("#ffe066"), 2)); tb.add_theme_stylebox_override("hover", tb.get_theme_stylebox("normal"))
+		tb.add_theme_font_override("font", FONT_H); tb.add_theme_font_size_override("font_size", 14 if sz > 60 else 13)
+		place(tb, b[2], b[3], b[4], b[5], sz, sz); touch.add_child(tb); UI.tbtns[b[0]] = tb
+		var id: String = b[0]
+		tb.button_down.connect(func(): touch_btn(id, true)); tb.button_up.connect(func(): touch_btn(id, false))
+	UI.sub = mklabel(hud, "", lset(21)); place(UI.sub, 0.5, 0.78, -480, -30, 960, 60); UI.sub.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY; UI.sub.modulate.a = 0; UI.sub.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	UI.skipCut = mkpill(root, "スキップ ▶", func(): CUT.skip = true); place(UI.skipCut, 1, 1, -150, -56, -1, -1, Control.GROW_DIRECTION_BEGIN); UI.skipCut.visible = false
+	# ---------- 暗転 ----------
+	var fade := ColorRect.new(); fade.color = Color.BLACK; fade.set_anchors_preset(Control.PRESET_FULL_RECT); fade.mouse_filter = Control.MOUSE_FILTER_IGNORE; fade.modulate.a = 0; root.add_child(fade); UI.fade = fade
+	# ---------- 画面 ----------
+	UI.screens = {}
+	# つかまった
+	var caught := screen("caught"); var cb := shader_rect("""void fragment(){ float d = length(UV - 0.5) * 1.6; COLOR = vec4(0.0, 0.0, 0.0, mix(0.2, 0.9, clamp(d, 0.0, 1.0))); }"""); caught.add_child(cb); caught.move_child(cb, 0)
+	var cv := centerbox(caught); mklabel(cv, "GAME OVER", lset(60, Color("#ff5a4a"), FONT_H)); mklabel(cv, "つかまった！", lset(22))
+	# タイトル
+	var title := screen("title"); var tg := shader_rect("""void fragment(){ COLOR = vec4(0.04, 0.03, 0.016, smoothstep(0.4, 1.0, UV.y) * 0.55); }"""); title.add_child(tg)
+	var logo := VBoxContainer.new(); place(logo, 0.5, 0.09, -400, 0, 800, 200); logo.alignment = BoxContainer.ALIGNMENT_BEGIN; title.add_child(logo); logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h1 := RichTextLabel.new(); h1.bbcode_enabled = true; h1.fit_content = true; h1.scroll_active = false; h1.autowrap_mode = TextServer.AUTOWRAP_OFF; h1.mouse_filter = Control.MOUSE_FILTER_IGNORE; h1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	h1.add_theme_font_override("normal_font", FONT_H); h1.add_theme_font_size_override("normal_font_size", 92); h1.add_theme_color_override("default_color", Color("#fff5dc"))
+	h1.add_theme_constant_override("outline_size", 10); h1.add_theme_color_override("font_outline_color", Color("#5a1f0c")); h1.add_theme_color_override("font_shadow_color", Color("#7a2e14")); h1.add_theme_constant_override("shadow_offset_y", 7); h1.add_theme_constant_override("shadow_offset_x", 0)
+	h1.text = "おとなり[color=#ffcf3a]さん[/color]"; h1.rotation = -0.05; h1.pivot_offset = Vector2(400, 60); logo.add_child(h1)
+	var tag := RichTextLabel.new(); tag.bbcode_enabled = true; tag.fit_content = true; tag.scroll_active = false; tag.autowrap_mode = TextServer.AUTOWRAP_OFF; tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag.add_theme_font_override("normal_font", FONT_H); tag.add_theme_font_size_override("normal_font_size", 20); tag.add_theme_color_override("font_shadow_color", Color.BLACK); tag.add_theme_constant_override("shadow_offset_y", 2)
+	tag.text = "となりの地下室には、なにがある？ [bgcolor=#d8402a]  ALPHA 1  [/bgcolor]"; logo.add_child(tag)
+	var menu := VBoxContainer.new(); menu.add_theme_constant_override("separation", 12); place(menu, 0.5, 1, -170, -330, 340, 300); title.add_child(menu)
+	UI.bNew = mkbtn(menu, "はじめから", "", func(): initAudio(); newGame()); UI.bCont = mkbtn(menu, "つづきから", "sub", func(): initAudio(); contGame())
+	mkbtn(menu, "あそびかた", "sub", func(): showScreen("help", true)); mkbtn(menu, "設定", "sub", func(): openSettings())
+	var ver := mklabel(title, "おとなりさん アルファ1（Godot版）", lset(13, Color(1, 1, 1, 0.7), FONT_B, false), HORIZONTAL_ALIGNMENT_LEFT); place(ver, 0, 1, 14, -28, 400, 20)
+	# あそびかた
+	var help := screen("help"); var hp := panel(help, 640, 560)
+	hp.add_child(ptitle("あそびかた"))
+	var ht := RichTextLabel.new(); ht.bbcode_enabled = true; ht.fit_content = false; ht.custom_minimum_size = Vector2(0, 380); ht.size_flags_vertical = Control.SIZE_EXPAND_FILL; ht.add_theme_font_override("normal_font", FONT_R); ht.add_theme_font_override("bold_font", FONT_H); ht.add_theme_font_size_override("normal_font_size", 15); ht.add_theme_font_size_override("bold_font_size", 15)
+	ht.text = HELP_TEXT; hp.add_child(ht)
+	var hb := mkbtn(hp, "もどる", "", func(): showScreen("help", false)); hb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; hb.custom_minimum_size = Vector2(240, 0)
+	# 設定
+	var sett := screen("settings"); var sp := panel(sett, 560, 0)
+	sp.add_child(ptitle("設定"))
+	UI.sSens = srow(sp, "視点の感度", 30, 250, 10, func(v): CFG.sens = v / 100.0; save_cfg())
+	UI.sInv = crow(sp, "上下反転", func(v): CFG.inv = v; save_cfg())
+	UI.sFov = srow(sp, "視野の広さ", 60, 95, 1, func(v): CFG.fov = v; save_cfg())
+	var qr := HBoxContainer.new(); sp.add_child(qr); var ql := mklabel(qr, "画質", lset(16, Color.WHITE, FONT_B, false), HORIZONTAL_ALIGNMENT_LEFT); ql.size_flags_horizontal = Control.SIZE_EXPAND_FILL; UI.sQ = mklabel(qr, "", lset(16, YEL, FONT_B, false))
+	UI.sHints = crow(sp, "ヒントを出す", func(v): CFG.hints = v; save_cfg(); BODY.nohint = not v)
+	var sn := mklabel(sp, "音の大きさ・横画面は、左上の⚙（3dameの設定）から変えられます。", lset(13, Color(1, 1, 1, 0.7), FONT_R, false), HORIZONTAL_ALIGNMENT_LEFT); sn.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	var sb := mkbtn(sp, "もどる", "", func(): showScreen("settings", false)); sb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; sb.custom_minimum_size = Vector2(240, 0)
+	# ポーズ
+	var pause := screen("pause"); var pbg := ColorRect.new(); pbg.color = Color(0, 0, 0, 0.5); pbg.set_anchors_preset(Control.PRESET_FULL_RECT); pause.add_child(pbg); pause.move_child(pbg, 0)
+	var pp := panel(pause, 400, 0); pp.add_child(ptitle("ポーズ"))
+	mkbtn(pp, "つづける", "", func(): resumeGame()); mkbtn(pp, "あそびかた", "sub", func(): showScreen("help", true)); mkbtn(pp, "設定", "sub", func(): openSettings())
+	UI.bSkip = mkbtn(pp, "チュートリアルをとばす", "sub", func():
+		showScreen("pause", false); skipTutorial())
+	mkbtn(pp, "3dameの設定", "sub", func(): post_parent({h3dOpenPanel = 1}))
+	mkbtn(pp, "タイトルへ", "red", func():
+		saveGame(); showScreen("pause", false); toTitle())
+	# おわり
+	var ending := screen("ending"); var eb := ColorRect.new(); eb.color = Color.BLACK; eb.set_anchors_preset(Control.PRESET_FULL_RECT); ending.add_child(eb); ending.move_child(eb, 0)
+	var ev := centerbox(ending); UI.endT = mklabel(ev, "THE END", lset(48, YEL, FONT_H)); UI.endP = mklabel(ev, "", lset(16, Color(1, 1, 1, 0.9), FONT_B, false))
+	var ebn := mkbtn(ev, "タイトルへ", "", func():
+		showScreen("ending", false); toTitle()); ebn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; ebn.custom_minimum_size = Vector2(240, 0)
+	# よみこみ中
+	var loading := screen("loading"); var lb := ColorRect.new(); lb.color = Color("#1a140c"); lb.set_anchors_preset(Control.PRESET_FULL_RECT); loading.add_child(lb); loading.move_child(lb, 0)
+	var lv := centerbox(loading); mklabel(lv, "よみこみ中…", lset(17, Color.WHITE, FONT_B, false))
+	var bar := Panel.new(); bar.custom_minimum_size = Vector2(220, 7); bar.add_theme_stylebox_override("panel", sbox(Color(1, 1, 1, 0.15), 4)); lv.add_child(bar); var bf := ColorRect.new(); bf.color = YEL; bf.size = Vector2(0, 7); bar.add_child(bf); UI.loadBar = bf
+	showScreen("loading", true)
+	# はじめから？
+	var cf := ConfirmationDialog.new(); cf.dialog_text = "はじめからにしますか？（今のセーブは消えます）"; cf.ok_button_text = "はい"; cf.cancel_button_text = "いいえ"; cf.title = "おとなりさん"; root.add_child(cf); UI.confirm = cf
+	cf.confirmed.connect(func(): newGameReally())
+	BODY.nohint = not CFG.hints
+	setup_web_bridge()
+const HELP_TEXT := """引っ越した先のお向かいさんは、どうも様子がおかしい。あの家の[b]地下室[/b]には何があるのだろう？ 見つからないように忍びこんで、地下室のドアを開けよう。2階の監視室のレバーで監視カメラを切れる。見つかったら走って逃げ、見えない所でクローゼットやベッドの下に隠れればやりすごせる（おとなりさんと同じ部屋で隠れると見つかる）。長く追いかけると、おとなりさんはつかれて見失う。
+
+[color=#ffe066][b]WASD[/b][/color]　移動（Shiftで走る）
+[color=#ffe066][b]マウス[/b][/color]　見回す
+[color=#ffe066][b]E / F[/b][/color]　拾う・開ける・押す・隠れる（ベッドの下にも）
+[color=#ffe066][b]左クリック[/b][/color]　持っている物を使う（鍵・ハンマー・シャベルなど）。長押しして離すと投げる
+[color=#ffe066][b]右クリック[/b][/color]　ズーム／目覚まし時計をセットする
+[color=#ffe066][b]Q[/b][/color]　持っている物を置く
+[color=#ffe066][b]1〜4 / ホイール[/b][/color]　持ち物を選ぶ（4つまで）
+[color=#ffe066][b]スペース[/b][/color]　ジャンプ
+[color=#ffe066][b]C / Ctrl[/b][/color]　しゃがむ（せまい所を通れる）
+[color=#ffe066][b]H[/b][/color]　ヒント
+[color=#ffe066][b]Esc[/b][/color]　ポーズ
+
+スマホ：左側をなぞって移動、右側をなぞって見回す。「手」で拾う・開ける、「使う/投げる」を押しっぱなしにして離すと投げる。
+
+おとなりさんは物音を聞きつけてやってくる。見つかると追いかけてくる（追いかけ中は壁ごしでも居場所がばれて、隠れてもむだ）。おとなりさんはこちらより足がおそいので、まずは走って逃げよう。つかまると、入ってきた所をいすでふさがれる。
+
+地下室への道は2つ。ボイラー室のバルブで水を凍らせて監視室のピッキング道具を取る方法と、ベル・シャベル・先生・数字の問題・射的・削岩機で「ハートの銅の鍵」を手に入れる方法。"""
+func mkpill(parent: Control, text: String, cb: Callable) -> Button:
+	var b := Button.new(); b.text = text; b.focus_mode = Control.FOCUS_NONE
+	for st in ["normal", "hover", "pressed", "focus"]:
+		var s := sbox(Color(0.078, 0.1, 0.133, 0.55), 100, Color(1, 1, 1, 0.42), 2); s.content_margin_left = 14; s.content_margin_right = 14; s.content_margin_top = 7; s.content_margin_bottom = 7
+		b.add_theme_stylebox_override(st, s)
+	b.add_theme_font_override("font", FONT_H); b.add_theme_font_size_override("font_size", 15); b.pressed.connect(cb); parent.add_child(b)
+	return b
+func screen(id: String) -> Control:
+	var c := Control.new(); c.set_anchors_preset(Control.PRESET_FULL_RECT); c.visible = false; c.mouse_filter = Control.MOUSE_FILTER_IGNORE; UI.root.add_child(c); UI.screens[id] = c
+	return c
+func centerbox(parent: Control) -> VBoxContainer:
+	var cc := CenterContainer.new(); cc.set_anchors_preset(Control.PRESET_FULL_RECT); cc.mouse_filter = Control.MOUSE_FILTER_IGNORE; parent.add_child(cc)
+	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 10); v.alignment = BoxContainer.ALIGNMENT_CENTER; cc.add_child(v)
+	return v
+func panel(parent: Control, w: int, h: int) -> VBoxContainer:
+	var cc := CenterContainer.new(); cc.set_anchors_preset(Control.PRESET_FULL_RECT); parent.add_child(cc)
+	var pc := PanelContainer.new(); var s := sbox(Color(0.11, 0.086, 0.055, 0.92), 18, Color(1, 0.81, 0.23, 0.6), 3); s.content_margin_left = 26; s.content_margin_right = 26; s.content_margin_top = 22; s.content_margin_bottom = 22
+	pc.add_theme_stylebox_override("panel", s); pc.custom_minimum_size = Vector2(w, h); cc.add_child(pc)
+	var v := VBoxContainer.new(); v.add_theme_constant_override("separation", 12); pc.add_child(v)
+	return v
+func ptitle(t: String) -> Label:
+	var l := Label.new(); l.text = t; l.label_settings = lset(26, YEL, FONT_H, false); l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return l
+func srow(parent: Control, name: String, mn: float, mx: float, stp: float, cb: Callable) -> HSlider:
+	var r := HBoxContainer.new(); parent.add_child(r); var l := mklabel(r, name, lset(16, Color.WHITE, FONT_B, false), HORIZONTAL_ALIGNMENT_LEFT); l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var s := HSlider.new(); s.min_value = mn; s.max_value = mx; s.step = stp; s.custom_minimum_size = Vector2(260, 24); s.focus_mode = Control.FOCUS_NONE; r.add_child(s); s.value_changed.connect(cb)
+	return s
+func crow(parent: Control, name: String, cb: Callable) -> CheckBox:
+	var r := HBoxContainer.new(); parent.add_child(r); var l := mklabel(r, name, lset(16, Color.WHITE, FONT_B, false), HORIZONTAL_ALIGNMENT_LEFT); l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var c := CheckBox.new(); c.focus_mode = Control.FOCUS_NONE; r.add_child(c); c.toggled.connect(cb)
+	return c
+# ---------- 画面の部品をかえる ----------
+func showScreen(id: String, on := true) -> void:
+	if UI.screens.has(id): UI.screens[id].visible = on
+func setLoad(p: float) -> void:
+	if UI.has("loadBar"): UI.loadBar.size.x = 220 * p
+var TOAST_T := 0.0
+var SUB_T := 0.0
+func toast(s: String, t := 2.2) -> void:
+	UI.toast.text = s; UI.toast.modulate.a = 1.0; TOAST_T = t
+func subtitle(s: String, t := 3.0, big := false) -> void:
+	var l: Label = UI.sub; l.text = s; l.label_settings = lset(40 if big else 21)
+	if big: place(l, 0.5, 0.42, -480, -40, 960, 80)
+	else: place(l, 0.5, 0.78, -480, -60, 960, 60)
+	var tw := create_tween(); tw.tween_property(l, "modulate:a", 1.0, 0.4); SUB_T = t
+func objective(s: String, sm = null) -> void:
+	if not s:
+		UI.obj.visible = false; story.obj = ""; return
+	if story.obj != s:
+		var st: StyleBoxFlat = UI.obj.get_theme_stylebox("panel"); st.bg_color = Color(1, 0.81, 0.23, 0.8)
+		var tw := create_tween(); tw.tween_method(func(v: float): st.bg_color = Color(1, 0.81, 0.23, 0.8).lerp(Color(0.078, 0.1, 0.133, 0.55), v), 0.0, 1.0, 0.9); sfx("tick")
+	story.obj = s; UI.objSm.text = sm if sm else "やること"; UI.objT.text = s; UI.obj.visible = true; UI.obj.reset_size()
+func updTexts(dt: float) -> void:
+	if TOAST_T > 0:
+		TOAST_T -= dt
+		if TOAST_T <= 0: create_tween().tween_property(UI.toast, "modulate:a", 0.0, 0.25)
+	if SUB_T > 0:
+		SUB_T -= dt
+		if SUB_T <= 0: create_tween().tween_property(UI.sub, "modulate:a", 0.0, 0.4)
+	if inameT > 0:
+		inameT -= dt
+		if inameT <= 0: create_tween().tween_property(UI.iname, "modulate:a", 0.0, 0.3)
+	# HUD の見え方（body のクラスのかわり）
+	UI.hud.visible = BODY.play; UI.hudMain.visible = not BODY.cut
+	UI.hintBtn.visible = BODY.main; UI.touch.visible = BODY.touch
+	UI.skipCut.visible = BODY.cut and UI.skipCut.get_meta("on", false)
+	UI.alarm.modulate.a = 1.0 if int(Time.get_ticks_msec() / 250) % 2 == 0 else 0.0
+	if PL.charging: UI.chargeFill.size.x = 84 * PL.charge
+func ui_body(cls: String, on: bool) -> void: BODY[cls] = on
+func ui_cls(id: String, cls: String, on: bool) -> void:
+	match id:
+		"cross":
+			UI.cross.scale = Vector2(1.9, 1.9) if on else Vector2.ONE
+			(UI.cross.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = Color("#ffe066") if on else Color(1, 1, 1, 0.85)
+		"hideView":
+			if cls == "on":
+				UI.hideView.visible = on; UI.hideTip.visible = on
+			elif cls == "under": UI.hideView.material.set_shader_parameter("under", 1.0 if on else 0.0)
+		"binoc": UI.binoc.visible = on
+		"hurt": UI.hurt.modulate.a = 1.0 if on else 0.0
+		"trapFx": create_tween().tween_property(UI.trapFx, "modulate:a", 1.0 if on else 0.0, 0.2)
+		"alarm": UI.alarm.visible = on
+		"skipCut": UI.skipCut.set_meta("on", on)
+		"charge": UI.charge.visible = on
+func ui_prompt(s: String) -> void:
+	var t := s.replace("[b]", "[bgcolor=#ffe066][color=#2a2110][b] ").replace("[/b]", " [/b][/color][/bgcolor] ").replace("[small]", "\n[font_size=14][color=#ffffffd8]").replace("[/small]", "[/color][/font_size]")
+	UI.prompt.text = "[center]" + t + "[/center]"
+func ui_iname(s: String) -> void:
+	UI.iname.text = s; UI.iname.modulate.a = 1.0
+func drawInv() -> void:
+	for i in 4:
+		var S = UI.slots[i]; var it = PL.inv[i]
+		var st := sbox(Color(0.196, 0.196, 0.22, 0.75) if i == PL.sel else Color(0.118, 0.118, 0.133, 0.62), 13, Color(1, 1, 1, 0.9) if i == PL.sel else Color(1, 1, 1, 0.12), 2)
+		S.p.add_theme_stylebox_override("panel", st)
+		var key: String = iconKey(it) if it else ""
+		if S.key != key:
+			S.key = key; S.img.texture = makeIcon(it) if it else null
+func ui_fade_now(on: bool) -> void:
+	if UI.has("fadeTw") and UI.fadeTw: UI.fadeTw.kill()
+	UI.fade.modulate.a = 1.0 if on else 0.0
+func ui_fade_white(white: bool) -> void: UI.fade.color = Color.WHITE if white else Color.BLACK
+func fadeOut(s := 0.6, white := false) -> void:
+	ui_fade_white(white)
+	if UI.get("fadeTw"): UI.fadeTw.kill()
+	UI.fadeTw = create_tween(); UI.fadeTw.tween_property(UI.fade, "modulate:a", 1.0, 0.6)
+	await wait(s)
+func fadeIn(s := 0.6) -> void:
+	if UI.get("fadeTw"): UI.fadeTw.kill()
+	UI.fadeTw = create_tween(); UI.fadeTw.tween_property(UI.fade, "modulate:a", 0.0, 0.6)
+	await wait(s)
+func ui_ending(t: String, p: String) -> void:
+	UI.endT.text = t; UI.endP.text = p
+# ================= 操作 =================
+var lockOn := false
+func lockPointer() -> void:
+	if BODY.touch or STATE != "play" or MANUAL: return
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED; lockOn = true
+func unlockPointer() -> void:
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	lockOn = false
+func pauseGame() -> void:
+	if STATE != "play": return
+	STATE = "pause"; showScreen("pause", true); UI.bSkip.visible = story.part == "move" or story.part == "intro"; IN.f = 0.0; IN.s = 0.0; KEYS.clear(); endCharge(false); unlockPointer()
+func resumeGame() -> void:
+	showScreen("pause", false); showScreen("help", false); showScreen("settings", false); STATE = "cut" if CUT.on else "play"; lockPointer()
+var KEYS := {}
+func kdown(k: int) -> bool: return KEYS.has(k)
+func keyAxis() -> void:
+	if BODY.touch and TOUCHS.stick: return
+	IN.f = (1.0 if kdown(KEY_W) or kdown(KEY_UP) else 0.0) - (1.0 if kdown(KEY_S) or kdown(KEY_DOWN) else 0.0)
+	IN.s = (1.0 if kdown(KEY_D) or kdown(KEY_RIGHT) else 0.0) - (1.0 if kdown(KEY_A) or kdown(KEY_LEFT) else 0.0)
+	IN.run = kdown(KEY_SHIFT); IN.crouch = kdown(KEY_C) or kdown(KEY_CTRL) or TOUCHS.crouch
+var lmbT := 0.0
+var lmbDown := false
+func _input(ev: InputEvent) -> void:
+	if not BOOTED or MANUAL: return
+	if ev is InputEventKey:
+		var k: int = ev.physical_keycode
+		if ev.pressed:
+			initAudio()
+			if STATE == "pause2": return
+			if k == KEY_ESCAPE:
+				if STATE == "pause": resumeGame()
+				elif STATE == "play": pauseGame()
+				return
+			if STATE == "cut" and (k == KEY_SPACE or k == KEY_ENTER) and UI.skipCut.get_meta("on", false):
+				CUT.skip = true; return
+			if STATE != "play": return
+			BODY.touch = false
+			if ev.echo and k != KEY_W: return
+			KEYS[k] = true; keyAxis()
+			if k == KEY_SPACE: IN.jump = true
+			if k == KEY_E or k == KEY_F: doInteract()
+			if k == KEY_Q or k == KEY_G: dropHeld()
+			if k == KEY_H: showHint()
+			if k == KEY_F:
+				var H = held()
+				if H and H.d.tool == "light": toolUse()
+			if k >= KEY_1 and k <= KEY_4: selSlot(k - KEY_1)
+		else:
+			KEYS.erase(k); keyAxis()
+	elif ev is InputEventMouseButton:
+		if BODY.touch and ev.device == -1: return
+		if ev.pressed:
+			initAudio()
+			if STATE != "play": return
+			if ev.button_index == MOUSE_BUTTON_WHEEL_DOWN: selSlot(PL.sel + 1); return
+			if ev.button_index == MOUSE_BUTTON_WHEEL_UP: selSlot(PL.sel - 1); return
+			if _over_ui(ev.position): return
+			if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+				lockPointer(); return
+			if ev.button_index == MOUSE_BUTTON_LEFT: useDown()
+			if ev.button_index == MOUSE_BUTTON_RIGHT:
+				var H = held()
+				if H and H.d.tool == "alarm": armAlarm(H)
+				else: IN.zoom = true
+		else:
+			if ev.button_index == MOUSE_BUTTON_LEFT: useUp()
+			if ev.button_index == MOUSE_BUTTON_RIGHT: IN.zoom = false
+	elif ev is InputEventMouseMotion:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or STATE != "play" or PL.frozen: return
+		var k: float = 0.0022 * CFG.sens * S3.sens * (1 - PL.zoom * 0.8)
+		PL.yaw -= ev.relative.x * k; PL.pitch -= ev.relative.y * k * (-1.0 if CFG.inv else 1.0); PL.pitch = clampf(PL.pitch, -1.5, 1.5)
+	elif ev is InputEventScreenTouch or ev is InputEventScreenDrag:
+		touch_input(ev)
+func _over_ui(p: Vector2) -> bool:
+	for k in ["pauseBtn", "hintBtn", "skipCut"]:
+		var c: Control = UI[k]
+		if c.is_visible_in_tree() and c.get_global_rect().has_point(p): return true
+	for s in UI.slots:
+		if s.p.is_visible_in_tree() and s.p.get_global_rect().has_point(p): return true
+	return false
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		KEYS.clear(); keyAxis()
+# マウスのロックがはずれたら（Esc など）ポーズ
+func updPointer() -> void:
+	if lockOn and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		lockOn = false
+		if STATE == "play" and not BODY.touch: pauseGame()
+# 使う・投げる（左クリック／使うボタン）
+func useDown() -> void:
+	if PL.hide or PL.frozen: return
+	lmbDown = true; lmbT = GT
+	if nearStand() and not PL.useTarget:
+		shootRange(); lmbDown = false; return
+	if PL.useTarget:
+		useHeldOnTarget(); lmbDown = false; return
+	var H = held()
+	if not H:
+		if PL.target: doInteract()
+		lmbDown = false; return
+	if H.d.tool: PL.toolPending = true
+	else: startCharge()
+func useUp() -> void:
+	if not lmbDown: return
+	lmbDown = false
+	if PL.get("toolPending"):
+		PL.toolPending = false
+		if GT - lmbT < 0.3:
+			toolUse(); return
+	if PL.charging: endCharge(true)
+func startCharge() -> void:
+	PL.charging = true; PL.charge = 0.0; ui_cls("charge", "on", true)
+func endCharge(doThrow: bool) -> void:
+	if not PL.charging: return
+	PL.charging = false; ui_cls("charge", "on", false)
+	if doThrow: throwHeld(PL.charge)
+func updCharge(dt: float) -> void:
+	updPointer()
+	if PL.get("toolPending") and lmbDown and GT - lmbT > 0.3:
+		PL.toolPending = false; startCharge()
+	if PL.charging:
+		PL.charge = minf(1, PL.charge + dt * 1.1)
+		if not held(): endCharge(false)
+# ---- タッチ ----
+var TOUCHS := {stick = null, look = null, crouch = false, run = false}
+func touch_input(ev: InputEvent) -> void:
+	initAudio(); BODY.touch = true
+	if STATE != "play": return
+	var W := get_viewport().get_visible_rect().size.x
+	if ev is InputEventScreenTouch:
+		if ev.pressed:
+			if _over_touch_btn(ev.position): return
+			if ev.position.x < W * 0.42 and not TOUCHS.stick:
+				TOUCHS.stick = {id = ev.index, x0 = ev.position.x, y0 = ev.position.y}; UI.stick.position = ev.position - Vector2(64, 64)
+			elif not TOUCHS.look:
+				TOUCHS.look = {id = ev.index, x = ev.position.x, y = ev.position.y, t0 = GT, moved = 0.0}
+		else:
+			if TOUCHS.stick and ev.index == TOUCHS.stick.id:
+				TOUCHS.stick = null; IN.f = 0.0; IN.s = 0.0; IN.run = TOUCHS.run; UI.knob.position = Vector2(37, 37); place(UI.stick, 0, 1, 34, -170, 128, 128)
+			if TOUCHS.look and ev.index == TOUCHS.look.id:
+				if TOUCHS.look.moved < 10 and GT - TOUCHS.look.t0 < 0.3 and STATE == "play": doInteract() # 軽くタップしたら「手」
+				TOUCHS.look = null
+	elif ev is InputEventScreenDrag:
+		if TOUCHS.stick and ev.index == TOUCHS.stick.id:
+			var dx: float = ev.position.x - TOUCHS.stick.x0; var dy: float = ev.position.y - TOUCHS.stick.y0; var l := Vector2(dx, dy).length(); var m := 52.0
+			if l > m:
+				dx *= m / l; dy *= m / l
+			UI.knob.position = Vector2(37 + dx, 37 + dy); IN.f = -dy / m; IN.s = dx / m
+			if absf(IN.f) < 0.15: IN.f = 0.0
+			if absf(IN.s) < 0.15: IN.s = 0.0
+			IN.run = TOUCHS.run or (l >= m * 0.98 and -dy / m > 0.85)
+		if TOUCHS.look and ev.index == TOUCHS.look.id:
+			var d: Vector2 = ev.position - Vector2(TOUCHS.look.x, TOUCHS.look.y); TOUCHS.look.x = ev.position.x; TOUCHS.look.y = ev.position.y; TOUCHS.look.moved += absf(d.x) + absf(d.y)
+			if STATE == "play" and not PL.frozen:
+				var k: float = 0.0048 * CFG.sens * S3.sens * (1 - PL.zoom * 0.8); PL.yaw -= d.x * k; PL.pitch -= d.y * k * (-1.0 if CFG.inv else 1.0); PL.pitch = clampf(PL.pitch, -1.5, 1.5)
+func _over_touch_btn(p: Vector2) -> bool:
+	for k in UI.tbtns:
+		if UI.tbtns[k].get_global_rect().has_point(p): return true
+	return _over_ui(p)
+func touch_btn(id: String, down: bool) -> void:
+	initAudio()
+	if STATE != "play": return
+	match id:
+		"tJump":
+			if down: IN.jump = true
+		"tUse":
+			if down: doInteract()
+		"tThrow":
+			if down: useDown()
+			else: useUp()
+		"tDrop":
+			if down: dropHeld()
+		"tCrouch":
+			if down:
+				TOUCHS.crouch = not TOUCHS.crouch; IN.crouch = TOUCHS.crouch
+		"tRun":
+			if down:
+				TOUCHS.run = not TOUCHS.run; PL.run = TOUCHS.run
+# ---- 設定 ----
+func openSettings() -> void:
+	showScreen("settings", true); UI.sSens.set_value_no_signal(roundf(CFG.sens * 100)); UI.sInv.set_pressed_no_signal(CFG.inv); UI.sFov.set_value_no_signal(CFG.fov); UI.sHints.set_pressed_no_signal(CFG.hints)
+	UI.sQ.text = {eco = "省電力", normal = "標準", high = "高", max = "最高"}.get(S3.quality, "高")
+# ---- タイトル ----
+var DIRTY := false
+func toTitle() -> void:
+	STATE = "title"; unlockPointer(); showScreen("title", true); BODY.play = false; BODY.main = false; BODY.cut = false; UI.bCont.disabled = not hasSave(); setMusic("title"); objective(""); NB.active = false
+	setEnv("evening"); nbVisible(true); nbTeleport(-3, 0, 10.6, PI); NB.anim = "idle"; NB.state = "off"; NB.look = 0.0; ui_cls("hideView", "on", false); PL.hide = null
+func freshStart(mode: String) -> void:
+	store_set("otonari-a1-auto", mode); get_tree().reload_current_scene()
+func newGame() -> void:
+	if hasSave():
+		UI.confirm.popup_centered(); return
+	newGameReally()
+func newGameReally() -> void:
+	store_set(SAVEKEY, null)
+	if DIRTY:
+		freshStart("new"); return
+	DIRTY = true; showScreen("title", false); BODY.play = true; STATE = "play"; story.flags = {}; story.stats = {time = 0.0, caught = 0, sleeps = 0}; runIntro()
+func contGame() -> void:
+	if DIRTY:
+		freshStart("cont"); return
+	DIRTY = true; showScreen("title", false); BODY.play = true; STATE = "play"
+	if not loadGame():
+		runIntro(); return
+	lockPointer()
+func skipTutorial() -> void:
+	ui_fade_now(false); story.gen += 1; STATE = "play"; BODY.cut = false; CUT.on = false; CUT.cam = null; CUT.skip = true; later(0.08, func(): CUT.skip = false)
+	for i in 4:
+		var it = PL.inv[i]
+		if it:
+			PL.inv[i] = null; propRestAt(it, it.home.x, it.home.y, it.home.z, it.home.yaw)
+	H1.ebox.on = true; H1.ebox.open = true; H1.eboxLid.m.tgt = 1.0; H1.ebox.sw.rotation.x = -0.7
+	for b in P.boxes: propRestAt(b, rr(-4, -1), 0.31, rr(-27, -24), 0)
+	parkMyCar(5.6, -12, PI); nbBinoc(false); startMain(false); lockPointer()
+# ---- 3dame（ランチャー）とのやりとり（Web のとき）----
+var _js_cb = null
+func setup_web_bridge() -> void:
+	if not IS_WEB: return
+	_js_cb = JavaScriptBridge.create_callback(_on_web_message)
+	var w = JavaScriptBridge.get_interface("window")
+	w.addEventListener("message", _js_cb)
+func _on_web_message(args) -> void:
+	var e = args[0]; var d = e.data
+	if d == null: return
+	var o = d.h3dSet
+	if o:
+		if typeof(o.sound) == TYPE_BOOL: S3.sound = o.sound
+		if typeof(o.vol) == TYPE_FLOAT or typeof(o.vol) == TYPE_INT: S3.vol = float(o.vol)
+		if typeof(o.sens) == TYPE_FLOAT or typeof(o.sens) == TYPE_INT: S3.sens = float(o.sens)
+		applyVol()
+func post_parent(msg: Dictionary) -> void:
+	if not IS_WEB: return
+	JavaScriptBridge.eval("try{parent.postMessage(%s,'*')}catch(e){}" % JSON.stringify(msg), true)
 
 # ================= テレビ =================
 func setTV(on: bool) -> void:
@@ -2919,11 +5209,12 @@ func _ready() -> void:
 	ROT = S3.land
 	scene = Node3D.new(); scene.name = "World"; add_child(scene)
 	load_mats()
+	setup_story_hooks(); propHitHook = nbPropHit
 	setup_render()
 	setup_ui()
 	boot()
 func boot() -> void:
-	TOUCH = is_phone()
+	BODY.touch = is_phone()
 	setLoad(0.1); await get_tree().process_frame
 	initPropDefs(); initPropDefsA1(); setLoad(0.25); await get_tree().process_frame
 	# 世界

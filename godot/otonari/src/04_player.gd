@@ -196,7 +196,7 @@ func updTarget() -> void:
 	showPrompt()
 var lastPrompt := ""
 func showPrompt() -> void:
-	var s := ""; var T = PL.target; var H = held(); var touch := TOUCH
+	var s := ""; var T = PL.target; var H = held(); var touch: bool = BODY.touch
 	if PL.hide: s = ""
 	elif T:
 		if T.k == "prop":

@@ -51,11 +51,12 @@ func _ready() -> void:
 	ROT = S3.land
 	scene = Node3D.new(); scene.name = "World"; add_child(scene)
 	load_mats()
+	setup_story_hooks(); propHitHook = nbPropHit
 	setup_render()
 	setup_ui()
 	boot()
 func boot() -> void:
-	TOUCH = is_phone()
+	BODY.touch = is_phone()
 	setLoad(0.1); await get_tree().process_frame
 	initPropDefs(); initPropDefsA1(); setLoad(0.25); await get_tree().process_frame
 	# 世界

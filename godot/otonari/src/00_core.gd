@@ -375,6 +375,18 @@ class G:
 				var a := k * (radial + 1) + j; var b := (k + 1) * (radial + 1) + j
 				g.i.append_array([a, b, a + 1, b, b + 1, a + 1])
 		return g
+	static func torus(radius: float, tube: float, rs := 8, ts := 6, arc := TAU) -> Geo:
+		var g := Geo.new()
+		for j in rs + 1:
+			for i in ts + 1:
+				var u := float(i) / ts * arc; var v := float(j) / rs * TAU
+				var p := Vector3((radius + tube * cos(v)) * cos(u), (radius + tube * cos(v)) * sin(u), tube * sin(v))
+				g.p.append(p); g.n.append((p - Vector3(radius * cos(u), radius * sin(u), 0)).normalized()); g.u.append(Vector2(float(i) / ts, float(j) / rs))
+		for j in range(1, rs + 1):
+			for i in range(1, ts + 1):
+				var a := (ts + 1) * j + i - 1; var b := (ts + 1) * (j - 1) + i - 1; var c := (ts + 1) * (j - 1) + i; var d := (ts + 1) * j + i
+				g.i.append_array([a, b, d, b, c, d])
+		return g
 	static func capsule(r: float, l: float, cap_seg := 4, rad_seg := 8) -> Geo:
 		# 円柱＋半球（向きは Y）
 		var g := Geo.new(); var rows := []
