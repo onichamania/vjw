@@ -1,0 +1,12 @@
+1 00_core.gd
+464 01_geo.gd
+695 02_objects.gd
+1047 03_props.gd
+1234 04_player.gd
+1568 05_furn.gd
+1728 06_street.gd
+1846 07_a1house.gd
+2366 08_a1home.gd
+2531 09_render.gd
+2788 98_stubs.gd
+2869 99_loop.gd

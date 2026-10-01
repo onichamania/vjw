@@ -1,0 +1,630 @@
+{
+ "tex": {
+  "sid_blue": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_cream": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_mint": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_white": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_yellow": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_pink": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_grey": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "floor": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "floor_dark": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "patch": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "raw": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "beam": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "fence": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "roof": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "roof_dark": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "roof_green": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "roof_brown": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "brick": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "brick_y": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "stone": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_green": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_blue": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_yellow": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_pink": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_red": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_beige": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_teal": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_kid": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_check": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "tile_k": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "tile_b": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "tile_w": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "carpet_r": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "carpet_g": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "carpet_b": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "carpet_p": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "grass": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "dirt": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "asphalt": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "walk": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "concrete": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "metal": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "metal_dark": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "corr": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "corr_o": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "corr_red": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "rust": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "fab_g": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "fab_r": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "fab_b": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "fab_y": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "fab_w": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "leaf": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "city": {
+   "w": 1024,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "cloud": {
+   "w": 1024,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "plain": {
+   "w": 64,
+   "h": 64,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_wine": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_brown": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_leafblue": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_navy": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_gstripe": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_floral": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "wp_kids2": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "plaster": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "plaster_w": {
+   "w": 128,
+   "h": 128,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_orange": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_teal": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_pinkg": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_yel2": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_beige": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "sid_lav": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "gdoor": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "chalk": {
+   "w": 1024,
+   "h": 512,
+   "rep": false,
+   "srgb": true
+  },
+  "worldmap": {
+   "w": 512,
+   "h": 256,
+   "rep": false,
+   "srgb": true
+  },
+  "alpha": {
+   "w": 512,
+   "h": 128,
+   "rep": false,
+   "srgb": true
+  },
+  "p_rifle": {
+   "w": 256,
+   "h": 512,
+   "rep": false,
+   "srgb": true
+  },
+  "p_prize": {
+   "w": 256,
+   "h": 512,
+   "rep": false,
+   "srgb": true
+  },
+  "landscape": {
+   "w": 1024,
+   "h": 256,
+   "rep": false,
+   "srgb": true
+  },
+  "drawings": {
+   "w": 512,
+   "h": 256,
+   "rep": false,
+   "srgb": true
+  },
+  "p_coffin": {
+   "w": 256,
+   "h": 320,
+   "rep": false,
+   "srgb": true
+  },
+  "exit": {
+   "w": 256,
+   "h": 96,
+   "rep": false,
+   "srgb": true
+  },
+  "tall": {
+   "w": 512,
+   "h": 160,
+   "rep": false,
+   "srgb": true
+  },
+  "hidehere": {
+   "w": 256,
+   "h": 96,
+   "rep": false,
+   "srgb": true
+  },
+  "monitor": {
+   "w": 128,
+   "h": 96,
+   "rep": false,
+   "srgb": true
+  },
+  "score": {
+   "w": 256,
+   "h": 96,
+   "rep": false,
+   "srgb": true
+  },
+  "water": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "icetex": {
+   "w": 256,
+   "h": 256,
+   "rep": true,
+   "srgb": true
+  },
+  "citynight": {
+   "w": 1024,
+   "h": 256,
+   "rep": false,
+   "srgb": true
+  }
+ },
+ "canv": [
+  {
+   "n": "c88",
+   "st": "cnv<buildBoilerRoom",
+   "w": 64,
+   "h": 64
+  },
+  {
+   "n": "c89",
+   "st": "cnv<buildRange",
+   "w": 256,
+   "h": 96
+  },
+  {
+   "n": "c90",
+   "st": "cnv<nbMats",
+   "w": 128,
+   "h": 128
+  },
+  {
+   "n": "c91",
+   "st": "cnv<buildElevator",
+   "w": 64,
+   "h": 96
+  },
+  {
+   "n": "c92",
+   "st": "cnv<buildCamPanel",
+   "w": 256,
+   "h": 384
+  },
+  {
+   "n": "c93",
+   "st": "cnv<buildCamPanel",
+   "w": 128,
+   "h": 48
+  },
+  {
+   "n": "c94",
+   "st": "cnv<buildCamPanel",
+   "w": 160,
+   "h": 120
+  },
+  {
+   "n": "c95",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c96",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c97",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c98",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c99",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c100",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c101",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c102",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  },
+  {
+   "n": "c103",
+   "st": "cnv<textTex",
+   "w": 128,
+   "h": 160
+  }
+ ]
+}
