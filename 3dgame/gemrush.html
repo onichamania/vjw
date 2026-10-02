@@ -36,8 +36,13 @@ body.br .gc,body.br #clock{display:none}body.br #brTop{display:block}
 .gc.b{box-shadow:inset 0 -4px 0 var(--blue)}.gc.r{box-shadow:inset 0 -4px 0 var(--red)}
 .gc svg{width:17px;height:17px}
 #clock{font-size:15px;font-weight:900;padding:5px 10px;border-radius:10px;background:#000a;min-width:62px;text-align:center;font-variant-numeric:tabular-nums}
-#cdown{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 52px);transform:translateX(-50%);font-size:15px;font-weight:900;padding:5px 14px;border-radius:10px;display:none;white-space:nowrap}
-#cdown.b{background:#1d5fa8e6}#cdown.r{background:#b3262fe6}
+/* ジェムのカウントダウン（本家のように上の真ん中に大きな数字） */
+#cdown{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 48px);transform:translateX(-50%);display:none;text-align:center;pointer-events:none;line-height:1;white-space:nowrap}
+#cdown b{display:block;font-size:clamp(44px,9vmin,64px);font-weight:900;font-style:italic;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 5px 0 #000;font-variant-numeric:tabular-nums}
+#cdown.b b{color:#6cc0ff}#cdown.r b{color:#ff6370}
+#cdown small{display:inline-block;margin-top:5px;font-size:13px;font-weight:900;padding:3px 12px;border-radius:9px;background:#000b}
+#cdown.b small{box-shadow:inset 0 -3px 0 var(--blue)}#cdown.r small{box-shadow:inset 0 -3px 0 var(--red)}
+#cdown.tick b{animation:cdTick .35s cubic-bezier(.2,1.8,.4,1)}@keyframes cdTick{from{transform:scale(1.5)}}
 #feed{position:absolute;right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);display:flex;flex-direction:column;gap:4px;align-items:flex-end;font-size:12px;font-weight:800}
 #feed div{background:#000a;padding:3px 9px;border-radius:8px}
 #feed .b{color:#8cc8ff}#feed .r{color:#ff9aa2}
@@ -314,6 +319,53 @@ body.spec #rot canvas{filter:saturate(.6) brightness(.9)}
 @keyframes pinIn{0%{transform:scale(0) rotate(-25deg) translateY(20px)}45%{transform:scale(1.28) rotate(9deg) translateY(-6px)}65%{transform:scale(.88) rotate(-5deg)}82%{transform:scale(1.07) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
 @keyframes pinBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
 .pin.out .pinI{animation:pinOut .3s ease-in forwards}@keyframes pinOut{0%{transform:scale(1)}30%{transform:scale(1.15)}100%{transform:scale(0) translateY(10px);opacity:0}}
+/* ===== 試合前の VS 画面（本家のロード画面のように、両チームのキャラを並べる） ===== */
+#vs{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2.2vh;overflow:hidden;cursor:pointer;
+  background:linear-gradient(172deg,#1f6fd6 0 49.4%,#0b0f1a 49.4% 50.6%,#d23240 50.6% 100%)}
+#vs.on{display:flex}
+#vs::before{content:'';position:absolute;inset:-20%;background:repeating-linear-gradient(115deg,#ffffff12 0 18px,transparent 18px 46px);animation:vsBg 5s linear infinite}
+@keyframes vsBg{to{transform:translateX(92px)}}
+.vsHead{position:relative;text-align:center;line-height:1.2}
+.vsHead b{display:block;font-size:clamp(22px,4.6vmin,36px);font-weight:900;letter-spacing:.06em;-webkit-text-stroke:2px #000;paint-order:stroke fill;text-shadow:0 3px 0 #000}
+.vsHead small{font-size:clamp(12px,2.4vmin,16px);font-weight:900;text-shadow:0 2px 0 #000}
+.vsRow{position:relative;display:flex;flex-wrap:wrap;gap:clamp(8px,1.6vw,18px);justify-content:center}
+.vsRow.b{animation:vsInL .45s cubic-bezier(.2,1.2,.4,1) both}.vsRow.r{animation:vsInR .45s cubic-bezier(.2,1.2,.4,1) .12s both}
+@keyframes vsInL{from{transform:translateX(-110vw)}}@keyframes vsInR{from{transform:translateX(110vw)}}
+.vsC{width:clamp(78px,15vmin,120px);border:3px solid #000;border-radius:12px;overflow:hidden;position:relative;text-align:center;box-shadow:0 5px 0 #000a;
+  background:linear-gradient(180deg,var(--rc) 0%,color-mix(in srgb,var(--rc) 45%,#000) 100%)}
+.vsC .pic{height:clamp(58px,12vmin,98px);display:grid;place-items:end center;background:radial-gradient(circle at 50% 62%,#ffffff70 0,transparent 68%)}
+.vsC .pic svg{height:94%;filter:drop-shadow(0 4px 0 #0007)}
+.vsC b{display:block;font-size:clamp(11px,2.1vmin,14px);font-weight:900;background:#000c;padding:3px 3px 1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vsC small{display:block;font-size:clamp(9px,1.7vmin,11px);font-weight:900;background:#000c;padding:0 2px 3px;color:#ffd84d}
+.vsC .lv{position:absolute;left:3px;top:3px;font-size:10px;font-weight:900;background:#000b;border-radius:6px;padding:1px 5px;color:#ffd84d}
+.vsC.me{outline:3px solid #58e06a;outline-offset:2px}
+.vsMid{position:relative;font-size:clamp(40px,10vmin,78px);font-weight:900;font-style:italic;color:#ffd84d;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 6px 0 #000;line-height:1;animation:vsPop .5s cubic-bezier(.2,1.8,.4,1) .3s both}
+@keyframes vsPop{from{transform:scale(3);opacity:0}}
+#vs.br{background:linear-gradient(180deg,#4a2f74,#140c22)}
+#vs.br .vsRow{max-width:min(96vw,clamp(380px,72vmin,600px))}#vs.br .vsC{width:clamp(62px,12vmin,96px)}#vs.br .vsC .pic{height:clamp(48px,9.5vmin,78px)}#vs.br .vsMid{display:none}
+/* 結果画面：チームの並びとスタープレイヤー */
+#rTeam{display:flex;flex-direction:column;align-items:center;gap:8px;margin:4px 0 0}
+/* チームの並びを出す分、結果画面を詰める（ボタンまで1画面に入るように） */
+#result .wrap{padding-top:3vh}#result #rTitle{font-size:clamp(38px,9vmin,72px);line-height:1.1}#result .sub{margin:4px 0 6px;line-height:1.5}
+#result .stats{display:grid;width:max-content;max-width:100%;margin:4px auto 0;grid-template-columns:none;grid-template-rows:auto auto;grid-auto-flow:column;gap:0 16px;padding:6px 14px;text-align:center}
+#result .stats span:nth-child(2n){text-align:center;font-size:17px}#result .stats span:nth-child(2n+1){font-size:11px;opacity:.8}
+#result br{display:none}#result #againBtn{margin-top:10px}
+@media (max-height:520px){#result .wrap{padding-top:6px}#result #rTitle{font-size:34px}#rTeam{gap:4px}#rTeam .vsC{width:60px}#rTeam .vsC .pic{height:42px}#rTeam .vsC b{font-size:10px}#rTeam .op{display:none}
+  .starTag{font-size:12px}#result .sub{font-size:11px;line-height:1.35}#result .cu{font-size:19px!important}#result .stats span:nth-child(2n){font-size:14px}#result #againBtn{margin-top:6px;padding:8px 26px;font-size:17px}}
+#rTeam .vsRow{animation:none}#rTeam .vsC{width:clamp(70px,12vmin,100px);animation:cardPop .35s cubic-bezier(.2,1.6,.4,1) backwards}#rTeam .vsC .pic{height:clamp(50px,9.5vmin,80px)}
+#rTeam .op .vsC{width:clamp(54px,9vmin,76px);opacity:.85}#rTeam .op .vsC .pic{height:clamp(38px,7vmin,60px)}
+.vsC.star{outline:3px solid #ffd84d;outline-offset:2px;box-shadow:0 0 22px #ffd84daa,0 5px 0 #000a}
+.vsC .st{position:absolute;right:3px;top:2px;font-size:15px;filter:drop-shadow(0 2px 0 #000)}
+.starTag{font-size:15px;font-weight:900;color:#ffd84d;text-shadow:0 2px 0 #000}
+/* PC：本家の右下の丸いボタン（必殺技・ガジェット・ハイパー）を、キーの表示つきで出す。押すのはキーとマウス */
+body:not(.touch) #supBtn,body:not(.touch) #gadBtn,body:not(.touch) #hypBtn{pointer-events:none}
+body:not(.touch) #supBtn{display:grid;right:calc(env(safe-area-inset-right,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 30px);width:76px;height:76px}
+body:not(.touch) #gadBtn{display:grid;right:calc(env(safe-area-inset-right,0px) + 112px);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:58px;height:58px}
+body:not(.touch) #hypBtn{display:block;right:calc(env(safe-area-inset-right,0px) + 31px);bottom:calc(env(safe-area-inset-bottom,0px) + 126px);width:58px;height:58px}
+body:not(.touch) #supBtn::after,body:not(.touch) #gadBtn::after,body:not(.touch) #hypBtn::after{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);font-size:10px;font-weight:900;color:#fff;background:#000c;border-radius:5px;padding:0 6px;white-space:nowrap;line-height:15px}
+body:not(.touch) #gadBtn{font-size:8.5px}body:not(.touch) #supBtn::after{content:'E / 右クリック'}body:not(.touch) #gadBtn::after{content:'F'}body:not(.touch) #hypBtn::after{content:'R'}
+body:not(.touch) #pcKit{display:none}
+@media (prefers-reduced-motion:reduce){#vs::before,.vsRow,.vsMid,#cdown.tick b{animation:none!important}}
 </style></head><body>
 <div id="rot">
 <canvas id="c"></canvas>
@@ -328,6 +380,7 @@ body.spec #rot canvas{filter:saturate(.6) brightness(.9)}
  <div id="pcKit"><span id="pkG"></span><span id="pkH"></span></div>
  <div id="pcHint"><b>WASD</b>移動　<b>マウス</b>ねらう　<b>左クリック</b>攻撃　<b>右クリック / E</b>必殺技<br><b>Space</b>自動でねらって攻撃　<b>F</b>ガジェット　<b>R</b>ハイパーチャージ　<b>P</b>一時停止　<b>1 / 2</b>ピン</div>
 </div>
+<div id="vs"><div class="vsHead"><b id="vsMode"></b><small id="vsMap"></small></div><div class="vsRow b" id="vsB"></div><div class="vsMid">VS</div><div class="vsRow r" id="vsR"></div></div>
 <div class="scr" id="menu">
  <div class="hTop">
   <button class="hPill rankPill" id="rankPill"><span class="emb" id="rankEmb"></span><span class="ht"><b id="rankName">ブロンズ I</b><span class="rbar"><i id="rankBar"></i></span><small id="rankPts">0 / 100</small></span></button>
@@ -354,7 +407,7 @@ body.spec #rot canvas{filter:saturate(.6) brightness(.9)}
 <div class="scr dim" id="unlockScr"><div class="wrap" style="padding-top:8vh"><div id="unTitle" class="st2" style="color:#ffd84d;font-size:34px">新しいキャラ！</div><div id="unPic" class="unpic"></div><div id="unSub" class="st2"></div><button class="go" id="unOk">やった！</button></div></div>
 <div class="scr dim" id="rankScr"><div class="wrap"><h2 class="st2">ランク</h2><p class="sub">ランク戦で勝つとランクポイントが増えます。100ポイントごとに1段階上がり、マスターズIIIの先がプロです。ランクが上がるほど相手が強くなります。同じランクの中では下の段階に落ちません。</p><div class="ladder" id="ladder"></div><button class="btn2" id="rankClose">もどる</button></div></div>
 <div class="scr" id="result"><div class="wrap">
- <div id="rTitle">勝利！</div><div id="rSub" class="sub"></div>
+ <div id="rTitle">勝利！</div><div id="rTeam"></div><div id="rSub" class="sub"></div>
  <div class="stats" id="rStats"></div><br>
  <button class="go" id="againBtn">もう一度</button><br><button class="btn2" id="toMenu">キャラを選び直す</button>
 </div></div>
@@ -751,7 +804,7 @@ function mkUnit(bt,team,isMe,name,spawn,lv,skin,kit){const B=BT[bt];const u={bt,
   hp:1,maxHp:1,dm:1,ammo:3,sup:0,hyp:0,hyperT:-9,lastHurt:-9,lastAtk:-9,dead:false,respT:0,gems:0,revealT:0,inv:0,act:null,walkT:0,flash:0,atkAnim:0,slowT:0,stunT:0,place:0,
   kills:0,deaths:0,dmg:0,gemsGot:0,kit:kit||{gad:-1,sp:-1,gears:[],hyper:false},gadCD:0,shield:0,gshield:0,redT:0,red:0,stage:0,stageBoostT:0,form:'clyde',boostT:0,sugarT:0,spinT:0,outT:-9,
   ai:{path:[],pt:0,think:0,tgt:null,see:0,fireT:0,strafe:rr(0,TAU),mode:'',stuck:0,lx:0,lz:0},seen:true};
-  const ring=G.mode==='br'?0xff4d5a:TEAMCOL[team];u.m=mkModel(bt,ring,isMe,skin);if(bt==='ranran'){u.m1=u.m;u.m2=mkModel(bt,ring,isMe,skin,'bonnie');u.m2.g.visible=false}
+  const ring=G.mode==='br'?0xff4d5a:TEAMCOL[team];u.sk=skin;u.m=mkModel(bt,ring,isMe,skin);if(bt==='ranran'){u.m1=u.m;u.m2=mkModel(bt,ring,isMe,skin,'bonnie');u.m2.g.visible=false}
   u.kit.buf=u.kit.buf||{};if(!BUF[bt])u.kit.buf={};if(u.kit.gears.includes('shield'))u.gshield=600;calcStats(u);spawnAt(u);return u}
 const hasSP=(u,id)=>!!u.kit&&u.kit.sp>=0&&BT[u.bt].sp[u.kit.sp].id===id,hasGear=(u,id)=>u.kit.gears.includes(id),hyperOn=u=>G.t<u.hyperT;
 // バフィー：bufG=そのガジェットのバフィー、bufS=そのスターパワーのバフィー、bufH=ハイパーバフィー
@@ -1494,7 +1547,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.state===
 function clearMatch(){for(const u of G.units){scene.remove(u.m.g);if(u.m1)scene.remove(u.m1.g);if(u.m2)scene.remove(u.m2.g);u.lab.d.remove()}for(const q of G.mines)scene.remove(q.m);G.mines=[];for(const h of G.heads){scene.remove(h.m.g);h.lab.d.remove()}G.heads=[];for(const q of G.pets){scene.remove(q.m.g);q.lab.d.remove()}G.pets=[];for(const t of G.turrets){scene.remove(t.m.g);t.lab.d.remove()}for(const b of G.bullets)scene.remove(b.m);for(const l of G.lobs){scene.remove(l.m);if(l.mk)scene.remove(l.mk)}
   for(const g of G.items)scene.remove(g.m);for(const z of G.zones)scene.remove(z.m);
   for(const s of G.safes)s.lab.d.remove();G.safes=[];G.M={};
-  G.units=[];G.bullets=[];G.lobs=[];G.items=[];G.turrets=[];G.zones=[];TIMERS.length=0;G.me=null;G._pw=0;DN.forEach(n=>n.d.remove());DN.length=0;$('feed').innerHTML='';showAim(null)}
+  $('vs').classList.remove('on');G.units=[];G.bullets=[];G.lobs=[];G.items=[];G.turrets=[];G.zones=[];TIMERS.length=0;G.me=null;G._pw=0;DN.forEach(n=>n.d.remove());DN.length=0;$('feed').innerHTML='';showAim(null)}
 // ================= 持ち物（トロフィー・コイン・レベル・ランク・クエスト） =================
 let PICK=BT[LS('gr-pick','rico')]?LS('gr-pick','rico'):'rico',PMODE=['gem','br','ranked'].includes(LS('gr-mode','gem'))?LS('gr-mode','gem'):'gem';
 const trophies=id=>+LS('gr-tr-'+id,0),totalTr=()=>BT_IDS.reduce((s,i)=>s+trophies(i),0);
@@ -1539,7 +1592,18 @@ function startMatch(mode){initAudio();if(!isOwned(PICK))PICK='rico';mode=mode||P
   else{const R0=HALFX*.88;for(let i=0;i<10;i++){const a=Math.PI/2+i/10*TAU,[x,z]=nearestOpen(Math.cos(a)*R0,Math.sin(a)*R0);
       const bb=BT_IDS[Math.floor(Math.random()*BT_IDS.length)],lv2=blv(),u=i===0?mkUnit(PICK,0,true,'あなた',[x,z],plv,skinOf(PICK),myKit(PICK)):mkUnit(bb,i,false,names[i-1],[x,z],lv2,botSkin(bb),botKit(bb,lv2));G.units.push(u);if(i===0)G.me=u}
     G.safeR=Math.hypot(HALFX,HALFZ)+2;G.alive=10}
-  for(const u of G.units)mkLabel(u);G.time=MODES[mode].time||150;modeInit();ZOOM=1;camP.set(me().x,0,me().z);note(MODES[mode].name+'・'+MAPS[mid].name,2.6)}
+  for(const u of G.units)mkLabel(u);G.time=MODES[mode].time||150;modeInit();ZOOM=1;camP.set(me().x,0,me().z);
+  // 相手のトロフィーは自分のトロフィーの近く（本家のマッチングのように）
+  const myTr=G.ranked?null:trophies(PICK);for(const u of G.units)u.tr=myTr==null?null:u.isMe?myTr:Math.max(0,Math.round(myTr+rr(-60,60)));
+  G._vsNote=MODES[mode].name+'・'+MAPS[mid].name;showVS(mode,mid)}
+// ================= 試合前の VS 画面（本家のロード画面のように：両チームのキャラ・名前・レベル・トロフィー） =================
+function vsCard(u,o){o=o||{};const B=BT[u.bt];return `<div class="vsC${u.isMe?' me':''}${o.star?' star':''}" style="--rc:${RARC[B.rar]||'#7fd8ff'}${o.d!=null?';animation-delay:'+o.d+'s':''}"><span class="lv">⚡${u.lv}</span>${o.star?'<span class="st">⭐</span>':''}<div class="pic">${portrait(u.bt,u.sk)}</div><b>${u.name.replace(/</g,'')}</b><small>${o.sub!=null?o.sub:u.tr==null?B.name:'🏆'+u.tr}</small></div>`}
+function showVS(mode,mid){const v=$('vs'),br=G.mode==='br';$('vsMode').textContent=MODES[mode].name;$('vsMap').textContent=MAPS[mid].name;v.classList.toggle('br',br);
+  $('vsB').innerHTML=G.units.filter(u=>br||u.team===0).map(vsCard).join('');$('vsR').innerHTML=br?'':G.units.filter(u=>u.team===1).map(vsCard).join('');
+  for(const e of v.querySelectorAll('.vsRow,.vsMid')){e.style.animation='none';void e.offsetWidth;e.style.animation=''}
+  v.classList.add('on');G.state='vs';G.vsT=2.6;SFX.superGo()}
+function vsEnd(){$('vs').classList.remove('on');if(G.state!=='vs')return;G.state='intro';G._n=null;if(G._vsNote)note(G._vsNote,2.6)}
+$('vs').addEventListener('pointerdown',()=>{if(G.state==='vs'&&G.vsT<2.1)G.vsT=0});
 function endMatch(win){if(G.over)return;G.over=true;G.win=win;G.endT=2.4;G.state='end';$('cdown').style.display='none';
   if(G.mode==='br'){const p=G.place;big(p===1?'1位！':p+'位',2.4,p===1?'#ffd84d':p<=4?'#8fe39a':'#fff');SFX.end(p<=4)}
   else{big(win===0?'勝利！':win===1?'敗北…':'引き分け',2.4,win===0?'#ffd84d':win===1?'#ff7b7b':'#fff');SFX.end(win===0)}}
@@ -1549,6 +1613,9 @@ function showResult(){G.state='result';document.body.classList.remove('playing')
   else{const w=G.win;won=w===0;d=w===0?8:w===1?-3:0;c=w===0?60:w===1?25:35;title=w===0?'勝利！':w===1?'敗北…':'引き分け';cls=w===0?'win':w===1?'lose':'draw'}
   if(d<0&&t0<100)d=0;                       // 100トロフィーまでは負けても減らない
   let html='';
+  // スタープレイヤー：勝ったチーム（引き分けなら全員）でいちばん活躍した人（倒した数・ジェム・ダメージ）
+  let star=null;if(G.mode!=='br'){const sc=v=>v.kills*2+v.gemsGot*2+v.dmg/1500;for(const v of G.units)if(!v.dummy&&(G.win<0||v.team===G.win)&&(!star||sc(v)>sc(star)))star=v}
+  if(star&&star.isMe){c+=10;html+=`<div class="starTag">⭐ スタープレイヤー！　🪙+10</div>`}
   if(G.ranked){const r0=rankOf(G.rpBefore),g=G.win===0?Math.max(14,36-r0.div):G.win===1?-Math.min(26,5+r0.div):0,floor=r0.pro?2100:r0.tier*300;
     const rp1=Math.max(Math.min(G.rpBefore,floor),G.rpBefore+g);LSset('gr-rp',rp1);const r1=rankOf(rp1),best=+LS('gr-rpbest',0);d=0;
     html+=`<div style="margin:6px 0;font-size:18px;font-weight:900">🏅 ランク ${g>=0?'+':''}${rp1-G.rpBefore}　<span style="color:${r1.col}">${r1.name}</span></div>`;
@@ -1560,6 +1627,8 @@ function showResult(){G.state='result';document.body.classList.remove('playing')
   const day=new Date().toDateString(),dw=J('gr-dw',{day:'',n:0});if(dw.day!==day){dw.day=day;dw.n=0}let gotDrop=false;if(won&&dw.n<3){dw.n++;LSset('gr-sd',+LS('gr-sd',0)+1);gotDrop=true}JS('gr-dw',dw);
   html+=`<div style="margin-top:4px;font-weight:900">🎟 パスXP +${xp}${up?'　<span style="color:#ffd84d">Tier '+bpTier(bp())+' に到達！</span>':''}</div>`+(gotDrop?`<div style="font-weight:900;color:#ffd84d">⭐ 今日の勝利ボーナス：スタードロップ ×1（${dw.n}/3）</div>`:'');
   $('rTitle').textContent=title;$('rTitle').className=cls;
+  {const sub=v=>'⚔'+v.kills+(G.rule==='gem'?'　💎'+v.gemsGot:''),row=(t,cl)=>`<div class="vsRow ${cl}">`+G.units.filter(v=>!v.dummy&&v.team===t).map((v,i)=>vsCard(v,{star:v===star,sub:sub(v),d:.15+i*.08})).join('')+'</div>';
+    $('rTeam').innerHTML=G.mode==='br'?'':row(0,'b')+row(1,'r op')+(star?`<div class="starTag">⭐ スタープレイヤー：${star.name.replace(/</g,'')}（${BT[star.bt].name}）</div>`:'')}
   $('rSub').innerHTML=(G.ranked?'':`<span style="font-size:26px;font-weight:900;color:#ffd84d" class="cu" data-v="${d}" data-p="🏆 ${d>=0?'+':''}">🏆 ${d>=0?'+':''}${d}</span>　`)+`<span style="font-size:26px;font-weight:900;color:#ffe9a8" class="cu" data-v="${c}" data-p="🪙 +">🪙 +${c}</span>`+html+(G.ranked?'':`<br>${BT[PICK].name} のトロフィー ${t1}・合計 ${totalTr()}`)+msgs.map(m=>`<div style="color:#8fe39a;font-weight:900">✔ ${m}</div>`).join('');
   $('rStats').innerHTML=`<span>倒した数</span><span>${u.kills}</span><span>倒された数</span><span>${u.deaths}</span>`+(G.mode==='br'?`<span>パワーキューブ</span><span>${u.pw}</span>`:`<span>拾ったジェム</span><span>${u.gemsGot}</span>`)+`<span>与えたダメージ</span><span>${u.dmg.toLocaleString()}</span>`;
   $('result').classList.add('on')}
@@ -1697,7 +1766,10 @@ function poseUnit(u,dt){const m=u.m;if(u.dead){m.g.visible=false;return}
 let hudT=0;
 function updHud(dt){const u=me(),b=teamGems(0),r=teamGems(1);const t=Math.max(0,Math.ceil(G.time));$('clock').textContent=G.rule==='knockout'&&G.M.round?'ラウンド'+G.M.round:Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
   if(G.mode==='team'&&G.rule!=='gem'&&G.rule!=='tutorial'&&G.M){const h=modeHud();$('iB').textContent=h[0];$('gB').textContent=h[1];$('iR').textContent=h[2];$('gR').textContent=h[3]}else{$('iB').textContent=$('iR').textContent='💎';$('gB').textContent=b;$('gR').textContent=r}
-  const cd=$('cdown');if(G.cdTeam>=0&&!G.over){cd.style.display='block';cd.className=G.cdTeam?'r':'b';cd.textContent=(G.cdTeam===0?'青チームの勝ちまで ':'赤チームの勝ちまで ')+Math.ceil(G.cd)+' 秒'}else cd.style.display='none';
+  // ジェムのカウントダウン：数字が変わるたびに大きく出し、残り5秒からは音も鳴らす
+  const cd=$('cdown');if(G.cdTeam>=0&&!G.over){const n=Math.max(0,Math.ceil(G.cd)),k=G.cdTeam+':'+n;if(G._cdK!==k){G._cdK=k;cd.style.display='block';
+      cd.innerHTML=`<b>${n}</b><small>${G.cdTeam===0?'青チームがリード！ 守りきれ':'赤チームがリード！ ジェムをうばえ'}</small>`;cd.className=G.cdTeam?'r':'b';void cd.offsetWidth;cd.className+=' tick';if(n<=5&&n>0)SFX.beep(false)}}
+  else{cd.style.display='none';G._cdK=null}
   // ガジェット：クールダウン中は残り秒数と円のゲージ
   const hasG=u.kit&&u.kit.gad>=0,gb=$('gadBtn');gb.style.display=hasG?'':'none';
   if(hasG){const g=BT[u.bt].gad[u.kit.gad],cd=u.gadCD>0,full=gadCool(u,g),txt=cd?String(Math.ceil(u.gadCD)):'OK';if($('gadN').textContent!==txt)$('gadN').textContent=txt;
@@ -1724,6 +1796,7 @@ function playerInput(dt){const u=me();if(!u||u.dead)return;let mx=(K.KeyD||K.Arr
   else if(mouse.has&&!document.body.classList.contains('touch')){const d=Math.hypot(mouse.x-u.x,mouse.z-u.z);showAim(u,Math.atan2(mouse.x-u.x,mouse.z-u.z),d/atkRange(u),false)}
   else showAim(null)}
 function step(dt){updLobby(dt);POISON.material.uniforms.T.value=performance.now()/1000;FX.upd(dt);GLOW.upd(dt);updRings(dt);updFade(dt);updDN(dt);waterMat.opacity=.78+Math.sin(performance.now()/600)*.05;
+  if(G.state==='vs'){G.vsT-=dt;if(G.vsT<=0)vsEnd()}
   if(G.state==='intro'){const n=Math.ceil(G.introT-.2);G.introT-=dt;if(n!==G._n){G._n=n;if(n>0){big(String(n),.9);SFX.beep(false)}else{big('ファイト！',.9,'#ffd84d');SFX.beep(true)}}if(G.introT<=0)G.state='play'}
   if(G.state==='play'||G.state==='end'){const sdt=dt*(G.over?.3:1);G.t+=sdt;updTimers();if(!G.over)playerInput(sdt);else showAim(null);
     for(const u of G.units)if(!u.isMe&&!u.dead&&!G.over&&!u.dummy)aiAct(u,sdt);else if(u.dummy){u.mx=u.mz=0}else if(!u.isMe||G.over){u.mx=u.mz=0}
