@@ -47,3 +47,9 @@ godot --headless --path . --export-release "Web" build/web/index.html
 Web版は Compatibility（WebGL 2）で描きます。空からのまわりの光が室内に届かないため、
 Web版だけ平らな色のまわりの光に置きかえ、three.js 版と同じ明るさになるよう合わせています
 （`src/09_render.gd` の `COMPAT_AMB`）。
+
+HTML ファイル1つにまとめるとき（ネットにつながずに、ファイルを直接開いて遊べます。約19MB）:
+
+```sh
+python3 tools/single_html.py build/web otonari_godot.html
+```
