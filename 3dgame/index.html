@@ -30,7 +30,7 @@
     -webkit-user-select:none; user-select:none;
   }
   .wrap { max-width:720px; margin:0 auto;
-    padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 40px); }
+    padding:calc(env(safe-area-inset-top,0px) + 18px) max(18px, env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 40px) max(18px, env(safe-area-inset-left,0px)); }
   h1.logo { margin:0 0 20px; font-size:26px; font-weight:800; letter-spacing:-.02em; }
   .me { display:flex; align-items:center; gap:14px; margin-bottom:26px; }
   .ring { width:86px; height:86px; border-radius:50%; flex:none; overflow:hidden;
@@ -305,6 +305,36 @@
     scrollTo(0, 0);
   });
 
+  // ---------------- 画面のふち（ノッチ・角の丸み）をゲームに伝える ----------------
+  // ゲームは iframe の中なので env(safe-area-inset-*) が 0 になってしまう。
+  // ゲームの HTML の env(...) を CSS の変数に置きかえ、ここで測った値を入れる（90°回した画面では上下左右を入れかえる）
+  var saProbe = null;
+  function safeArea() {
+    if (!saProbe) {
+      saProbe = document.createElement('div');
+      saProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;' +
+        'padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+      document.body.appendChild(saProbe);
+    }
+    var cs = getComputedStyle(saProbe), t = parseFloat(cs.paddingTop) || 0, r = parseFloat(cs.paddingRight) || 0,
+        b = parseFloat(cs.paddingBottom) || 0, l = parseFloat(cs.paddingLeft) || 0;
+    if (S.land) return { top: r, right: b, bottom: l, left: t };   // ゲームは右に90°回して出している
+    return { top: t, right: r, bottom: b, left: l };
+  }
+  function safeCss() { var a = safeArea(), o = ''; for (var k in a) o += '--h3d-sa-' + k + ':' + a[k] + 'px;'; return o; }
+  function sendSafe() {
+    if (!frame) return;
+    try { var d = frame.contentDocument && frame.contentDocument.documentElement; if (d) d.style.cssText += ';' + safeCss(); } catch (e) {}
+  }
+  var SAFE_RE = /env\(\s*safe-area-inset-(top|right|bottom|left)\s*(?:,\s*([^()]*?))?\s*\)/g;
+  window.addEventListener('resize', function () { setTimeout(sendSafe, 50); });
+  window.addEventListener('orientationchange', function () { setTimeout(sendSafe, 300); });
+
+  // ホーム画面から開いたとき（アプリのように開いたとき）は、もう全画面
+  var STANDALONE = false;
+  try { STANDALONE = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches; } catch (e) {}
+  var HOME_URL = 'https://onichamania.github.io/3dgame/';
+
   // ---------------- 全画面（スマホのブラウザのバーを消す） ----------------
   // ゲームを始めるボタンを押したときに全画面にする（ブラウザは、押した瞬間にしか全画面を許さないため）
   var fsOn = false;
@@ -328,12 +358,24 @@
   function fsDraw() {
     var can = fsCan(), row = document.getElementById('fsRow'), a = document.getElementById('fsPlay'), b = document.getElementById('setFs');
     a.checked = b.checked = can && fsOn; a.disabled = b.disabled = !can;
+    if (STANDALONE) {
+      row.style.display = 'none';
+      fsMsg('ホーム画面から開いているので、もう全画面です。');
+      b.disabled = true; b.checked = true;
+      return;
+    }
     if (!can) {
       // iPhone のブラウザ（Safari・Firefox・Chrome）は、ページを全画面にする機能がない
-      var ip = /iPhone|iPod/.test(navigator.userAgent);
-      var t = ip ? 'iPhoneのブラウザは全画面にできません。Safariなら、アドレスバーの「ぁあ」→「ツールバーを非表示」で上のバーを消せます。'
-                 : 'このブラウザ（またはアプリの中）では全画面にできません。';
+      var ip = /iPhone|iPod/.test(navigator.userAgent), onSite = location.href.indexOf(HOME_URL) === 0;
+      var t = !ip ? 'このブラウザ（またはアプリの中）では全画面にできません。'
+            : onSite ? 'iPhoneは、共有ボタン →「ホーム画面に追加」で、全画面のアプリのように開けます。'
+            : 'iPhoneのブラウザは全画面にできません。全画面で遊ぶには、ホーム画面版を開いて共有ボタン →「ホーム画面に追加」してください。';
       row.className = 'fsRow no'; row.textContent = t; fsMsg(t);
+      if (ip && !onSite) {
+        var a = document.createElement('a'); a.href = HOME_URL; a.target = '_blank'; a.rel = 'noopener'; a.textContent = ' ホーム画面版を開く ›';
+        a.style.cssText = 'color:var(--green);font-weight:800;white-space:nowrap';
+        row.appendChild(a); document.getElementById('fsNote').appendChild(a.cloneNode(true));
+      }
     }
   }
   function fsSet(on) {
@@ -355,12 +397,13 @@
       // 別のファイルになっているゲーム（Godot版など）。fpsの上限はゲームのページの中に入れてある
       frame.src = g.src;
     } else {
-      var html = g.html;
-      var inj = '<scr' + 'ipt>' + PLATFORM + '</scr' + 'ipt>';
+      var html = g.html.replace(SAFE_RE, function (_, k, f) { return 'var(--h3d-sa-' + k + ',' + (f || '0px') + ')'; });
+      var inj = '<style>:root{' + safeCss() + '}</style><scr' + 'ipt>' + PLATFORM + '</scr' + 'ipt>';
       html = html.replace('<body>', '<body>' + inj);
       frame.srcdoc = html;
     }
     stage.innerHTML = '';
+    frame.addEventListener('load', sendSafe);
     stage.appendChild(frame);
     // キー入力がゲーム側に届くようにする
     setTimeout(function () {
@@ -527,6 +570,7 @@
     placeGear();
     try { localStorage.setItem('3dame-settings', JSON.stringify(S)); } catch (e) {}
     if (frame && frame.contentWindow) frame.contentWindow.postMessage({ h3dSet: S }, '*');
+    sendSafe();
   }
   var landBtns = document.getElementById('setLandSeg').getElementsByTagName('button');
   var setSound = document.getElementById('setSound');
