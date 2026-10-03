@@ -74,6 +74,7 @@ static func wardrobe(parent: Node, pos: Vector3, yaw: float, mat := "wood_dark",
 	# Doors (visual, swing open when someone hides / the Neighbor checks)
 	for s: int in [-1, 1]:
 		var hinge := Node3D.new()
+		hinge.add_to_group("no_batch")
 		hinge.position = Vector3(s * (w * 0.5 - 0.02), 0.1, d * 0.5)
 		r.add_child(hinge)
 		var door := MeshInstance3D.new()
@@ -519,8 +520,8 @@ static func tree(parent: Node, pos: Vector3, h := 6.0, seed_val := 0) -> Node3D:
 		var d := rs.randf_range(0.4, 1.6)
 		var y := h * rs.randf_range(0.55, 0.95)
 		var rad := rs.randf_range(1.0, 1.7)
-		B.sphere(r, Vector3(cos(a) * d, y, sin(a) * d), rad, leaf, Vector3(1, 0.85, 1), 14)
-	B.sphere(r, Vector3(0, h, 0), 1.5, leaf, Vector3(1, 0.9, 1), 14)
+		B.sphere(r, Vector3(cos(a) * d, y, sin(a) * d), rad, leaf, Vector3(1, 0.85, 1), 12)
+	B.sphere(r, Vector3(0, h, 0), 1.5, leaf, Vector3(1, 0.9, 1), 12)
 	return r
 
 

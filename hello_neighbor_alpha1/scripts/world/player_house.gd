@@ -94,6 +94,8 @@ func build(dyn: Node3D) -> void:
 	bedroom_door.player_only = true
 	var locked := Door.make(dyn_root, Vector3(7.0, FL, 4.5), 1.1, 2.2, 0.0, M("wood_white"))
 	locked.player_only = true
+	for d in [front_door, bedroom_door, locked]:
+		d.panel.collision_layer = Game.L_DOOR | Game.L_PDOOR
 	locked.locked = true
 	locked.lock_text = "まだ荷ほどきが終わっていない部屋だ"
 	# Entry room furniture

@@ -78,6 +78,7 @@ func _build(mat: Material) -> void:
 	kp.material_override = Mats.get_mat("metal_dark")
 	kp.position = Vector3(pw - 0.08, 0.88, 0)
 	panel.add_child(kp)
+	StaticBatcher.merge_local(panel)
 
 
 func _physics_process(delta: float) -> void:
@@ -118,14 +119,15 @@ func interact(p: Node) -> void:
 
 
 ## Opens away from `from`.
-func open_from(from: Vector3) -> void:
+func open_from(from: Vector3, noisy := true) -> void:
 	if is_open:
 		return
 	var local := to_local(from)
 	target = 1.55 if local.z > 0.0 else -1.55
 	is_open = true
 	Game.sfx3d("door_open", global_position + Vector3.UP, -4.0, randf_range(0.9, 1.1))
-	Game.make_noise(global_position, 3.0, "door")
+	if noisy:
+		Game.make_noise(global_position, 3.0, "door")
 	if on_opened.is_valid():
 		on_opened.call()
 
@@ -150,7 +152,7 @@ func neighbor_open(from: Vector3) -> bool:
 			return false
 		jammed = false
 		Game.sfx3d("impact", center(), -2.0)
-	open_from(from)
+	open_from(from, false)
 	return true
 
 

@@ -57,11 +57,12 @@ func _physics_process(delta: float) -> void:
 		body.collision_layer = 0 if t > 0.8 else Game.L_DOOR
 
 
-func toggle() -> void:
+func toggle(noisy := true) -> void:
 	target = 0.0 if target > 0.5 else 1.0
 	is_open = target > 0.5
 	Game.sfx3d("garage_door", global_position + Vector3(width * 0.5, 1.5, 0), 0.0)
-	Game.make_noise(global_position + Vector3(width * 0.5, 1.0, 0), 9.0, "garage")
+	if noisy:
+		Game.make_noise(global_position + Vector3(width * 0.5, 1.0, 0), 9.0, "garage")
 
 
 func open_from(_from: Vector3) -> void:
@@ -71,7 +72,7 @@ func open_from(_from: Vector3) -> void:
 
 func neighbor_open(_from: Vector3) -> bool:
 	if not is_open:
-		toggle()
+		toggle(false)
 	return t > 0.8
 
 

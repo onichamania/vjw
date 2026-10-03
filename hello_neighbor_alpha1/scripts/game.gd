@@ -17,6 +17,7 @@ const L_DOOR := 16
 const L_GLASS := 32
 const L_USE := 64
 const L_BARRIER := 128
+const L_PDOOR := 256   # doors of the player's house: the only ones that stop the Neighbor
 
 var mode: int = Mode.MENU
 var power_on := true

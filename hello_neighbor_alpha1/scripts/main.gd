@@ -56,6 +56,11 @@ func _ready() -> void:
 	add_child(special)
 	special.build()
 	_nav_links()
+	var batched_root := Node3D.new()
+	batched_root.name = "Batched"
+	add_child(batched_root)
+	var merged := StaticBatcher.merge(nav_region, batched_root)
+	print("Static batching: merged %d meshes into %d" % [merged, batched_root.get_child_count()])
 	# Actors
 	player = Player.new()
 	player.name = "Player"
@@ -149,8 +154,8 @@ func _make_environment() -> void:
 	night_env.background_mode = Environment.BG_SKY
 	night_env.sky = nsky
 	night_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	night_env.ambient_light_color = Color(0.18, 0.2, 0.32)
-	night_env.ambient_light_energy = 0.6
+	night_env.ambient_light_color = Color(0.22, 0.24, 0.38)
+	night_env.ambient_light_energy = 0.9
 	night_env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	night_env.glow_enabled = true
 	night_env.glow_intensity = 0.8
@@ -193,7 +198,7 @@ func _bake_nav() -> void:
 	nm.cell_height = 0.1
 	nm.agent_height = 1.8
 	nm.agent_radius = 0.4
-	nm.agent_max_climb = 0.3
+	nm.agent_max_climb = 0.1
 	nm.agent_max_slope = 46.0
 	nm.region_min_size = 4.0
 	nm.edge_max_error = 1.2

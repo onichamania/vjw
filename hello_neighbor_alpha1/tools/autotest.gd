@@ -109,6 +109,10 @@ func _run() -> void:
 	main._start_play_in_bed("")
 	await secs(2.0)
 	ok(Game.mode == Game.Mode.PLAYING, "game is playing after wake-up")
+	if "--routineonly" in OS.get_cmdline_user_args():
+		await _test_ai()
+		get_tree().quit()
+		return
 	if "--pathsonly" in OS.get_cmdline_user_args():
 		get_tree().quit()
 		return
@@ -291,6 +295,8 @@ func _test_ai() -> void:
 			seen[str(n.activity.get("anim", "?")) + "@" + str(Vector3i(n.activity.pos))] = true
 		if i % 5 != 4:
 			continue
+		if "--verbose" in OS.get_cmdline_user_args():
+			print("      t=%3d st=%d at=%s act=%s pos=%s" % [i, n.state, str(n.at_activity), str(n.activity.get("anim", "")) + str(Vector3i(h.to_local(n.activity.get("pos", Vector3.ZERO)))), str(Vector3i(h.to_local(n.global_position)))])
 		var moved := n.global_position.distance_to(last)
 		if moved < 0.3 and not n.at_activity and n.state == Neighbor.S.ROUTINE:
 			idle_samples += 1

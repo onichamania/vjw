@@ -97,6 +97,31 @@ func _run() -> void:
 	main.hud.show_message("お隣さんの地下室には何がある？", 5.0)
 	await secs(0.6)
 	await shot("17_gameplay_hud")
+	# Holding an item, chase vignette
+	var rifle: Item = Items.make("toy_rifle")
+	main.items_root.add_child(rifle)
+	main.player.pick_up(rifle)
+	main.player.global_position = h.gpos(Vector3(8.3, 4.35, 1.6))
+	var fwd: Vector3 = h.global_basis * Vector3(-1, 0, 0)
+	main.player.set_look(atan2(-fwd.x, -fwd.z), 0.05)
+	main.hud.set_chase(true)
+	await secs(0.8)
+	await shot("17b_holding_rifle_chase")
+	main.hud.set_chase(false)
+	# Hidden in the bedroom wardrobe
+	var wr: HideSpot = null
+	for hs in get_tree().get_nodes_in_group("hide_spots"):
+		if hs.kind == "wardrobe" and h.room_at(hs.global_position) == "bedroom":
+			wr = hs
+	if wr:
+		main.player.hide_in(wr)
+		n.direct = false
+		n.global_position = h.gpos(Vector3(13.5, 0.31, 14.0))
+		n.rotation.y = h.global_rotation.y
+		n.script_anim("search")
+		await secs(1.0)
+		await shot("17c_hidden_in_wardrobe")
+		main.player.unhide()
 	# Carnival & grave
 	main.special.set_active("carnival")
 	main.set_night(true)

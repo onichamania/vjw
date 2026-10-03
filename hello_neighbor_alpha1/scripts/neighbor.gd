@@ -63,7 +63,9 @@ var _prev_check_pos := Vector3.ZERO
 
 func _ready() -> void:
 	collision_layer = Game.L_NEIGHBOR
-	collision_mask = Game.L_WORLD | Game.L_DOOR | Game.L_GLASS
+	# He walks "through" the swinging panels of his own doors (he opens them
+	# anyway), but the doors of the player's house do stop him.
+	collision_mask = Game.L_WORLD | Game.L_GLASS | Game.L_PDOOR
 	floor_max_angle = deg_to_rad(50)
 	floor_snap_length = 0.4
 	var cs := CollisionShape3D.new()

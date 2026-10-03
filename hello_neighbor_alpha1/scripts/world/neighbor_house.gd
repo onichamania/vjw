@@ -71,6 +71,7 @@ func build(dyn: Node3D) -> void:
 	HouseProps.furnish(self)
 	puzzles = HousePuzzles.new()
 	puzzles.name = "Puzzles"
+	puzzles.add_to_group("no_batch")
 	add_child(puzzles)
 	puzzles.setup(self)
 	_build_train()
@@ -504,6 +505,7 @@ func _build_flooded_room() -> void:
 		mi.position = Vector3(rc.get_center().x, WATER, rc.get_center().y)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
+		mi.add_to_group("no_batch")
 		water_mesh_nodes.append(mi)
 		# Ice slab (hidden + non-colliding until the valve is turned)
 		var ice := B.box(dyn_root, Vector3(rc.get_center().x, WATER - 0.05, rc.get_center().y), Vector3(rc.size.x, 0.1, rc.size.y), M("water_ice"), true, 0)

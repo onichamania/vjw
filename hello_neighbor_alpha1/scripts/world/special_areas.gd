@@ -151,10 +151,10 @@ func _build_grave() -> void:
 	coffin_lid.position = Vector3(0.95, 0.95, 1.95)
 	coffin_lid.rotation = Vector3(-1.35, 0.0, 0.25)
 	grave_cam = Node3D.new()
-	grave_cam.position = Vector3(0, -1.85, 0.55)
+	grave_cam.position = Vector3(0, -1.85, -0.45)
 	g.add_child(grave_cam)
 	grave_neighbor = Node3D.new()
-	grave_neighbor.position = Vector3(0, 0.1, 2.05)
+	grave_neighbor.position = Vector3(0, 0.1, 1.95)
 	g.add_child(grave_neighbor)
 	# moon
 	B.sphere(g, Vector3(10, 30, -25), 2.0, Mats.emissive(Color(0.9, 0.92, 1.0), 2.5), Vector3.ONE, 16)
@@ -165,7 +165,9 @@ func _build_grave() -> void:
 	moon.name = "Moon"
 	moon.visible = false
 	g.add_child(moon)
-	var lamp := B.omni(g, Vector3(0.6, 0.9, 1.6), Color(1.0, 0.75, 0.4), 1.4, 6.0)
+	var lamp := B.omni(g, Vector3(0.35, 0.5, 1.55), Color(1.0, 0.7, 0.35), 3.5, 7.0)
+	B.sphere(g, Vector3(0.35, 0.5, 1.6), 0.08, Mats.get_mat("string_bulb"), Vector3(1, 1.3, 1), 10)
+	B.omni(g, Vector3(0, -1.2, 0.6), Color(0.5, 0.55, 0.8), 0.6, 3.0)
 	lamp.name = "Lantern"
 	for i in 5:
 		F.tree(g, Vector3(randf_range(-9, 9), 0, randf_range(-9, -4)), randf_range(6, 9), 500 + i)

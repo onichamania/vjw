@@ -40,7 +40,8 @@ theme/custom_font="res://fonts/NotoSansJP-Bold.ttf"
 3d_physics/layer_5="doors"
 3d_physics/layer_6="glass"
 3d_physics/layer_7="usable"
-3d_physics/layer_8="hazard"
+3d_physics/layer_8="barrier"
+3d_physics/layer_9="player_house_doors"
 
 [navigation]
 

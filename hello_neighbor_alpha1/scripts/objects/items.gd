@@ -369,6 +369,8 @@ static func make(id: String, magnet_number := 0) -> Item:
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
 	it.add_child(cs)
+	if id != "cam":
+		StaticBatcher.merge_local(v)
 	it.mass = mass
 	it.noise_radius = clampf(3.0 + mass * 1.2, 3.0, 9.0)
 	var pm := PhysicsMaterial.new()

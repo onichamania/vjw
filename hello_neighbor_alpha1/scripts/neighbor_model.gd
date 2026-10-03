@@ -155,9 +155,9 @@ func _build_head(hd: Node3D) -> void:
 		B.sphere(hd, Vector3(s * 0.118, 0.14, -0.035), 0.06, M("n_hair_grey"), Vector3(0.55, 1.0, 1.2))
 	B.sphere(hd, Vector3(0, 0.15, -0.115), 0.09, M("n_hair_grey"), Vector3(1.2, 0.9, 0.5))
 	# cowlick: a wave of hair swept up and curling back over the forehead
-	B.capsule(hd, Vector3(0, 0.29, 0.06), 0.032, 0.13, M("n_hair"), Vector3(-0.5, 0, 0))
-	B.capsule(hd, Vector3(0, 0.335, 0.085), 0.024, 0.09, M("n_hair"), Vector3(0.9, 0, 0))
-	B.sphere(hd, Vector3(0, 0.33, 0.045), 0.022, M("n_hair"))
+	B.capsule(hd, Vector3(0, 0.29, 0.075), 0.034, 0.12, M("n_hair"), Vector3(0.7, 0, 0))
+	B.capsule(hd, Vector3(0, 0.325, 0.125), 0.026, 0.09, M("n_hair"), Vector3(1.9, 0, 0))
+	B.sphere(hd, Vector3(0, 0.305, 0.155), 0.022, M("n_hair"))
 	# sack used in the carnival nightmare ("his face covered")
 	sack = Node3D.new()
 	hd.add_child(sack)
