@@ -181,6 +181,13 @@ func apply_quality() -> void:
 	env.glow_enabled = q >= 1 or not forward
 	sun.directional_shadow_max_distance = 60.0 if q == 0 else 90.0
 	RenderingServer.directional_shadow_atlas_set_size(2048 if q == 0 else 4096, true)
+	if OS.has_feature("web"):
+		# Browser build: keep it light for WebGL 2 and phones.
+		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
+		get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		sun.directional_shadow_max_distance = 45.0
+		RenderingServer.directional_shadow_atlas_set_size(2048, true)
 
 
 func set_night(on: bool) -> void:
@@ -267,7 +274,7 @@ func _process(delta: float) -> void:
 		cut_cam.global_position = p
 		cut_cam.look_at(c + Vector3(0, -1.5, 0))
 	if Game.mode == Game.Mode.PLAYING:
-		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not get_tree().paused:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not get_tree().paused and not Game.touch_mode:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		# indoor/outdoor ambience
 		var inside := house.room_at(player.global_position) != "" or phouse.contains(player.global_position)
@@ -285,7 +292,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("hint") and Game.mode == Game.Mode.PLAYING:
 		Game.settings.hints = not Game.settings.hints
 		hud.show_message("ヒント：" + ("ON" if Game.settings.hints else "OFF"), 1.5)
-	if event is InputEventMouseButton and Game.mode == Game.Mode.PLAYING:
+	if event is InputEventMouseButton and Game.mode == Game.Mode.PLAYING and not Game.touch_mode:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _capture_mouse() -> void:
+	if not Game.touch_mode:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -300,7 +312,7 @@ func _resume() -> void:
 	hud.show_pause(false)
 	get_tree().paused = false
 	Game.mode = Game.Mode.PLAYING
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_capture_mouse()
 	player.cam.fov = Game.settings.fov
 
 
@@ -469,7 +481,7 @@ func _start_play_in_bed(msg: String) -> void:
 	Game.mode = Game.Mode.PLAYING
 	player.controls = true
 	busy = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_capture_mouse()
 	if msg != "":
 		hud.show_message(msg, 5.0)
 

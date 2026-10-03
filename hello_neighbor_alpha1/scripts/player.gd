@@ -103,7 +103,10 @@ func teleport(xf: Transform3D) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not controls:
 		return
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	# In a browser the pointer lock can be refused; then plain mouse movement
+	# still turns the view.
+	var web_free := OS.has_feature("web") and not Game.touch_mode
+	if event is InputEventMouseMotion and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or web_free):
 		var m := event as InputEventMouseMotion
 		var sens: float = Game.settings.sens * (0.35 if zoom else 1.0)
 		yaw -= m.relative.x * sens
@@ -129,6 +132,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 var _hide_yaw := 0.0
+
+
+## Look by a screen-space delta (touch drag).
+func look_delta(rel: Vector2) -> void:
+	if not controls:
+		return
+	var sens: float = Game.settings.sens * (0.35 if zoom else 1.0)
+	yaw -= rel.x * sens
+	pitch -= rel.y * sens * (-1.0 if Game.settings.invert_y else 1.0)
+	pitch = clampf(pitch, -1.5, 1.5)
+	if hidden_in:
+		yaw = clampf(yaw, _hide_yaw - 0.9, _hide_yaw + 0.9)
+		pitch = clampf(pitch, -0.5, 0.4)
+	rotation.y = yaw
+	head.rotation.x = pitch
 
 
 # ---------------------------------------------------------------- physics --

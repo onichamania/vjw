@@ -27,6 +27,7 @@ var captures := 0
 var sleeps := 0
 var tutorial_done := false
 var game_time := 0.0
+var touch_mode := false   # set after the first touch: on-screen controls, no mouse capture
 
 var settings := {
 	"sens": 0.0022,

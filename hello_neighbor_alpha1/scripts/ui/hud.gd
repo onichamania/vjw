@@ -49,6 +49,9 @@ func _ready() -> void:
 	_build_settings()
 	_build_controls()
 	_build_credits()
+	var touch := TouchControls.new()
+	touch.name = "Touch"
+	root.add_child(touch)
 	fade = ColorRect.new()
 	fade.color = Color(0, 0, 0, 0)
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
