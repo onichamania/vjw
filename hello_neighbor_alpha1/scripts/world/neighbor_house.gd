@@ -167,8 +167,6 @@ func _define_openings() -> void:
 	_op("w_fl_front2", "z", 0, 20.0, 22.0, 5.2, 6.6, "window")
 	_op("w_fl_side", "x", 24, 3.0, 5.0, 5.2, 6.6, "window")
 	_op("w_c1_front", "z", 0, 10.4, 11.6, 5.3, 6.5, "window")
-	_op("w_class_front1", "z", 0, 2.0, 3.0, 5.4, 6.3, "window")
-	_op("w_class_front2", "z", 0, 6.0, 7.0, 5.4, 6.3, "window")
 	_op("w_store", "x", 0, 7.0, 8.2, 5.4, 6.4, "window")
 	_op("w_children_back", "z", 18, 2.0, 4.6, 5.2, 6.6, "window")
 	_op("w_living2_back", "z", 18, 15.0, 17.6, 5.2, 6.6, "window")
@@ -210,7 +208,7 @@ func _build_floors_and_ceilings() -> void:
 			B.slab(self, x0, z0, x1, z1, C1, C1 + 0.06, M(r.ce), ch)
 		else:
 			if n == "flooded":
-				B.slab(self, x0, z0, x1, z1, C1, POOL, M(r.fl), stair_hole)
+				B.slab(self, x0, z0, x1, z1, C1 + 0.07, POOL, M(r.fl), stair_hole)
 			else:
 				var hole2 := Rect2()
 				if n == "hall2":
@@ -430,8 +428,13 @@ func _build_stairs() -> void:
 	for i in steps:
 		var sx := x0 + i * run
 		var top := F1 + (i + 1) * rise
-		B.bmm(self, Vector3(sx, top - 0.06, z0), Vector3(sx + run + 0.02, top, z1), wood, false)
-		B.bmm(self, Vector3(sx, top - rise, z0 + 0.01), Vector3(sx + 0.03, top, z1 - 0.01), M("wood_white"), false)
+		if sx + run < 15.2:
+			# solid lower steps
+			B.bmm(self, Vector3(sx, F1, z0), Vector3(sx + run + 0.01, top, z1), wood, false)
+		else:
+			B.bmm(self, Vector3(sx, top - 0.06, z0), Vector3(sx + run + 0.02, top, z1), wood, false)
+			B.bmm(self, Vector3(sx, top - rise, z0 + 0.01), Vector3(sx + 0.03, top, z1 - 0.01), M("wood_dark"), false)
+		B.bmm(self, Vector3(sx - 0.01, top - 0.025, z0 - 0.02), Vector3(sx + run + 0.02, top + 0.005, z1), M("wood_dark"), false)
 	B.ramp(self, Vector3(x0 - 0.15, F1, (z0 + z1) * 0.5), Vector3(x1, F2, (z0 + z1) * 0.5), z1 - z0)
 	# Stringer / under-stair wall with the basement door in it.
 	var wall_m := M("wp_living_ears")

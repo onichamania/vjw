@@ -227,8 +227,10 @@ static func _wall(parent: Node, along: String, c: float, s0: float, s1: float, y
 	for o in openings:
 		var a: float = maxf(o.a, s0)
 		var b: float = minf(o.b, s1)
-		if b - a > 0.01:
-			ops.append({"a": a, "b": b, "y0": maxf(o.y0, y0), "y1": minf(o.y1, y1)})
+		var oy0: float = maxf(o.y0, y0)
+		var oy1: float = minf(o.y1, y1)
+		if b - a > 0.01 and oy1 - oy0 > 0.01:
+			ops.append({"a": a, "b": b, "y0": oy0, "y1": oy1})
 	ops.sort_custom(func(p, q): return p.a < q.a)
 	var cur := s0
 	for o in ops:

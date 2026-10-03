@@ -67,7 +67,7 @@ func build() -> void:
 	# shirt underneath (shows at the bottom and collar)
 	B.capsule(spine, Vector3(0, 0.3, -0.005), 0.235, 0.72, M("n_shirt"), Vector3.ZERO, Vector3(1.24, 1.0, 0.82))
 	B.capsule(spine, Vector3(0, 0.31, 0.0), 0.24, 0.66, M("n_vest"), Vector3.ZERO, Vector3(1.27, 1.0, 0.86))
-	B.torus(spine, Vector3(0, 0.03, 0), 0.24, 0.3, M("n_vest_edge"), Vector3.ZERO).scale = Vector3(1.22, 0.8, 0.84)
+	B.torus(spine, Vector3(0, 0.06, 0), 0.215, 0.255, M("n_vest_edge"), Vector3.ZERO).scale = Vector3(1.24, 0.7, 0.84)
 	# V-neck: yellow shirt triangle + collar
 	var v := B.prism(spine, Vector3(0, 0.55, 0.19), Vector3(0.18, 0.2, 0.04), M("n_shirt"))
 	v.rotation = Vector3(-0.15, 0, PI)
@@ -80,13 +80,14 @@ func build() -> void:
 	# --- neck & head
 	neck = _pivot(spine, Vector3(0, 0.62, 0.0))
 	B.cyl(neck, Vector3(0, 0.04, 0.0), 0.075, 0.1, M("n_skin"), false, 12)
-	head = _pivot(neck, Vector3(0, 0.08, 0.01))
+	head = _pivot(neck, Vector3(0, 0.07, 0.01))
 	_build_head(head)
+	head.scale = Vector3.ONE * 1.18
 	# --- arms
-	sh_l = _pivot(spine, Vector3(-0.29, 0.53, 0))
-	sh_r = _pivot(spine, Vector3(0.29, 0.53, 0))
-	B.sphere(spine, Vector3(-0.27, 0.53, 0), 0.1, M("n_vest"), Vector3(1.0, 0.9, 1.0))
-	B.sphere(spine, Vector3(0.27, 0.53, 0), 0.1, M("n_vest"), Vector3(1.0, 0.9, 1.0))
+	sh_l = _pivot(spine, Vector3(-0.37, 0.5, 0))
+	sh_r = _pivot(spine, Vector3(0.37, 0.5, 0))
+	B.sphere(spine, Vector3(-0.33, 0.51, 0), 0.085, M("n_shirt"), Vector3(1.0, 0.9, 1.0))
+	B.sphere(spine, Vector3(0.33, 0.51, 0), 0.085, M("n_shirt"), Vector3(1.0, 0.9, 1.0))
 	for sh: Node3D in [sh_l, sh_r]:
 		B.capsule(sh, Vector3(0, -0.14, 0), 0.072, 0.32, M("n_shirt"))
 		var el := _pivot(sh, Vector3(0, -0.29, 0))
@@ -153,9 +154,10 @@ func _build_head(hd: Node3D) -> void:
 	for s: int in [-1, 1]:
 		B.sphere(hd, Vector3(s * 0.118, 0.14, -0.035), 0.06, M("n_hair_grey"), Vector3(0.55, 1.0, 1.2))
 	B.sphere(hd, Vector3(0, 0.15, -0.115), 0.09, M("n_hair_grey"), Vector3(1.2, 0.9, 0.5))
-	var cow := B.torus(hd, Vector3(0, 0.3, 0.07), 0.025, 0.055, M("n_hair"), Vector3(0, PI / 2, 0))
-	cow.scale = Vector3(1, 1.2, 1)
-	B.capsule(hd, Vector3(0, 0.29, 0.03), 0.03, 0.12, M("n_hair"), Vector3(-1.1, 0, 0))
+	# cowlick: a wave of hair swept up and curling back over the forehead
+	B.capsule(hd, Vector3(0, 0.29, 0.06), 0.032, 0.13, M("n_hair"), Vector3(-0.5, 0, 0))
+	B.capsule(hd, Vector3(0, 0.335, 0.085), 0.024, 0.09, M("n_hair"), Vector3(0.9, 0, 0))
+	B.sphere(hd, Vector3(0, 0.33, 0.045), 0.022, M("n_hair"))
 	# sack used in the carnival nightmare ("his face covered")
 	sack = Node3D.new()
 	hd.add_child(sack)

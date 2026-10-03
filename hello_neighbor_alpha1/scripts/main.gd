@@ -85,6 +85,9 @@ func _ready() -> void:
 	if "--autotest" in OS.get_cmdline_user_args():
 		add_child(load("res://tools/autotest.gd").new())
 		return
+	if "--shots" in OS.get_cmdline_user_args():
+		add_child(load("res://tools/shots.gd").new())
+		return
 	if Game.has_meta("autostart") and Game.get_meta("autostart"):
 		Game.set_meta("autostart", false)
 		call_deferred("_on_new_game")
@@ -692,7 +695,7 @@ func start_ending() -> void:
 	neighbor.reset_to(special.grave_neighbor.global_position)
 	neighbor.script_mode(true)
 	neighbor.rotation.y = PI
-	neighbor.script_anim("cheer")
+	neighbor.script_anim("grab")
 	cut_cam.global_position = special.grave_cam.global_position
 	cut_cam.look_at(special.grave_cam.global_position + Vector3(0, 1, 0.12), Vector3(0, 0, -1))
 	Game.play_music("ending", 0.5, false)

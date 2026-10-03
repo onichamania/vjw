@@ -66,6 +66,17 @@ func use(substr: String) -> bool:
 	return true
 
 
+## Make the Neighbor stand still at `local`, looking along `dir` (house coords).
+func stand_neighbor(local: Vector3, dir: Vector3) -> void:
+	n.reset_to(h.gpos(local))
+	n.state = Neighbor.S.ROUTINE
+	var d: Vector3 = h.global_basis * dir
+	n.activity = {"anim": "stand", "pos": h.gpos(local), "dir": d, "dur": 30.0, "w": 1.0}
+	n.at_activity = true
+	n.act_timer = 30.0
+	n.rotation.y = atan2(d.x, d.z)
+
+
 func put_player(local: Vector3) -> void:
 	player.global_position = h.gpos(local)
 	player.velocity = Vector3.ZERO
@@ -98,6 +109,9 @@ func _run() -> void:
 	main._start_play_in_bed("")
 	await secs(2.0)
 	ok(Game.mode == Game.Mode.PLAYING, "game is playing after wake-up")
+	if "--pathsonly" in OS.get_cmdline_user_args():
+		get_tree().quit()
+		return
 	await _test_movement()
 	await _test_puzzles_copper()
 	await _test_ai()
@@ -125,6 +139,8 @@ func _test_paths() -> void:
 		for i in range(1, path.size()):
 			length += path[i - 1].distance_to(path[i])
 		ok(reach, "nav path living room -> %s (%.1f m)" % [k, length])
+		if not reach and path.size() > 0:
+			print("      ends at ", h.to_local(path[path.size() - 1]), "  closest to target: ", h.to_local(NavigationServer3D.map_get_closest_point(map, to)))
 	var street := NavigationServer3D.map_get_path(map, from, Vector3(0, 0, 0), true)
 	ok(street.size() > 0 and street[street.size() - 1].distance_to(Vector3(0, 0, 0)) < 1.2, "nav path to the street")
 	var ph := NavigationServer3D.map_get_path(map, from, Vector3(0, 0.3, 14.0), true)
@@ -259,8 +275,30 @@ func _test_puzzles_copper() -> void:
 
 
 func _test_ai() -> void:
-	# Put the Neighbor in his routine and stand in front of him.
 	Game.set_power(true)
+	# Let him live his routine for a while (player safe at home).
+	player.global_position = Vector3(-3.0, 0.4, 17.5)
+	main.phouse.front_door.close()
+	main.phouse.bedroom_door.close()
+	n.reset_to(n.home_spot)
+	n.state = Neighbor.S.ROUTINE
+	var seen := {}
+	var last := n.global_position
+	var idle_samples := 0
+	for i in 240:
+		await secs(1.0)
+		if n.at_activity:
+			seen[str(n.activity.get("anim", "?")) + "@" + str(Vector3i(n.activity.pos))] = true
+		if i % 5 != 4:
+			continue
+		var moved := n.global_position.distance_to(last)
+		if moved < 0.3 and not n.at_activity and n.state == Neighbor.S.ROUTINE:
+			idle_samples += 1
+		last = n.global_position
+	print("    routine activities reached: %d -> %s" % [seen.size(), str(seen.keys())])
+	ok(seen.size() >= 4, "Neighbor walks around his routine (%d spots in 4 min)" % seen.size())
+	ok(idle_samples <= 4, "Neighbor rarely gets stuck (%d stuck samples)" % idle_samples)
+	# Put the Neighbor in his routine and stand in front of him.
 	n.reset_to(h.gpos(Vector3(15.0, 0.35, 3.0)))
 	n.state = Neighbor.S.ROUTINE
 	n.activity = {"anim": "look", "pos": h.gpos(Vector3(15.0, 0.3, 3.0)), "dir": h.global_basis * Vector3(0, 0, -1), "dur": 30.0, "w": 1.0}
@@ -285,21 +323,21 @@ func _test_ai() -> void:
 	print("    cameras placed: %d" % cams)
 	# Catch
 	var caps := Game.captures
-	n.reset_to(h.gpos(Vector3(9.0, 0.35, 6.0)))
-	n.state = Neighbor.S.ROUTINE
+	stand_neighbor(Vector3(9.0, 0.35, 6.0), Vector3(0, 0, 1))
 	put_player(Vector3(9.0, 0.35, 8.0))
-	n.rotation.y = h.global_rotation.y
-	await secs(4.0)
+	await secs(0.5)
+	print("    catch test: state=%d mode=%d sees=%s hidden=%s" % [n.state, Game.mode, str(n.can_see_player()), str(player.hidden_in)])
+	await secs(3.5)
 	ok(Game.captures == caps + 1, "Neighbor catches the player (captures=%d)" % Game.captures)
 	await secs(4.0)
 	ok(main.phouse.contains(player.global_position), "player wakes up in their own house")
 	ok(n.run_speed() > 3.45, "Neighbor got faster (%.2f m/s)" % n.run_speed())
 	# Second catch triggers the carnival nightmare.
-	n.reset_to(h.gpos(Vector3(9.0, 0.35, 6.0)))
-	n.state = Neighbor.S.ROUTINE
-	n.rotation.y = h.global_rotation.y
+	stand_neighbor(Vector3(9.0, 0.35, 6.0), Vector3(0, 0, 1))
 	put_player(Vector3(9.0, 0.35, 8.0))
-	await secs(4.0)
+	await secs(0.5)
+	print("    catch2: state=%d mode=%d busy=%s sees=%s ctrl=%s" % [n.state, Game.mode, str(main.busy), str(n.can_see_player()), str(player.controls)])
+	await secs(3.5)
 	print("    after 2nd catch attempt: captures=%d state=%d mode=%d dist=%.1f" % [Game.captures, n.state, Game.mode, n.global_position.distance_to(player.global_position)])
 	ok(Game.tutorial_done, "carnival nightmare started after the 2nd capture")
 	await secs(3.0)
