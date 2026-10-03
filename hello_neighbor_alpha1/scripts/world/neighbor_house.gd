@@ -545,7 +545,7 @@ func _build_exterior_details() -> void:
 	var deck := M("floor_wood_dark")
 	# Front porch
 	B.bmm(self, Vector3(7.3, 0, -2.3), Vector3(10.7, F1, 0), deck)
-	B.bmm(self, Vector3(8.0, 0, -2.75), Vector3(10.0, 0.15, -2.3), M("concrete"))
+	B.bmm(self, Vector3(8.0, 0, -2.75), Vector3(10.0, 0.15, -2.3), M("concrete"), false)  # the ramp carries walkers
 	B.ramp(self, Vector3(9.0, 0.0, -3.0), Vector3(9.0, F1, -2.3), 2.0)
 	for x: float in [7.45, 10.55]:
 		B.box(self, Vector3(x, 1.7, -2.15), Vector3(0.16, 2.8, 0.16), tw)
@@ -559,7 +559,7 @@ func _build_exterior_details() -> void:
 	B.collider(self, Vector3(7.45, 0.8, -1.15), Vector3(0.1, 1.0, 2.0))
 	B.collider(self, Vector3(10.55, 0.8, -1.15), Vector3(0.1, 1.0, 2.0))
 	# Back steps
-	B.bmm(self, Vector3(18.8, 0, 18.0), Vector3(20.7, 0.15, 18.9), M("concrete"))
+	B.bmm(self, Vector3(18.8, 0, 18.0), Vector3(20.7, 0.15, 18.9), M("concrete"), false)
 	B.ramp(self, Vector3(19.75, 0.0, 19.3), Vector3(19.75, F1, 18.0), 1.8)
 	B.bmm(self, Vector3(18.7, 2.7, 18.0), Vector3(20.8, 2.82, 19.0), M("roof_grey"))
 	# Garage ramp lip

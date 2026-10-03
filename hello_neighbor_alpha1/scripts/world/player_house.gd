@@ -70,7 +70,7 @@ func build(dyn: Node3D) -> void:
 	# Porch & steps
 	B.bmm(self, Vector3(3.6, 0, -1.6), Vector3(6.4, FL, 0), M("floor_wood_dark"))
 	B.ramp(self, Vector3(5.0, 0.0, -2.2), Vector3(5.0, FL, -1.6), 1.8)
-	B.bmm(self, Vector3(4.1, 0, -2.2), Vector3(5.9, 0.15, -1.6), M("concrete"))
+	B.bmm(self, Vector3(4.1, 0, -2.2), Vector3(5.9, 0.15, -1.6), M("concrete"), false)
 	B.bmm(self, Vector3(3.4, 2.65, -1.8), Vector3(6.6, 2.78, 0), M("roof_grey"))
 	for x: float in [3.55, 6.45]:
 		B.box(self, Vector3(x, 1.45, -1.65), Vector3(0.12, 2.4, 0.12), tw)
