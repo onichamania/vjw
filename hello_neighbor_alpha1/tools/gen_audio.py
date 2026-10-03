@@ -105,7 +105,10 @@ def normalize(x, peak=0.89):
     return (x / m * peak).astype(np.float32)
 
 
-def write_ogg(path, x, quality=5):
+def write_ogg(path, x, quality=5, mono32k=False):
+    """mono32k: long loops (music, ambience) are stored as 32 kHz mono. Browsers
+    keep every played sound fully decoded (float32), so this cuts their memory
+    to about a third; on phone speakers the difference is hard to hear."""
     path.parent.mkdir(parents=True, exist_ok=True)
     x = np.clip(x, -1, 1)
     ch = 1 if x.ndim == 1 else x.shape[1]
@@ -117,7 +120,8 @@ def write_ogg(path, x, quality=5):
         w.setsampwidth(2)
         w.setframerate(SR)
         w.writeframes(pcm.tobytes())
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, "-c:a", "libvorbis", "-q:a", str(quality), str(path)], check=True)
+    extra = ["-ac", "1", "-ar", "32000"] if mono32k else []
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, *extra, "-c:a", "libvorbis", "-q:a", str(quality), str(path)], check=True)
     pathlib.Path(tmp).unlink()
     print(f"  {path.relative_to(ROOT)}  {len(x) / SR:5.1f}s")
 
@@ -795,16 +799,16 @@ def build_sfx():
 
 def main():
     print("music:")
-    write_ogg(OUT_MUSIC / "menu.ogg", music_menu())
-    write_ogg(OUT_MUSIC / "chase1.ogg", chase(1, 150, "A3", [0, 0, -4, -5], 16, 1))
-    write_ogg(OUT_MUSIC / "chase2.ogg", chase(2, 142, "D3", [0, 0, 3, -2], 16, 2))
-    write_ogg(OUT_MUSIC / "chase3.ogg", chase(3, 160, "E3", [0, 1, 0, -2], 16, 3))
-    write_ogg(OUT_MUSIC / "carnival.ogg", music_carnival())
-    write_ogg(OUT_MUSIC / "intro.ogg", music_intro())
-    write_ogg(OUT_MUSIC / "ending.ogg", music_ending())
+    write_ogg(OUT_MUSIC / "menu.ogg", music_menu(), mono32k=True)
+    write_ogg(OUT_MUSIC / "chase1.ogg", chase(1, 150, "A3", [0, 0, -4, -5], 16, 1), mono32k=True)
+    write_ogg(OUT_MUSIC / "chase2.ogg", chase(2, 142, "D3", [0, 0, 3, -2], 16, 2), mono32k=True)
+    write_ogg(OUT_MUSIC / "chase3.ogg", chase(3, 160, "E3", [0, 1, 0, -2], 16, 3), mono32k=True)
+    write_ogg(OUT_MUSIC / "carnival.ogg", music_carnival(), mono32k=True)
+    write_ogg(OUT_MUSIC / "intro.ogg", music_intro(), mono32k=True)
+    write_ogg(OUT_MUSIC / "ending.ogg", music_ending(), mono32k=True)
     print("ambience & sfx:")
-    write_ogg(OUT_SFX / "amb_suburb.ogg", amb_suburb(), 4)
-    write_ogg(OUT_SFX / "amb_house.ogg", amb_house(), 3)
+    write_ogg(OUT_SFX / "amb_suburb.ogg", amb_suburb(), 4, mono32k=True)
+    write_ogg(OUT_SFX / "amb_house.ogg", amb_house(), 3, mono32k=True)
     for name, x in build_sfx().items():
         write_ogg(OUT_SFX / f"{name}.ogg", x.astype(np.float32), 4)
 

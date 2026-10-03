@@ -183,6 +183,32 @@ kbd {
 @media (orientation: portrait) and (pointer: coarse) {
   body[data-started="true"]:not(.land) #rotate { display: grid; }
 }
+/* Shown when the browser drops the game's WebGL context (out of memory, or a
+   phone that killed it in the background); the game cannot resume after that. */
+#lost {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  background: rgba(11, 16, 32, 0.92);
+}
+#lost[hidden] { display: none; }
+#lost p { margin: 0 0 16px; font-size: 16px; font-weight: 700; line-height: 1.7; }
+#lost small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
+#lost button {
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--night);
+  background: var(--paint);
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 22px;
+  cursor: pointer;
+}
 @media (prefers-reduced-motion: reduce) {
   #card, .bar > i { transition: none; }
 }
@@ -215,6 +241,12 @@ kbd {
 </div>
 </div>
 <button id="fs" type="button">全画面</button>
+<div id="lost" role="alert" hidden>
+  <div>
+    <p>画面の描画が止まってしまいました<small>端末のメモリが足りなくなったか、アプリを切りかえたときに起きることがあります。</small></p>
+    <button type="button" id="reload">もう一度読み込む</button>
+  </div>
+</div>
 <div id="rotate" role="status">
   <div>
     <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -402,6 +434,11 @@ kbd {
     if (coarse && document.body.dataset.started === 'true') { goFullscreen(); }
   }, { passive: true });
   canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  canvas.addEventListener('webglcontextlost', function (e) {
+    e.preventDefault();
+    document.getElementById('lost').hidden = false;
+  }, false);
+  document.getElementById('reload').addEventListener('click', function () { location.reload(); });
 
   document.addEventListener('fullscreenchange', function () { setTimeout(fit, 100); });
 

@@ -34,6 +34,8 @@ var mobile := false       # phone / tablet browser: lighter rendering, touch con
 var hub_sens := 1.0
 var _hub_gain := -1.0
 var _hub_t := 0.0
+var _memlog := false     # --memlog: print memory / object counts every 5 s (diagnostics)
+var _memlog_t := 0.0
 
 var settings := {
 	"sens": 0.0022,
@@ -67,6 +69,7 @@ func _ready() -> void:
 	mobile = OS.has_feature("web_android") or OS.has_feature("web_ios") or OS.has_feature("mobile") \
 		or "--mobile" in OS.get_cmdline_user_args()
 	touch_mode = mobile
+	_memlog = "--memlog" in OS.get_cmdline_user_args()
 	_setup_input()
 	_setup_buses()
 	_load_settings()
@@ -90,11 +93,35 @@ func reset_state() -> void:
 func _process(delta: float) -> void:
 	if mode == Mode.PLAYING:
 		game_time += delta
+	if _memlog:
+		_memlog_t -= delta
+		if _memlog_t <= 0.0:
+			_memlog_t = 5.0
+			_print_mem()
 	if OS.has_feature("web"):
 		_hub_t -= delta
 		if _hub_t <= 0.0:
 			_hub_t = 0.5
 			_poll_hub()
+
+
+## Diagnostics (--memlog): memory in use at a named point of the start-up.
+func memmark(label: String) -> void:
+	if _memlog:
+		print("MEMMARK %-12s static=%.1fMB peak=%.1fMB objects=%d" % [label, OS.get_static_memory_usage() / 1048576.0, OS.get_static_memory_peak_usage() / 1048576.0, Performance.get_monitor(Performance.OBJECT_COUNT)])
+
+
+func _print_mem() -> void:
+	var p3d := 0
+	if main:
+		for c in main.get_children():
+			if c is AudioStreamPlayer3D:
+				p3d += 1
+	print("MEM t=%d static=%.1fMB peak=%.1fMB video=%.1fMB objects=%d nodes=%d orphans=%d sfx3d=%d mode=%d" % [
+		Time.get_ticks_msec() / 1000, OS.get_static_memory_usage() / 1048576.0, OS.get_static_memory_peak_usage() / 1048576.0,
+		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+		Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT), p3d, mode])
 
 
 func _poll_hub() -> void:

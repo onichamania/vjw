@@ -9,7 +9,8 @@ OUT_DIR receives:
   index.js                       Godot's loader, patched so touches and mouse
                                  motion are mapped back when the page turns the
                                  canvas 90° (window.__gdRot, the launcher's
-                                 sideways mode)
+                                 sideways mode), and without its English
+                                 "context lost" alert (the page has its own)
   engine-gz.wasm                 index.wasm, gzip-compressed (unpacked in the browser)
   game-pck.wasm                  index.pck
   index.audio*.worklet.js        audio worklets
@@ -39,7 +40,10 @@ mov_new = ("const rot=!!window.__gdRot;const rw=canvas.width/(rot?rect.height:re
            "const rh=canvas.height/(rot?rect.width:rect.height);"
            "const rel_pos_x=(rot?evt.movementY:evt.movementX)*rw;"
            "const rel_pos_y=(rot?-evt.movementX:evt.movementY)*rh;")
-for old, new in ((pos_old, pos_new), (mov_old, mov_new)):
+# the page shows its own (Japanese) message with a reload button instead
+lost_old = 'alert("WebGL context lost, please reload the page");'
+lost_new = ''
+for old, new in ((pos_old, pos_new), (mov_old, mov_new), (lost_old, lost_new)):
     assert js.count(old) == 1, old
     js = js.replace(old, new)
 (out / "index.js").write_text(js, encoding="utf-8")

@@ -26,7 +26,12 @@ var _orbit := true
 
 func _ready() -> void:
 	Game.main = self
+	# The world is built the same way every run (so the pre-baked navigation
+	# mesh fits it); gameplay randomness is re-seeded once it is built.
+	seed(19102016)
+	Game.memmark("start")
 	_make_environment()
+	Game.memmark("env")
 	nav_region = NavigationRegion3D.new()
 	nav_region.name = "Navigation"
 	add_child(nav_region)
@@ -38,6 +43,7 @@ func _ready() -> void:
 	street_root.name = "Street"
 	nav_region.add_child(street_root)
 	Street.build(street_root)
+	Game.memmark("street")
 	house = NeighborHouse.new()
 	house.name = "NeighborHouse"
 	house.position = Vector3(12, 0, -12)
@@ -50,17 +56,26 @@ func _ready() -> void:
 	nav_region.add_child(phouse)
 	Game.player_house = phouse
 	house.build(items_root)
+	Game.memmark("house")
 	phouse.build(items_root)
+	Game.memmark("phouse")
 	special = SpecialAreas.new()
 	special.name = "Special"
 	add_child(special)
 	special.build()
+	Game.memmark("special")
 	_nav_links()
 	var batched_root := Node3D.new()
 	batched_root.name = "Batched"
 	add_child(batched_root)
 	var merged := StaticBatcher.merge(nav_region, batched_root)
 	print("Static batching: merged %d meshes into %d" % [merged, batched_root.get_child_count()])
+	var colliders_root := Node3D.new()
+	colliders_root.name = "Colliders"
+	nav_region.add_child(colliders_root)
+	var bodies := StaticBatcher.merge_colliders(nav_region, colliders_root)
+	print("Collider batching: %d static bodies into %d" % [bodies, colliders_root.get_child_count()])
+	Game.memmark("batched")
 	# Actors
 	player = Player.new()
 	player.name = "Player"
@@ -70,6 +85,7 @@ func _ready() -> void:
 	neighbor.name = "Neighbor"
 	add_child(neighbor)
 	Game.neighbor = neighbor
+	Game.memmark("actors")
 	neighbor.home_spot = house.gpos(Vector3(15.0, NeighborHouse.F1 + 0.05, 4.0))
 	neighbor.reset_to(neighbor.home_spot)
 	neighbor.state = Neighbor.S.IDLE
@@ -81,11 +97,14 @@ func _ready() -> void:
 	hud.name = "HUD"
 	add_child(hud)
 	Game.hud = hud
+	Game.memmark("hud")
 	hud.menu_new_game.connect(_on_new_game)
 	hud.menu_resume.connect(_resume)
 	hud.menu_quit_to_title.connect(_quit_to_title)
 	apply_quality()
+	randomize()
 	_bake_nav()
+	Game.memmark("nav")
 	Game.play_ambience("amb_suburb")
 	if "--autotest" in OS.get_cmdline_user_args():
 		add_child(load("res://tools/autotest.gd").new())
@@ -216,7 +235,25 @@ func set_night(on: bool) -> void:
 
 
 # ------------------------------------------------------------ navigation --
+const NAV_FILE := "res://nav/navmesh.res"
+
+
+## Baking the navigation mesh needs a lot of memory and time (in a phone
+## browser the memory peak alone can get the page killed), so a mesh baked ahead
+## of time is loaded when the level geometry still matches it. Otherwise it is
+## baked here; `-- --save-nav` writes the result for the next runs.
 func _bake_nav() -> void:
+	NavigationServer3D.map_set_cell_size(get_world_3d().navigation_map, 0.1)
+	NavigationServer3D.map_set_cell_height(get_world_3d().navigation_map, 0.1)
+	var sig := _nav_signature()
+	var args := OS.get_cmdline_user_args()
+	if not "--rebake-nav" in args and ResourceLoader.exists(NAV_FILE):
+		var pre := load(NAV_FILE) as NavigationMesh
+		if pre and int(pre.get_meta("sig", 0)) == sig:
+			nav_region.navigation_mesh = pre
+			_nav_ready(pre, "loaded")
+			return
+		print("Pre-baked navigation mesh is out of date, baking it")
 	var nm := NavigationMesh.new()
 	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nm.geometry_collision_mask = 1
@@ -230,14 +267,45 @@ func _bake_nav() -> void:
 	nm.edge_max_error = 1.2
 	nm.filter_baking_aabb = AABB(Vector3(-24, -1.5, -46), Vector3(48, 8.3, 70))
 	nav_region.navigation_mesh = nm
-	NavigationServer3D.map_set_cell_size(get_world_3d().navigation_map, 0.1)
-	NavigationServer3D.map_set_cell_height(get_world_3d().navigation_map, 0.1)
 	nav_region.bake_finished.connect(func():
-		nav_baked = true
-		for b in get_tree().get_nodes_in_group("nav_blockers"):
-			(b as CollisionObject3D).collision_layer = 0
-		print("Navigation baked: ", nm.get_polygon_count(), " polygons"))
+		_nav_ready(nm, "baked")
+		if "--save-nav" in args:
+			nm.set_meta("sig", sig)
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(NAV_FILE.get_base_dir()))
+			print("Saved navigation mesh: ", error_string(ResourceSaver.save(nm, NAV_FILE))))
 	nav_region.bake_navigation_mesh(true)
+
+
+func _nav_ready(nm: NavigationMesh, how: String) -> void:
+	nav_baked = true
+	for b in get_tree().get_nodes_in_group("nav_blockers"):
+		(b as CollisionObject3D).collision_layer = 0
+	print("Navigation %s: %d polygons" % [how, nm.get_polygon_count()])
+
+
+## Fingerprint of everything the bake reads (static colliders on layer 1).
+func _nav_signature() -> int:
+	var parts: Array = []
+	for n in nav_region.find_children("*", "StaticBody3D", true, false):
+		var sb := n as StaticBody3D
+		if sb.collision_layer & 1 == 0:
+			continue
+		var xf := sb.global_transform
+		var row: Array = [snappedf(xf.origin.x, 0.01), snappedf(xf.origin.y, 0.01), snappedf(xf.origin.z, 0.01),
+			snappedf(xf.basis.x.x, 0.01), snappedf(xf.basis.x.z, 0.01), snappedf(xf.basis.y.y, 0.01), snappedf(xf.basis.z.y, 0.01)]
+		for c in sb.get_children():
+			if c is CollisionShape3D and (c as CollisionShape3D).shape:
+				var cs := c as CollisionShape3D
+				row.append(cs.shape.get_class())
+				row.append(snappedf(cs.position.x, 0.01))
+				row.append(snappedf(cs.position.y, 0.01))
+				row.append(snappedf(cs.position.z, 0.01))
+				if cs.shape is BoxShape3D:
+					var sz: Vector3 = (cs.shape as BoxShape3D).size
+					row.append_array([snappedf(sz.x, 0.01), snappedf(sz.y, 0.01), snappedf(sz.z, 0.01)])
+		parts.append(hash(row))
+	parts.sort()
+	return hash(parts)
 
 
 func _nav_links() -> void:
@@ -291,7 +359,9 @@ func _process(delta: float) -> void:
 		cut_cam.global_position = p
 		cut_cam.look_at(c + Vector3(0, -1.5, 0))
 	if Game.mode == Game.Mode.PLAYING:
-		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not get_tree().paused and not Game.touch_mode:
+		# (a browser only lets a click capture the mouse; see _unhandled_input)
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not get_tree().paused and not Game.touch_mode \
+				and not OS.has_feature("web"):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		# indoor/outdoor ambience
 		var inside := house.room_at(player.global_position) != "" or phouse.contains(player.global_position)

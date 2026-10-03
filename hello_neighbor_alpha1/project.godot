@@ -53,6 +53,7 @@ theme/custom_font="res://fonts/NotoSansJP-Bold.ttf"
 
 3d/physics_engine="Jolt Physics"
 common/physics_ticks_per_second=60
+jolt_physics_3d/limits/temporary_memory_buffer_size=8
 
 [rendering]
 
