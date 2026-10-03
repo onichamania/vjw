@@ -15,6 +15,7 @@ var key_id := ""            # item id that unlocks it (consumed: false)
 var player_only := false    # the Neighbor can't open it (the player's house)
 var jammed := false
 var jam_text := "向こう側から何かでふさがれている"
+var neighbor_unjam := false   # the Neighbor just shoves the obstacle aside
 var speed := 3.2
 var on_opened: Callable
 
@@ -142,8 +143,13 @@ func close() -> void:
 func neighbor_open(from: Vector3) -> bool:
 	if is_open:
 		return true
-	if player_only or jammed:
+	if player_only:
 		return false
+	if jammed:
+		if not neighbor_unjam:
+			return false
+		jammed = false
+		Game.sfx3d("impact", center(), -2.0)
 	open_from(from)
 	return true
 

@@ -82,6 +82,9 @@ func _ready() -> void:
 	apply_quality()
 	_bake_nav()
 	Game.play_ambience("amb_suburb")
+	if "--autotest" in OS.get_cmdline_user_args():
+		add_child(load("res://tools/autotest.gd").new())
+		return
 	if Game.has_meta("autostart") and Game.get_meta("autostart"):
 		Game.set_meta("autostart", false)
 		call_deferred("_on_new_game")
@@ -186,8 +189,8 @@ func _bake_nav() -> void:
 	nm.cell_size = 0.1
 	nm.cell_height = 0.1
 	nm.agent_height = 1.8
-	nm.agent_radius = 0.34
-	nm.agent_max_climb = 0.35
+	nm.agent_radius = 0.4
+	nm.agent_max_climb = 0.3
 	nm.agent_max_slope = 46.0
 	nm.region_min_size = 4.0
 	nm.edge_max_error = 1.2
@@ -197,6 +200,8 @@ func _bake_nav() -> void:
 	NavigationServer3D.map_set_cell_height(get_world_3d().navigation_map, 0.1)
 	nav_region.bake_finished.connect(func():
 		nav_baked = true
+		for b in get_tree().get_nodes_in_group("nav_blockers"):
+			(b as CollisionObject3D).collision_layer = 0
 		print("Navigation baked: ", nm.get_polygon_count(), " polygons"))
 	nav_region.bake_navigation_mesh(true)
 

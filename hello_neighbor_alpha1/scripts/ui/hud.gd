@@ -231,6 +231,7 @@ void fragment() {
 """
 	var sm := ShaderMaterial.new()
 	sm.shader = sh
+	sm.set_shader_parameter("amount", 0.0)
 	chase_vignette.material = sm
 	chase_vignette.visible = false
 	root.add_child(chase_vignette)

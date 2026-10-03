@@ -97,6 +97,12 @@ func setup(house: NeighborHouse) -> void:
 	_basement_door()
 	_crib_key()
 	Game.power_changed.connect(_on_power)
+	# Doorways the Neighbor can't use (jammed, locked gate): cut them out of
+	# the navigation mesh. The blockers are switched off after the bake.
+	for b in [[Vector3(7.0, F1 + 1.1, 15.35), Vector3(0.5, 2.0, 1.2)], [Vector3(0.0, F1 + 1.1, 15.55), Vector3(0.5, 2.0, 1.2)],
+			[Vector3(6.6, F2 + 1.1, 3.4), Vector3(0.5, 2.0, 1.1)]]:
+		var nb := B.collider(self, b[0], b[1], 1)
+		nb.add_to_group("nav_blockers")
 	# The Neighbor already has a couple of cameras out.
 	call_deferred("_initial_cameras")
 
@@ -480,7 +486,7 @@ func _classroom() -> void:
 	var sd := HouseProps.item(h, "magnet_2", Vector3(9.9, u + 0.75, 6.5), 0.0, 2)
 	sd.freeze = true
 	# Student desks (students face the blackboard)
-	for sx: float in [8.6, 10.1, 11.6]:
+	for sx: float in [7.95, 9.45]:
 		for sz: float in [5.0, 6.5, 8.0]:
 			F.student_desk(self, Vector3(sx, u, sz), PI / 2)
 	# Spot to stand the mannequin teacher next to the blackboard

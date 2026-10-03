@@ -334,7 +334,8 @@ func _build_openings() -> void:
 	doors["grave_out"].jammed = true
 	doors["grave_out"].jam_text = "反対側が家具でふさがれている"
 	doors["class_hall2"].jammed = true
-	doors["class_hall2"].jam_text = "向こう側にイスがはさまっている"
+	doors["class_hall2"].jam_text = "イスがはさまっていて開かない。イスをどかそう"
+	doors["class_hall2"].neighbor_unjam = true
 
 
 func _frame(o: Dictionary, mat: Material, wide := false) -> void:

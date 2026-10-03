@@ -54,7 +54,7 @@ static func glass(tint := Color(0.75, 0.88, 0.95, 0.28)) -> StandardMaterial3D:
 	m.albedo_color = tint
 	m.roughness = 0.04
 	m.metallic = 0.2
-	m.specular = 0.9
+	m.metallic_specular = 0.9
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
 

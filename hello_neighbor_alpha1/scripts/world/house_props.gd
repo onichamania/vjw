@@ -250,8 +250,8 @@ static func _upstairs(h: NeighborHouse) -> void:
 	F.painting(h, Vector3(9.12, u + 1.8, 13.0), PI / 2, 0.8, 0.6, 33)
 	F.rug(h, Vector3(10.3, u, 13.0), 0, 1.4, 5.0, "carpet_blue")
 	lamp(h, 10.5, 12.5, 2, 6.0, 1.0)
-	# chair jammed against the classroom door
-	var jam := item(h, "chair", Vector3(11.05, u + 0.6, 9.55), PI)
+	# chair wedged against the classroom's second door (classroom side)
+	var jam := item(h, "chair", Vector3(11.05, u + 0.6, 8.5), 0.0)
 	jam.set_meta("jam_chair", true)
 	h.set_meta("jam_chair", jam)
 	# --- 2F living room
