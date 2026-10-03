@@ -64,6 +64,7 @@ func _ready() -> void:
 	skip_label.position = Vector2(-260, -40)
 	skip_label.visible = false
 	root.add_child(skip_label)
+	_apply_touch_layout(Game.touch_mode)
 
 
 func _label(text: String, size: int, col := Color.WHITE, outline := 6) -> Label:
@@ -135,8 +136,7 @@ func _build_game_hud() -> void:
 	hint_label.position = Vector2(22, 44)
 	root.add_child(hint_label)
 	inv_box = HBoxContainer.new()
-	inv_box.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	inv_box.position = Vector2(-4 * 132 - 24, -112)
+	inv_box.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	inv_box.add_theme_constant_override("separation", 8)
 	inv_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(inv_box)
@@ -319,27 +319,20 @@ func set_subtitle(text: String) -> void:
 	subtitle.text = text
 
 
-## Touch play: the inventory moves to the top right (the buttons own the
-## bottom corners) and its slots become tappable; key hints go away.
+## The inventory sits in the bottom-left corner. In touch play it is a bit
+## smaller (the move stick sits right above it) and its slots are tappable;
+## key hints go away.
 func _apply_touch_layout(on: bool) -> void:
 	_touch_layout = on
-	var sw := 104.0 if on else 124.0
-	var sh := 60.0 if on else 84.0
+	var sw := 100.0 if on else 124.0
+	var sh := 58.0 if on else 84.0
 	var w := sw * 4 + 8 * 3
-	if on:
-		inv_box.anchor_left = 1.0
-		inv_box.anchor_right = 1.0
-		inv_box.anchor_top = 0.0
-		inv_box.anchor_bottom = 0.0
-		inv_box.offset_left = -w - 20
-		inv_box.offset_top = 12
-	else:
-		inv_box.anchor_left = 1.0
-		inv_box.anchor_right = 1.0
-		inv_box.anchor_top = 1.0
-		inv_box.anchor_bottom = 1.0
-		inv_box.offset_left = -4 * 132 - 24
-		inv_box.offset_top = -112
+	inv_box.anchor_left = 0.0
+	inv_box.anchor_right = 0.0
+	inv_box.anchor_top = 1.0
+	inv_box.anchor_bottom = 1.0
+	inv_box.offset_left = 20.0 if on else 24.0
+	inv_box.offset_top = -sh - (12.0 if on else 24.0)
 	inv_box.offset_right = inv_box.offset_left + w
 	inv_box.offset_bottom = inv_box.offset_top + sh
 	for i in slots.size():
@@ -347,8 +340,6 @@ func _apply_touch_layout(on: bool) -> void:
 		slot_labels[i].position = Vector2(4, 16 if on else 18)
 		slot_labels[i].size = Vector2(sw - 8, sh - 18)
 		slot_labels[i].add_theme_font_size_override("font_size", 13 if on else 15)
-	cam_alert.offset_top = 84 if on else 60
-	cam_alert.offset_bottom = cam_alert.offset_top + 30
 	hint_label.visible = inv_box.visible and not on
 
 
@@ -535,7 +526,7 @@ const TOUCH_CONTROLS := """左側をなぞる　移動（外側まで押すと�
 投げる　長押しして離す（窓ガラスを割れる）
 捨てる / ジャンプ / しゃがむ（足音を消す）
 ダッシュ　足音が大きい（指を離すと解除）
-右上の持ち物の枠をタップ　持ち替え
+左下の持ち物の枠をタップ　持ち替え
 Ⅱ　ポーズ
 
 """ + GOAL_TEXT

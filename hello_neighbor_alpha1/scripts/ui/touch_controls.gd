@@ -66,7 +66,8 @@ func _ui_scale() -> float:
 func _layout() -> void:
 	var s := size
 	var k := _ui_scale()
-	stick_home = Vector2((70 + STICK_R) * k, s.y - (70 + STICK_R) * k)
+	# Resting place of the stick: bottom-left, just above the inventory.
+	stick_home = Vector2(56 + STICK_R * k, s.y - 96 - STICK_R * k)
 	if stick_index < 0:
 		stick_center = stick_home
 	var br := Vector2(s.x, s.y)
@@ -332,7 +333,7 @@ func _draw() -> void:
 	var knob := Color(1, 0.5, 0.35, 0.6) if (stick_run and active) else Color(1, 0.95, 0.85, 0.45 if active else 0.25)
 	draw_circle(stick_center + stick_vec * STICK_R * k, 34 * k, knob)
 	if not active:
-		_text(font, stick_center + Vector2(0, STICK_R * k + 26 * k), "移動", int(16 * k), Color(1, 1, 1, 0.45))
+		_text(font, stick_center - Vector2(0, STICK_R * k + 18 * k), "移動", int(16 * k), Color(1, 1, 1, 0.45))
 	var has_item: bool = Game.player != null and Game.player.held_item() != null
 	var use: Array = _use_label()
 	for b in buttons:

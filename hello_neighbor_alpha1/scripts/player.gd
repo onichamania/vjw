@@ -108,7 +108,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var web_free := OS.has_feature("web") and not Game.touch_mode
 	if event is InputEventMouseMotion and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or web_free):
 		var m := event as InputEventMouseMotion
-		var sens: float = Game.settings.sens * (0.35 if zoom else 1.0)
+		var sens: float = Game.settings.sens * Game.hub_sens * (0.35 if zoom else 1.0)
 		yaw -= m.relative.x * sens
 		pitch -= m.relative.y * sens * (-1.0 if Game.settings.invert_y else 1.0)
 		pitch = clampf(pitch, -1.5, 1.5)
@@ -138,7 +138,7 @@ var _hide_yaw := 0.0
 func look_delta(rel: Vector2) -> void:
 	if not controls:
 		return
-	var sens: float = Game.settings.sens * (0.35 if zoom else 1.0)
+	var sens: float = Game.settings.sens * Game.hub_sens * (0.35 if zoom else 1.0)
 	yaw -= rel.x * sens
 	pitch -= rel.y * sens * (-1.0 if Game.settings.invert_y else 1.0)
 	pitch = clampf(pitch, -1.5, 1.5)

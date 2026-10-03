@@ -1,0 +1,442 @@
+<title>ハローネイバー Alpha 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* Layout: one full-bleed game canvas; a night-street title card sits over it
+   while the engine loads, then fades away. Single dark look by design. */
+:root {
+  --night: #0b1020;          /* the street at night */
+  --night-2: #141b31;
+  --siding: #5b8bbd;         /* the Neighbor's blue planks */
+  --paint: #f1ece0;          /* white picket fence */
+  --door: #c8302c;           /* red basement door */
+  --muted: #9aa6c2;
+  --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--night);
+  color: var(--paint);
+  font-family: var(--body);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* #rot holds the game and its loading card. Normally it is the window;
+   inside the 3dgame launcher's sideways mode it is turned 90° clockwise so a
+   phone held upright shows the game in landscape. */
+#rot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+#canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  touch-action: none;
+  background: var(--night);
+}
+#card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-inline: 16px;
+  padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(120% 70% at 70% 105%, rgba(91, 139, 189, 0.22), transparent 60%),
+    linear-gradient(180deg, var(--night-2), var(--night));
+  transition: opacity 0.8s ease;
+  overflow-y: auto;
+}
+#card[data-done="true"] { opacity: 0; pointer-events: none; }
+.inner {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 22px;
+}
+.logo {
+  font-family: var(--display);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+.logo .a { display: block; font-size: clamp(44px, 11vw, 76px); color: var(--paint); }
+.logo .b { display: block; font-size: clamp(44px, 11vw, 76px); color: var(--door); }
+.sub {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  color: var(--siding);
+  font-weight: 700;
+}
+.bar {
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(241, 236, 224, 0.12);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--siding), var(--paint));
+  transition: width 0.25s ease;
+}
+.status {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.keys section { min-width: 0; }
+.keys h2 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.keys p { margin: 0; }
+kbd {
+  font-family: var(--body);
+  font-size: 12px;
+  padding: 1px 6px;
+  border: 1px solid rgba(241, 236, 224, 0.3);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
+.goal {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--door);
+  background: rgba(200, 48, 44, 0.08);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.note { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
+#error[hidden] { display: none; }
+#error {
+  margin: 0;
+  padding: 12px 14px;
+  background: rgba(200, 48, 44, 0.18);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+#fs {
+  position: fixed;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--paint);
+  background: rgba(11, 16, 32, 0.55);
+  border: 1px solid rgba(241, 236, 224, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  z-index: 3;
+}
+#fs:focus-visible { outline: 2px solid var(--siding); outline-offset: 2px; }
+#fs[hidden] { display: none; }
+/* Phones held upright: the game needs landscape. */
+#rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  background: var(--night);
+}
+#rotate svg { width: 88px; height: 88px; margin: 0 auto 16px; display: block; color: var(--siding); }
+#rotate p { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.6; }
+#rotate small { display: block; margin-top: 6px; font-size: 13px; font-weight: 500; color: var(--muted); }
+@media (orientation: portrait) and (pointer: coarse) {
+  body[data-started="true"]:not(.land) #rotate { display: grid; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #card, .bar > i { transition: none; }
+}
+</style>
+
+<div id="rot">
+<canvas id="canvas" tabindex="0">ブラウザが canvas に対応していません。</canvas>
+<div id="card">
+  <div class="inner">
+    <h1 class="logo"><span class="a">HELLO</span><span class="b">NEIGHBOR</span></h1>
+    <p class="sub">ALPHA 1（2016）ファンメイド再現版</p>
+    <div>
+      <div class="bar" aria-hidden="true"><i id="fill"></i></div>
+      <div class="status"><span id="label">エンジンを読み込み中…</span><span id="amount">0 / 15 MB</span></div>
+    </div>
+    <p id="error" hidden></p>
+    <p class="goal">目的：通りの向かいに住むお隣さんの家の、<b>地下室</b>に何があるのか確かめること。見つかったら走って逃げよう。追跡中の彼には隠れても見つかる。</p>
+    <div class="keys">
+      <section>
+        <h2>PC</h2>
+        <p><kbd>WASD</kbd> 移動　マウス 視点<br><kbd>E</kbd>/クリック 拾う・使う・隠れる<br>右クリック長押し 投げる　<kbd>Q</kbd> 捨てる<br><kbd>Shift</kbd> ダッシュ　<kbd>Ctrl</kbd> しゃがむ　<kbd>Space</kbd> ジャンプ<br><kbd>1</kbd>〜<kbd>4</kbd> 持ち物　<kbd>Esc</kbd> ポーズ</p>
+      </section>
+      <section>
+        <h2>スマホ・タブレット（横向き）</h2>
+        <p>左側をなぞって移動（外側まで押すとダッシュ）、右側をなぞって視点。<br>右下の「使う」で拾う・ドア・隠れる・撃つ。<br>左下の持ち物の枠をタップで持ち替え。</p>
+      </section>
+    </div>
+    <p class="note">非公式のファンメイド作品です。tinyBuild / Dynamic Pixels とは無関係です。モデル・音楽・効果音はすべてこの再現版のためのオリジナルです。音は最初に画面を触る（クリックする）と鳴ります。</p>
+  </div>
+</div>
+</div>
+<button id="fs" type="button">全画面</button>
+<div id="rotate" role="status">
+  <div>
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="5" y="8" width="16" height="28" rx="3"/>
+      <rect x="20" y="28" width="24" height="14" rx="3" stroke-dasharray="3 3.5" opacity="0.7"/>
+      <path d="M27 9a13 13 0 0 1 12 12"/>
+      <path d="M39.5 14.5V21h-6.5"/>
+    </svg>
+    <p>スマホを横向きにしてください<small>縦向きのままでは遊べません</small></p>
+  </div>
+</div>
+
+
+<script src="index.js"></script>
+<script>
+(function () {
+  var WASM_GZ_SIZE = 9400140;
+  var WASM_SIZE = 43699190;
+  var PCK_SIZE = 4874448;
+  var MB = 1048576;
+  var fill = document.getElementById('fill');
+  var label = document.getElementById('label');
+  var amount = document.getElementById('amount');
+  var card = document.getElementById('card');
+  var errBox = document.getElementById('error');
+
+  function showError(msg) {
+    errBox.textContent = msg;
+    errBox.hidden = false;
+    label.textContent = '起動できませんでした';
+  }
+
+  // The engine binary ships gzip-compressed (engine-gz.wasm) to fit the file
+  // size limit, and the game data as game-pck.wasm; both are binary blobs
+  // read here and handed to Godot under the names it asks for.
+  var realFetch = window.fetch.bind(window);
+  var downloaded = 0;
+  function progress(extra) {
+    var total = WASM_GZ_SIZE + PCK_SIZE;
+    var cur = Math.min(total, downloaded + (extra || 0));
+    fill.style.width = (cur / total * 100).toFixed(1) + '%';
+    amount.textContent = (cur / MB).toFixed(1) + ' / ' + (total / MB).toFixed(0) + ' MB';
+  }
+
+  function readAll(resp, onChunk) {
+    if (!resp.body || !resp.body.getReader) {
+      return resp.arrayBuffer().then(function (b) { onChunk(b.byteLength); return new Uint8Array(b); });
+    }
+    var reader = resp.body.getReader();
+    var parts = [];
+    var size = 0;
+    function pump() {
+      return reader.read().then(function (r) {
+        if (r.done) {
+          var out = new Uint8Array(size);
+          var o = 0;
+          parts.forEach(function (p) { out.set(p, o); o += p.length; });
+          return out;
+        }
+        parts.push(r.value);
+        size += r.value.length;
+        onChunk(r.value.length);
+        return pump();
+      });
+    }
+    return pump();
+  }
+
+  window.fetch = function (input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (/index\.wasm($|\?)/.test(url)) {
+      label.textContent = 'エンジンを読み込み中…';
+      return realFetch('engine-gz.wasm', init).then(function (r) {
+        if (!r.ok) { throw new Error('engine-gz.wasm: HTTP ' + r.status); }
+        return readAll(r, function (n) { downloaded += n; progress(); });
+      }).then(function (bytes) {
+        var isGzip = bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+        if (!isGzip) {
+          return bytes.buffer;
+        }
+        label.textContent = '展開中…';
+        var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        return new Response(stream).arrayBuffer();
+      }).then(function (buf) {
+        label.textContent = 'ゲームデータを読み込み中…';
+        return new Response(buf, { status: 200, headers: { 'Content-Type': 'application/wasm', 'Content-Length': String(buf.byteLength) } });
+      });
+    }
+    if (/index\.pck($|\?)/.test(url)) {
+      return realFetch('game-pck.wasm', init).then(function (r) {
+        if (!r.ok) { throw new Error('game-pck.wasm: HTTP ' + r.status); }
+        var base = downloaded;
+        return readAll(r, function (n) { downloaded += n; progress(); }).then(function (bytes) {
+          downloaded = base + bytes.length;
+          progress();
+          return new Response(bytes, { status: 200, headers: { 'Content-Type': 'application/octet-stream', 'Content-Length': String(bytes.length) } });
+        });
+      });
+    }
+    return realFetch(input, init);
+  };
+
+  var canvas = document.getElementById('canvas');
+  var rot = document.getElementById('rot');
+
+  // ---- 3dgame launcher ----
+  // Opened from the launcher, its settings (sideways view, sound, volume, look
+  // sensitivity) come from localStorage and then from h3dSet messages. The
+  // launcher handles fullscreen itself and keeps its gear at the top right.
+  var embedded = window.parent !== window;
+  var hub = null;
+  try {
+    var saved = JSON.parse(localStorage.getItem('3dame-settings'));
+    if (saved && typeof saved === 'object') { hub = saved; }
+  } catch (e) {}
+  function hubShare() {
+    if (hub) {
+      window.__hnHub = { sound: hub.sound !== false, vol: typeof hub.vol === 'number' ? hub.vol : 0.7,
+                         sens: typeof hub.sens === 'number' ? hub.sens : 1 };
+    }
+  }
+  hubShare();
+  window.addEventListener('message', function (e) {
+    var o = e.data && e.data.h3dSet;
+    if (!o || typeof o !== 'object') { return; }
+    hub = hub || {};
+    for (var k in o) { hub[k] = o[k]; }
+    hubShare();
+    fit();
+  });
+
+  // The game canvas is sized here (Godot's resize policy is "none") so it can
+  // also be laid out sideways. index.js maps touches back when window.__gdRot.
+  var lastW = 0, lastH = 0;
+  function fit() {
+    var land = !!(embedded && hub && hub.land);
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var w = land ? vh : vw, h = land ? vw : vh;
+    window.__gdRot = land;
+    document.body.classList.toggle('land', land);
+    rot.style.width = w + 'px';
+    rot.style.height = h + 'px';
+    rot.style.transform = land ? 'rotate(90deg) translateY(-100%)' : 'none';
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
+    if (pw !== lastW || ph !== lastH) {
+      lastW = pw; lastH = ph;
+      canvas.width = pw;
+      canvas.height = ph;
+    }
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', function () { setTimeout(fit, 250); });
+
+  // Fullscreen: the button on computers; on phones the first tap on the game
+  // goes fullscreen and locks landscape where the browser allows it (Android).
+  var fsBtn = document.getElementById('fs');
+  var root = document.documentElement;
+  var canFs = !embedded && !!(root.requestFullscreen && document.fullscreenEnabled !== false);
+  function goFullscreen() {
+    if (!canFs || document.fullscreenElement) { return; }
+    try {
+      var p = root.requestFullscreen({ navigationUI: 'hide' });
+      if (p && p.then) {
+        p.then(function () {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function () {});
+          }
+        }, function () {});
+      }
+    } catch (e) {}
+  }
+  function syncFsButton() {
+    fsBtn.hidden = !canFs || !!document.fullscreenElement;
+  }
+  syncFsButton();
+  document.addEventListener('fullscreenchange', syncFsButton);
+  fsBtn.addEventListener('click', function () {
+    goFullscreen();
+    canvas.focus();
+  });
+  var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  canvas.addEventListener('touchend', function () {
+    if (coarse && document.body.dataset.started === 'true') { goFullscreen(); }
+  }, { passive: true });
+  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  document.addEventListener('fullscreenchange', function () { setTimeout(fit, 100); });
+
+  if (typeof Engine === 'undefined') {
+    showError('エンジンのスクリプト（index.js）を読み込めませんでした。ページを再読み込みしてください。');
+    return;
+  }
+  var config = {
+    args: [],
+    canvasResizePolicy: 0,
+    ensureCrossOriginIsolationHeaders: false,
+    executable: 'index',
+    experimentalVK: false,
+    fileSizes: { 'index.pck': PCK_SIZE, 'index.wasm': WASM_SIZE },
+    focusCanvas: true,
+    gdextensionLibs: []
+  };
+  var missing = Engine.getMissingFeatures({ threads: false });
+  if (missing.length) {
+    showError('このブラウザには次の機能がないため遊べません：\n' + missing.join('\n') + '\nPC の Chrome / Edge / Firefox / Safari の最新版でお試しください。');
+    return;
+  }
+  var engine = new Engine(config);
+  progress();
+  engine.startGame({
+    onProgress: function () {}
+  }).then(function () {
+    fill.style.width = '100%';
+    label.textContent = '起動しました';
+    document.body.dataset.started = 'true';
+    setTimeout(function () { card.setAttribute('data-done', 'true'); }, 400);
+    setTimeout(function () { card.hidden = true; }, 1400);
+  }, function (err) {
+    console.error(err);
+    showError((err && err.message) ? err.message : String(err));
+  });
+}());
+</script>

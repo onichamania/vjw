@@ -39,7 +39,7 @@ Web 書き出し（`export_presets.cfg` の「Web」）をスマホで開くと�
 | 使う | 拾う・ドア・隠れる / 出る。持ち物によって「撃つ」「ライト」「のぞく（長押し）」「食べる」に変わる |
 | 投げる（長押し → 離す） | 投げる |
 | 捨てる / ジャンプ / しゃがむ / ダッシュ | しゃがむ・ダッシュは押すたびに ON/OFF（ダッシュは移動の指を離すと解除） |
-| 右上の持ち物の枠をタップ | 持ち替え |
+| 左下の持ち物の枠をタップ | 持ち替え |
 | Ⅱ | ポーズ |
 | カットシーン中にタップ | スキップ |
 
@@ -93,6 +93,12 @@ godot --headless --path . --fixed-fps 60 -- --autotest
 # スクリーンショット巡回（画面が必要。Linux なら xvfb-run で可）
 godot --path . -- --shots --shotdir=/tmp/shots
 godot --path . -- --introshots --shotdir=/tmp/shots
+
+# ブラウザ版：Web 書き出し → 公開用にまとめる（index.wasm を gzip、読み込みページ web/page.html を同梱）
+godot --headless --path . --export-release "Web" /tmp/web/index.html
+python3 tools/package_web.py /tmp/web /tmp/site
+# 「3dgame」ランチャーに入れる版（ランチャーの FPS 上限スクリプトを先頭に入れた完全な HTML になる）
+python3 tools/package_web.py /tmp/web /tmp/site-hub --hub platform.js
 
 # 音楽・効果音の再生成（numpy, scipy, ffmpeg が必要）
 python3 tools/gen_audio.py

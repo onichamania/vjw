@@ -29,6 +29,11 @@ var tutorial_done := false
 var game_time := 0.0
 var touch_mode := false   # on-screen controls, no mouse capture (phones, or after the first touch)
 var mobile := false       # phone / tablet browser: lighter rendering, touch controls from the start
+# Inside the "3dgame" launcher page its sound switch, volume and look
+# sensitivity apply on top of ours (read from window.__hnHub in the browser).
+var hub_sens := 1.0
+var _hub_gain := -1.0
+var _hub_t := 0.0
 
 var settings := {
 	"sens": 0.0022,
@@ -85,6 +90,26 @@ func reset_state() -> void:
 func _process(delta: float) -> void:
 	if mode == Mode.PLAYING:
 		game_time += delta
+	if OS.has_feature("web"):
+		_hub_t -= delta
+		if _hub_t <= 0.0:
+			_hub_t = 0.5
+			_poll_hub()
+
+
+func _poll_hub() -> void:
+	var s: Variant = JavaScriptBridge.eval("window.__hnHub ? JSON.stringify(window.__hnHub) : ''", true)
+	if typeof(s) != TYPE_STRING or s == "":
+		return
+	var d: Variant = JSON.parse_string(s)
+	if typeof(d) != TYPE_DICTIONARY:
+		return
+	hub_sens = clampf(float(d.get("sens", 1.0)), 0.2, 3.0)
+	# The launcher's default volume (0.7) leaves our mix as it is.
+	var gain := clampf(float(d.get("vol", 0.7)) / 0.7, 0.0, 1.43) if d.get("sound", true) else 0.0
+	if not is_equal_approx(gain, _hub_gain):
+		_hub_gain = gain
+		AudioServer.set_bus_volume_db(0, linear_to_db(maxf(gain, 0.0001)))
 
 
 # ---------------------------------------------------------------- input ----
