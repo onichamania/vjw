@@ -388,7 +388,8 @@ void fragment() {
 	vb.add_child(_button("ニューゲーム", func(): menu_new_game.emit()))
 	vb.add_child(_button("操作方法", func(): _show_panel(controls_panel)))
 	vb.add_child(_button("設定", func(): _show_panel(settings_panel)))
-	vb.add_child(_button("終了", func(): get_tree().quit()))
+	if not OS.has_feature("web"):   # quitting in a browser just freezes the page
+		vb.add_child(_button("終了", func(): get_tree().quit()))
 	var note := _label("非公式のファンメイド作品です（2016年 Alpha 1 版の再現）。tinyBuild / Dynamic Pixels とは無関係です。\n音楽・効果音・モデルはすべてこのプロジェクト用のオリジナルです。", 14, Color(1, 1, 1, 0.6), 4)
 	note.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	note.position = Vector2(24, -60)
