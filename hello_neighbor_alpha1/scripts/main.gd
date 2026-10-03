@@ -90,6 +90,8 @@ func _ready() -> void:
 	if "--autotest" in OS.get_cmdline_user_args():
 		add_child(load("res://tools/autotest.gd").new())
 		return
+	if "--introshots" in OS.get_cmdline_user_args():
+		add_child(load("res://tools/introshots.gd").new())
 	if "--shots" in OS.get_cmdline_user_args():
 		add_child(load("res://tools/shots.gd").new())
 		return
@@ -363,8 +365,20 @@ func _intro() -> void:
 	intro_car = F.car(items_root, Vector3(-75, 0, 2.2), 0.0, "car_red")
 	cut_cam.current = true
 	var skipped := false
-	cut_cam.global_position = intro_car.global_position + Vector3(-0.15, 1.28, 0.35)
-	cut_cam.look_at(cut_cam.global_position + Vector3(1, -0.05, 0))
+	cut_cam.global_position = intro_car.global_position + Vector3(-0.2, 1.22, 0.35)
+	cut_cam.look_at(cut_cam.global_position + Vector3(1, 0.02, 0))
+	# First-person car interior: dashboard, steering wheel, hood and pillars.
+	intro_car.visible = false
+	var dash := Node3D.new()
+	cut_cam.add_child(dash)
+	B.box(dash, Vector3(0, -0.42, -0.75), Vector3(1.7, 0.22, 0.45), Mats.get_mat("wood_dark"), false)
+	B.box(dash, Vector3(0, -0.3, -0.98), Vector3(1.7, 0.04, 0.05), Mats.get_mat("chrome"), false)
+	B.box(dash, Vector3(0, -0.62, -1.9), Vector3(1.9, 0.12, 1.9), Mats.get_mat("car_red"), false).rotation.x = 0.06
+	for sx: float in [-0.95, 0.95]:
+		B.box(dash, Vector3(sx, 0.05, -0.85), Vector3(0.08, 0.95, 0.08), Mats.get_mat("car_red"), false).rotation.z = -sx * 0.3
+	B.box(dash, Vector3(0, 0.52, -0.75), Vector3(2.1, 0.1, 0.5), Mats.get_mat("car_red"), false)
+	B.torus(dash, Vector3(-0.36, -0.28, -0.55), 0.15, 0.18, Mats.get_mat("black"), Vector3(1.2, 0, 0))
+	B.box(dash, Vector3(0.25, 0.4, -0.7), Vector3(0.22, 0.06, 0.02), Mats.get_mat("chrome"), false)
 	hud.fade_in(1.5)
 	hud.set_subtitle("新しい家への引っ越しの日。")
 	var drive := create_tween()
@@ -374,11 +388,13 @@ func _intro() -> void:
 		await get_tree().process_frame
 		t += get_process_delta_time()
 		var look_side := smoothstep(5.0, 8.5, t)
-		cut_cam.global_position = intro_car.global_position + Vector3(-0.15, 1.28, 0.35)
-		var fwd := Vector3(1, -0.05, 0).lerp(Vector3(0.35, 0.05, -1.0), look_side * 0.85)
+		cut_cam.global_position = intro_car.global_position + Vector3(-0.2, 1.22, 0.35)
+		var fwd := Vector3(1, 0.02, 0).lerp(Vector3(0.35, 0.08, -1.0), look_side * 0.85)
 		cut_cam.look_at(cut_cam.global_position + fwd)
 	skipped = skip_requested
 	drive.kill()
+	dash.queue_free()
+	intro_car.visible = true
 	# 2) The Neighbor notices, grabs his binoculars and goes upstairs
 	if not skipped:
 		hud.set_subtitle("")
@@ -402,8 +418,8 @@ func _intro() -> void:
 		neighbor.rotation.y = house.global_rotation.y + PI
 		neighbor.script_anim("look")
 		neighbor.model.hold_prop(_binoculars_prop())
-		_cam_to(house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.6, -4.0)), house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.6, 0.6)), 0.0)
-		_cam_to(house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.7, -2.4)), house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.6, 0.6)), 4.0)
+		_cam_to(house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.45, -1.95)), house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.6, 0.6)), 0.0)
+		_cam_to(house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.6, -1.15)), house.gpos(Vector3(11.0, NeighborHouse.F2 + 1.65, 0.6)), 4.0)
 		hud.set_subtitle("…誰かが見ている。")
 		skipped = await _wait(4.0)
 	# 3) Moving in

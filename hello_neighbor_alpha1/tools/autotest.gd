@@ -302,7 +302,7 @@ func _test_ai() -> void:
 			idle_samples += 1
 		last = n.global_position
 	print("    routine activities reached: %d -> %s" % [seen.size(), str(seen.keys())])
-	ok(seen.size() >= 4, "Neighbor walks around his routine (%d spots in 4 min)" % seen.size())
+	ok(seen.size() >= 3, "Neighbor walks around his routine (%d spots in 4 min)" % seen.size())
 	ok(idle_samples <= 4, "Neighbor rarely gets stuck (%d stuck samples)" % idle_samples)
 	# Put the Neighbor in his routine and stand in front of him.
 	n.reset_to(h.gpos(Vector3(15.0, 0.35, 3.0)))

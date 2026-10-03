@@ -22,7 +22,7 @@ var state: int = S.IDLE
 var model: NeighborModel
 var agent: NavigationAgent3D
 var anim := "idle"
-var walk_speed := 2.0
+var walk_speed := 2.3
 var cur_speed := 0.0
 var want_speed := 0.0
 var move_target := Vector3.ZERO
