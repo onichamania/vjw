@@ -27,7 +27,8 @@ var captures := 0
 var sleeps := 0
 var tutorial_done := false
 var game_time := 0.0
-var touch_mode := false   # set after the first touch: on-screen controls, no mouse capture
+var touch_mode := false   # on-screen controls, no mouse capture (phones, or after the first touch)
+var mobile := false       # phone / tablet browser: lighter rendering, touch controls from the start
 
 var settings := {
 	"sens": 0.0022,
@@ -58,6 +59,9 @@ var _music_tween: Tween
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	mobile = OS.has_feature("web_android") or OS.has_feature("web_ios") or OS.has_feature("mobile") \
+		or "--mobile" in OS.get_cmdline_user_args()
+	touch_mode = mobile
 	_setup_input()
 	_setup_buses()
 	_load_settings()
@@ -286,6 +290,11 @@ func set_frozen(f: bool) -> void:
 func message(text: String, dur := 3.0) -> void:
 	if hud:
 		hud.show_message(text, dur)
+
+
+## Pick the wording for the current control scheme.
+func ctl(pc_text: String, touch_text: String) -> String:
+	return touch_text if touch_mode else pc_text
 
 
 func hint(text: String, dur := 4.0) -> void:

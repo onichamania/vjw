@@ -188,6 +188,23 @@ func apply_quality() -> void:
 		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 		sun.directional_shadow_max_distance = 45.0
 		RenderingServer.directional_shadow_atlas_set_size(2048, true)
+	if Game.mobile:
+		# Phones: one shadow split close to the player, no glow / FXAA, and the
+		# 3D view drawn at about 600 lines and scaled up (the HUD stays sharp).
+		env.glow_enabled = false
+		get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+		sun.directional_shadow_max_distance = 26.0
+		RenderingServer.directional_shadow_atlas_set_size(1024, true)
+		if not get_viewport().size_changed.is_connected(_fit_render_scale):
+			get_viewport().size_changed.connect(_fit_render_scale)
+		_fit_render_scale()
+
+
+func _fit_render_scale() -> void:
+	var h := float(get_window().size.y)
+	get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	get_viewport().scaling_3d_scale = clampf(600.0 / maxf(h, 1.0), 0.35, 1.0)
 
 
 func set_night(on: bool) -> void:
@@ -746,7 +763,7 @@ func start_ending() -> void:
 	Game.sfx("coffin_slam", 6.0)
 	hud.set_fade(Color(0, 0, 0, 1))
 	await get_tree().create_timer(2.5).timeout
-	hud.show_credits("HELLO NEIGHBOR  ALPHA 1\nファンメイド再現版\n\nTHE END\n\n\nクリアおめでとう！\n捕まった回数： %d\n\nEsc / クリックでタイトルへ" % Game.captures)
+	hud.show_credits("HELLO NEIGHBOR  ALPHA 1\nファンメイド再現版\n\nTHE END\n\n\nクリアおめでとう！\n捕まった回数： %d\n\n%s" % [Game.captures, Game.ctl("Esc / クリックでタイトルへ", "画面をタップでタイトルへ")])
 	hud.fade_in(1.5)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	await get_tree().create_timer(2.0).timeout

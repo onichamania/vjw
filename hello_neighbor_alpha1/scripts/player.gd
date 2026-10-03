@@ -302,11 +302,11 @@ func _update_target() -> void:
 		if target == null and hid != "":
 			match hid:
 				"toy_rifle":
-					extra = "左クリック：撃つ"
+					extra = Game.ctl("左クリック：撃つ", "「撃つ」ボタンで撃つ")
 				"flashlight":
-					extra = "左クリック：ライトのON/OFF"
+					extra = Game.ctl("左クリック：ライトのON/OFF", "「ライト」ボタンでON/OFF")
 				"binoculars":
-					extra = "左クリック長押し：のぞく"
+					extra = Game.ctl("左クリック長押し：のぞく", "「のぞく」ボタン長押しでのぞく")
 		Game.hud.set_prompt(prompt, extra)
 
 
@@ -414,7 +414,7 @@ func pick_up(it: Item) -> void:
 				idx = i
 				break
 	if idx == -1:
-		Game.message("持ち物がいっぱい（Qで捨てる / 右クリックで投げる）", 2.5)
+		Game.message(Game.ctl("持ち物がいっぱい（Qで捨てる / 右クリックで投げる）", "持ち物がいっぱい（「捨てる」か「投げる」で手放す）"), 2.5)
 		return
 	if it.get_parent():
 		it.get_parent().remove_child(it)

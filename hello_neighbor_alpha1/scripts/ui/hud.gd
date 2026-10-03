@@ -33,6 +33,8 @@ var _alert_t := 0.0
 var _chase := false
 var _chase_t := 0.0
 var _hide_kind := ""
+var _touch_layout := false
+var controls_text: Label
 
 
 func _ready() -> void:
@@ -78,8 +80,9 @@ func _label(text: String, size: int, col := Color.WHITE, outline := 6) -> Label:
 func _button(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(320, 52)
-	b.add_theme_font_size_override("font_size", 24)
+	# Bigger targets for fingers on phones.
+	b.custom_minimum_size = Vector2(360, 64) if Game.mobile else Vector2(320, 52)
+	b.add_theme_font_size_override("font_size", 28 if Game.mobile else 24)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.08, 0.1, 0.14, 0.82)
 	sb.border_color = Color(0.95, 0.85, 0.55, 0.6)
@@ -213,6 +216,7 @@ func set_chase(on: bool) -> void:
 func set_game_hud_visible(v: bool) -> void:
 	for n: Control in [crosshair, prompt_label, extra_label, inv_box, objective_label, hint_label, charge_bar]:
 		n.visible = v
+	hint_label.visible = v and not Game.touch_mode
 	if not v:
 		chase_vignette.visible = false
 
@@ -288,7 +292,7 @@ func set_hidden(on: bool, kind: String) -> void:
 	hide_overlay.visible = on
 	hide_overlay.queue_redraw()
 	if on:
-		show_message("E / クリック：出る", 2.0)
+		show_message(Game.ctl("E / クリック：出る", "「出る」ボタンで出る"), 2.0)
 
 
 ## Fade the screen to `col` (alpha 1) over `dur` seconds.
@@ -315,7 +319,44 @@ func set_subtitle(text: String) -> void:
 	subtitle.text = text
 
 
+## Touch play: the inventory moves to the top right (the buttons own the
+## bottom corners) and its slots become tappable; key hints go away.
+func _apply_touch_layout(on: bool) -> void:
+	_touch_layout = on
+	var sw := 104.0 if on else 124.0
+	var sh := 60.0 if on else 84.0
+	var w := sw * 4 + 8 * 3
+	if on:
+		inv_box.anchor_left = 1.0
+		inv_box.anchor_right = 1.0
+		inv_box.anchor_top = 0.0
+		inv_box.anchor_bottom = 0.0
+		inv_box.offset_left = -w - 20
+		inv_box.offset_top = 12
+	else:
+		inv_box.anchor_left = 1.0
+		inv_box.anchor_right = 1.0
+		inv_box.anchor_top = 1.0
+		inv_box.anchor_bottom = 1.0
+		inv_box.offset_left = -4 * 132 - 24
+		inv_box.offset_top = -112
+	inv_box.offset_right = inv_box.offset_left + w
+	inv_box.offset_bottom = inv_box.offset_top + sh
+	for i in slots.size():
+		slots[i].custom_minimum_size = Vector2(sw, sh)
+		slot_labels[i].position = Vector2(4, 16 if on else 18)
+		slot_labels[i].size = Vector2(sw - 8, sh - 18)
+		slot_labels[i].add_theme_font_size_override("font_size", 13 if on else 15)
+	cam_alert.offset_top = 84 if on else 60
+	cam_alert.offset_bottom = cam_alert.offset_top + 30
+	hint_label.visible = inv_box.visible and not on
+
+
 func _process(delta: float) -> void:
+	if _touch_layout != Game.touch_mode:
+		_apply_touch_layout(Game.touch_mode)
+	if skip_label.visible:
+		skip_label.text = Game.ctl("Space / Enter：スキップ", "画面をタップでスキップ")
 	if _msg_t > 0.0:
 		_msg_t -= delta
 		if _msg_t < 0.6:
@@ -398,6 +439,10 @@ void fragment() {
 
 func show_title(on: bool) -> void:
 	title_screen.visible = on
+	if settings_panel.visible:
+		Game.save_settings()
+	settings_panel.visible = false
+	controls_panel.visible = false
 	if on:
 		set_game_hud_visible(false)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -430,6 +475,7 @@ func show_pause(on: bool) -> void:
 
 
 func _show_panel(p: Control) -> void:
+	controls_text.text = TOUCH_CONTROLS if Game.touch_mode else PC_CONTROLS
 	settings_panel.visible = p == settings_panel
 	controls_panel.visible = p == controls_panel
 
@@ -459,7 +505,18 @@ func _build_controls() -> void:
 	var vb := VBoxContainer.new()
 	controls_panel.add_child(vb)
 	vb.add_child(_label("操作方法", 30, Color(1, 0.9, 0.6)))
-	var txt := """WASD / 矢印キー　移動
+	controls_text = _label(PC_CONTROLS, 18, Color(0.95, 0.95, 0.95), 3)
+	vb.add_child(controls_text)
+	vb.add_child(_button("閉じる", func(): controls_panel.visible = false))
+
+
+const GOAL_TEXT := """目的：お隣さんの家の地下室に入ること。
+地下室のドアはリビングの階段の下。
+板をはがす道具と、銅の錠を開ける手段が要る。
+お隣さんに見つかったら走って逃げよう。
+追跡中の彼には隠れても無駄…距離を取れ！"""
+
+const PC_CONTROLS := """WASD / 矢印キー　移動
 マウス　視点
 Shift　ダッシュ（足音が大きい）
 Ctrl / C　しゃがむ（足音を消す）
@@ -470,13 +527,18 @@ Q　捨てる
 1〜4 / ホイール　持ち物の切り替え
 Esc　ポーズ
 
-目的：お隣さんの家の地下室に入ること。
-地下室のドアはリビングの階段の下。
-板をはがす道具と、銅の錠を開ける手段が要る。
-お隣さんに見つかったら走って逃げよう。
-追跡中の彼には隠れても無駄…距離を取れ！"""
-	vb.add_child(_label(txt, 18, Color(0.95, 0.95, 0.95), 3))
-	vb.add_child(_button("閉じる", func(): controls_panel.visible = false))
+""" + GOAL_TEXT
+
+const TOUCH_CONTROLS := """左側をなぞる　移動（外側まで押すとダッシュ）
+右側をなぞる　視点
+使う　拾う・ドア・隠れる・撃つ・ライト・のぞく
+投げる　長押しして離す（窓ガラスを割れる）
+捨てる / ジャンプ / しゃがむ（足音を消す）
+ダッシュ　足音が大きい（指を離すと解除）
+右上の持ち物の枠をタップ　持ち替え
+Ⅱ　ポーズ
+
+""" + GOAL_TEXT
 
 
 func _build_settings() -> void:
@@ -485,7 +547,7 @@ func _build_settings() -> void:
 	vb.add_theme_constant_override("separation", 10)
 	settings_panel.add_child(vb)
 	vb.add_child(_label("設定", 30, Color(1, 0.9, 0.6)))
-	vb.add_child(_slider("マウス感度", 0.0006, 0.006, Game.settings.sens, func(v): Game.settings.sens = v))
+	vb.add_child(_slider("視点の感度", 0.0006, 0.006, Game.settings.sens, func(v): Game.settings.sens = v))
 	vb.add_child(_slider("視野角 (FOV)", 60, 100, Game.settings.fov, func(v): Game.settings.fov = v))
 	vb.add_child(_slider("音楽の音量", 0, 1, Game.settings.music, func(v):
 		Game.settings.music = v
