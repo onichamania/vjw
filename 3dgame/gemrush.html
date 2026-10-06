@@ -765,8 +765,52 @@ Object.assign(BT,{
    gad:[{id:'defense',name:'ディフェンスブースター',d:'3秒間 受けるダメージを40%カット',cd:20},{id:'slowtoxin',name:'スロートキシン',d:'毒になっている敵を2秒間遅くする',cd:18}],
    sp:[{id:'extratoxic',name:'エクストラトキシック',d:'毒になった敵の攻撃力が15%下がる'},{id:'carrion',name:'キャリオンクロウ',d:'体力50%以下の敵に+30%ダメージ'}],
    hyper:{name:'ユーティリティナイフ',d:'必殺技のナイフが敵を貫き、ブーメランのように戻ってくる（戻りは20%少ないダメージ）'},desc:'毒のナイフを3本投げる。必殺技は跳び上がってナイフの輪をばらまく'}});
+// ---- 追加のキャラ②（ローザ・ダリル・パム・フランク・パイパー・レオン・スパイク） ----
+Object.assign(BT,{
+ sumire:{name:'スミレ',role:'タンク',rar:'レア',base:'ローザ',hp:5800,spd:SPD(770),reload:1.4,range:TL(3.33),superDmg:4200,col:0x8a7a4a,
+   atk:{type:'punch',hits:3,dmg:440,heal:0,arc:1.6,gap:.12},sup:{type:'strong',red:.7,dur:3.5},
+   gad:[{id:'growlight',name:'グローライト',d:'まわり3×3マスに10秒間 草むらを生やす',cd:20},{id:'unfriendly',name:'トゲトゲの草むら',d:'近くの草むらにいる敵に500ダメージ、2秒遅くする',cd:15}],
+   sp:[{id:'plantlife',name:'プラントライフ',d:'草むらの中にいると毎秒200回復'},{id:'thorny',name:'トゲトゲグローブ',d:'必殺技中のパンチのダメージ+220'}],
+   hyper:{name:'ブルームブースト',d:'必殺技中は移動速度が上がり、パンチのダメージの20%を回復'},
+   desc:'広い範囲の3連パンチ。必殺技で3.5秒間 受けるダメージを70%カット'},
+ tarubo:{name:'タルボ',role:'タンク',rar:'スーパーレア',base:'ダリル',hp:5000,spd:SPD(770),reload:1.9,range:TL(5),superDmg:4800,autoSup:.05,col:0x8a5a33,
+   atk:{type:'double',n:5,spread:.46,speed:20,dmg:340,r:.24,col:[1,.65,.3],gap:.28},sup:{type:'roll',dmg:800,range:TL(7)},
+   gad:[{id:'rotator',name:'リコイルローテーター',d:'回りながら全方向に散弾を撃つ（250ダメージ）',cd:16},{id:'tar',name:'タールバレル',d:'タールをまいて、上にいる敵を遅くする',cd:18}],
+   sp:[{id:'hoops',name:'スチールフープ',d:'転がったあと3.5秒間 受けるダメージ25%カット'},{id:'rollreload',name:'ローリングリロード',d:'転がったあと5秒間 リロードが45%速い'}],
+   hyper:{name:'ビッグローラー',d:'転がりのダメージ+50%・距離+40%'},
+   desc:'2連の散弾銃。必殺技は時間でもたまり、転がって体当たりする'},
+ hatsue:{name:'ハツエ',role:'サポート',rar:'エピック',base:'パム',hp:4800,spd:SPD(720),reload:1.9,range:TL(9),superDmg:4000,col:0x6b8e5a,
+   atk:{type:'scrap',n:9,spread:.5,gap:.045,speed:20,dmg:320,r:.2,col:[.95,.8,.4]},sup:{type:'station',hp:2600,heal:330,rad:TL(3.33),range:TL(3)},
+   gad:[{id:'pulse',name:'パルスモジュレーター',d:'回復ステーションのまわりの味方を1000回復',cd:18},{id:'scrapsucker',name:'スクラップサッカー',d:'次の攻撃のスクラップがブーメランのように戻ってくる',cd:14}],
+   sp:[{id:'hug',name:'ママのハグ',d:'通常攻撃が当たるたび、近くの味方と自分を40回復'},{id:'squeeze',name:'ママのスクイーズ',d:'回復ステーションが範囲の敵に毎秒450ダメージ'}],
+   hyper:{name:'ビッグマム',d:'回復ステーションの回復量が2倍、範囲が30%広い'},
+   desc:'スクラップを左右にばらまく。必殺技で味方を回復するステーションを置く'},
+ gantetsu:{name:'ガンテツ',role:'タンク',rar:'エピック',base:'フランク',hp:7000,spd:SPD(720),reload:1.0,range:TL(4.67),superDmg:4400,col:0x4a5a6a,
+   atk:{type:'hammer',dmg:1200,arc:.9,wind:.45,speed:26,r:.5},sup:{type:'quake',dmg:1600,stun:1.2,arc:1.1,wind:.45,speed:24,r:.55,range:TL(5)},
+   gad:[{id:'noise',name:'ノイズキャンセラー',d:'2秒間 スタン・遅い・ノックバックを受けない',cd:16},{id:'attraction',name:'イレジスティブル',d:'前にいる敵を引きよせる',cd:17}],
+   sp:[{id:'powergrab',name:'パワーグラブ',d:'敵を倒すと10秒間 攻撃力+30%'},{id:'sponge',name:'スポンジ',d:'最大体力+1000'}],
+   hyper:{name:'アースクエイク',d:'必殺技の衝撃波が30%広く・遠くまで届く'},
+   desc:'ハンマーを振り上げてから衝撃波。必殺技は壁をこわして敵をスタン（振り上げ中にスタンされると止まる）'},
+ ayame:{name:'アヤメ',role:'スナイパー',rar:'エピック',base:'パイパー',hp:2400,spd:SPD(720),reload:2.3,range:TL(10),superDmg:4400,col:0xf0a0c0,
+   atk:{type:'snipe',speed:30,dmg:1520,grow:.38,r:.22,col:[1,.85,.95]},sup:{type:'poppin',n:4,dmg:900,rad:TL(1.3),range:TL(8.33)},
+   gad:[{id:'autoaimer',name:'オートエイマー',d:'近くの敵に散弾を撃ってはじき飛ばす',cd:14},{id:'homemade',name:'ホームメイドレシピ',d:'次の攻撃が敵を追いかける',cd:15}],
+   sp:[{id:'ambush',name:'アンブッシュ',d:'草むらの中から撃つとダメージ+800'},{id:'snappy',name:'スナッピースナイピング',d:'通常攻撃が当たると弾が0.4発たまる'}],
+   hyper:{name:'ポップポップ',d:'必殺技の手りゅう弾が8個になり、広く散らばる'},
+   desc:'遠いほど強くなるかさの弾。必殺技は手りゅう弾を落として遠くへジャンプ'},
+ shinobu:{name:'シノブ',role:'アサシン',rar:'レジェンダリー',base:'レオン',hp:3200,spd:SPD(820),reload:1.8,range:TL(9),superDmg:3600,col:0x3f9a4a,
+   atk:{type:'blades',n:4,spread:.34,speed:20,dmg:460,fade:.55,r:.22,col:[.6,1,.5]},sup:{type:'smoke',dur:6},
+   gad:[{id:'clone',name:'クローンプロジェクター',d:'敵をまどわす分身を出す',cd:18},{id:'lollipop',name:'ロリポップドロップ',d:'中にいる味方が透明になるキャンディを置く',cd:20}],
+   sp:[{id:'smoketrails',name:'スモークトレイル',d:'透明中は移動速度+30%'},{id:'invisiheal',name:'インビジヒール',d:'透明中は毎秒800回復'}],
+   hyper:{name:'スモークスクリーン',d:'必殺技を使うと、まわりの味方も3秒間 透明になる'},
+   desc:'近いほど強い4枚の刃。必殺技で6秒間 透明になる（攻撃すると見える）'},
+ sabo:{name:'サボ',role:'ダメージディーラー',rar:'レジェンダリー',base:'スパイク',hp:2400,spd:SPD(720),reload:2.0,range:TL(7.67),superDmg:4000,col:0x5cb83a,
+   atk:{type:'needle',n:6,speed:14,dmg:520,r:.32,col:[.55,.9,.35]},sup:{type:'cactus',dps:360,rad:TL(2.6),dur:4.5,slow:.6,range:TL(9.33)},
+   gad:[{id:'pincushion',name:'ポッピングピンクッション',d:'まわりにトゲを3回とばす（280ダメージ）',cd:15},{id:'lifeplant',name:'ライフプラント',d:'サボテンを植える。こわれると近くの味方を1000回復',cd:20}],
+   sp:[{id:'fertilize',name:'ファーティライズ',d:'必殺技のエリアの中にいると毎秒800回復'},{id:'curveball',name:'カーブボール',d:'飛び散るトゲがカーブする'}],
+   hyper:{name:'トゲトゲの森',d:'必殺技のエリアが50%広く、敵を中心へ引きよせる'},
+   desc:'当たるとトゲが6方向に飛び散る。必殺技は敵を遅くするトゲのエリア'}});
 // 並び順（トロフィーロードの順）
-const ORDER=['rico','yuki','jack','gai','jet','riki','goro','carlo','kachiko','mimi','piko','kagerou','ranran','yotaka','vlad','soda'];
+const ORDER=['rico','yuki','jack','gai','jet','riki','goro','carlo','kachiko','mimi','piko','kagerou','ranran','yotaka','vlad','soda','sumire','tarubo','hatsue','gantetsu','ayame','shinobu','sabo'];
 for(const k of ORDER){const v=BT[k];delete BT[k];BT[k]=v}
 // 射程の倍率（本家どおり＝1）
 const RMUL=1;{const sc=o=>{if(!o||typeof o!=='object')return;const hasR=typeof o.range==='number';for(const k of['range','range2','trange'])if(typeof o[k]==='number')o[k]*=RMUL;if(hasR&&typeof o.speed==='number')o.speed*=RMUL;for(const k in o)if(o[k]&&typeof o[k]==='object')sc(o[k])};for(const k in BT)sc(BT[k])}
@@ -780,7 +824,7 @@ const GEARS=[{id:'dmg',name:'ダメージ',d:'体力が半分以下のとき攻�
 const KITLV={gad:7,gear1:8,sp:9,gear2:10,hyper:11},KITCOST={gad:300,sp:600,gear:300,hyper:1000};
 // ハイパーチャージ中は 移動速度・攻撃力が上がり、体力がどんどん回復する（time秒）
 const HYP={time:5,spd:.25,dmg:.25,heal:.08};
-// ---- バフィー（本家と同じ：ガジェット・スターパワー・ハイパーチャージをもっと強くする。本家でバフィーがあるキャラだけ）----
+// ---- バフィー（本家と同じ：ガジェット・スターパワー・ハイパーチャージをもっと強くする。全キャラ）----
 // gad/sp は装備しているもの（1つめ・2つめ）ごとの効果。hyper はハイパーが2秒のびて通常攻撃が強くなる
 const BUF={
  rico:{gad:['ダッシュ中はダメージを受けない','集中した弾が当たると敵を遅くし、当たるたびに遅くなる時間がのびる'],sp:['必殺技を撃つと、その先に燃えるエリアが残る','回復したあと3秒間、移動速度が上がる'],hyper:'通常攻撃の弾がとても速く飛ぶ'},
@@ -794,14 +838,25 @@ const BUF={
  kagerou:{gad:['敵をつかむと、着地のあと少しの間 移動速度が上がる','1秒間、スタン・遅い・ノックバックを受けない'],sp:['着地のど真ん中で敵に当てると必殺技がたまる','敵を倒すと最大体力の15%をすぐ回復'],hyper:'リロードと必殺技のたまりが30%速い'},
  yotaka:{gad:['使うと、毒にしている敵の毒の時間がリセットされる','遅くした敵の近くにいる敵にも、毒と遅いが広がる'],sp:['毒になっている敵1人ごとに、ヨタカの攻撃力+5%','毒の時間が1秒のびる'],hyper:'通常攻撃のナイフも敵を貫いて戻ってくる（戻りは20%少ないダメージ）'},
  vlad:{gad:['体力が半分以下の敵には30%多いダメージ','通り道の敵へのダメージと回復が60%ふえる'],sp:['倒されるまで、敵を倒すたびに最大体力+10%（5回まで重なる）','通常攻撃の長い突進中は受けるダメージ30%カット'],hyper:'通常攻撃のあと、少しおくれて同じ場所に幻の攻撃が当たる'},
- soda:{gad:['強化中はリロードも30%速い','効果中に攻撃を受けると、ガジェットのクールダウンが半分になる'],sp:['壁に当たると、小さな弾がさらに2つ出る','強化段階3のとき必殺技を使うと、移動速度が上がる'],hyper:'ジュース弾をもう1発撃つ（ダメージは少なめ）'}};
+ soda:{gad:['強化中はリロードも30%速い','効果中に攻撃を受けると、ガジェットのクールダウンが半分になる'],sp:['壁に当たると、小さな弾がさらに2つ出る','強化段階3のとき必殺技を使うと、移動速度が上がる'],hyper:'ジュース弾をもう1発撃つ（ダメージは少なめ）'},
+ goro:{gad:['スピナー中は受けるダメージ30%カット','スタンの時間が2秒にのびる'],sp:['ジャンプの着地で、まわりに400ダメージ','大だるが当たった敵を2秒遅くする'],hyper:'ダイナマイトを3本投げる'},
+ kachiko:{gad:['その地雷が当たった敵を遅くする','ダメージカットが70%になり、爆発で敵を0.5秒スタン'],sp:['体力の回復が始まると、すぐに500回復','地雷が爆発するたびに弾が0.1たまる'],hyper:'地雷を4個投げる'},
+ mimi:{gad:['衝撃波が近くの敵に400ダメージ','タレットの体力も2000回復'],sp:['タレットを回復すると、ミミも同じだけ回復','タレットの弾が2回跳ね返る'],hyper:'通常攻撃の跳ね返りが2回ふえる'},
+ ranran:{gad:['効果中は受けるダメージ20%カット','当たった敵を1秒スタン'],sp:['着地の爆発が30%大きくなる','くだけた弾が当たった敵を遅くする'],hyper:'大砲の弾が速く・大きくなる'},
+ sumire:{gad:['グローライトを使ったあとは、草むらの中で毎秒300回復','トゲが当たった敵を1秒スタン'],sp:['草むらの中では受けるダメージ15%カット','必殺技中のパンチが敵を遅くする'],hyper:'ハイパー中はパンチの範囲が30%広い'},
+ tarubo:{gad:['回転中は受けるダメージ30%カット','タールの上の敵に毎秒300ダメージ'],sp:['ダメージカットが40%になる','転がったあと弾が2発たまる'],hyper:'散弾が当たると必殺技が2倍速くたまる'},
+ hatsue:{gad:['回復した味方は2秒間 受けるダメージ20%カット','その攻撃のスクラップが当たった敵を遅くする'],sp:['回復量が2倍','ステーションの範囲にいる敵を遅くする'],hyper:'通常攻撃のスクラップが2倍'},
+ gantetsu:{gad:['効果中は受けるダメージ25%カット','引きよせた敵を1秒スタン'],sp:['効果中は移動速度も上がる','体力が半分以下のとき 受けるダメージ15%カット'],hyper:'ハイパー中は通常攻撃の振り上げが半分の時間'},
+ ayame:{gad:['当たった敵を1秒遅くする','追いかける弾が当たると、弾が1発もどる'],sp:['草むらから出たあとも2秒間 効果が続く','当てたときにたまる弾が0.6発になる'],hyper:'通常攻撃が当たると、そこで小さく爆発する'},
+ shinobu:{gad:['分身がこわれると、まわりの敵を遅くする','中にいる味方は移動速度も上がる'],sp:['透明が終わっても2秒間 速いまま','透明中は受けるダメージ20%カット'],hyper:'通常攻撃の刃が6枚になる'},
+ sabo:{gad:['トゲが当たった敵を遅くする','サボテンがこわれると、まわりの敵にも1000ダメージ'],sp:['必殺技のエリアの中では受けるダメージ20%カット','カーブするトゲのダメージ+15%'],hyper:'通常攻撃のトゲが8本になる'}};
 const BUFCOST={gad:600,sp:800,hyper:1000},BUFNAME={gad:'ガジェットバフィー',sp:'スターパワーバフィー',hyper:'ハイパーバフィー'};
 
 // ---- 見た目：丸い体と大きな頭、キャラごとの頭・武器（SK=スキン、form=ランランの姿） ----
 const G_leg=new THREE.CylinderGeometry(.13,.15,.5,8),G_body=new THREE.CylinderGeometry(.36,.46,.72,14),G_head=new THREE.SphereGeometry(.42,18,14),G_eye=new THREE.SphereGeometry(.085,10,8),G_pup=new THREE.SphereGeometry(.045,8,6),G_hand=new THREE.SphereGeometry(.13,10,8);
 function mkModel(bt,ringCol,isMe,SK,form){SK=SK||{};const B=BT[bt],g=new THREE.Group(),mats=[];const mm=(hex,o)=>{const m=M(hex,o);mats.push(m);return m};const HC=h=>SK.hair||h;
-  const robot=bt==='kachiko'||bt==='piko'||bt==='soda'||bt==='yotaka';
-  const skin=mm(robot?0xc7ccd6:bt==='vlad'?0xd8e0ea:0xffd2a8),body=mm(SK.body||B.col),dark=mm(0x2b2d36),white=mm(0xffffff),metal=mm(0x9aa3b5);
+  const robot=bt==='kachiko'||bt==='piko'||bt==='soda'||bt==='yotaka'||bt==='tarubo';
+  const skin=mm(robot?0xc7ccd6:bt==='vlad'?0xd8e0ea:bt==='gantetsu'?0x9fb8a8:bt==='sabo'?0x5cb83a:0xffd2a8),body=mm(SK.body||B.col),dark=mm(0x2b2d36),white=mm(0xffffff),metal=mm(0x9aa3b5);
   const add=(geo,mat,x,y,z,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(par||g).add(m);return m};
   const rig=new THREE.Group();g.add(rig);rig.scale.setScalar(1.3);
   const legL=add(G_leg,dark,-.17,.25,0,rig),legR=add(G_leg,dark,.17,.25,0,rig);
@@ -849,6 +904,28 @@ function mkModel(bt,ringCol,isMe,SK,form){SK=SK||{};const B=BT[bt],g=new THREE.G
   if(bt==='yotaka'){add(new THREE.SphereGeometry(.44,16,12),mm(HC(0x1c1d2a)),0,0,0,head);add(new THREE.ConeGeometry(.12,.45,10),mm(0xffc53d),0,-.05,.5,head).rotation.x=Math.PI/2;
     for(const sx of[-1,1])add(new THREE.SphereGeometry(.09,10,8),mm(0x9dff6a,{emissive:0x3a8a20}),sx*.16,.1,.36,head);add(new THREE.ConeGeometry(.1,.4,6),mm(HC(0x1c1d2a)),0,.45,-.1,head).rotation.x=-.5;
     for(const sx of[-1,1])add(new THREE.ConeGeometry(.05,.35,4),mm(0x9dff6a),sx*.46,.5,.2,torso).rotation.x=Math.PI/2}
+  if(bt==='sumire'){add(G_head,skin,0,0,0,head);eyes(.05,.36);const hair=mm(HC(0x6a3a2a));add(new THREE.SphereGeometry(.45,16,10,0,TAU,0,Math.PI*.55),hair,0,.03,-.03,head);
+    add(new THREE.CylinderGeometry(.62,.62,.05,20),mm(0xd8c08a),0,.3,0,head);add(new THREE.CylinderGeometry(.32,.38,.22,16),mm(0xd8c08a),0,.42,0,head);
+    for(const [sx,c] of[[-.25,0xff6fb5],[.2,0xffd84d]])add(new THREE.SphereGeometry(.09,8,6),mm(c),sx,.42,.3,head);hL.scale.setScalar(1.7);hR.scale.setScalar(1.7);hL.material=hR.material=mm(0x4caf50)}
+  if(bt==='tarubo'){bodyM.visible=false;const bar=add(new THREE.CylinderGeometry(.5,.5,1.0,16),body,0,.36,0,torso);for(const y of[.05,.66])add(new THREE.CylinderGeometry(.52,.52,.07,16),metal,0,y,0,torso);
+    add(new THREE.SphereGeometry(.36,14,10,0,TAU,0,Math.PI*.5),metal,0,-.2,0,head);add(new THREE.BoxGeometry(.4,.1,.06),mm(0xff3b3b,{emissive:0xa01010}),0,-.08,.33,head);
+    add(new THREE.CylinderGeometry(.4,.4,.06,16),mm(HC(0x2b2d36)),0,.05,0,head);add(new THREE.ConeGeometry(.28,.3,3),mm(HC(0x2b2d36)),0,.2,0,head).rotation.y=Math.PI;
+    for(const sx of[-1,1]){const gun=new THREE.Group();gun.position.set(sx*.58,.4,.25);torso.add(gun);add(new THREE.CylinderGeometry(.07,.07,.55,8),metal,0,0,.2,gun).rotation.x=Math.PI/2;add(new THREE.BoxGeometry(.12,.16,.22),mm(0x6b4a2e),0,-.04,-.12,gun)}}
+  if(bt==='hatsue'){rig.scale.set(1.4,1.3,1.4);add(G_head,skin,0,0,0,head);eyes(.05,.36);const hair=mm(HC(0xd8642a));for(let i=0;i<7;i++){const a=i/7*TAU;add(new THREE.SphereGeometry(.2,10,8),hair,Math.cos(a)*.34,.22+Math.sin(i*2)*.05,Math.sin(a)*.3-.05,head)}
+    add(new THREE.TorusGeometry(.13,.04,6,12),metal,-.14,.18,.33,head);add(new THREE.TorusGeometry(.13,.04,6,12),metal,.14,.18,.33,head);
+    const gun=new THREE.Group();gun.position.set(.55,.36,.25);torso.add(gun);add(new THREE.BoxGeometry(.28,.3,.55),mm(0x8a7a5a),0,0,0,gun);add(new THREE.CylinderGeometry(.1,.14,.3,8),metal,0,0,.4,gun).rotation.x=Math.PI/2}
+  if(bt==='gantetsu'){rig.scale.set(1.6,1.45,1.6);add(G_head,skin,0,0,0,head).scale.set(1,1.05,1);for(const sx of[-1,1]){add(G_eye,white,sx*.15,.02,.36,head);add(G_pup,dark,sx*.15,.02,.43,head)}
+    add(new THREE.BoxGeometry(.7,.24,.6),mm(HC(0x1c1d2a)),0,.36,0,head);for(const sx of[-1,1])add(new THREE.CylinderGeometry(.05,.05,.25,6),metal,sx*.44,-.05,0,head).rotation.z=Math.PI/2;
+    const hm=new THREE.Group();hm.position.set(.5,.4,.2);torso.add(hm);add(new THREE.CylinderGeometry(.05,.05,1.2,6),mm(0x6b4a2e),0,.3,.1,hm);add(new THREE.BoxGeometry(.5,.36,.36),metal,0,.95,.1,hm)}
+  if(bt==='ayame'){add(G_head,skin,0,0,0,head);eyes(.05,.36);const hair=mm(HC(0xffd27a));add(new THREE.SphereGeometry(.45,16,10,0,TAU,0,Math.PI*.55),hair,0,.03,-.03,head);add(new THREE.SphereGeometry(.2,12,10),hair,0,.38,-.3,head);
+    add(new THREE.ConeGeometry(.42,.5,14),body,0,-.15,0,torso);const um=new THREE.Group();um.position.set(.45,.4,.25);torso.add(um);add(new THREE.CylinderGeometry(.03,.03,.5,6),mm(0x6b4a2e),0,0,-.1,um).rotation.x=Math.PI/2;
+    add(new THREE.ConeGeometry(.13,.8,10),mm(HC(0xff8ac0)),0,0,.5,um).rotation.x=Math.PI/2;add(new THREE.TorusGeometry(.08,.025,6,10,Math.PI),mm(0x6b4a2e),0,-.06,-.36,um)}
+  if(bt==='shinobu'){add(G_head,skin,0,-.02,0,head);eyes(.0,.36);const hood=mm(HC(0x4caf50));add(new THREE.SphereGeometry(.5,16,12,0,TAU,0,Math.PI*.6),hood,0,.04,-.05,head);
+    for(const sx of[-1,1]){add(new THREE.SphereGeometry(.16,12,10),white,sx*.2,.42,.18,head);add(new THREE.SphereGeometry(.07,8,6),dark,sx*.2,.46,.31,head)}
+    add(new THREE.TorusGeometry(.18,.06,6,14,Math.PI*1.5),hood,0,.2,-.62,torso);add(new THREE.ConeGeometry(.05,.3,4),metal,.5,.4,.3,torso).rotation.x=Math.PI/2}
+  if(bt==='sabo'){add(new THREE.SphereGeometry(.46,16,12),mm(HC(0x5cb83a)),0,0,0,head).scale.set(1,1.1,1);eyes(.05,.36);const sp=mm(0xf2eedd);
+    for(let i=0;i<10;i++){const a=i/10*TAU,yy=(i%2?.2:-.05);const c=add(new THREE.ConeGeometry(.04,.18,4),sp,Math.cos(a)*.44,yy,Math.sin(a)*.44,head);c.rotation.z=-Math.cos(a)*Math.PI/2;c.rotation.x=Math.sin(a)*Math.PI/2}
+    add(new THREE.SphereGeometry(.14,10,8),mm(0xff6fb5),0,.52,0,head);for(const sx of[-1,1])add(new THREE.CylinderGeometry(.12,.12,.4,8),skin,sx*.55,.6,0,torso)}
   if(SK.crown){const cr=new THREE.Mesh(new THREE.CylinderGeometry(.28,.24,.2,8,1,true),mm(0xffd84d,{emissive:0x7a5a00,side:THREE.DoubleSide}));cr.position.y=.62;head.add(cr)}
   if(SK.cape&&bt!=='vlad'){const cp=new THREE.Mesh(new THREE.PlaneGeometry(.8,1.0),mm(0xff5fa2,{side:THREE.DoubleSide}));cp.position.set(0,.3,-.42);cp.rotation.x=.18;torso.add(cp)}
   // 本家のような黒い輪郭線（すき通る物・うすい板にはつけない）
@@ -882,18 +959,18 @@ const hasBuf=(u,k)=>!!(u&&u.kit&&u.kit.buf&&u.kit.buf[k]&&BUF[u.bt]);
 const bufG=(u,id)=>hasBuf(u,'gad')&&u.kit.gad>=0&&BT[u.bt].gad[u.kit.gad].id===id,bufS=(u,id)=>hasBuf(u,'sp')&&hasSP(u,id),bufH=u=>hasBuf(u,'hyper')&&u.kit.hyper;
 const hyperTime=u=>HYP.time+(bufH(u)?2:0),silenced=u=>(u.silT||0)>G.t;
 const gadCool=(u,g)=>g.cd*(hasGear(u,'gadget')?.8:1);
-function calcStats(u){const B=BT[u.bt],k=LVM(u.lv),base=u.bt==='ranran'&&u.form==='bonnie'?B.hp2:B.hp;const mh=Math.round((Math.round(base*k)+u.pw*400)*(1+.1*(u.hvN||0))),r=u.maxHp>1?u.hp/u.maxHp:1;u.maxHp=mh;u.hp=Math.min(mh,Math.max(1,Math.round(mh*r)));u.dm=k*(1+.1*u.pw)}
-function spawnAt(u){[u.x,u.z]=u.spawn;u.poison=null;u.bandT=0;u.hvN=0;u.godT=0;u.ccT=0;u.silT=0;u.mrT=0;u.stompT=0;u.rlT=0;u.scT=0;u.psT=0;if(u.bt==='ranran'&&u.form!=='clyde')setForm(u,'clyde');u.maxHp=1;calcStats(u);u.hp=u.maxHp;u.ammo=maxAmmo(u);u.dead=false;u.inv=G.mode==='br'?0:1.6;u.act=null;u.kx=u.kz=0;u.slowT=u.stunT=0;
+function calcStats(u){const B=BT[u.bt],k=LVM(u.lv),base=u.bt==='ranran'&&u.form==='bonnie'?B.hp2:B.hp;const mh=Math.round((Math.round(base*k)+(u.kit&&hasSP(u,'sponge')?1000:0)+u.pw*400)*(1+.1*(u.hvN||0))),r=u.maxHp>1?u.hp/u.maxHp:1;u.maxHp=mh;u.hp=Math.min(mh,Math.max(1,Math.round(mh*r)));u.dm=k*(1+.1*u.pw)}
+function spawnAt(u){[u.x,u.z]=u.spawn;u.poison=null;u.invisT=0;u.strongT=0;u.pgT=0;u.glT=0;u.bandT=0;u.hvN=0;u.godT=0;u.ccT=0;u.silT=0;u.mrT=0;u.stompT=0;u.rlT=0;u.scT=0;u.psT=0;if(u.bt==='ranran'&&u.form!=='clyde')setForm(u,'clyde');u.maxHp=1;calcStats(u);u.hp=u.maxHp;u.ammo=maxAmmo(u);u.dead=false;u.inv=G.mode==='br'?0:1.6;u.act=null;u.kx=u.kz=0;u.slowT=u.stunT=0;
   u.stage=hasSP(u,'icecold')?1:0;u.shield=u.gshield;u.redT=0;u.spinT=0;u.face=u.z>0?Math.PI:0;u.faceT=u.face;u.m.g.rotation.y=u.face;u.m.g.visible=true}
 function setForm(u,f){if(u.form===f)return;u.form=f;u.m.g.visible=false;u.m=f==='bonnie'?u.m2:u.m1;u.m.g.visible=!u.dead;u.m.g.position.set(u.x,0,u.z);calcStats(u);u.sup=f==='bonnie'?0:u.sup}
 // 移動速度・リロード・攻撃力の倍率
 function unitSpeed(u){const B=BT[u.bt];let s=u.bt==='ranran'&&u.form==='bonnie'?B.spd2:B.spd;
   if(hasSP(u,'slick'))s*=1.13;if(u.bt==='soda'&&sodaStage(u)>=1)s*=1.25;if(hyperOn(u))s*=1+HYP.spd;if(hasGear(u,'speed')&&u.inBush)s*=1.15;if(u.sugarT>0)s*=1.3;if(u.boostT>0)s*=1.2;if(u.spinT>0)s*=1.25;if(u.stompT>0)s*=1.3;
   if(hasSP(u,'plugged')&&myBooster(u)&&Math.hypot(myBooster(u).x-u.x,myBooster(u).z-u.z)<BT.piko.sup.rad)s*=1.25;
-  else{const b=boosterFor(u);if(b&&b.src!==u&&bufS(b.src,'plugged'))s*=1.15}if(u.slowT>0)s*=.55;return s}
+  else{const b=boosterFor(u);if(b&&b.src!==u&&bufS(b.src,'plugged'))s*=1.15}if(u.invisT>G.t&&hasSP(u,'smoketrails'))s*=1.3;if(u.slowT>0)s*=.55;return s}
 function reloadOf(u){const B=BT[u.bt];let r=u.bt==='ranran'&&u.form==='bonnie'?B.reload2:B.reload;if(hasSP(u,'berserker')&&u.hp<u.maxHp*.6)r/=2;if(hasSP(u,'autoreload'))r*=.91;if(u.sugarT>0)r/=1.3;
-  if(u.rlT>0)r/=1.25;if(u.stageBoostT>0&&bufG(u,'powersurge'))r/=1.3;if(u.bt==='kagerou'&&bufH(u)&&hyperOn(u))r/=1.3;return r}
-function dmgMul(u){if(!u||u.isTurret||u.isHead||u.isPet)return u&&u.dm||1;let m=u.dm;if(u.poison&&u.poison.src&&hasSP(u.poison.src,'extratoxic'))m*=.85;if(hyperOn(u))m*=1+HYP.dmg;if(hasGear(u,'dmg')&&u.hp<u.maxHp/2)m*=1.15;const b=boosterFor(u);if(b)m*=1+b.boost;
+  if(u.rlT>0)r/=1.25;if(u.stageBoostT>0&&bufG(u,'powersurge'))r/=1.3;if(u.bt==='kagerou'&&bufH(u)&&hyperOn(u))r/=1.3;if(u.rrT>0)r/=1.45;return r}
+function dmgMul(u){if(!u||u.isTurret||u.isHead||u.isPet)return u&&u.dm||1;let m=u.dm;if(u.poison&&u.poison.src&&hasSP(u.poison.src,'extratoxic'))m*=.85;if(hyperOn(u))m*=1+HYP.dmg;if(hasGear(u,'dmg')&&u.hp<u.maxHp/2)m*=1.15;if(u.pgT>G.t)m*=1.3;const b=boosterFor(u);if(b)m*=1+b.boost;
   if(bufS(u,'extratoxic')){let n=0;for(const o of G.units)if(!o.dead&&o.poison&&o.poison.src===u&&G.t<=o.poison.until)n++;m*=1+.05*n}return m}
 const sodaStage=u=>Math.min(3,u.stage+(u.stageBoostT>0?1:0))+(hyperOn(u)&&u.bt==='soda'?1:0);
 const myBooster=u=>G.turrets.find(t=>t.booster&&t.src===u&&!t.dead);
@@ -912,7 +989,7 @@ function targets(){return G.turrets.length||G.safes.length||G.heads.length||G.pe
 // ---- ダメージ・回復・倒れる ----
 function hurt(t,dmg,src,isSup,fx){if(t.dead||t.inv>0||G.over)return;if((t.godT||0)>G.t){if(Math.random()<.4)burst(t.x,1.2,t.z,4,[1,1,.8],2,.35,.25,true);return}fx=fx||{};const s0=src&&(src.isTurret||src.isHead||src.isPet)?src.src:src;
   if(s0&&s0.kit&&hasSP(s0,'carrion')&&!isSup&&t.hp<=t.maxHp*.5)dmg*=1.3;if(t.kit&&hasSP(t,'toughguy')&&t.hp<t.maxHp*.3)dmg*=.7;if(t.act&&t.act.type==='charge'&&hyperOn(t))dmg*=.2;if(t.immuneT>0){fx={}}
-  if(t.redT>0)dmg*=1-t.red;if(t.mrT>0&&bufS(t,'meteorrush'))dmg*=.7;if(t.act&&t.act.long&&bufS(t,'coiled'))dmg*=.7;dmg=Math.round(dmg);let shown=dmg;
+  if(t.redT>0)dmg*=1-t.red;if(t.mrT>0&&bufS(t,'meteorrush'))dmg*=.7;if(t.kit)dmg*=bufRed(t);if(t.act&&t.act.long&&bufS(t,'coiled'))dmg*=.7;dmg=Math.round(dmg);let shown=dmg;
   if(t.psT>G.t&&!t.psHit&&bufG(t,'powershield')&&dmg>0){t.psHit=true;t.gadCD*=.5;if(t.isMe)note('パワーシールド：クールダウン半分！',1.2)}
   if(t.shield>0){const a=Math.min(t.shield,dmg);t.shield-=a;dmg-=a}
   t.hp-=dmg;t.lastHurt=G.t;t.flash=1;t.revealT=Math.max(t.revealT||0,.6);if(fx.slow)t.slowT=Math.max(t.slowT||0,fx.slow);if(fx.stun&&!t.isTurret&&!t.isSafe){t.stunT=Math.max(t.stunT||0,fx.stun);burst(t.x,2.2,t.z,6,[1,1,.5],2,.3,.5,true)}
@@ -931,8 +1008,11 @@ function hurt(t,dmg,src,isSup,fx){if(t.dead||t.inv>0||G.over)return;if((t.godT||
     if(t.gems>0){drop('gem',t.gems);t.gems=0}
     if(G.mode==='br'){drop('cube',Math.max(1,t.pw));G.alive=G.units.filter(u=>!u.dead).length;t.place=G.alive+1}
     const killer=s;modeKill(t,killer);if(killer){killer.kills++;feed(killer,t);if(hasSP(killer,'harvest'))healU(killer,killer.maxHp*.2,killer);killBuf(killer)}else feed(null,t)}}
+// 受けるダメージを減らすバフィー（新しく足したキャラの分）
+function bufRed(t){let m=1;if(t.sugarT>0&&bufG(t,'sugarrush'))m*=.8;if(t.invisT>G.t&&bufS(t,'invisiheal'))m*=.8;if(bufS(t,'plantlife')&&t.inBush)m*=.85;if(bufS(t,'sponge')&&t.hp<t.maxHp*.5)m*=.85;if(t.fzT>G.t)m*=.8;return m}
 // 敵を倒したときのバフィー
 function killBuf(k){if(!k||k.dead||!k.kit)return;
+  if(hasSP(k,'powergrab')){k.pgT=G.t+10;if(bufS(k,'powergrab'))k.boostT=Math.max(k.boostT,10);if(k.isMe)note('パワーグラブ：10秒間 攻撃力アップ！',1.2)}
   if(bufS(k,'berserker')&&k.hp<k.maxHp*.6){k.sup=1;if(k.isMe)note('バーサーカー：必殺技が満タン！',1.2)}
   if(bufS(k,'toughguy')&&k.hp<k.maxHp*.3)k.godT=G.t+.5;
   if(bufS(k,'fisticuffs'))healU(k,k.maxHp*.15,k);
@@ -941,7 +1021,7 @@ function healU(t,v,src){if(t.dead||t.isHead||t.isSafe||t.hp>=t.maxHp)return;cons
 // 体力をこえた回復（あまりはシールドになる・最大cap）
 function overheal(t,v,cap){if(t.dead)return;const h=Math.max(0,Math.min(v,t.maxHp-t.hp));if(h>=1){t.hp+=h;dmgNum(t,'+'+Math.round(h),'heal')}const over=v-h;
   if(over>0){t.shield=Math.min((t.gshield||0)+cap,(t.shield||0)+Math.round(over));if(!t.isPet)t.hcT=Math.max(t.hcT||0,5)}}
-function regen(u,dt){if(u.dead)return;const wait=hasSP(u,'welloiled')?1:3;if(G.t-u.lastHurt>wait&&G.t-u.lastAtk>wait){if(u.hp<u.maxHp)u.hp=Math.min(u.maxHp,u.hp+u.maxHp*.13*(hasGear(u,'health')?1.5:1)*dt);if(u.gshield&&u.shield<u.gshield&&G.t-u.lastHurt>5)u.shield=Math.min(u.gshield,u.shield+300*dt)}}
+function regen(u,dt){if(u.dead)return;const wait=hasSP(u,'welloiled')?1:3,on=G.t-u.lastHurt>wait&&G.t-u.lastAtk>wait;if(on&&!u._rg&&bufS(u,'welloiled'))healU(u,500*u.dm,u);u._rg=on;if(on){if(u.hp<u.maxHp)u.hp=Math.min(u.maxHp,u.hp+u.maxHp*.13*(hasGear(u,'health')?1.5:1)*dt);if(u.gshield&&u.shield<u.gshield&&G.t-u.lastHurt>5)u.shield=Math.min(u.gshield,u.shield+300*dt)}}
 
 // ---- ジェムとパワーキューブ ----
 const gemGeo=new THREE.OctahedronGeometry(.34,0),gemMat=M(0xc77dff,{emissive:0x6a2aa0}),cubeGeo=new THREE.BoxGeometry(.5,.5,.5),cubeMat=M(0x57d68d,{emissive:0x1f7a45}),ammoMat=M(0xffc53d,{emissive:0x7a5200});
@@ -963,17 +1043,23 @@ function bmat(col){const k=col.join();return bulletMats[k]||(bulletMats[k]=new T
 // o: {pierce,isSup,slow,stun,breakWalls,split,splitDmg,wallSplit,wallMore,endSplit,lifesteal,onHit,back,backMul,falloff,far,dacapo}
 function shoot(u,ang,spd,range,dmg,r,col,o,x0,z0){o=o||{};const dx=Math.sin(ang),dz=Math.cos(ang),m=new THREE.Mesh(bulletGeo,bmat(col));m.scale.set(r,r,r*(spd>22?2.6:1.4));m.rotation.y=ang;
   const sx=x0!=null?x0:u.x+dx*.7,sz=z0!=null?z0:u.z+dz*.7;const b=Object.assign({x:sx,z:sz,dx,dz,spd,d:0,range,dmg,r,col,team:u.team,src:u,hit:new Set(),m},o);m.position.set(b.x,1,b.z);scene.add(m);G.bullets.push(b);return b}
-function splitAt(b,x,z,n,wall){const base=Math.atan2(b.dx,b.dz),angs=n>=6?[0,1,2,3,4,5].map(i=>i/6*TAU):wall?[base+Math.PI*.75,base-Math.PI*.75]:[base+.7,base-.7];
-  for(const a of angs){const c=shoot(b.src,a,b.spd*.9,TL(2.3),b.dmg*b.splitDmg,b.r*.7,b.col,{hit:new Set(b.hit),isSup:b.isSup},x-Math.sin(a)*.05,z-Math.cos(a)*.05)}
+function splitAt(b,x,z,n,wall){const base=Math.atan2(b.dx,b.dz),angs=n>=6?Array.from({length:n},(_,i)=>i/n*TAU+(n>6?.2:0)):wall?[base+Math.PI*.75,base-Math.PI*.75]:[base+.7,base-.7];
+  for(const a of angs){const c=shoot(b.src,a,b.splitSpd||b.spd*.9,b.splitR||TL(2.3),b.dmg*b.splitDmg,b.r*.7,b.col,{hit:new Set(b.hit),isSup:b.isSup,curve:b.splitCurve||0,slow:b.splitSlow||0},x-Math.sin(a)*.05,z-Math.cos(a)*.05)}
   // トゥザマックスのバフィー：壁に当たると小さな弾がさらに2つ
   if(wall&&b.wallMore)for(const a of[base+Math.PI-.35,base+Math.PI+.35])shoot(b.src,a,b.spd*.9,TL(2),b.dmg*.35,b.r*.5,b.col,{hit:new Set(b.hit),isSup:b.isSup},x-Math.sin(a)*.05,z-Math.cos(a)*.05)}
-function updBullets(dt){const T=targets();for(let i=G.bullets.length-1;i>=0;i--){const b=G.bullets[i];let dead=false;const steps=Math.ceil(b.spd*dt/.3),st=b.spd*dt/steps;
+// 弾のダメージ（遠くで弱く／近くで弱く・草むらから+など）
+function bulletDmg(b){const k=Math.min(1,b.d/b.range);let d=b.dmg*(b.falloff&&b.d>b.range*.5?b.falloff:1)*(b.far&&b.d>b.range*.55?b.far:1);if(b.fade)d*=lerp(1,b.fade,k);if(b.grow)d*=lerp(b.grow,1,k);return d+(b.bonus||0)}
+// カーブする弾・敵を追いかける弾
+function steerBullet(b,dt){if(b.curve){const na=Math.atan2(b.dx,b.dz)+b.curve*dt;b.dx=Math.sin(na);b.dz=Math.cos(na);b.m.rotation.y=na}
+  if(b.home){let best=null,bd=TL(4.5);for(const t of G.units){if(t.dead||t.team===b.team||b.hit.has(t)||!visibleTo(b.team,t))continue;const d=Math.hypot(t.x-b.x,t.z-b.z);if(d<bd){bd=d;best=t}}
+    if(best){const ta=Math.atan2(best.x-b.x,best.z-b.z),ca=Math.atan2(b.dx,b.dz),na=ca+clamp(angd(ta-ca),-7*dt,7*dt);b.dx=Math.sin(na);b.dz=Math.cos(na);b.m.rotation.y=na}}}
+function updBullets(dt){const T=targets();for(let i=G.bullets.length-1;i>=0;i--){const b=G.bullets[i];let dead=false;if(b.curve||b.home)steerBullet(b,dt);const steps=Math.ceil(b.spd*dt/.3),st=b.spd*dt/steps;
     for(let s=0;s<steps&&!dead;s++){b.x+=b.dx*st;b.z+=b.dz*st;b.d+=st;const c=cx(b.x),r=cz(b.z);
       if(blockShot(c,r)&&!b.noWall){if(b.breakWalls&&cell(c,r)==='#'){breakWall(c,r);continue}if(breakable(c,r))hitBox(c,r,b.dmg);if(b.split&&b.wallSplit)splitAt(b,b.x-b.dx*.5,b.z-b.dz*.5,b.split,true);dead=true;burst(b.x,1,b.z,5,[.9,.8,.6],3,.35,.35);break}
       if(b.allyHeal)for(const t of G.units){if(t.dead||t.team!==b.team||t===b.src||b.hit.has(t))continue;if(Math.hypot(t.x-b.x,t.z-b.z)<UR+b.r+.1){b.hit.add(t);if(b.dacapo&&t.hp>=t.maxHp)t.scT=3;healU(t,b.allyHeal,b.src);if(b.overheal&&t.hp>=t.maxHp){t.shield+=Math.round(b.allyHeal*.5);t.hcT=5}}}
-      if(b.healTurret)for(const t of G.turrets){if(t.dead||t.src!==b.src||b.hit.has(t))continue;if(Math.hypot(t.x-b.x,t.z-b.z)<1.2){b.hit.add(t);t.hp=Math.min(t.maxHp,t.hp+b.healTurret)}}
+      if(b.healTurret)for(const t of G.turrets){if(t.dead||t.src!==b.src||b.hit.has(t))continue;if(Math.hypot(t.x-b.x,t.z-b.z)<1.2){b.hit.add(t);const h0=t.hp;t.hp=Math.min(t.maxHp,t.hp+b.healTurret);if(bufS(b.src,'energize')&&t.hp>h0)healU(b.src,t.hp-h0,b.src)}}
       for(const t of T){if(t.dead||t.team===b.team||b.hit.has(t))continue;if(Math.hypot(t.x-b.x,t.z-b.z)<(t.rad||UR)+b.r+.1){b.hit.add(t);
-        const bd=b.dmg*(b.falloff&&b.d>b.range*.5?b.falloff:1)*(b.far&&b.d>b.range*.55?b.far:1);
+        const bd=bulletDmg(b);
         if(bd>0)hurt(t,bd,b.src,b.isSup,{slow:b.slow,stun:b.stun,poison:b.poison});if(b.src&&b.src.kit&&hasSP(b.src,'bearwithme')&&!b.isSup)for(const p of G.pets)if(p.src===b.src){if(bufS(b.src,'bearwithme'))overheal(p,410*p.dm,2000);else p.hp=Math.min(p.maxHp,p.hp+410*p.dm)}if(b.lifesteal&&b.src&&!b.src.dead)healU(b.src,bd*b.lifesteal,b.src);if(b.onHit)b.onHit(t,b);
         burst(b.x,1,b.z,7,b.col,4,.45,.35,true);if(b.split){splitAt(b,b.x,b.z,b.split,false);dead=true;break}if(!b.pierce){dead=true;break}}}
       if(b.d>=b.range){if(b.split&&b.endSplit)splitAt(b,b.x,b.z,b.split,false);if(b.back&&!b.returned){b.returned=true;b.d=0;b.dx=-b.dx;b.dz=-b.dz;b.hit=new Set();b.m.rotation.y+=Math.PI;if(b.backMul)b.dmg*=b.backMul}else dead=true}}
@@ -999,8 +1085,8 @@ function explode(x,z,o){const rad=o.rad;let hitN=0;
     else{ring(x,z,rad,0xffc070,.35);burst(x,.6,z,o.big?40:20,[1,.62,.25],rad*2.4,.9,.55,true);burst(x,.5,z,o.big?26:10,[.5,.45,.42],rad*1.6,1.2,1.1);SFX.boom(o.big)}}
   const mm=me(),d0=Math.hypot(x-mm.x,z-mm.z);G.shake=Math.max(G.shake,clamp(1-d0/22,0,1)*(o.big?.6:.3));
   for(const t of targets()){if(t.dead)continue;const d=Math.hypot(t.x-x,t.z-z);if(d>=rad+UR*.6)continue;
-    if(t.team===o.team){if(t===o.src&&hasSP(t,'dynajump')&&!t.act&&!t.isTurret){const f=t.faceT!=null?t.faceT:t.face;const [x1,z1]=nearestOpen(t.x+Math.sin(f)*TL(3),t.z+Math.cos(f)*TL(3));t.act={type:'jump',t:0,T:.55,x0:t.x,z0:t.z,x1,z1,pad:true}}continue}
-    if(G.units.includes(t))hitN++;hurt(t,o.dmg*(o.low&&t.hp<t.maxHp*.5?o.low:1),o.src,o.isSup,{stun:o.stun});if(o.knock&&!t.isTurret&&!t.isSafe&&!t.isHead){const k=Math.max(d,.3);t.kx=(t.x-x)/k*o.knock;t.kz=(t.z-z)/k*o.knock}}
+    if(t.team===o.team){if(t===o.src&&hasSP(t,'dynajump')&&!t.act&&!t.isTurret){const f=t.faceT!=null?t.faceT:t.face;const [x1,z1]=nearestOpen(t.x+Math.sin(f)*TL(3),t.z+Math.cos(f)*TL(3));t.act={type:'jump',t:0,T:.55,x0:t.x,z0:t.z,x1,z1,pad:true,dj:true}}continue}
+    if(G.units.includes(t))hitN++;hurt(t,o.dmg*(o.low&&t.hp<t.maxHp*.5?o.low:1),o.src,o.isSup,{stun:o.stun,slow:o.slow});if(o.knock&&!t.isTurret&&!t.isSafe&&!t.isHead){const k=Math.max(d,.3);t.kx=(t.x-x)/k*o.knock;t.kz=(t.z-z)/k*o.knock}}
   for(let r=cz(z)-3;r<=cz(z)+3;r++)for(let c=cx(x)-3;c<=cx(x)+3;c++){if(Math.hypot(tx(c)-x,tz(r)-z)>=rad+.6)continue;if(breakable(c,r))hitBox(c,r,o.dmg);else if(o.breakWalls)breakWall(c,r)}return hitN}
 function melee(u,ang,range,arc,dmg,col,onHit){const s=new THREE.Mesh(sectGeo(range,arc),new THREE.MeshBasicMaterial({color:col||0xffe6a0,transparent:true,opacity:.55,depthWrite:false,side:THREE.DoubleSide}));
   s.rotation.y=ang-Math.PI/2;s.position.set(u.x,.12,u.z);scene.add(s);FADE.push({m:s,t:0,T:.16});let tot=0;
@@ -1011,11 +1097,11 @@ function melee(u,ang,range,arc,dmg,col,onHit){const s=new THREE.Mesh(sectGeo(ran
 const FADE=[];function updFade(dt){for(let i=FADE.length-1;i>=0;i--){const f=FADE[i];f.t+=dt;f.m.material.opacity=.55*(1-f.t/f.T);if(f.t>=f.T){scene.remove(f.m);f.m.material.dispose();FADE.splice(i,1)}}}
 
 // ---- 地雷（カチコ）----
-function addMine(u,x,z,dmg){const m=new THREE.Mesh(GEO.mine,GMAT.mine);m.position.set(x,.2,z);scene.add(m);const l=new THREE.Mesh(GEO.bomb,new THREE.MeshBasicMaterial({color:u.team===0?0x3aa0ff:0xff4d5a}));l.scale.setScalar(.25);l.position.y=.22;m.add(l);
-  G.mines.push({x,z,team:u.team,src:u,dmg,arm:.35,life:BT.kachiko.atk.life,m})}
+function addMine(u,x,z,dmg,slow){const m=new THREE.Mesh(GEO.mine,GMAT.mine);m.position.set(x,.2,z);scene.add(m);const l=new THREE.Mesh(GEO.bomb,new THREE.MeshBasicMaterial({color:u.team===0?0x3aa0ff:0xff4d5a}));l.scale.setScalar(.25);l.position.y=.22;m.add(l);
+  G.mines.push({x,z,team:u.team,src:u,dmg,slow:slow||0,arm:.35,life:BT.kachiko.atk.life,m})}
 function updMines(dt){for(let i=G.mines.length-1;i>=0;i--){const q=G.mines[i];q.arm-=dt;q.life-=dt;q.m.children[0].visible=Math.sin(G.t*14)>0;let go=q.life<=0;
     if(q.arm<=0&&!go)for(const t of targets())if(!t.dead&&t.team!==q.team&&Math.hypot(t.x-q.x,t.z-q.z)<1.1){go=true;break}
-    if(go){scene.remove(q.m);G.mines.splice(i,1);explode(q.x,q.z,{rad:BT.kachiko.atk.rad,dmg:q.dmg,team:q.team,src:q.src})}}}
+    if(go){scene.remove(q.m);G.mines.splice(i,1);explode(q.x,q.z,{rad:BT.kachiko.atk.rad,dmg:q.dmg,team:q.team,src:q.src,slow:q.slow});if(bufS(q.src,'autoreload')&&!q.src.dead)q.src.ammo=Math.min(maxAmmo(q.src),q.src.ammo+.1)}}}
 // ---- カチコの頭（必殺技）----
 function addHead(u,x,z){const S2=BT.kachiko.sup,g=new THREE.Group(),h=new THREE.Mesh(new THREE.SphereGeometry(.5,16,12),MC(0x5a6070));h.position.y=.55;h.castShadow=true;g.add(h);
   const e=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),MC(0xff3b3b));e.position.set(0,.6,.42);g.add(e);for(const sx of[-1,1]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.4,6),MC(0x9aa3b5));l.position.set(sx*.25,.15,0);g.add(l)}
@@ -1034,18 +1120,24 @@ function placeBooster(u){const old=myBooster(u);if(old)killTurret(old);const S2=
   const [x,z]=nearestOpen(u.x,u.z);g.position.set(x,0,z);scene.add(g);const hp=Math.round(S2.hp*u.dm);
   const t={isTurret:true,booster:true,bt:'turret',name:'ブースター',team:u.team,src:u,x,z,hp,maxHp:hp,rad,boost:S2.boost+(hasSP(u,'boosted')?.15:0),cool:.5,dead:false,gems:0,pw:0,isMe:false,m:{g},top,revealT:9,inBush:false,inv:0,lv:u.lv,dm:u.dm,sup:0,dmg:0};
   mkLabel(t);G.turrets.push(t);burst(x,.6,z,14,[.6,1,.7],4,.6,.5,true)}
-function killTurret(t){if(t.dead&&!G.turrets.includes(t))return;t.dead=true;scene.remove(t.m.g);t.lab.d.remove();burst(t.x,.8,t.z,20,[1,.7,.3],5,.7,.6,true);const i=G.turrets.indexOf(t);if(i>=0)G.turrets.splice(i,1)}
-function updTurrets(dt){for(const t of G.turrets.slice()){if(t.src.dead&&G.mode==='br'){killTurret(t);continue}t.cool-=dt;if(t.scrappy){scrappyTick(t,dt);continue}t.top.rotation.y+=dt*.8;
+function killTurret(t){if(t.dead&&!G.turrets.includes(t))return;if(t.plant&&!G.over)plantPop(t);t.dead=true;scene.remove(t.m.g);t.lab.d.remove();burst(t.x,.8,t.z,20,[1,.7,.3],5,.7,.6,true);const i=G.turrets.indexOf(t);if(i>=0)G.turrets.splice(i,1)}
+function updTurrets(dt){for(const t of G.turrets.slice()){if(t.src.dead&&G.mode==='br'){killTurret(t);continue}t.cool-=dt;if(t.scrappy){scrappyTick(t,dt);continue}if(t.station){stationTick(t,dt);continue}if(t.plant)continue;t.top.rotation.y+=dt*.8;
     if(t.booster&&bufS(t.src,'boosted')){t.ammoT=(t.ammoT==null?3:t.ammoT)-dt;if(t.ammoT<=0){t.ammoT=3;const a=rr(0,TAU),[gx,gz]=nearestOpen(t.x+Math.cos(a)*1.6,t.z+Math.sin(a)*1.6),it=addItem('ammo',t.x,t.z,gx,gz);it.team=t.team;it.life=8}}
     if(hyperOn(t.src)&&t.cool<=0){let best=null,bd=1e9;for(const o of G.units){if(o.team===t.team||!visibleTo(t.team,o))continue;const d=Math.hypot(o.x-t.x,o.z-t.z);if(d<TL(5)&&d<bd&&los(t.x,t.z,o.x,o.z)){bd=d;best=o}}
       if(best){t.cool=.4;shoot(t,Math.atan2(best.x-t.x,best.z-t.z),26,TL(5),115*t.dm,.18,[.4,1,.6],{},t.x,t.z);SFX.shot('tur')}}}}
 // 燃えるエリア（シェリーのシェルショックのバフィーなど）
 const fireGeo=new THREE.CircleGeometry(1,32);fireGeo.rotateX(-Math.PI/2);
-function addFire(u,x,z,rad,dps,dur){const m=new THREE.Mesh(fireGeo,new THREE.MeshBasicMaterial({color:0xff7a2e,transparent:true,opacity:.45,depthWrite:false}));m.scale.setScalar(rad);m.position.set(x,.09,z);m.renderOrder=2;scene.add(m);
-  G.zones.push({x,z,rad,dps,t:0,T:dur,tick:.25,team:u.team,src:u,m})}
+// o: {col,pc（つぶの色）,slow,ally:'invis',buf,fert（スパイクのファーティライズ）,pull}
+function addFire(u,x,z,rad,dps,dur,o){o=o||{};const m=new THREE.Mesh(fireGeo,new THREE.MeshBasicMaterial({color:o.col||0xff7a2e,transparent:true,opacity:.45,depthWrite:false}));m.scale.setScalar(rad);m.position.set(x,.09,z);m.renderOrder=2;scene.add(m);
+  const q=Object.assign({x,z,rad,dps,t:0,T:dur,tick:.25,team:u.team,src:u,m,pc:[1,.55,.2]},o);G.zones.push(q);return q}
 function updZones(dt){for(let i=G.zones.length-1;i>=0;i--){const q=G.zones[i];q.t+=dt;q.tick-=dt;q.m.material.opacity=(.35+Math.sin(G.t*18+i)*.1)*Math.min(1,(q.T-q.t)*2);
-    if(Math.random()<.6)GLOW.add(q.x+rr(-q.rad,q.rad)*.8,.3,q.z+rr(-q.rad,q.rad)*.8,0,1.2,0,.35,[1,.55,.2],.45,0);
-    if(q.tick<=0){q.tick=.5;for(const t of targets())if(!t.dead&&t.team!==q.team&&Math.hypot(t.x-q.x,t.z-q.z)<q.rad+UR*.5)hurt(t,q.dps*.5,q.src,true)}
+    if(Math.random()<.6)GLOW.add(q.x+rr(-q.rad,q.rad)*.8,.3,q.z+rr(-q.rad,q.rad)*.8,0,1.2,0,.35,q.pc,.45,0);
+    const inQ=t=>Math.hypot(t.x-q.x,t.z-q.z)<q.rad+UR*.5;
+    if(q.ally==='invis')for(const o of G.units)if(!o.dead&&o.team===q.team&&inQ(o)){o.invisT=Math.max(o.invisT||0,G.t+.3);if(q.buf)o.boostT=Math.max(o.boostT,.3)}
+    if(q.pull)for(const t of G.units)if(!t.dead&&t.team!==q.team&&inQ(t)&&!(t.ccT>0)){t.kx=(q.x-t.x)*1.2;t.kz=(q.z-t.z)*1.2}
+    if(q.fert&&!q.src.dead&&inQ(q.src)&&bufS(q.src,'fertilize'))q.src.fzT=G.t+.15;
+    if(q.tick<=0){q.tick=.5;for(const t of targets())if(!t.dead&&t.team!==q.team&&inQ(t)){if(q.dps>0)hurt(t,q.dps*.5,q.src,true,{slow:q.slow});else if(q.slow&&G.units.includes(t))t.slowT=Math.max(t.slowT,q.slow)}
+      if(q.fert&&!q.src.dead&&inQ(q.src))healU(q.src,400*q.src.dm,q.src)}
     if(q.t>=q.T){scene.remove(q.m);q.m.material.dispose();G.zones.splice(i,1)}}}
 const TIMERS=[];function setTimeoutG(d,fn){TIMERS.push({t:G.t+d,fn})}
 function updTimers(){for(let i=TIMERS.length-1;i>=0;i--)if(G.t>=TIMERS[i].t){const f=TIMERS[i].fn;TIMERS.splice(i,1);f()}}
@@ -1058,8 +1150,8 @@ function statusTick(u){const p=u.poison;if(!p)return;if(G.t>p.until){u.poison=nu
 function addBear(u,x,z){for(const p of G.pets.slice())if(p.src===u)killPet(p);const S2=BT.yuki.sup,H=hyperOn(u),g=mkBear(u.team,H),hp=Math.round(S2.hp*u.lv/u.lv*LVM(u.lv)*(H?1.2:1));const [px,pz]=nearestOpen(x,z);g.position.set(px,0,pz);
   const b={isPet:true,bt:'bear',name:'クマ',team:u.team,src:u,x:px,z:pz,hp,maxHp:hp,dm:LVM(u.lv),cool:.5,spd:SPD(770)*(H?1.15:1),dead:false,gems:0,pw:0,isMe:false,m:{g},revealT:0,inBush:false,inv:0,lv:u.lv,sup:0,dmg:0,redT:0,red:0,vx:0,vz:0,rad:.9};
   mkLabel(b);G.pets.push(b);burst(px,1,pz,20,[.9,.7,.4],5,.7,.6,true)}
-function killPet(p){if(p.dead&&!G.pets.includes(p))return;p.dead=true;scene.remove(p.m.g);p.lab.d.remove();G.pets.splice(G.pets.indexOf(p),1);burst(p.x,1,p.z,16,[.8,.6,.4],4,.6,.6)}
-function updPets(dt){for(const p of G.pets.slice()){if(p.src.dead&&G.mode==='br'){killPet(p);continue}p.cool-=dt;p.redT=Math.max(0,p.redT-dt);
+function killPet(p){if(p.dead&&!G.pets.includes(p))return;if(p.decoy&&!G.over&&bufG(p.src,'clone')){ring(p.x,p.z,TL(2.5),0x9dff8a,.35);for(const o of G.units)if(!o.dead&&o.team!==p.team&&Math.hypot(o.x-p.x,o.z-p.z)<TL(2.5))o.slowT=Math.max(o.slowT,1.5)}p.dead=true;scene.remove(p.m.g);p.lab.d.remove();G.pets.splice(G.pets.indexOf(p),1);burst(p.x,1,p.z,16,[.8,.6,.4],4,.6,.6)}
+function updPets(dt){for(const p of G.pets.slice()){if(p.src.dead&&G.mode==='br'){killPet(p);continue}if(p.decoy){decoyTick(p,dt);continue}p.cool-=dt;p.redT=Math.max(0,p.redT-dt);
     let best=null,bd=1e9;for(const o of G.units){if(o.dead||o.team===p.team||!visibleTo(p.team,o))continue;const d=Math.hypot(o.x-p.x,o.z-p.z);if(d<bd&&d<TL(7)){bd=d;best=o}}
     let gx=p.src.x+1.5,gz=p.src.z+1.5;if(best){gx=best.x;gz=best.z}const d=Math.hypot(gx-p.x,gz-p.z),ox=p.x,oz=p.z;if(d>(best?1.3:2.5)){p.x+=(gx-p.x)/d*p.spd*dt;p.z+=(gz-p.z)/d*p.spd*dt;collide(p)}
     p.vx=(p.x-ox)/dt;p.vz=(p.z-oz)/dt;if(best&&bd<2&&p.cool<=0){p.cool=hasSP(p.src,'hyperbear')?.4:1;const mul=p.pawT?1.5:1;p.pawT=false;hurt(best,BT.yuki.sup.dmg*p.dm*mul,p.src,true);burst(best.x,1,best.z,mul>1?16:8,[1,.8,.5],4,.5,.3,true);SFX.punch();if(hasSP(p.src,'bearwithme')){if(bufS(p.src,'bearwithme'))overheal(p.src,410*p.dm,2000);else healU(p.src,410*p.dm,p.src)}}
@@ -1072,7 +1164,45 @@ function placeScrappy(u,x,z){for(const t of G.turrets.slice())if(t.src===u&&!t.b
   const t={isTurret:true,scrappy:true,bt:'turret',name:'タレット',team:u.team,src:u,x:px,z:pz,hp,maxHp:hp,rad:.8,cool:.5,fastT:0,dead:false,gems:0,pw:0,isMe:false,m:{g},top,revealT:9,inBush:false,inv:0,lv:u.lv,dm:u.dm*(H?1.2:1),sup:0,dmg:0};
   mkLabel(t);G.turrets.push(t);burst(px,.6,pz,14,[1,.8,.4],4,.6,.5,true)}
 function scrappyTick(t,dt){t.fastT=Math.max(0,t.fastT-dt);const S2=BT.mimi.sup;let best=null,bd=1e9;for(const o of G.units.concat(G.pets)){if(o.dead||o.team===t.team||!visibleTo(t.team,o))continue;const d=Math.hypot(o.x-t.x,o.z-t.z);if(d<S2.trange&&d<bd&&los(t.x,t.z,o.x,o.z)){bd=d;best=o}}
-  if(best){const a=Math.atan2(best.x-t.x,best.z-t.z);t.top.rotation.y=a;if(t.cool<=0){t.cool=S2.rate/(t.fastT>0?2:1);const b=shoot(t,a,22,S2.trange,S2.dmg*t.dm,.18,[1,.8,.35],{},t.x,t.z);if(hasSP(t.src,'shocky')){b.chain=1;b.onHit=chainNext}SFX.shot('tur')}}}
+  if(best){const a=Math.atan2(best.x-t.x,best.z-t.z);t.top.rotation.y=a;if(t.cool<=0){t.cool=S2.rate/(t.fastT>0?2:1);const b=shoot(t,a,22,S2.trange,S2.dmg*t.dm,.18,[1,.8,.35],{},t.x,t.z);if(hasSP(t.src,'shocky')){b.chain=bufS(t.src,'shocky')?2:1;b.onHit=chainNext}SFX.shot('tur')}}}
+// ---- ハツエの回復ステーション ----
+function placeStation(u,x,z){for(const t of G.turrets.slice())if(t.src===u&&t.station)killTurret(t);const S2=BT.hatsue.sup,H=hyperOn(u),g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.5,.62,.5,10),MC(0x6b5a4a));base.position.y=.25;base.castShadow=true;g.add(base);const top=new THREE.Group();top.position.y=.85;g.add(top);
+  const box=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.7),MC(0xf2eee4));box.castShadow=true;top.add(box);for(const [w,h] of[[.5,.14],[.14,.5]]){const c=new THREE.Mesh(new THREE.BoxGeometry(w,h,.72),MC(0x3fd35a));top.add(c)}
+  const hr=S2.rad*(H?1.3:1),rg=new THREE.RingGeometry(hr-.15,hr,48);rg.rotateX(-Math.PI/2);const ring2=new THREE.Mesh(rg,MB(0x6aff8a,{transparent:true,opacity:.45,depthWrite:false}));ring2.position.y=.05;g.add(ring2);
+  const [px,pz]=nearestOpen(x,z);g.position.set(px,0,pz);scene.add(g);const hp=Math.round(S2.hp*u.dm);
+  const t={isTurret:true,station:true,bt:'turret',name:'ステーション',team:u.team,src:u,x:px,z:pz,hp,maxHp:hp,rad:.8,hr,heal:S2.heal*(H?2:1),tick:.5,cool:0,dead:false,gems:0,pw:0,isMe:false,m:{g},top,revealT:9,inBush:false,inv:0,lv:u.lv,dm:u.dm,sup:0,dmg:0};
+  mkLabel(t);G.turrets.push(t);burst(px,.6,pz,14,[.6,1,.7],4,.6,.5,true)}
+function stationTick(t,dt){t.top.rotation.y+=dt*.8;t.tick-=dt;if(t.tick>0)return;t.tick=.5;const s=t.src;
+  for(const o of G.units)if(!o.dead&&o.team===t.team&&Math.hypot(o.x-t.x,o.z-t.z)<t.hr){if(o.hp<o.maxHp){healU(o,t.heal*.5*t.dm,s);GLOW.add(o.x,1.6,o.z,0,1.2,0,.4,[.5,1,.6],.5,0)}}
+  if(hasSP(s,'squeeze'))for(const o of targets())if(!o.dead&&o.team!==t.team&&Math.hypot(o.x-t.x,o.z-t.z)<t.hr)hurt(o,450*.5*t.dm,s,true,{slow:bufS(s,'squeeze')?.6:0})}
+// ママのハグ：当てるたびに近くの味方と自分を回復
+function hugHeal(u){const v=40*u.dm*(bufS(u,'hug')?2:1);for(const o of G.units)if(!o.dead&&o.team===u.team&&Math.hypot(o.x-u.x,o.z-u.z)<TL(3.67))healU(o,v,u)}
+// ---- サボのライフプラント（サボテン）----
+function placePlant(u,x,z){for(const t of G.turrets.slice())if(t.src===u&&t.plant)killTurret(t);const g=new THREE.Group(),gm=MC(0x5cb83a);
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,1.5,10),gm);b.position.y=.75;b.castShadow=true;g.add(b);
+  for(const sx of[-1,1]){const arm=new THREE.Mesh(new THREE.CylinderGeometry(.18,.2,.6,8),gm);arm.position.set(sx*.55,1.05,0);arm.castShadow=true;g.add(arm)}
+  const fl=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),MC(0xff6fb5));fl.position.y=1.6;g.add(fl);
+  const [px,pz]=nearestOpen(x,z);g.position.set(px,0,pz);scene.add(g);const hp=Math.round(2000*u.dm);
+  const t={isTurret:true,plant:true,bt:'turret',name:'サボテン',team:u.team,src:u,x:px,z:pz,hp,maxHp:hp,rad:.8,cool:0,dead:false,gems:0,pw:0,isMe:false,m:{g},revealT:9,inBush:false,inv:0,lv:u.lv,dm:u.dm,buf:bufG(u,'lifeplant'),sup:0,dmg:0};
+  mkLabel(t);G.turrets.push(t);burst(px,.6,pz,14,[.6,1,.4],4,.6,.5,true)}
+function plantPop(t){ring(t.x,t.z,TL(3),0x8affb0,.4);for(const o of G.units)if(!o.dead&&o.team===t.team&&Math.hypot(o.x-t.x,o.z-t.z)<TL(3))healU(o,1000*t.dm,t.src);
+  if(t.buf)explode(t.x,t.z,{rad:TL(2),dmg:1000*t.dm,team:t.team,src:t.src})}
+// ---- シノブの分身（敵のボットはこれもねらう）----
+function addClone(u){for(const p of G.pets.slice())if(p.src===u&&p.decoy)killPet(p);const f=u.faceT!=null?u.faceT:u.face,mm=mkModel(u.bt,G.mode==='br'?0xff4d5a:TEAMCOL[u.team],false,u.sk),[px,pz]=nearestOpen(u.x+Math.sin(f)*1.4,u.z+Math.cos(f)*1.4);
+  mm.g.position.set(px,0,pz);mm.g.rotation.y=f;const hp=Math.round(1500*u.dm);
+  const b={isPet:true,decoy:true,bt:u.bt,name:u.name,team:u.team,src:u,x:px,z:pz,hp,maxHp:hp,dm:u.dm,cool:0,spd:unitSpeed(u),dead:false,gems:0,pw:0,isMe:false,m:mm,revealT:0,inBush:false,inv:0,lv:u.lv,sup:0,dmg:0,redT:0,red:0,vx:0,vz:0,rad:UR,life:6,walkT:0,face:f};
+  mkLabel(b);G.pets.push(b);burst(px,1,pz,14,[.6,1,.5],4,.6,.4,true)}
+function decoyTick(p,dt){p.life-=dt;if(p.life<=0){killPet(p);return}let best=null,bd=TL(9);for(const o of G.units){if(o.dead||o.team===p.team)continue;const d=Math.hypot(o.x-p.x,o.z-p.z);if(d<bd){bd=d;best=o}}
+  const ox=p.x,oz=p.z,a=best?Math.atan2(best.x-p.x,best.z-p.z):p.face;if(!best||bd>TL(3)){p.x+=Math.sin(a)*p.spd*dt;p.z+=Math.cos(a)*p.spd*dt;collide(p)}p.face=a;
+  p.vx=(p.x-ox)/Math.max(dt,1e-4);p.vz=(p.z-oz)/Math.max(dt,1e-4);const sp=Math.hypot(p.vx,p.vz),m=p.m;p.walkT+=dt*Math.min(sp,7)*2.3;const w=Math.min(1,sp/3);
+  m.legL.rotation.x=Math.sin(p.walkT)*.8*w;m.legR.rotation.x=-Math.sin(p.walkT)*.8*w;m.g.position.set(p.x,0,p.z);m.g.rotation.y=a}
+// ---- スミレのグローライト（しばらくのあいだ草むらを生やす）----
+function growBushes(u){const c0=cx(u.x),r0=cz(u.z),made=[];for(let r=r0-1;r<=r0+1;r++)for(let c=c0-1;c<=c0+1;c++){if(cell(c,r)!=='.')continue;
+    GRID[r][c]='B';const g=new THREE.Group();g.userData.m=[];const d=new THREE.Mesh(BUSHDOME,bushMat2);d.castShadow=true;g.add(d);const bl=new THREE.Mesh(BUSHGEO[(c+r)%4],bushMat);bl.castShadow=true;g.add(bl);
+    g.userData.m.push(bl,d);g.userData.ph=hash2(c+3,r+7)*TAU;g.position.set(tx(c),0,tz(r));g.scale.setScalar(.2);ARENA.add(g);const k=c+','+r;BUSH[k]=g;BUSHL.push(g);made.push([c,r,k,g])}
+  let gr=0;const grow=()=>{gr+=.1;for(const m of made)m[3].scale.setScalar(Math.min(1,.2+gr));if(gr<.8)setTimeoutG(.03,grow)};grow();
+  setTimeoutG(10,()=>{for(const [c,r,k,g] of made){if(BUSH[k]!==g)continue;if(GRID[r]&&GRID[r][c]==='B')GRID[r][c]='.';ARENA.remove(g);delete BUSH[k];const i=BUSHL.indexOf(g);if(i>=0)BUSHL.splice(i,1);bushSeeThrough.delete(k)}})}
 // ---- 跳ね返る弾（ミミ）----
 function chainNext(t,b){if(!b.chain)return;let best=null,bd=1e9;for(const o of targets()){if(o.dead||o.team===b.team||o===t||b.hit.has(o))continue;const d=Math.hypot(o.x-t.x,o.z-t.z);if(d<TL(3.3)&&d<bd){bd=d;best=o}}
   if(!best)return;const a=Math.atan2(best.x-t.x,best.z-t.z);const nb=shoot(b.src,a,b.spd,TL(3.6),b.dmg*.75,b.r,b.col,{chain:b.chain-1,hit:new Set(b.hit)},t.x,t.z);nb.onHit=chainNext}
@@ -1082,8 +1212,8 @@ function atkRange(u){const B=BT[u.bt];let r=u.bt==='ranran'&&u.form==='bonnie'?B
 function attack(u,ang,dist){if(u.dead||u.act||G.over||u.stunT>0||u.spinT>0)return false;
   if(G.rule==='ball'&&G.M.ball&&G.M.ball.carrier===u){if(G.t-u.lastAtk<.3)return false;kick(u,ang,21);return true}
   if(u.ammo<1||G.t-u.lastAtk<.3)return false;
-  const B=BT[u.bt],D=dmgMul(u),R=atkRange(u),HB=bufH(u)&&hyperOn(u);if(!(u.bt==='piko'&&HB))u.ammo-=1;u.lastAtk=G.t;u.revealT=1.2;u.face=ang;u.faceT=ang;u.atkAnim=1;u.inv=0;
-  const a=u.bt==='ranran'&&u.form==='bonnie'?B.atk2:B.atk,stun=u.satchel?1.5:0;u.satchel=false;
+  const B=BT[u.bt],D=dmgMul(u),R=atkRange(u),HB=bufH(u)&&hyperOn(u);if(!(u.bt==='piko'&&HB))u.ammo-=1;if(u.invisT>G.t)u.invisT=0;u.lastAtk=G.t;u.revealT=1.2;u.face=ang;u.faceT=ang;u.atkAnim=1;u.inv=0;
+  const a=u.bt==='ranran'&&u.form==='bonnie'?B.atk2:B.atk,stun=u.satchel?(u.satchelB?2:1.5):0;u.satchel=false;
   const dx=Math.sin(ang),dz=Math.cos(ang),px=-dz,pz=dx;
   if(a.type==='spread'){const clay=u.clay>0;if(clay)u.clay--;const sp2=clay?a.spread*.35:a.spread,R2=clay?R*1.25:R;
     // クレイピジョンのバフィー：当たるたびに遅くなる時間がのびる／ハイパーバフィー：リコは弾が速い・ガイは全員を貫く
@@ -1095,36 +1225,53 @@ function attack(u,ang,dist){if(u.dead||u.act||G.over||u.stunT>0||u.spinT>0)retur
   else if(a.type==='rocket'){const fuel=u.fuel;u.fuel=false;if(u.bt==='jet'&&bufS(u,'rocket4')&&u.r4T>=6){u.r4T=0;burst(u.x,1.2,u.z,10,[1,.7,.3],3,.4,.3,true)}
     shoot(u,ang,a.speed*(fuel?1.5:1),R,0,fuel?.5:a.r,a.col,{breakWalls:fuel,onHit:(t,b)=>{},boom:{rad:a.rad*(fuel?1.4:1),dmg:a.dmg*D*(fuel?1.2:1),split:fuel&&bufG(u,'fuel')?4:0}});
     if(HB)for(const sd of[-1,1])shoot(u,ang+sd*.16,a.speed,R,0,a.r*.7,a.col,{boom:{rad:a.rad*.75,dmg:a.dmg*D*.4}});SFX.shot('lob')}
-  else if(a.type==='chain'){const b=shoot(u,ang,a.speed,R,a.dmg*D,a.r,a.col,{chain:a.bounces-1,healTurret:hasSP(u,'energize')?477*u.dm:0});b.onHit=chainNext;SFX.shot('ice')}
+  else if(a.type==='chain'){const b=shoot(u,ang,a.speed,R,a.dmg*D,a.r,a.col,{chain:a.bounces-1+(HB&&u.bt==='mimi'?2:0),healTurret:hasSP(u,'energize')?477*u.dm:0});b.onHit=chainNext;SFX.shot('ice')}
   else if(a.type==='dagger'){for(let i=0;i<a.n;i++)shoot(u,ang+(i-1)*a.spread*.5,a.speed,R,a.dmg*D,a.r,a.col,{poison:a.poison,pierce:HB,back:HB,backMul:.8});SFX.shot('snipe')}
   else if(a.type==='burst'){const cred=u.credits,n=cred?18:a.n,sp=cred?.28:a.spread,spd=a.speed*(hasSP(u,'magnum')?1.11:1);u.credits=false;
     // ジャックのバフィー：スリックブーツ（当てると速く）・マグナム（遠くで強い）・ハイパー（速く撃ちきる）／ピコ：エクストラクレジット（跳ね返る）
     const o={};if(bufS(u,'slick'))o.onHit=()=>{u.boostT=Math.max(u.boostT,1)};if(bufS(u,'magnum'))o.far=1.25;if(cred&&bufG(u,'credits')){o.chain=1;o.onHit=chainNext}
     const gap=u.bt==='piko'&&n>6?a.gap*.45:a.gap*(HB&&u.bt==='jack'?.5:1);
     for(let i=0;i<n;i++)setTimeoutG(i*gap,()=>{if(!u.dead){shoot(u,ang+rr(-sp,sp),spd,R,a.dmg*D,a.r,a.col,Object.assign({},o));if(i%2===0)SFX.shot(u.bt==='piko'?'tur':'snipe')}})}
-  else if(a.type==='dyna'){const d=clamp(dist,2,R);for(const s of[-1,1])lob(u,u.x+dx*d+px*s*.55,u.z+dz*d+pz*s*.55,{rad:a.rad,dmg:a.dmg*D,T:a.time,kind:'stick',stun});SFX.shot('lob')}
-  else if(a.type==='mines'){const n=u.mania?6:a.n;u.mania=false;const d=clamp(dist,2,R);for(let i=0;i<n;i++){const aa=i/n*TAU+ang,rad=n>3?1.9:1.3,tx0=u.x+dx*d+Math.sin(aa)*rad,tz0=u.z+dz*d+Math.cos(aa)*rad;
-      lob(u,tx0,tz0,{T:a.time+i*.04,kind:'mine',onLand:L=>{if(!walkable(L.x1,L.z1)&&blockMove(cx(L.x1),cz(L.z1)))return;addMine(u,L.x1,L.z1,a.dmg*D)}})}SFX.shot('lob')}
-  else if(a.type==='punch'){const hits=a.hits+(G.t<u.outT?2:0),big=HB&&u.bt==='riki'?1.2:1;
+  else if(a.type==='dyna'){const d=clamp(dist,2,R);for(const s of HB&&u.bt==='goro'?[-1.4,0,1.4]:[-1,1])lob(u,u.x+dx*d+px*s*.55,u.z+dz*d+pz*s*.55,{rad:a.rad,dmg:a.dmg*D,T:a.time,kind:'stick',stun});SFX.shot('lob')}
+  else if(a.type==='mines'){const n=u.mania?6:a.n+(HB&&u.bt==='kachiko'?1:0),msl=u.mania&&u.maniaB?1.5:0;u.mania=false;const d=clamp(dist,2,R);for(let i=0;i<n;i++){const aa=i/n*TAU+ang,rad=n>3?1.9:1.3,tx0=u.x+dx*d+Math.sin(aa)*rad,tz0=u.z+dz*d+Math.cos(aa)*rad;
+      lob(u,tx0,tz0,{T:a.time+i*.04,kind:'mine',onLand:L=>{if(!walkable(L.x1,L.z1)&&blockMove(cx(L.x1),cz(L.z1)))return;addMine(u,L.x1,L.z1,a.dmg*D,msl)}})}SFX.shot('lob')}
+  else if(a.type==='punch'){const hits=a.hits+(G.t<u.outT?2:0),big=HB&&u.bt==='riki'?1.2:HB&&u.bt==='sumire'?1.3:1,ros=u.bt==='sumire'&&G.t<u.strongT;
     // リキ：エルフエゴのバフィー（燃えている敵の燃える時間をのばす）・ハイパーバフィー（大きいパンチで燃やす）
     const oh=u.bt==='riki'&&(big>1||bufS(u,'elfuego'))?(t=>{if(!G.units.includes(t))return;if(bufS(u,'elfuego')&&t.poison&&t.poison.kind==='burn'&&t.poison.src===u)t.poison.until=Math.min(G.t+8,t.poison.until+1.5);if(big>1&&!(t.poison&&t.poison.kind==='burn'&&t.poison.until>G.t+2))poisonU(t,157,2,u,'burn')}):null;
-    for(let i=0;i<hits;i++)setTimeoutG(i*(a.gap||.14),()=>{if(u.dead)return;const ext=i>=a.hits,rng=R*(ext?1.8:1)*big,dd=a.dmg*D*(ext?.5:1);
-      const got=melee(u,u.faceT!=null?u.faceT:ang,rng,a.arc*big,dd,big>1?0xff9a5a:0xc7a8ff,oh);if(got)healU(u,got*a.heal*(hasSP(u,'fisticuffs')?1.3:1),u)})}
-  else if(a.type==='cannon'){shoot(u,ang,a.speed,R,a.dmg*D,a.r,a.col,{stun:hyperOn(u)?1:0,onHit:hasSP(u,'wisdom')?((t,b)=>explode(b.x,b.z,{rad:TL(1.2),dmg:a.dmg*D*.25,team:u.team,src:u,noFx:true})):null});SFX.shot('spread')}
+    // スミレ：必殺技中のトゲトゲグローブ（+220・バフィーで遅くする）とハイパー（回復）
+    const oh2=ros&&bufS(u,'thorny')?(t=>{if(G.units.includes(t))t.slowT=Math.max(t.slowT,1)}):oh,heal=a.heal+(ros&&hyperOn(u)?.2:0);
+    for(let i=0;i<hits;i++)setTimeoutG(i*(a.gap||.14),()=>{if(u.dead)return;const ext=i>=a.hits,rng=R*(ext?1.8:1)*big,dd=(a.dmg+(ros&&hasSP(u,'thorny')?220:0))*D*(ext?.5:1);
+      const got=melee(u,u.faceT!=null?u.faceT:ang,rng,a.arc*big,dd,big>1?0xff9a5a:ros?0x8aff8a:0xc7a8ff,oh2);if(got)healU(u,got*heal*(hasSP(u,'fisticuffs')?1.3:1),u)})}
+  else if(a.type==='cannon'){const hb=HB&&u.bt==='ranran'?1.4:1;shoot(u,ang,a.speed*hb,R,a.dmg*D,a.r*hb,a.col,{stun:hyperOn(u)?1:0,onHit:hasSP(u,'wisdom')?((t,b)=>explode(b.x,b.z,{rad:TL(1.2),dmg:a.dmg*D*.25,team:u.team,src:u,noFx:true,slow:bufS(u,'wisdom')?1.2:0})):null});SFX.shot('spread')}
   else if(a.type==='bomber'){const d=clamp(dist,1.5,R);lob(u,u.x+dx*d,u.z+dz*d,{rad:a.rad,dmg:a.dmg*D,T:a.time,stun});SFX.shot('lob')}
   else if(a.type==='dash'){const dd=a.dist*(hasSP(u,'coiled')?1.33:1);u.act={type:'mdash',t:0,T:.26,dx,dz,spd:dd/.26,hit:new Set(),dmg:a.dmg*D,long:hasSP(u,'coiled'),phantom:HB,x0:u.x,z0:u.z};SFX.punch()}
   else if(a.type==='split'){const st=sodaStage(u),o={split:st>=3?6:2,splitDmg:.5,wallSplit:hasSP(u,'tothemax'),wallMore:bufS(u,'tothemax'),endSplit:hyperOn(u)};shoot(u,ang,a.speed,R,a.dmg*D,a.r,a.col,o);
     if(HB)setTimeoutG(.14,()=>{if(!u.dead)shoot(u,ang+.05,a.speed,R,a.dmg*D*.6,a.r*.8,a.col,Object.assign({},o))});SFX.shot('ice')}
-  if(a.type==='burst'||a.type==='cannon'||a.type==='split'||a.type==='spread'||a.type==='rocket')burst(u.x+dx*.9,1,u.z+dz*.9,5,[1,.9,.6],3,.4,.15,true);return true}
+  // ---- 追加のキャラ② ----
+  else if(a.type==='double'){const fast=HB&&u.bt==='tarubo';for(let k=0;k<2;k++)setTimeoutG(k*a.gap,()=>{if(u.dead)return;const an=u.faceT!=null?u.faceT:ang;
+      for(let i=0;i<a.n;i++)shoot(u,an+(i/(a.n-1)-.5)*a.spread+rr(-.02,.02),a.speed,R,a.dmg*D,a.r,a.col,fast?{onHit:()=>{u.sup=Math.min(1,u.sup+.012)}}:{});SFX.shot('spread')})}
+  else if(a.type==='scrap'){const suck=u.suck,sl=suck&&u.suckB?.6:0,n=a.n*(HB&&u.bt==='hatsue'?2:1);u.suck=false;
+    for(let i=0;i<n;i++)setTimeoutG(i*a.gap*a.n/n,()=>{if(u.dead)return;const an=(u.faceT!=null?u.faceT:ang)+Math.sin(i*2.1)*a.spread*.5;
+      shoot(u,an,a.speed,R,a.dmg*D,a.r,a.col,{back:suck,backMul:1,slow:sl,onHit:hasSP(u,'hug')?(t=>{if(G.units.includes(t))hugHeal(u)}):null});if(i%3===0)SFX.shot('tur')})}
+  else if(a.type==='hammer'){const W=a.wind*(HB&&u.bt==='gantetsu'?.5:1);u.act={type:'wind',t:0,T:W,fire:()=>{const hit=new Set();
+      for(let i=0;i<5;i++)shoot(u,ang+(i/4-.5)*a.arc,a.speed,R,a.dmg*D,a.r,[.75,.85,1],{pierce:true,hit});ring(u.x+Math.sin(ang)*1.4,u.z+Math.cos(ang)*1.4,1.4,0xc8d8ff,.25);G.shake=Math.max(G.shake,.15);SFX.punch()}}}
+  else if(a.type==='snipe'){const hm=u.homing,amb=hasSP(u,'ambush')&&(u.inBush||bufS(u,'ambush')&&G.t<(u.ambT||0));u.homing=false;
+    shoot(u,ang,a.speed,R,a.dmg*D,a.r,a.col,{grow:a.grow,bonus:amb?800*D:0,home:hm,onHit:(t,b)=>{const unit=G.units.includes(t);
+      if(unit&&hasSP(u,'snappy'))u.ammo=Math.min(maxAmmo(u),u.ammo+(bufS(u,'snappy')?.6:.4));if(unit&&hm&&bufG(u,'homemade'))u.ammo=Math.min(maxAmmo(u),u.ammo+1);
+      if(HB&&u.bt==='ayame')explode(b.x,b.z,{rad:TL(1),dmg:a.dmg*D*.25,team:u.team,src:u})}});SFX.shot('snipe')}
+  else if(a.type==='blades'){const n=a.n+(HB&&u.bt==='shinobu'?2:0);for(let i=0;i<n;i++)shoot(u,ang+(i/(n-1)-.5)*a.spread+rr(-.02,.02),a.speed,R,a.dmg*D,a.r,a.col,{fade:a.fade});SFX.shot('snipe')}
+  else if(a.type==='needle'){const n=a.n+(HB&&u.bt==='sabo'?2:0),cv=hasSP(u,'curveball')?2.4:0;
+    shoot(u,ang,a.speed,R,a.dmg*D,a.r,a.col,{split:n,splitDmg:cv&&bufS(u,'curveball')?1.15:1,endSplit:true,wallSplit:true,splitCurve:cv,splitR:TL(2.67),splitSpd:21});SFX.shot('lob')}
+  if(a.type==='burst'||a.type==='cannon'||a.type==='split'||a.type==='spread'||a.type==='rocket'||a.type==='snipe'||a.type==='blades')burst(u.x+dx*.9,1,u.z+dz*.9,5,[1,.9,.6],3,.4,.15,true);return true}
 
 // ================= 必殺技 =================
-function supRange(u){const B=BT[u.bt],s=u.bt==='ranran'&&u.form==='bonnie'?B.sup2:B.sup;let r=s.range||atkRange(u);if(hasSP(u,'blackpowder')&&s.type==='launch')r*=1.36;return r}
+function supRange(u){const B=BT[u.bt],s=u.bt==='ranran'&&u.form==='bonnie'?B.sup2:B.sup;let r=s.range||atkRange(u);if(hasSP(u,'blackpowder')&&s.type==='launch')r*=1.36;if((u.bt==='tarubo'||u.bt==='gantetsu')&&hyperOn(u))r*=u.bt==='tarubo'?1.4:1.3;return r}
 function superAtk(u,ang,dist){if(u.dead||u.act||G.over||u.sup<1||u.stunT>0||silenced(u))return false;
   if(G.rule==='ball'&&G.M.ball&&G.M.ball.carrier===u){u.sup=0;kick(u,ang,31);SFX.superGo();return true}
-  const B=BT[u.bt],s=u.bt==='ranran'&&u.form==='bonnie'?B.sup2:B.sup,D=dmgMul(u),H=hyperOn(u);u.sup=0;u.supUsed=(u.supUsed||0)+1;u.lastAtk=G.t;u.revealT=1.5;u.face=ang;u.faceT=ang;u.atkAnim=1;u.inv=0;SFX.superGo();
+  const B=BT[u.bt],s=u.bt==='ranran'&&u.form==='bonnie'?B.sup2:B.sup,D=dmgMul(u),H=hyperOn(u);u.sup=0;if(u.invisT>G.t)u.invisT=0;u.supUsed=(u.supUsed||0)+1;u.lastAtk=G.t;u.revealT=1.5;u.face=ang;u.faceT=ang;u.atkAnim=1;u.inv=0;SFX.superGo();
   const R=supRange(u),d=clamp(dist,1,R),dx=Math.sin(ang),dz=Math.cos(ang),px=u.x+dx*d,pz=u.z+dz*d;
   if(s.type==='barrage'){for(let i=0;i<s.n;i++)setTimeoutG(i*s.gap,()=>{if(u.dead)return;const lane=H?[-1.1,0,1.1][i%3]:(i%2?.25:-.25);shoot(u,ang+rr(-.02,.02),s.speed,s.range,s.dmg*D,s.r,[1,.9,.35],{pierce:true,isSup:true,breakWalls:true},u.x-dz*lane+dx*.7,u.z+dx*lane+dz*.7);if(i%2===0)SFX.shot('snipe')})}
-  else if(s.type==='barrel'){const dmg=(s.dmg+(hasSP(u,'demolition')?1200:0))*D;lob(u,px,pz,{rad:s.rad,dmg,T:s.time,big:true,breakWalls:true,knock:8,isSup:true,onLand:L=>{explode(L.x1,L.z1,{rad:s.rad,dmg,team:u.team,src:u,big:true,breakWalls:true,knock:8,isSup:true});
+  else if(s.type==='barrel'){const dmg=(s.dmg+(hasSP(u,'demolition')?1200:0))*D,sl=bufS(u,'demolition')?2:0;lob(u,px,pz,{rad:s.rad,dmg,T:s.time,big:true,breakWalls:true,knock:8,isSup:true,onLand:L=>{explode(L.x1,L.z1,{rad:s.rad,dmg,team:u.team,src:u,big:true,breakWalls:true,knock:8,isSup:true,slow:sl});
       if(H)for(let i=0;i<6;i++){const a=i/6*TAU;setTimeoutG(.25+i*.05,()=>explode(L.x1+Math.cos(a)*2.6,L.z1+Math.sin(a)*2.6,{rad:1.4,dmg:600*D,team:u.team,src:u,isSup:true}))}}})}
   else if(s.type==='head'){addHead(u,u.x+dx*1.2,u.z+dz*1.2)}
   else if(s.type==='booster'){placeBooster(u)}
@@ -1142,6 +1289,17 @@ function superAtk(u,ang,dist){if(u.dead||u.act||G.over||u.sup<1||u.stunT>0||sile
   else if(s.type==='return'){setForm(u,'clyde');burst(u.x,1,u.z,16,[1,.6,.8],4,.6,.5,true)}
   else if(s.type==='bats'){shoot(u,ang,s.speed,s.range,s.dmg*D,s.r,[.55,.2,.7],{pierce:true,isSup:true,lifesteal:1,back:H})}
   else if(s.type==='surge'){if(bufS(u,'icecold')&&sodaStage(u)>=3)u.boostT=Math.max(u.boostT,3);const [x1,z1]=nearestOpen(px,pz);u.act={type:'jump',t:0,T:.55,x0:u.x,z0:u.z,x1,z1,surge:true}}
+  // ---- 追加のキャラ② ----
+  else if(s.type==='strong'){u.redT=s.dur;u.red=s.red;u.strongT=G.t+s.dur;if(H)u.boostT=Math.max(u.boostT,s.dur);burst(u.x,1.2,u.z,24,[.5,1,.5],5,.6,.5,true)}
+  else if(s.type==='roll'){const dd=Math.max(d,TL(3));u.act={type:'mdash',t:0,T:dd/15,dx,dz,spd:15,hit:new Set(),dmg:s.dmg*D*(H?1.5:1),knock:7,isSup:true,roll:true}}
+  else if(s.type==='station'){placeStation(u,u.x+dx*Math.min(d,s.range),u.z+dz*Math.min(d,s.range))}
+  else if(s.type==='quake'){const k=H?1.3:1;u.act={type:'wind',t:0,T:s.wind,fire:()=>{const hit=new Set();
+      for(let i=0;i<7;i++)shoot(u,ang+(i/6-.5)*s.arc*k,s.speed,s.range*k,s.dmg*D,s.r,[1,.85,.4],{pierce:true,isSup:true,breakWalls:true,stun:s.stun,hit});G.shake=Math.max(G.shake,.5);SFX.boom(true)}}}
+  else if(s.type==='poppin'){const [x1,z1]=nearestOpen(px,pz),n=H?8:s.n,x0=u.x,z0=u.z;for(let i=0;i<n;i++){const a2=i/n*TAU+rr(-.3,.3),r2=n>4?TL(1.8):TL(1.1);
+      lob(u,x0+Math.sin(a2)*r2,z0+Math.cos(a2)*r2,{rad:s.rad,dmg:s.dmg*D,T:.55+i*.04,isSup:true})}u.act={type:'jump',t:0,T:.7,x0:u.x,z0:u.z,x1,z1,poppin:true}}
+  else if(s.type==='smoke'){u.invisT=G.t+s.dur;burst(u.x,1,u.z,30,[.8,.95,.8],5,.8,.8);if(H)for(const o of G.units)if(!o.dead&&o.team===u.team&&o!==u&&Math.hypot(o.x-u.x,o.z-u.z)<TL(4))o.invisT=Math.max(o.invisT||0,G.t+3)}
+  else if(s.type==='cactus'){const rad=s.rad*(H?1.5:1);lob(u,px,pz,{rad,T:.6,onLand:L=>{burst(L.x1,.6,L.z1,24,[.6,1,.4],rad*2,.6,.6,true);SFX.boom(false);
+      addFire(u,L.x1,L.z1,rad,s.dps*D,s.dur,{col:0x6fc23f,pc:[.65,1,.45],slow:s.slow,fert:hasSP(u,'fertilize'),pull:H})}})}
   return true}
 // ================= ガジェット（クールダウン制：使うとg.cd秒たてばまた使える） =================
 function gadget(u,ang){if(u.dead||u.act||G.over||u.kit.gad<0||u.gadCD>0||u.stunT>0||silenced(u))return false;const g=BT[u.bt].gad[u.kit.gad],D=dmgMul(u),BG=hasBuf(u,'gad');ang=ang!=null?ang:(u.faceT!=null?u.faceT:u.face);
@@ -1150,16 +1308,16 @@ function gadget(u,ang){if(u.dead||u.act||G.over||u.kit.gad<0||u.gadCD>0||u.stunT
   if(g.id==='speedloader'){const steal=BG?(t=>{if(G.units.includes(t)&&t.ammo!=null){if(t.ammo>=1)t.ammo-=1;else t.ammo=0;u.ammo=Math.min(maxAmmo(u),u.ammo+1);GLOW.add(t.x,1.8,t.z,0,1,0,.5,[1,.8,.3],.4,0)}}):null;
     for(let i=0;i<2;i++)setTimeoutG(i*.12,()=>{if(!u.dead)shoot(u,ang,25,atkRange(u),288*D,.24,[.7,.9,1],{slow:1.5,onHit:steal})});SFX.shot('snipe')}
   else if(g.id==='silver'){shoot(u,ang,28,atkRange(u)*1.1,540*D*(BG?1.4:1),BG?.5:.3,[.85,.9,1],{pierce:true,breakWalls:true});SFX.shot('snipe')}
-  else if(g.id==='spinner'){u.spinT=2.4;for(let i=0;i<8;i++)setTimeoutG(i*.28,()=>{if(u.dead)return;const a=rr(0,TAU),r2=rr(1.6,3.4);lob(u,u.x+Math.cos(a)*r2,u.z+Math.sin(a)*r2,{rad:1.4,dmg:900*D,T:.5,kind:'stick'})})}
-  else if(g.id==='satchel')u.satchel=true;
-  else if(g.id==='minemania')u.mania=true;
-  else if(g.id==='hurrah'){u.redT=1;u.red=.5;setTimeoutG(1,()=>{if(!u.dead)explode(u.x,u.z,{rad:TL(1.7),dmg:442*D,team:u.team,src:u,knock:6})})}
+  else if(g.id==='spinner'){u.spinT=2.4;if(BG){u.redT=2.4;u.red=.3}for(let i=0;i<8;i++)setTimeoutG(i*.28,()=>{if(u.dead)return;const a=rr(0,TAU),r2=rr(1.6,3.4);lob(u,u.x+Math.cos(a)*r2,u.z+Math.sin(a)*r2,{rad:1.4,dmg:900*D,T:.5,kind:'stick'})})}
+  else if(g.id==='satchel'){u.satchel=true;u.satchelB=BG}
+  else if(g.id==='minemania'){u.mania=true;u.maniaB=BG}
+  else if(g.id==='hurrah'){u.redT=1;u.red=BG?.7:.5;setTimeoutG(1,()=>{if(!u.dead)explode(u.x,u.z,{rad:TL(1.7),dmg:442*D,team:u.team,src:u,knock:6,stun:BG?.5:0})})}
   else if(g.id==='cheat'){const b=myBooster(u);if(!b)ok=false;else{burst(u.x,1,u.z,14,[.6,1,.7],4,.6,.4,true);[u.x,u.z]=nearestOpen(b.x+.8,b.z+.8);burst(u.x,1,u.z,14,[.6,1,.7],4,.6,.4,true);if(BG){b.hp=b.maxHp;healU(u,1800*u.dm,u)}}}
   else if(g.id==='credits')u.credits=true;
   else if(g.id==='letsfly'){const [t,d]=en();if(!t||d>TL(6))ok=false;else{const bx=t.x+(t.x-u.x)/Math.max(d,.1)*1.4,bz=t.z+(t.z-u.z)/Math.max(d,.1)*1.4,[x1,z1]=nearestOpen(bx,bz);u.act={type:'jump',t:0,T:.45,x0:u.x,z0:u.z,x1,z1,vault:true,lf:true}}}
   else if(g.id==='hardcore'){u.shield+=Math.round(1203*u.dm);u.hcT=3;if(BG){u.ccT=1;u.slowT=u.stunT=0}}
   else if(g.id==='sugarrush'){if(u.form!=='clyde')ok=false;else u.sugarT=5}
-  else if(g.id==='crashtest'){if(u.form!=='bonnie')ok=false;else u.act={type:'mdash',t:0,T:.3,dx,dz,spd:TL(2.2)/.3,hit:new Set(),dmg:580*D,knock:9}}
+  else if(g.id==='crashtest'){if(u.form!=='bonnie')ok=false;else u.act={type:'mdash',t:0,T:.3,dx,dz,spd:TL(2.2)/.3,hit:new Set(),dmg:580*D,knock:9,stun:BG?1:0}}
   else if(g.id==='spinner2'){explode(u.x,u.z,{rad:TL(2),dmg:750*D,team:u.team,src:u,slash:true,low:BG?1.3:0})}
   else if(g.id==='bats'){const [t]=en();const tx0=t?t.x:u.x+dx*TL(5),tz0=t?t.z:u.z+dz*TL(5),d=Math.hypot(tx0-u.x,tz0-u.z);const [x1,z1]=nearestOpen(u.x+(tx0-u.x)*Math.min(1,TL(5)/Math.max(d,.1)),u.z+(tz0-u.z)*Math.min(1,TL(5)/Math.max(d,.1)));u.act={type:'jump',t:0,T:.5,x0:u.x,z0:u.z,x1,z1,bats:true,bdmg:BG?800:500,hit:new Set()}}
   else if(g.id==='powersurge')u.stageBoostT=10;
@@ -1176,12 +1334,29 @@ function gadget(u,ang){if(u.dead||u.act||G.over||u.kit.gad<0||u.gadCD>0||u.stunT
       if(BG){let n=0;for(let i=G.bullets.length-1;i>=0;i--){const q=G.bullets[i];if(q.team!==u.team&&Math.hypot(q.x-ax,q.z-az)<TL(2.5)){scene.remove(q.m);G.bullets.splice(i,1);n++}}if(n){u.sup=Math.min(1,u.sup+n*.08);burst(ax,1,az,10,[1,.9,.5],4,.5,.4,true)}}})}}
   else if(g.id==='tuning'){for(let i=0;i<5;i++)setTimeoutG(i+.01,()=>{for(const t of G.units)if(!t.dead&&t.team===u.team&&Math.hypot(t.x-u.x,t.z-u.z)<TL(3)){healU(t,300*u.dm,u);if(BG)t.rlT=Math.max(t.rlT||0,2)}ring(u.x,u.z,TL(3),0x8affb0,.4)})}
   else if(g.id==='protect'){const pr=TL(4)*(BG?1.2:1);for(const t of G.units)if(!t.dead&&t.team===u.team&&Math.hypot(t.x-u.x,t.z-u.z)<pr){t.slowT=t.stunT=0;t.poison=null;t.immuneT=BG?6:4}ring(u.x,u.z,pr,0x8affb0,.4)}
-  else if(g.id==='sparkplug'){const t0=G.turrets.find(q=>q.scrappy&&q.src===u);if(!t0)ok=false;else{ring(t0.x,t0.z,TL(3),0x8ad0ff,.4);for(const t of G.units)if(!t.dead&&t.team!==u.team&&Math.hypot(t.x-t0.x,t.z-t0.z)<TL(3))t.slowT=Math.max(t.slowT,2)}}
-  else if(g.id==='recoil'){const t0=G.turrets.find(q=>q.scrappy&&q.src===u);if(!t0)ok=false;else t0.fastT=5}
+  else if(g.id==='sparkplug'){const t0=G.turrets.find(q=>q.scrappy&&q.src===u);if(!t0)ok=false;else{ring(t0.x,t0.z,TL(3),0x8ad0ff,.4);for(const t of G.units)if(!t.dead&&t.team!==u.team&&Math.hypot(t.x-t0.x,t.z-t0.z)<TL(3)){t.slowT=Math.max(t.slowT,2);if(BG)hurt(t,400*D,u,false)}}}
+  else if(g.id==='recoil'){const t0=G.turrets.find(q=>q.scrappy&&q.src===u);if(!t0)ok=false;else{t0.fastT=5;if(BG)t0.hp=Math.min(t0.maxHp,t0.hp+2000*u.dm)}}
   else if(g.id==='defense'){u.redT=3;u.red=.4;if(BG)for(const t of G.units)if(!t.dead&&t.poison&&t.poison.src===u){t.poison.until=G.t+4+(bufS(u,'carrion')?1:0);GLOW.add(t.x,1.8,t.z,0,1,0,.5,[.5,1,.35],.5,0)}}
   else if(g.id==='slowtoxin'){const hit=[];for(const t of G.units)if(!t.dead&&t.poison&&t.poison.src===u){t.slowT=Math.max(t.slowT,2);hit.push(t)}
     if(BG)for(const t of hit)for(const o of G.units)if(!o.dead&&o.team!==u.team&&o!==t&&!hit.includes(o)&&Math.hypot(o.x-t.x,o.z-t.z)<TL(3)){o.slowT=Math.max(o.slowT,2);poisonU(o,BT.yotaka.atk.poison,4+(bufS(u,'carrion')?1:0),u);burst(o.x,1,o.z,6,[.55,1,.4],3,.4,.3,true)}}
   else if(g.id==='powershield'){u.redT=2;u.red=.5;u.ammo=Math.min(maxAmmo(u),u.ammo+2);u.psT=G.t+2;u.psHit=false}
+  // ---- 追加のキャラ② ----
+  else if(g.id==='growlight'){growBushes(u);u.glT=G.t+10;burst(u.x,.6,u.z,20,[.5,1,.5],4,.6,.5,true)}
+  else if(g.id==='unfriendly'){let n=0;for(const t of G.units)if(!t.dead&&t.team!==u.team&&t.inBush&&Math.hypot(t.x-u.x,t.z-u.z)<TL(5)){hurt(t,500*D,u,false,BG?{stun:1}:{slow:2});burst(t.x,.8,t.z,12,[.5,1,.4],4,.5,.4,true);n++}
+    for(const k in BUSH){const b=BUSH[k];if(Math.hypot(b.position.x-u.x,b.position.z-u.z)<TL(5))GLOW.add(b.position.x,.8,b.position.z,0,1,0,.7,[.6,1,.4],.4,0)}}
+  else if(g.id==='rotator'){u.spinT=1.4;if(BG){u.redT=1.4;u.red=.3}for(let i=0;i<7;i++)setTimeoutG(i*.2,()=>{if(u.dead)return;for(let k=0;k<6;k++)shoot(u,k/6*TAU+i*.3,19,TL(4),250*D,.2,[1,.65,.3],{});SFX.shot('spread')})}
+  else if(g.id==='tar'){const [t,dd]=en(),dl=t&&dd<TL(7)?dd:TL(4),an=t&&dd<TL(7)?Math.atan2(t.x-u.x,t.z-u.z):ang;lob(u,u.x+Math.sin(an)*dl,u.z+Math.cos(an)*dl,{rad:TL(2),T:.55,onLand:L=>addFire(u,L.x1,L.z1,TL(2),BG?300*D:0,4.5,{col:0x231a14,pc:[.25,.2,.15],slow:1})})}
+  else if(g.id==='pulse'){const st=G.turrets.find(q=>q.station&&q.src===u);if(!st)ok=false;else{ring(st.x,st.z,st.hr,0x8affb0,.45);for(const o of G.units)if(!o.dead&&o.team===u.team&&Math.hypot(o.x-st.x,o.z-st.z)<st.hr){healU(o,1000*u.dm,u);if(BG){o.redT=Math.max(o.redT,2);o.red=Math.max(o.red||0,.2)}}}}
+  else if(g.id==='scrapsucker'){u.suck=true;u.suckB=BG}
+  else if(g.id==='noise'){u.ccT=2;u.slowT=u.stunT=0;u.kx=u.kz=0;if(BG){u.redT=2;u.red=.25}}
+  else if(g.id==='attraction'){let n=0;for(const t of G.units){if(t.dead||t.team===u.team||t.ccT>0)continue;const ddx=t.x-u.x,ddz=t.z-u.z,d0=Math.hypot(ddx,ddz);if(d0>TL(5)||d0<1)continue;if(Math.abs(angd(Math.atan2(ddx,ddz)-ang))>.8)continue;
+      t.kx=-ddx*5.5;t.kz=-ddz*5.5;if(BG)hurt(t,0,u,true,{stun:1});n++;burst(t.x,1,t.z,10,[.7,.8,1],4,.5,.4,true)}ring(u.x+dx*TL(2.5),u.z+dz*TL(2.5),TL(2.5),0xa8c0ff,.3)}
+  else if(g.id==='autoaimer'){const [t,dd]=en();if(!t||dd>TL(5.5))ok=false;else{const an=Math.atan2(t.x-u.x,t.z-u.z);for(let i=-1;i<=1;i++)shoot(u,an+i*.12,26,TL(5.5),230*D,.2,[1,.85,.95],{onHit:(o,b)=>{if(!o.isTurret&&!o.isSafe&&!o.isHead){o.kx=b.dx*8;o.kz=b.dz*8}if(BG&&G.units.includes(o))o.slowT=Math.max(o.slowT,1)}});SFX.shot('spread')}}
+  else if(g.id==='homemade')u.homing=true;
+  else if(g.id==='clone')addClone(u);
+  else if(g.id==='lollipop'){addFire(u,u.x,u.z,TL(2.5),0,5,{col:0xff8ad8,pc:[1,.6,.9],ally:'invis',buf:BG})}
+  else if(g.id==='pincushion'){for(let w=0;w<3;w++)setTimeoutG(w*.18,()=>{if(u.dead)return;for(let k=0;k<6;k++)shoot(u,k/6*TAU+w*.5,20,TL(2.67),280*D,.18,[.55,.9,.35],{slow:BG?.8:0},u.x,u.z);SFX.shot('snipe')})}
+  else if(g.id==='lifeplant'){placePlant(u,u.x+dx*1.6,u.z+dz*1.6)}
   if(!ok)return false;u.gadCD=gadCool(u,g);u.revealT=1;burst(u.x,1.4,u.z,12,BG?[1,.6,.85]:[.5,1,.55],3,.5,.4,true);SFX.gadget();if(u.isMe)note('ガジェット：'+g.name+(BG?' ✦':''),1.2);return true}
 // ================= ハイパーチャージ =================
 function hyperGo(u){if(u.dead||!u.kit.hyper||u.hyp<1||u.sup<1||silenced(u))return false;u.hyp=0;u.hyperT=G.t+hyperTime(u);u.hypHealT=.5;SFX.superReady();burst(u.x,1,u.z,30,[.8,.4,1],6,.7,.6,true);
@@ -1189,7 +1364,10 @@ function hyperGo(u){if(u.dead||!u.kit.hyper||u.hyp<1||u.sup<1||silenced(u))retur
 // 毎フレームの状態（時間で切れる効果など）
 function kitTick(u,dt){const B=BT[u.bt];u.gadCD=Math.max(0,u.gadCD-dt);u.stunT=Math.max(0,u.stunT-dt);u.redT=Math.max(0,u.redT-dt);u.sugarT=Math.max(0,u.sugarT-dt);u.boostT=Math.max(0,u.boostT-dt);u.stageBoostT=Math.max(0,u.stageBoostT-dt);
   u.immuneT=Math.max(0,(u.immuneT||0)-dt);statusTick(u);
-  for(const k of['rlT','stompT','mrT','ccT','scT'])if(u[k]>0)u[k]=Math.max(0,u[k]-dt);
+  for(const k of['rlT','stompT','mrT','ccT','scT','rrT'])if(u[k]>0)u[k]=Math.max(0,u[k]-dt);
+  // 透明（シノブ）：インビジヒール・スモークトレイルのバフィー
+  const iv=u.invisT>G.t&&!u.dead;if(iv&&hasSP(u,'invisiheal')){u.ihT=(u.ihT||0)+dt;if(u.ihT>=.5){u.ihT-=.5;healU(u,400*u.dm,u)}}if(u._iv&&!iv&&bufS(u,'smoketrails'))u.boostT=Math.max(u.boostT,2);u._iv=iv;
+  if(!u.dead&&u.inBush){if(hasSP(u,'plantlife')){u.plT=(u.plT||0)+dt;if(u.plT>=.5){u.plT-=.5;healU(u,100*u.dm,u)}}if(G.t<u.glT&&bufG(u,'growlight')){u.glH=(u.glH||0)+dt;if(u.glH>=.5){u.glH-=.5;healU(u,150*u.dm,u)}}if(bufS(u,'ambush'))u.ambT=G.t+2}
   if(u.bt==='jet'&&bufS(u,'rocket4')&&!u.dead&&(u.r4T||0)<6){u.r4T=(u.r4T||0)+dt;if(u.r4T>=6&&u.isMe)note('ロケットNo.4：次の攻撃の射程アップ',1)}
   // ハイパーチャージ中は体力がどんどん回復する（0.5秒ごと）
   if(hyperOn(u)&&!u.dead){u.hypHealT=(u.hypHealT||0)+dt;if(u.hypHealT>=.5){u.hypHealT-=.5;if(u.hp<u.maxHp){healU(u,u.maxHp*HYP.heal*.5,u);GLOW.add(u.x+rr(-.4,.4),1.2,u.z+rr(-.4,.4),0,1.4,0,.45,[.55,1,.6],.5,0)}}}
@@ -1199,25 +1377,30 @@ function kitTick(u,dt){const B=BT[u.bt];u.gadCD=Math.max(0,u.gadCD-dt);u.stunT=M
   if(u.bt==='ranran'&&u.form==='bonnie'&&!u.dead)u.sup=Math.min(1,u.sup+dt*.12)}
 // 突進・ジャンプ中の動き
 function updAct(u,dt){const a=u.act;a.t+=dt;
+  // 振り上げ（ガンテツ）：動けない。スタンされると止まる
+  if(a.type==='wind'){if(u.stunT>0&&!(u.ccT>0)){u.act=null;return}if(a.t>=a.T){u.act=null;a.fire()}return}
   if(a.type==='charge'){const ox=u.x,oz=u.z;u.x+=a.dx*a.spd*dt;u.z+=a.dz*a.spd*dt;const c=cx(u.x),r=cz(u.z);if(cell(c,r)==='#'||breakable(c,r)){if(cell(c,r)==='#')breakWall(c,r);else hitBox(c,r,99999)}
       if(cell(c,r)==='~'||Math.abs(u.x)>HALFX-UR||Math.abs(u.z)>HALFZ-UR){u.x=ox;u.z=oz;a.t=a.T}FX.add(u.x,.4,u.z,rr(-1,1),rr(.5,1.5),rr(-1,1),.8,[.9,.8,.7],.5,2);
     for(const t of targets()){if(t.dead||t.team===u.team||a.hit.has(t))continue;if(Math.hypot(t.x-u.x,t.z-u.z)<UR*2+.4){a.hit.add(t);hurt(t,a.dmg,u,true);if(!t.isTurret&&!t.isSafe){t.kx=a.dx*12;t.kz=a.dz*12}SFX.punch()}}
     if(a.t>=a.T){u.act=null;collide(u);for(const t of G.units)if(!t.dead&&t.team!==u.team&&Math.hypot(t.x-u.x,t.z-u.z)<TL(2))t.slowT=Math.max(t.slowT,1.5)}return}
   if(a.type==='mdash'){u.x+=a.dx*a.spd*dt;u.z+=a.dz*a.spd*dt;collide(u);FX.add(u.x,.4,u.z,rr(-1,1),rr(.5,1.5),rr(-1,1),.7,[.8,.7,.9],.45,2);
-    for(const t of targets()){if(t.dead||t.team===u.team||a.hit.has(t))continue;if(Math.hypot(t.x-u.x,t.z-u.z)<UR*2+.3){a.hit.add(t);hurt(t,a.dmg,u,false);if(a.knock&&!t.isTurret&&!t.isSafe){t.kx=a.dx*a.knock*1.5;t.kz=a.dz*a.knock*1.5}burst(t.x,1,t.z,12,[1,.6,.5],5,.6,.4,true)}}
-    if(a.t>=a.T){u.act=null;if(a.phantom)phantom(u,a.x0,a.z0,u.x,u.z,a.dmg*.6)}return}
+    for(const t of targets()){if(t.dead||t.team===u.team||a.hit.has(t))continue;if(Math.hypot(t.x-u.x,t.z-u.z)<UR*2+.3){a.hit.add(t);hurt(t,a.dmg,u,!!a.isSup,{stun:a.stun});if(a.knock&&!t.isTurret&&!t.isSafe){t.kx=a.dx*a.knock*1.5;t.kz=a.dz*a.knock*1.5}burst(t.x,1,t.z,12,[1,.6,.5],5,.6,.4,true)}}
+    if(a.t>=a.T){u.act=null;if(a.phantom)phantom(u,a.x0,a.z0,u.x,u.z,a.dmg*.6);if(a.roll)rollEnd(u)}return}
   const k=Math.min(1,a.t/a.T);u.x=lerp(a.x0,a.x1,k);u.z=lerp(a.z0,a.z1,k);u.jy=Math.sin(k*Math.PI)*(a.pad?3:4.2);
   if(a.bats){for(const t of targets())if(!t.dead&&t.team!==u.team&&!a.hit.has(t)&&Math.hypot(t.x-u.x,t.z-u.z)<1.6){a.hit.add(t);const dd=(a.bdmg||500)*dmgMul(u);hurt(t,dd,u,true);healU(u,dd,u)}GLOW.add(u.x,1+u.jy,u.z,0,0,0,.6,[.6,.2,.8],.3,0)}
   if(k<1)return;u.jy=0;u.act=null;collide(u);const D=dmgMul(u),H=hyperOn(u);
-  if(a.pad){u.padCool=.6;burst(u.x,.3,u.z,10,[1,.85,.4],3,.5,.4,true);return}
+  if(a.pad){u.padCool=.6;burst(u.x,.3,u.z,10,[1,.85,.4],3,.5,.4,true);if(a.dj&&bufS(u,'dynajump'))explode(u.x,u.z,{rad:TL(1.5),dmg:400*D,team:u.team,src:u});return}
   if(a.vault){if(!a.lf||bufG(u,'letsfly'))u.boostT=Math.max(u.boostT,2);
     if(hasSP(u,'hardlanding')){if(bufS(u,'hardlanding')){let n=0;for(const t of G.units)if(!t.dead&&t.team!==u.team&&Math.hypot(t.x-u.x,t.z-u.z)<TL(.9))n++;if(n)u.sup=Math.min(1,u.sup+.2*n)}explode(u.x,u.z,{rad:TL(1.8),dmg:484*D,team:u.team,src:u,isSup:true})}else burst(u.x,.3,u.z,12,[.8,.7,1],4,.5,.4,true)}
   if(a.elbow){const S2=BT.riki.sup;if(H)for(const t of G.units)if(!t.dead&&t.team!==u.team&&Math.hypot(t.x-u.x,t.z-u.z)<TL(3.5)){t.kx=(u.x-t.x)*3;t.kz=(u.z-t.z)*3}explode(u.x,u.z,{rad:S2.rad,dmg:S2.dmg*D,team:u.team,src:u,isSup:true,knock:7});if(hasSP(u,'elfuego'))for(const t of G.units)if(!t.dead&&t.team!==u.team&&Math.hypot(t.x-u.x,t.z-u.z)<S2.rad+1)poisonU(t,157,4,u,'burn');if(hasSP(u,'meteorrush')){u.boostT=4;u.mrT=4}}
   if(a.swoop)ring2(u,BT.yotaka.sup);
-  if(a.launch){setForm(u,'bonnie');explode(u.x,u.z,{rad:BT.ranran.sup.rad,dmg:BT.ranran.sup.dmg*D,team:u.team,src:u,isSup:true,stun:H?1:0});if(H)for(let i=0;i<8;i++)shoot(u,i/8*TAU,20,TL(3),300*D,.2,[1,1,.9],{},u.x,u.z)}
+  if(a.launch){setForm(u,'bonnie');explode(u.x,u.z,{rad:BT.ranran.sup.rad*(bufS(u,'blackpowder')?1.3:1),dmg:BT.ranran.sup.dmg*D,team:u.team,src:u,isSup:true,stun:H?1:0});if(H)for(let i=0;i<8;i++)shoot(u,i/8*TAU,20,TL(3),300*D,.2,[1,1,.9],{},u.x,u.z)}
   if(a.surge){explode(u.x,u.z,{rad:BT.soda.sup.rad,dmg:BT.soda.sup.dmg*D,team:u.team,src:u,isSup:true});if(u.stage<3){u.stage++;if(u.isMe)note('強化 段階'+u.stage+'：'+['','移動が速くなった','射程がのびた','弾が6つに分裂'][u.stage],1.6)}}
+  if(a.poppin){burst(u.x,.4,u.z,14,[1,.8,.9],4,.5,.4,true);return}
   if(!a.vault&&!a.launch&&!a.surge&&!a.bats&&!a.elbow&&!a.swoop){const S2=BT[u.bt].sup;if(S2.rad)explode(u.x,u.z,{rad:S2.rad,dmg:S2.dmg*D,team:u.team,src:u,knock:9,isSup:true})}}
 
+// タルボ：転がりおわったとき
+function rollEnd(u){if(hasSP(u,'hoops')){u.redT=3.5;u.red=bufS(u,'hoops')?.4:.25}if(hasSP(u,'rollreload')){u.rrT=5;if(bufS(u,'rollreload'))u.ammo=Math.min(maxAmmo(u),u.ammo+2)}burst(u.x,.4,u.z,12,[.9,.75,.5],4,.5,.5,true)}
 // ヴラドのハイパーバフィー：突進した道に、少しおくれて幻の攻撃
 function phantom(u,x0,z0,x1,z1,dmg){const L=Math.max(.01,Math.hypot(x1-x0,z1-z0));setTimeoutG(.45,()=>{if(u.dead&&G.mode==='br')return;
   for(let k=0;k<=8;k++)GLOW.add(lerp(x0,x1,k/8),.8,lerp(z0,z1,k/8),0,.6,0,.9,[.65,.3,.95],.4,0);
@@ -1226,7 +1409,9 @@ function phantom(u,x0,z0,x1,z1,dmg){const L=Math.max(.01,Math.hypot(x1-x0,z1-z0)
 function ring2(u,s){const D=dmgMul(u),H=hyperOn(u);for(let i=0;i<s.n;i++)shoot(u,i/s.n*TAU,20,TL(3.3),s.dmg*D,.18,[.55,1,.4],{poison:s.poison,isSup:true,pierce:H,back:H,backMul:.8},u.x,u.z);SFX.shot('snipe')}
 
 // ================= 見える・見えない（草むら） =================
-function visibleTo(team,u){if(u.dead)return false;if(u.team===team)return true;if(!u.inBush||u.revealT>0)return true;
+function visibleTo(team,u){if(u.dead)return false;if(u.team===team)return true;
+  if(u.invisT>G.t){for(const o of G.units)if(!o.dead&&o.team===team&&Math.hypot(o.x-u.x,o.z-u.z)<TL(1.2))return true;return false}
+  if(!u.inBush||u.revealT>0)return true;
   for(const o of G.units)if(!o.dead&&o.team===team&&Math.hypot(o.x-u.x,o.z-u.z)<3.8)return true;return false}
 
 // ================= 道さがし（A*） =================
@@ -1242,9 +1427,9 @@ function astar(sc,sr,gc,gr){if(blockMove(gc,gr)){let best=null,bd=1e9;for(let r=
 
 // ================= ボットの考え =================
 const curAtk=u=>u.bt==='ranran'&&u.form==='bonnie'?BT.ranran.atk2:BT[u.bt].atk;
-function prefDist(u){const t=curAtk(u).type,R=atkRange(u);return t==='punch'?0:t==='spread'?R*.45:t==='dash'?R*.5:t==='bomber'?R*.6:t==='split'?R*.7:t==='cannon'?R*.85:R*.75}
+function prefDist(u){const t=curAtk(u).type,R=atkRange(u);return t==='punch'?0:t==='spread'?R*.45:t==='double'?R*.4:t==='dash'?R*.5:t==='bomber'||t==='blades'||t==='hammer'?R*.6:t==='split'||t==='scrap'?R*.7:t==='cannon'||t==='snipe'?R*.85:R*.75}
 function aiThink(u){const A=u.ai,B=BT[u.bt],br=G.mode==='br';
-  let tgt=null,td=1e9;for(const o of G.units){if(o.team===u.team||!visibleTo(u.team,o))continue;const d=Math.hypot(o.x-u.x,o.z-u.z);if(d<td){td=d;tgt=o}}
+  let tgt=null,td=1e9;for(const o of G.pets.length?G.units.concat(G.pets.filter(p=>p.decoy)):G.units){if(o.team===u.team||!visibleTo(u.team,o))continue;const d=Math.hypot(o.x-u.x,o.z-u.z);if(d<td){td=d;tgt=o}}
   if(G.rule==='ball'&&G.M.ball.carrier&&G.M.ball.carrier.team!==u.team&&visibleTo(u.team,G.M.ball.carrier)){tgt=G.M.ball.carrier;td=Math.hypot(tgt.x-u.x,tgt.z-u.z)}
   if(tgt!==A.tgt){A.tgt=tgt;A.see=G.t}A.box=null;A.mg=null;
   const hpR=u.hp/u.maxHp;let gx,gz,mode;const pref=prefDist(u);
@@ -1281,7 +1466,7 @@ function aiAct(u,dt){const A=u.ai,B=BT[u.bt];A.think-=dt;if(A.think<=0){A.think=
   if(!t||G.t-A.see<lerp(.7,.2,G.diff))return;const dx=t.x-u.x,dz=t.z-u.z,d=Math.hypot(dx,dz),ang0=Math.atan2(dx,dz);
   // ハイパーチャージ・ガジェット
   if(u.hyp>=1&&u.sup>=1&&d<R*1.2&&Math.random()<dt*3)hyperGo(u);
-  if(u.kit.gad>=0&&u.gadCD<=0&&Math.random()<dt*.45){const g=BT[u.bt].gad[u.kit.gad].id,def=['hardcore','hurrah','powershield'].includes(g);if(def?u.hp<u.maxHp*.55&&G.t-u.lastHurt<1:d<R*1.1)gadget(u,ang0)}
+  if(u.kit.gad>=0&&u.gadCD<=0&&Math.random()<dt*.45){const g=BT[u.bt].gad[u.kit.gad].id,def=['hardcore','hurrah','powershield','noise'].includes(g);if(def?u.hp<u.maxHp*.55&&G.t-u.lastHurt<1:g==='lollipop'||g==='growlight'?d<R*1.4&&u.hp<u.maxHp*.7:d<R*1.1)gadget(u,ang0)}
   // 必殺技
   if(u.sup>=1){const s=u.bt==='ranran'&&u.form==='bonnie'?BT.ranran.sup2:BT[u.bt].sup,SR=supRange(u),ty=s.type;let go=false;
     if(ty==='barrage'||ty==='bats')go=d<SR*.9&&(ty==='barrage'||los(u.x,u.z,t.x,t.z));
@@ -1289,6 +1474,11 @@ function aiAct(u,dt){const A=u.ai,B=BT[u.bt];A.think-=dt;if(A.think<=0){A.think=
     else if(ty==='vault'||ty==='launch'||ty==='surge'||ty==='elbow'||ty==='swoop')go=d<SR*1.05&&d>1.5;
     else if(ty==='shell')go=d<SR*.7&&los(u.x,u.z,t.x,t.z);else if(ty==='bear')go=d<TL(8);else if(ty==='charge')go=d<SR*.8&&d>2;else if(ty==='rain')go=d<SR;else if(ty==='scrappy')go=d<R*1.1;
     else if(ty==='encore')go=u.hp<u.maxHp*.6||G.units.some(o=>!o.dead&&o.team===u.team&&o!==u&&o.hp<o.maxHp*.5&&Math.hypot(o.x-u.x,o.z-u.z)<SR);
+    else if(ty==='strong')go=d<TL(4)||u.hp<u.maxHp*.6;else if(ty==='roll')go=d<SR*.85&&d>1.5;
+    else if(ty==='station')go=d<R||u.hp<u.maxHp*.7||G.units.some(o=>!o.dead&&o.team===u.team&&o!==u&&o.hp<o.maxHp*.6&&Math.hypot(o.x-u.x,o.z-u.z)<TL(4));
+    else if(ty==='quake')go=d<SR*.85&&los(u.x,u.z,t.x,t.z);else if(ty==='smoke')go=d<R*1.3||u.hp<u.maxHp*.45;else if(ty==='cactus')go=d<SR*.95;
+    else if(ty==='poppin'){if(d<TL(3.5)||u.hp<u.maxHp*.4&&d<R){superAtk(u,ang0+Math.PI+rr(-.4,.4),SR);return}}
+    else go=d<SR*.9;
     if(go){superAtk(u,ang0+rr(-.05,.05),d);return}}
   if(u.ammo<1||G.t<A.fireT)return;if(d>R*(a.type==='punch'?1.2:a.type==='dash'?1:.95))return;if(!lobT&&!los(u.x,u.z,t.x,t.z))return;
   const spd=a.speed||d/(a.time||.25),lead=d/spd*rr(.3,.9)*lerp(.6,1.1,G.diff),px=t.x+t.vx*lead,pz=t.z+t.vz*lead,err=rr(-.13,.13)*lerp(1.4,.45,G.diff);
@@ -1411,7 +1601,7 @@ const skinsOwned=id=>J('gr-sk-'+id,['base']),skinOf=id=>{const s=LS('gr-skin-'+i
 function giveSkin(id,sk){const o=skinsOwned(id);if(o.includes(sk))return false;o.push(sk);JS('gr-sk-'+id,o);const S2=SKINS[id].find(k=>k.id===sk);popUnlock('新しいスキン！',BT[id].name+'「'+S2.name+'」',portrait(id,S2));return true}
 // ---- トロフィーロード（合計トロフィーで順番に受け取る）----
 // キャラ解放の段（合計トロフィー）。早く仲間が増えるように低めにしてある
-const ROAD_CHARS=[['yuki',5],['jack',15],['gai',30],['jet',45],['riki',60],['goro',80],['carlo',100],['kachiko',120],['mimi',140],['piko',165],['kagerou',190],['ranran',215],['yotaka',240],['vlad',270],['soda',300]];
+const ROAD_CHARS=[['yuki',5],['jack',15],['gai',30],['jet',45],['riki',60],['goro',80],['carlo',100],['kachiko',120],['mimi',140],['piko',165],['kagerou',190],['ranran',215],['yotaka',240],['vlad',270],['soda',300],['sumire',325],['tarubo',350],['hatsue',380],['gantetsu',410],['ayame',440],['shinobu',475],['sabo',510]];
 const ROAD=[];{const gifts=[{coins:80},{drop:1},{coins:120},{drop:1},{coins:150},{drop:2},{coins:200},{skin:1},{drop:2},{coins:250},{drop:2},{coins:300},{drop:3},{coins:350},{skin:1},{drop:3}];
   ROAD_CHARS.forEach(([id,t],i)=>{if(!BT[id])return;ROAD.push({t,char:id});const nx=ROAD_CHARS[i+1];ROAD.push(Object.assign({t:nx?Math.round((t+nx[1])/2):t+20},gifts[i%gifts.length]))});
   const last=ROAD[ROAD.length-1].t;for(let t=last+40,k=0;t<=last+2400;t+=60,k++)ROAD.push(k%2?{t,coins:250}:{t,drop:2})}
@@ -1497,7 +1687,7 @@ function bufHtml(id){const B=BT[id],X=BUF[id];if(!X)return`<div class="kr"><b>�
   const o=kitOwn(id),b=bufOwn(id),free=bufFree();
   const one=(k,lines)=>{const has=b[k],need=k==='hyper'?o.hyper:o[k].length>0,st=has?'装備中':!need?'🔒'+(k==='gad'?'ガジェット':k==='sp'?'スターパワー':'ハイパー')+'が必要':free?'🎁 無料！':'🪙'+BUFCOST[k];
     return`<button class="kb bf ${has?'on':''} ${has?'':'no'}" data-k="buf" data-v="${k}" title="${BUFNAME[k]}"><b>${BUFNAME[k]}</b><small>${st}</small><i>${lines}</i></button>`};
-  return`<div class="kr"><b>バフィー（本家と同じ効果）</b><div class="bfNote">買うと自動で装備。3つ全部つけられます${free?'・最初の1つは無料！':''}</div><div class="kc">`+
+  return`<div class="kr"><b>バフィー（ガジェット・スターパワー・ハイパーを強化）</b><div class="bfNote">買うと自動で装備。3つ全部つけられます${free?'・最初の1つは無料！':''}</div><div class="kc">`+
    one('gad',B.gad.map((g,i)=>`<span class="bl"><u>${g.name}</u>：${X.gad[i]}</span>`).join(''))+
    one('sp',B.sp.map((g,i)=>`<span class="bl"><u>${g.name}</u>：${X.sp[i]}</span>`).join(''))+
    one('hyper',`<span class="bl">ハイパーが2秒長くなる</span><span class="bl"><u>${B.hyper.name}</u>：${X.hyper}</span>`)+`</div></div>`}
@@ -1605,11 +1795,11 @@ function aimMesh(kind,arc){const key=kind+arc;if(AIM[key])return AIM[key];let g;
   const m=new THREE.Mesh(g,aimMat);m.visible=false;m.renderOrder=2;scene.add(m);return AIM[key]=m}
 let aimShown=[];const put0=(u,mat)=>{const m=aimMesh('circle',0);m.material=mat;m.visible=true;m.position.set(u.x,.07,u.z);m.scale.set(1.6,1,1.6);aimShown.push(m)};
 function showAim(u,ang,m,sup){for(const o of aimShown)o.visible=false;aimShown=[];if(!u||u.dead)return;const B=BT[u.bt],bf=u.bt==='ranran'&&u.form==='bonnie',spec=sup?(bf?B.sup2:B.sup):(bf?B.atk2:B.atk),type=spec.type,rng=sup?supRange(u):atkRange(u),mat=sup?aimMatS:aimMat;
-  if(type==='booster'||type==='return'||type==='head'){put0(u,mat);return}
+  if(type==='booster'||type==='return'||type==='head'||type==='smoke'||type==='strong'){put0(u,mat);return}
   const put=(mesh,x,z,sx,sz,rot)=>{mesh.material=mat;mesh.visible=true;mesh.position.set(x,.07,z);mesh.scale.set(sx,1,sz);mesh.rotation.y=rot||0;aimShown.push(mesh)};
-  if(type==='punch'){put(aimMesh('sector',spec.arc),u.x,u.z,rng,rng,ang)}
-  else if(type==='spread'||type==='shell'){const k=type==='shell'&&hyperOn(u)?1.33:1;put(aimMesh('sector',(spec.spread+.12)*k),u.x,u.z,rng*k,rng*k,ang)}
-  else if(type==='wave'||type==='rocket'||type==='chain'||type==='dagger'||type==='charge'||type==='encore'){const wall=type==='charge'||type==='encore';const len=wall?rng:rayWall(u.x,u.z,Math.sin(ang),Math.cos(ang),rng);put(aimMesh('strip',0),u.x,u.z,type==='encore'?3.2:type==='wave'?(spec.r||.6)*2:type==='charge'?1.6:.7,len,ang)}
+  if(type==='punch'||type==='hammer'||type==='quake'){const k=type==='quake'&&hyperOn(u)?1.3:1;put(aimMesh('sector',spec.arc*k+(type==='punch'?0:.3)),u.x,u.z,rng,rng,ang)}
+  else if(type==='spread'||type==='shell'||type==='double'||type==='scrap'||type==='blades'){const k=type==='shell'&&hyperOn(u)?1.33:1;put(aimMesh('sector',(spec.spread+.12)*k),u.x,u.z,rng*k,rng*k,ang)}
+  else if(type==='wave'||type==='rocket'||type==='chain'||type==='dagger'||type==='charge'||type==='encore'||type==='needle'||type==='roll'||type==='snipe'){const wall=type==='charge'||type==='encore';const len=wall?rng:rayWall(u.x,u.z,Math.sin(ang),Math.cos(ang),rng);put(aimMesh('strip',0),u.x,u.z,type==='encore'?3.2:type==='wave'?(spec.r||.6)*2:type==='charge'||type==='roll'?1.6:type==='snipe'?.45:.7,len,ang)}
   else if(type==='burst'||type==='barrage'||type==='cannon'||type==='split'||type==='bats'||type==='dash'){const wall=type==='barrage'||type==='bats'||type==='dash';const len=wall?rng:rayWall(u.x,u.z,Math.sin(ang),Math.cos(ang),rng);put(aimMesh('strip',0),u.x,u.z,type==='bats'?1.9:type==='barrage'?(hyperOn(u)?2.6:1.1):type==='dash'?1.4:.7,len,ang)}
   else{const d=clamp(m*rng,2,rng),x=u.x+Math.sin(ang)*d,z=u.z+Math.cos(ang)*d,rad=spec.rad||1.2;put(aimMesh('circle',0),x,z,rad,rad,0);put(aimMesh('strip',1),u.x,u.z,.18,d,ang)}}
 
@@ -1730,6 +1920,13 @@ function portrait(id,SK){SK=SK||(typeof skinOf==='function'?skinOf(id):null)||{}
    riki:`<rect x="16" y="44" width="48" height="32" rx="12" fill="${c}"/><circle cx="40" cy="32" r="19" fill="${h('#2f6fd8')}"/><path d="M29 30 Q33 25 37 30 Q33 36 29 30ZM43 30 Q47 25 51 30 Q47 36 43 30Z" fill="#fff"/><circle cx="33" cy="30" r="2" fill="#222"/><circle cx="47" cy="30" r="2" fill="#222"/><path d="M40 13 36 22H44Z" fill="#ffd84d"/><rect x="33" y="41" width="14" height="4" rx="2" fill="#ffd2a8"/>`,
    carlo:body+`<circle cx="40" cy="34" r="18" fill="#f2eee4"/><circle cx="33" cy="33" r="4.5" fill="#222"/><circle cx="47" cy="33" r="4.5" fill="#222"/><rect x="33" y="43" width="14" height="3" fill="#222"/><path d="M22 26 Q40 10 58 26" stroke="${h('#3f8a5c')}" stroke-width="5" fill="none"/><rect x="58" y="44" width="6" height="22" rx="2" fill="#c9a36b"/>`,
    mimi:body+face+`<path d="M22 32 Q40 8 58 32 L56 24 Q40 12 24 24Z" fill="${h('#ff7a2e')}"/><circle cx="21" cy="28" r="6" fill="${h('#ff7a2e')}"/><circle cx="59" cy="28" r="6" fill="${h('#ff7a2e')}"/><rect x="30" y="12" width="20" height="5" rx="2" fill="#ffc53d"/>`,
+   sumire:body+face+`<path d="M22 32 Q40 8 58 32 L56 24 Q40 12 24 24Z" fill="${h('#6a3a2a')}"/><ellipse cx="40" cy="17" rx="25" ry="4" fill="#d8c08a"/><rect x="29" y="5" width="22" height="12" rx="4" fill="#d8c08a"/><circle cx="33" cy="12" r="3" fill="#ff6fb5"/><circle cx="47" cy="12" r="3" fill="#ffd84d"/><circle cx="18" cy="60" r="8" fill="#4caf50"/><circle cx="62" cy="60" r="8" fill="#4caf50"/>`,
+   tarubo:`<rect x="20" y="40" width="40" height="36" rx="6" fill="${c}"/><rect x="18" y="46" width="44" height="4" fill="#9aa3b5"/><rect x="18" y="66" width="44" height="4" fill="#9aa3b5"/><path d="M24 40 Q40 14 56 40Z" fill="#9aa3b5"/><rect x="31" y="30" width="18" height="5" rx="2" fill="#ff3b3b"/><path d="M26 22 L54 22 L40 10Z" fill="${h('#2b2d36')}"/><rect x="62" y="50" width="14" height="5" rx="2" fill="#5a6070"/><rect x="4" y="50" width="14" height="5" rx="2" fill="#5a6070"/>`,
+   hatsue:`<rect x="16" y="44" width="48" height="32" rx="12" fill="${c}"/>`+face+`<circle cx="26" cy="20" r="8" fill="${h('#d8642a')}"/><circle cx="40" cy="15" r="9" fill="${h('#d8642a')}"/><circle cx="54" cy="20" r="8" fill="${h('#d8642a')}"/><circle cx="23" cy="31" r="6" fill="${h('#d8642a')}"/><circle cx="57" cy="31" r="6" fill="${h('#d8642a')}"/><circle cx="34" cy="26" r="5" fill="none" stroke="#9aa3b5" stroke-width="2"/><circle cx="46" cy="26" r="5" fill="none" stroke="#9aa3b5" stroke-width="2"/><rect x="58" y="50" width="16" height="10" rx="3" fill="#8a7a5a"/>`,
+   gantetsu:`<rect x="16" y="44" width="48" height="32" rx="12" fill="${c}"/><circle cx="40" cy="33" r="19" fill="#9fb8a8"/><rect x="24" y="12" width="32" height="10" rx="2" fill="${h('#1c1d2a')}"/><circle cx="33" cy="34" r="4" fill="#fff"/><circle cx="47" cy="34" r="4" fill="#fff"/><circle cx="33" cy="35" r="2" fill="#222"/><circle cx="47" cy="35" r="2" fill="#222"/><rect x="18" y="31" width="5" height="3" fill="#9aa3b5"/><rect x="57" y="31" width="5" height="3" fill="#9aa3b5"/><rect x="64" y="20" width="3" height="40" fill="#6b4a2e"/><rect x="57" y="10" width="17" height="12" rx="2" fill="#9aa3b5"/>`,
+   ayame:body+face+`<path d="M22 32 Q40 8 58 32 L56 24 Q40 12 24 24Z" fill="${h('#ffd27a')}"/><circle cx="40" cy="12" r="6" fill="${h('#ffd27a')}"/><path d="M50 8 Q66 -2 80 8Z" fill="${h('#ff8ac0')}"/><rect x="64" y="7" width="2" height="40" fill="#6b4a2e"/>`,
+   shinobu:body+face+`<path d="M18 36 Q40 0 62 36 L58 28 Q40 12 22 28Z" fill="${h('#4caf50')}"/><circle cx="31" cy="13" r="6" fill="#fff"/><circle cx="49" cy="13" r="6" fill="#fff"/><circle cx="31" cy="14" r="3" fill="#222"/><circle cx="49" cy="14" r="3" fill="#222"/>`,
+   sabo:`<rect x="24" y="46" width="32" height="28" rx="12" fill="${c}"/><ellipse cx="40" cy="32" rx="19" ry="21" fill="${h('#5cb83a')}"/><circle cx="33" cy="33" r="4" fill="#fff"/><circle cx="47" cy="33" r="4" fill="#fff"/><circle cx="33" cy="34" r="2" fill="#222"/><circle cx="47" cy="34" r="2" fill="#222"/><circle cx="40" cy="10" r="5" fill="#ff6fb5"/><path d="M20 26 14 24M20 38 14 40M60 26 66 24M60 38 66 40M28 16 25 11M52 16 55 11" stroke="#f2eedd" stroke-width="2"/><rect x="12" y="50" width="8" height="14" rx="4" fill="${h('#5cb83a')}"/><rect x="60" y="50" width="8" height="14" rx="4" fill="${h('#5cb83a')}"/>`,
    yotaka:`<rect x="24" y="46" width="32" height="28" rx="12" fill="${c}"/><circle cx="40" cy="34" r="19" fill="${h('#1c1d2a')}"/><circle cx="33" cy="32" r="4" fill="#fff"/><circle cx="47" cy="32" r="4" fill="#fff"/><circle cx="33" cy="32" r="2" fill="#d8343a"/><circle cx="47" cy="32" r="2" fill="#d8343a"/><path d="M34 38 L40 52 L46 38Z" fill="#ffc53d"/><path d="M30 16 40 4 50 16Z" fill="${h('#1c1d2a')}"/><path d="M20 50 L8 44 L22 60Z M60 50 L72 44 L58 60Z" fill="#b8c4d8"/>`});
   return `<svg viewBox="0 0 80 80">${P[id]||body+face}${SK.crown?'<path d="M28 6 32 -2 36 5 40 -4 44 5 48 -2 52 6Z" fill="#ffd84d" transform="translate(0 4)"/>':''}</svg>`}
 function hideScreens(){$('charScr').classList.remove('det');$('menu').style.visibility='';for(const id of['menu','result','charScr','modeScr','rankScr','roadScr','passScr','dropScr','setScr'])$(id).classList.remove('on')}
@@ -1840,7 +2037,8 @@ function poseUnit(u,dt){const m=u.m;if(u.dead){m.g.visible=false;return}
   if(u.faceT!=null){const cur=m.g.rotation.y;m.g.rotation.y=cur+angd(u.faceT-cur)*Math.min(1,dt*16)}
   const sp=Math.hypot(u.vx,u.vz);u.walkT+=dt*Math.min(sp,7)*2.3;const w=Math.min(1,sp/3);m.legL.rotation.x=Math.sin(u.walkT)*.8*w;m.legR.rotation.x=-Math.sin(u.walkT)*.8*w;
   m.torso.position.y=.5+Math.abs(Math.sin(u.walkT))*.08*w;u.atkAnim=Math.max(0,u.atkAnim-dt*5);m.torso.rotation.x=-u.atkAnim*.25;m.hR.position.z=.12+u.atkAnim*.25;
-  u.flash=Math.max(0,u.flash-dt*6);const half=u.team===0&&u.inBush;if(m.outl&&m._oh!==half){m._oh=half;for(const o of m.outl)o.visible=!half}for(const mt of m.mats){mt.emissive.setRGB(u.flash*.7,u.flash*.7,u.flash*.7);if(mt.transparent!==half){mt.transparent=half;mt.opacity=half?.5:1;mt.needsUpdate=true}}
+  if(u.act&&u.act.roll)m.torso.rotation.x=u.act.t*26;else if(u.act&&u.act.type==='wind')m.torso.rotation.x=.45*Math.min(1,u.act.t/u.act.T);
+  u.flash=Math.max(0,u.flash-dt*6);const half=u.team===0&&(u.inBush||u.invisT>G.t);if(m.outl&&m._oh!==half){m._oh=half;for(const o of m.outl)o.visible=!half}for(const mt of m.mats){mt.emissive.setRGB(u.flash*.7,u.flash*.7,u.flash*.7);if(mt.transparent!==half){mt.transparent=half;mt.opacity=half?.5:1;mt.needsUpdate=true}}
   m.shield.visible=u.inv>0||u.redT>0||u.shield>(u.gshield||0)||(u.godT||0)>G.t||u.ccT>0;m.shield.material.opacity=.15+Math.sin(G.t*14)*.06;m.hyp.visible=hyperOn(u);if(m.hyp.visible){m.hyp.rotation.z+=dt*6;m.hyp.material.opacity=.5+Math.sin(G.t*18)*.3}}
 let hudT=0;
 function updHud(dt){const u=me(),b=teamGems(0),r=teamGems(1);const t=Math.max(0,Math.ceil(G.time));$('clock').textContent=G.rule==='knockout'&&G.M.round?'ラウンド'+G.M.round:Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
@@ -2014,7 +2212,7 @@ for(const b of document.querySelectorAll('#pinTray button')){b.innerHTML=pinSvg(
 $('pinBtn').innerHTML=`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#ffd84d" stroke="#101010" stroke-width="7"/><circle cx="36" cy="42" r="6" fill="#101010"/><circle cx="64" cy="42" r="6" fill="#101010"/><path d="M30 60 Q50 80 70 60" stroke="#101010" stroke-width="7" fill="none" stroke-linecap="round"/></svg>`;
 addEventListener('keydown',e=>{if(e.repeat||G.state!=='play'||paused)return;if(e.code==='Digit1')usePin('like');else if(e.code==='Digit2')usePin('bad');else if(e.code==='KeyT')$('pinTray').classList.toggle('on')});
 const _step3=step;step=function(dt){_step3(dt);specTick(dt);updPins(dt)};
-window.__A={HYP,BUF,myKit,kitAct,bufOwn,mkUnit,hyperOn,drawChar,openChars,mkLabel,hurt:(...a)=>hurt(...a),SPEC,usePin,specNext,autoAttack,setPick:id=>{PICK=id},gadget,hyperGo,superAtk2:superAtk,buildArenaTest:id=>{buildArena(id)},rankOf,RPts,quests,questAdd,drawHome,MAPS,aiAct,buildArena,coins,level,upgrade,trophies,LSset,showMenu,G,BT,me,startMatch,step,attack,superAtk,autoAttack,cam,scene,renderer,teamGems,visibleTo,astar,MAP,GRID,endMatch,setZoom:z=>ZOOM=z,K,STK};
+window.__A={walkable,los,grid:()=>GRID,bushes:()=>BUSH,unitSpeed,dmgMul,reloadOf,HYP,BUF,myKit,kitAct,bufOwn,mkUnit,hyperOn,drawChar,openChars,mkLabel,hurt:(...a)=>hurt(...a),SPEC,usePin,specNext,autoAttack,setPick:id=>{PICK=id},gadget,hyperGo,superAtk2:superAtk,buildArenaTest:id=>{buildArena(id)},rankOf,RPts,quests,questAdd,drawHome,MAPS,aiAct,buildArena,coins,level,upgrade,trophies,LSset,showMenu,G,BT,me,startMatch,step,attack,superAtk,autoAttack,cam,scene,renderer,teamGems,visibleTo,astar,MAP,GRID,endMatch,setZoom:z=>ZOOM=z,K,STK};
 })();
 </script>
 </body></html>
