@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Bee Swarm Simulator 再現版</title>
+<style>
+:root{--hny:#ffc93c;--pan:rgba(18,20,28,.86);--line:rgba(255,255,255,.14);--sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px);--sa-l:env(safe-area-inset-left,0px);--sa-r:env(safe-area-inset-right,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#87c8f0;font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
+#c{position:fixed;inset:0}
+canvas{display:block}
+.hud{position:fixed;pointer-events:none;z-index:5;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+#top{top:calc(8px + var(--sa-t));left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center}
+.pill{background:rgba(0,0,0,.45);border-radius:12px;padding:5px 12px;font-weight:800;font-size:17px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+#honey{color:var(--hny)}
+#pbar{width:210px;height:22px;border-radius:11px;background:rgba(0,0,0,.45);position:relative;overflow:hidden}
+#pbar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#ffe37a,#f2b52b);width:0}
+#pbar span{position:absolute;inset:0;text-align:center;font-size:13px;line-height:22px;font-weight:800}
+#pbar.full i{background:linear-gradient(#ff8a7a,#e0453a)}
+#buffs{top:calc(42px + var(--sa-t));left:50%;transform:translateX(-50%);display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:92vw}
+.bf{width:38px;height:38px;border-radius:7px;background:rgba(0,0,0,.5);position:relative;font-size:20px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.25)}
+.bf b{position:absolute;right:1px;bottom:-1px;font-size:11px}
+.bf u{position:absolute;left:0;bottom:0;height:3px;background:#fff8;text-decoration:none}
+#menu{left:calc(8px + var(--sa-l));top:calc(90px + var(--sa-t));display:flex;flex-direction:column;gap:6px;pointer-events:auto}
+.mb{width:50px;height:50px;border-radius:12px;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.3);font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;position:relative}
+.mb small{position:absolute;bottom:1px;font-size:9px;font-weight:800}
+.mb:active{transform:scale(.94)}
+#hp{left:calc(66px + var(--sa-l));top:calc(92px + var(--sa-t));width:120px;height:12px;border-radius:6px;background:rgba(0,0,0,.5);overflow:hidden;display:none}
+#hp i{display:block;height:100%;background:#5fe36a;width:100%}
+#zone{top:calc(66px + var(--sa-t));left:50%;transform:translateX(-50%);font-size:14px;font-weight:800;opacity:.92}
+#prompt{bottom:calc(120px + var(--sa-b));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:10px;padding:8px 14px;font-weight:800;font-size:16px;display:none;pointer-events:auto;cursor:pointer}
+#prompt kbd{background:#fff;color:#222;border-radius:5px;padding:0 6px;margin-right:6px;text-shadow:none}
+#notes{right:calc(10px + var(--sa-r));bottom:calc(14px + var(--sa-b));display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:min(420px,70vw)}
+.nt{background:rgba(0,0,0,.55);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;animation:nin .25s}
+@keyframes nin{from{transform:translateX(30px);opacity:0}}
+#big{top:30%;left:50%;transform:translate(-50%,-50%);font-size:34px;font-weight:900;text-align:center;display:none;color:#fff7c2}
+.dn{position:fixed;pointer-events:none;z-index:4;font-weight:900;font-size:15px;text-shadow:0 2px 0 #0008,0 0 4px #0008;white-space:nowrap}
+.lab{position:fixed;pointer-events:none;z-index:3;font-size:12px;font-weight:800;text-align:center;transform:translate(-50%,-100%);text-shadow:0 1px 0 #000,0 0 3px #000;white-space:nowrap}
+.lab .hb{width:70px;height:7px;background:#0008;border-radius:4px;overflow:hidden;margin:2px auto 0}
+.lab .hb i{display:block;height:100%;background:#ff5a4a}
+/* パネル */
+.dim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
+.dim.on{display:flex}
+.pan{background:var(--pan);border:2px solid var(--line);border-radius:16px;width:min(760px,96vw);max-height:min(88vh,88dvh);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px #0008}
+.pan h2{margin:0;padding:12px 16px;font-size:19px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.pan h2 .x{margin-left:auto;cursor:pointer;width:34px;height:34px;border-radius:9px;background:#e0453a;display:flex;align-items:center;justify-content:center;font-size:18px}
+.pan .bd{overflow:auto;padding:12px 14px;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.tabs{display:flex;gap:6px;padding:8px 12px 0;flex-wrap:wrap}
+.tab{padding:6px 12px;border-radius:9px;background:#ffffff18;cursor:pointer;font-weight:800;font-size:14px}
+.tab.on{background:var(--hny);color:#2a1d00}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.it{background:#ffffff10;border:2px solid #ffffff1c;border-radius:12px;padding:8px;cursor:pointer;position:relative;font-size:13px}
+.it:hover{border-color:#ffffff55}
+.it.sel{border-color:var(--hny)}
+.it .ic{font-size:28px;line-height:34px}
+.it .nm{font-weight:800;font-size:14px}
+.it .ct{position:absolute;right:8px;top:6px;font-weight:900;font-size:15px;color:var(--hny)}
+.it .ds{opacity:.85;font-size:12px;margin-top:2px}
+.it.lock{opacity:.5}
+.btn{display:inline-block;padding:8px 14px;border-radius:10px;background:var(--hny);color:#2a1d00;font-weight:900;cursor:pointer;border:0;font-size:15px;font-family:inherit;margin:3px}
+.btn.g{background:#5fd36a;color:#0c2a10}.btn.b{background:#55a8ff;color:#06203d}.btn.r{background:#ff6a5a;color:#3a0702}.btn.d{background:#ffffff24;color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cost{color:var(--hny);font-weight:900}
+.small{font-size:12px;opacity:.8}
+.stat{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}
+.stat b{text-align:right}
+/* ハイブ */
+.hive{display:grid;grid-template-columns:repeat(5,64px);gap:4px 6px;justify-content:center;padding:8px 0}
+.cell{width:64px;height:72px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#c8902a;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:11px;font-weight:900}
+.cell:nth-child(5n+2),.cell:nth-child(5n+4){transform:translateY(36px)}
+.cell.empty{background:#6a5530}
+.cell.sel{outline:3px solid #fff;filter:brightness(1.25)}
+.cell .fc{width:36px;height:30px;border-radius:50%/60%;display:flex;align-items:center;justify-content:center;font-size:18px}
+.cell .lv{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:11px;background:#0007;border-radius:5px;padding:0 4px}
+.cell .gf{position:absolute;bottom:9px;font-size:12px}
+.cell .zz{position:absolute;top:22px;right:8px;font-size:11px}
+/* 会話 */
+#dlg{position:fixed;left:50%;bottom:calc(20px + var(--sa-b));transform:translateX(-50%);width:min(680px,94vw);background:var(--pan);border:2px solid var(--line);border-radius:16px;z-index:21;padding:12px 16px;display:none}
+#dlg .who{font-weight:900;color:var(--hny);font-size:16px}
+#dlg .tx{font-size:15px;margin:6px 0 8px;line-height:1.55}
+/* スマホ操作 */
+#touch{position:fixed;inset:0;z-index:4;display:none;pointer-events:none}
+body.touch #touch{display:block}
+#stick{position:absolute;left:calc(24px + var(--sa-l));bottom:calc(30px + var(--sa-b));width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);pointer-events:auto}
+#stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.45)}
+.tb{position:absolute;width:70px;height:70px;border-radius:50%;background:rgba(0,0,0,.4);border:3px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:28px;pointer-events:auto;font-weight:900}
+#tJump{right:calc(24px + var(--sa-r));bottom:calc(30px + var(--sa-b))}
+#tTool{right:calc(104px + var(--sa-r));bottom:calc(52px + var(--sa-b));width:84px;height:84px;font-size:34px}
+#tUse{right:calc(40px + var(--sa-r));bottom:calc(120px + var(--sa-b));width:58px;height:58px;font-size:15px;display:none}
+body.touch #notes{bottom:calc(190px + var(--sa-b))}
+/* 横向きスマホなど、高さが低い画面：メニューを2列にしてスティックと重ならないように */
+@media (max-height:520px){#menu{top:calc(8px + var(--sa-t));display:grid;grid-template-columns:repeat(2,42px);gap:4px}.mb{width:42px;height:42px;font-size:19px;border-radius:10px}.mb small{font-size:8px}
+ #stick{width:116px;height:116px;bottom:calc(16px + var(--sa-b))}#stick i{left:33px;top:33px}#tJump{bottom:calc(16px + var(--sa-b))}#tTool{bottom:calc(36px + var(--sa-b))}body.touch #notes{bottom:calc(150px + var(--sa-b));max-width:min(360px,46vw)}#hp{left:calc(104px + var(--sa-l));top:calc(14px + var(--sa-t))}}
+#boot{position:fixed;inset:0;z-index:50;background:linear-gradient(#ffd75e,#f2a516);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#3a2400;text-shadow:none}
+#boot h1{font-size:34px;margin:0 0 4px}
+#boot p{margin:4px;font-weight:700}
+#bootGo{margin-top:18px;font-size:20px;padding:12px 30px;border-radius:14px;background:#3a2400;color:#ffd75e;border:0;font-weight:900;font-family:inherit;cursor:pointer;visibility:hidden}
+.bar2{height:8px;width:min(320px,80vw);border-radius:4px;background:#0002;overflow:hidden}
+.bar2 i{display:block;height:100%;background:#3a2400;width:0}
+</style>
+</head>
+<body>
+<div id="c"></div>
+<div id="top" class="hud"><div class="pill" id="honey">🍯 0</div><div id="pbar"><i></i><span>0 / 200</span></div></div>
+<div id="buffs" class="hud"></div>
+<div id="zone" class="hud"></div>
+<div id="hp" class="hud"><i></i></div>
+<div id="menu" class="hud">
+  <div class="mb" data-p="inv">🎒<small>持ち物</small></div>
+  <div class="mb" data-p="bees">🐝<small>ハチ</small></div>
+  <div class="mb" data-p="quest">📜<small>クエスト</small></div>
+  <div class="mb" data-p="gear">🧢<small>装備</small></div>
+  <div class="mb" data-p="stats">📊<small>能力</small></div>
+  <div class="mb" data-p="map">🗺️<small>地図</small></div>
+  <div class="mb" data-p="set">⚙️<small>設定</small></div>
+</div>
+<div id="prompt" class="hud"></div>
+<div id="notes" class="hud"></div>
+<div id="big" class="hud"></div>
+<div id="touch"><div id="stick"><i></i></div><div class="tb" id="tJump">⤒</div><div class="tb" id="tTool">🥄</div><div class="tb" id="tUse">E</div></div>
+<div class="dim" id="dim"><div class="pan"><h2><span id="pt"></span><span class="x" id="px">✕</span></h2><div class="tabs" id="ptabs"></div><div class="bd" id="pb"></div></div></div>
+<div id="dlg"><div class="who"></div><div class="tx"></div><div class="row bt"></div></div>
+<div id="boot"><h1>🐝 Bee Swarm Simulator</h1><p>再現版（通常時）</p><div class="bar2"><i id="bootBar"></i></div><p id="bootTx" class="small">読みこみ中…</p><button id="bootGo">はじめる</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
