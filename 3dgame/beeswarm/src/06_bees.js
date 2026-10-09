@@ -1,24 +1,5 @@
 // ===================== ハチ（見た目・動き・花粉集め・ハチミツ作り・育てる） =====================
-// 体の色・しまの色（本家の見た目に近い色）
-const BEECOL={basic:[0xffd84a,0x2b2b2b],bomber:[0x9aa0a8,0x3a3a3a],brave:[0xff9a3a,0x5a2a10],bumble:[0x5a7ad8,0xffd84a],cool:[0x7ad0ff,0x2a5a9a],hasty:[0xffe86a,0x3a8a3a],looker:[0xf0f0f0,0x2a6ad8],
- rad:[0xff6a5a,0x7a1a1a],rascal:[0xd83a3a,0x2b2b2b],stubborn:[0xb08050,0x3a2a1a],bubble:[0x6ab0ff,0xffffff],bucko:[0x3a6ad8,0x1a2a5a],commander:[0x8a8f6a,0x2b2b2b],demo:[0x7a7a80,0xff6a2a],
- exhausted:[0xa0a8b8,0x5a5a6a],fire:[0xff7a2a,0xffd84a],frosty:[0xc8f0ff,0x6ab0e0],honey:[0xffb320,0x7a4a00],rage:[0xd82a2a,0x3a0a0a],riley:[0xe83a3a,0x6a1010],shocked:[0xfff06a,0xa0a0a0],
- baby:[0xffb0d0,0xffffff],carpenter:[0xa07040,0xffd84a],demon:[0x8a1a1a,0x2b0a0a],diamond:[0x9ae8ff,0xffffff],lion:[0xe8b060,0x8a5020],music:[0xa070e0,0x3a2a6a],ninja:[0x2a3a8a,0x0a0a2a],shy:[0xff7aa0,0xffd0e0],
- buoyant:[0x8ad8ff,0x3a8ad8],fuzzy:[0xf8f8f8,0xd8d8d8],precise:[0xe04a3a,0x2b2b2b],spicy:[0xff4a2a,0xffa020],tadpole:[0x2a4a7a,0x6a9ad8],vector:[0xe8e8ff,0x8a4ae0],
- bear:[0x8a5a32,0xd8b080],cobalt:[0x2a5ae0,0x0a1a5a],crimson:[0xe02a3a,0x5a0a0a],digital:[0x4ae07a,0x0a3a1a],festive:[0xe02a2a,0x2aa03a],gummy:[0x5ad8c0,0x2a8a7a],photon:[0xfff8d0,0xffd84a],
- puppy:[0xd8b080,0x8a5a32],tabby:[0xff9a3a,0xa04a10],vicious:[0x2a3a6a,0xa0c0ff],windy:[0xf0f8ff,0xb0c8d8]};
-const beeColHex=t=>(BEECOL[t]?BEECOL[t][0]:0xffd84a).toString(16).padStart(6,'0');
 const BEELIST=[];
-const beeGeo=new THREE.SphereGeometry(.32,12,10),wingGeo=new THREE.PlaneGeometry(.42,.24),stripeGeo=new THREE.TorusGeometry(.3,.05,4,14),eyeGeo=new THREE.SphereGeometry(.07,6,5);
-const wingMat=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.7,side:THREE.DoubleSide});
-const BMATS={};function beeMat(hex){return BMATS[hex]||(BMATS[hex]=M(hex))}
-function beeMesh(t,g){const [a,b]=BEECOL[t]||[0xffd84a,0x2b2b2b],G0=new THREE.Group(),body=new THREE.Mesh(beeGeo,beeMat(a));body.scale.set(1,.9,1.25);body.castShadow=true;G0.add(body);
-  for(const z of[-.06,.18]){const s=new THREE.Mesh(stripeGeo,beeMat(b));s.position.z=z;s.scale.set(1,.92,1);G0.add(s)}
-  for(const sx of[-1,1]){const e=new THREE.Mesh(eyeGeo,MAT.black);e.position.set(sx*.12,.07,-.36);G0.add(e)}
-  const wl=new THREE.Mesh(wingGeo,wingMat),wr=new THREE.Mesh(wingGeo,wingMat);wl.position.set(-.25,.25,0);wr.position.set(.25,.25,0);wl.rotation.x=wr.rotation.x=-Math.PI/2;G0.add(wl,wr);
-  if(t==='commander'||t==='tabby'||t==='puppy'||t==='bear'||t==='lion'){const ex=new THREE.Mesh(new THREE.SphereGeometry(.13,6,5),beeMat(b));ex.position.set(0,.3,-.1);G0.add(ex)}
-  if(g){const s=new THREE.Mesh(new THREE.OctahedronGeometry(.1),M(0xfff07a,{emissive:0x6a5a00}));s.position.set(0,.45,0);G0.add(s)}
-  G0.userData={wl,wr};scene.add(G0);return G0}
 // ---- ハチの能力値 ----
 const beeData=b=>ST.hive[b.slot];
 function beeSpd(b){const d=beeData(b),B=BEES[d.t];return B.spd/4*(1+.03*(d.lv-1))*(1+P.beeMs/100)*P.beeMsMul}
@@ -27,7 +8,7 @@ function beeConv(b){const d=beeData(b),B=BEES[d.t];return (B.cv*(1+.1*(d.lv-1))*
 function beeEnergy(b){const d=beeData(b),B=BEES[d.t];return B.energy*(1+.05*(d.lv-1))*P.energyMul}
 function beeAtk(b){const d=beeData(b),B=BEES[d.t];let a=B.atk+P.atk+(B.col==='w'?P.atkW:B.col==='r'?P.atkR:P.atkB);a*=(1+P.atkPct/100)*(B.col==='r'?1+P.atkRpct/100:1)*(d.g?1.5:1);return a}
 // 巣のマスの場所（ハイブの正面）
-function slotPos(i){const r=9-Math.floor(i/5),c=i%5,u=256/5.2*(c+.6),v=448/10.6*(r+.55)+(c%2?448/10.6/2:0);return[HIVE_X(MY_HIVE)+3.8-u/256*7.6,7+6.65-v/448*13.3,HIVE_Z-.9]}
+function slotPos(i){const [u,v]=hiveCellUV(i);return[HIVE_X(MY_HIVE)+(.5-u)*HFW,HFY+(1-v)*HFH,HIVE_FRONT-.35]}
 // ハイブの中身が変わったら、飛んでいるハチを作り直す
 function syncBees(){const want=new Map();ST.hive.forEach((d,i)=>{if(d&&i<ST.slots)want.set(i,d)});
   for(let i=BEELIST.length-1;i>=0;i--){const b=BEELIST[i];if(b.temp)continue;const d=want.get(b.slot);if(!d||d.t!==b.t||!!d.g!==b.g){scene.remove(b.m);BEELIST.splice(i,1)}else want.delete(b.slot)}
@@ -76,7 +57,7 @@ function beeAtkD(d){const B=BEES[d.t];let a=B.atk+P.atk+(B.col==='w'?P.atkW:B.co
 function fly(b,x,y,z,sp,dt){const dx=x-b.x,dy=y-b.y,dz=z-b.z,l=Math.hypot(dx,dy,dz);if(l>.001){const s=Math.min(l,sp*dt);b.x+=dx/l*s;b.y+=dy/l*s;b.z+=dz/l*s;if(Math.hypot(dx,dz)>.05)b.face=Math.atan2(-dx,-dz)}
   // とても遠いとワープ（本家でも遠いとプレイヤーのところへ飛んでくる）
   if(l>60&&b.st!=='toHive'&&b.st!=='sleep'){b.x=PL.x+rr(-2,2);b.y=PL.y+3;b.z=PL.z+rr(-2,2)}
-  const m=b.m;m.position.set(b.x,b.y+Math.sin(b.ph)*.05,b.z);if(b.face!=null)m.rotation.y=b.face;const w=Math.sin(b.ph*4)*.6;m.userData.wl.rotation.y=w;m.userData.wr.rotation.y=-w;return l}
+  const m=b.m;const dd=beeD(b);if(dd&&b.lvS!==dd.lv)beeLvTag(b,dd.lv);m.position.set(b.x,b.y+Math.sin(b.ph)*.05,b.z);if(b.face!=null)m.rotation.y=b.face;const w=Math.sin(b.ph*4)*.55;m.userData.wl.rotation.z=w;m.userData.wr.rotation.z=-w;return l}
 function pickFlower(D,x,z,r){let best=-1,bs=-1;for(let t=0;t<10;t++){const k=flowerAt(D,x+rr(-r,r),z+rr(-r,r));if(k<0)continue;const s=D.fill[k]*D.s[k]+Math.random()*.3;if(s>bs){bs=s;best=k}}return best}
 function finishGather(b,d,D){const k=b.flower.k,B=BEES[b.t];
   const v=collectFlower(D,k,beeGatD(d),null,'bee',B.col);b.energy--;

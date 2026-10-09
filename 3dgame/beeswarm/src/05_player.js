@@ -1,5 +1,5 @@
 // ===================== プレイヤー（見た目・操作・カメラ・道具） =====================
-const PL={x:HIVE_X(MY_HIVE),y:0,z:-1,vy:0,yaw:Math.PI,face:Math.PI,onGround:true,hp:100,maxHp:100,hurtT:-9,swingT:0,swingN:0,glideOn:false,walkT:0,lastCell:'',dead:0,inRoom:null};
+const PL={x:HIVE_X(MY_HIVE),y:.4,z:HIVE_PADZ,vy:0,yaw:Math.PI,face:Math.PI,onGround:true,hp:100,maxHp:100,hurtT:-9,swingT:0,swingN:0,glideOn:false,walkT:0,lastCell:'',dead:0,inRoom:null};
 // ---- 見た目（ロブロックス風の四角い体） ----
 const pg=new THREE.Group();scene.add(pg);
 const skinM=M(0xffd36a),shirtM=M(0x3a7ae0),pantsM=M(0x2a3a5a);
@@ -78,7 +78,7 @@ const GRAV=49;
 function walkSpeed(){if(buffStack('bearmorph'))return 24/4*(1+P.msPct/100)*P.msMul;return (16+P.ms)/4*(1+P.msPct/100)*P.msMul}
 function jumpPress(){if(PL.dead)return;if(PL.onGround){PL.vy=(buffStack('bearmorph')?65:50+P.jump)/4*1.06;PL.onGround=false;PL.glideOn=false}else if(ST.equip.glide&&!PL.glideOn&&PL.vy<4){PL.glideOn=true;note('🪂 '+GEAR[ST.equip.glide].jp+'を開いた')}}
 function teleport(x,z,y){PL.x=x;PL.z=z;PL.y=y!=null?y:groundAt(x,z,200);PL.vy=0;for(const b of BEELIST){b.x=x+rr(-2,2);b.y=PL.y+2;b.z=z+rr(-2,2)}}
-function updPlayer(dt){if(PL.dead>0){PL.dead-=dt;if(PL.dead<=0){PL.hp=PL.maxHp;PL.inRoom=null;G.field=null;teleport(HIVE_X(MY_HIVE),-1,0);note('ハイブにもどった')}return}
+function updPlayer(dt){if(PL.dead>0){PL.dead-=dt;if(PL.dead<=0){PL.hp=PL.maxHp;PL.inRoom=null;G.field=null;teleport(HIVE_X(MY_HIVE),HIVE_PADZ);note('ハイブにもどった')}return}
   let mx=(KEY.KeyD||KEY.ArrowRight?1:0)-(KEY.KeyA||KEY.ArrowLeft?1:0),mz=(KEY.KeyS||KEY.ArrowDown?1:0)-(KEY.KeyW||KEY.ArrowUp?1:0);
   if(STK.id!=null){mx=STK.dx;mz=STK.dy}const ml=Math.hypot(mx,mz);if(ml>1){mx/=ml;mz/=ml}
   // カメラの向きに合わせる
@@ -90,7 +90,7 @@ function updPlayer(dt){if(PL.dead>0){PL.dead-=dt;if(PL.dead<=0){PL.hp=PL.maxHp;P
   // 重力・着地
   PL.vy-=GRAV*dt;if(PL.glideOn)PL.vy=Math.max(PL.vy,ST.equip.glide==='glider'?-2.2:-3.2);
   PL.y+=PL.vy*dt;const gy=groundAt(PL.x,PL.z,PL.y);if(PL.y<=gy){PL.y=gy;PL.vy=0;PL.onGround=true;PL.glideOn=false}else PL.onGround=PL.y-gy<.05;
-  if(PL.y<-30)teleport(HIVE_X(MY_HIVE),-1,0);
+  if(PL.y<-30)teleport(HIVE_X(MY_HIVE),HIVE_PADZ);
   if(KEY.Space&&PL.onGround)jumpPress();
   // 見た目
   pg.position.set(PL.x,PL.y,PL.z);pg.rotation.y=lerpAng(pg.rotation.y,PL.face,Math.min(1,dt*14));

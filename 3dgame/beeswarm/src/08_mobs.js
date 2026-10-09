@@ -72,7 +72,7 @@ function updMobs(dt){for(let i=MOBLIST.length-1;i>=0;i--){const m=MOBLIST[i],B=M
   if(m.id==='stumpsnail'&&d<3.5&&Math.random()<dt)hurtPlayer(B.dmg,m);
   // ココナッツクラブ：ココナッツを降らせる
   if(m.id==='coconutcrab'&&!away){m.coco=(m.coco||3)-dt;if(m.coco<=0){m.coco=2.2;for(let k=0;k<3;k++){const x=PL.x+rr(-6,6),z=PL.z+rr(-6,6);const cm=mesh(new THREE.SphereGeometry(.6,8,6),MAT.brown,x,m.y+18,z);fallingCoco.push({x,z,y:m.y+18,m:cm,gy:m.y})}}}
-  m.y=m.room?0:(f?f.y:m.y);m.m.position.set(m.x,m.y+(m.wind>0?Math.sin(G.t*40)*.05:0),m.z);m.m.rotation.y=lerpAng(m.m.rotation.y,m.face,Math.min(1,dt*6));
+  m.y=m.room?0:(f?(FL[m.field]?FL[m.field].y:f.y):m.y);m.m.position.set(m.x,m.y+(m.wind>0?Math.sin(G.t*40)*.05:0),m.z);m.m.rotation.y=lerpAng(m.m.rotation.y,m.face,Math.min(1,dt*6));
   // ラベル
   const [sx,sy,ok]=toScreen(m.x,m.y+m.size*2.2+1,m.z);m.lab.style.display=ok&&Math.hypot(cam.position.x-m.x,cam.position.z-m.z)<80?'':'none';m.lab.style.left=sx+'px';m.lab.style.top=sy+'px';m.labBar.style.width=Math.max(0,m.hp/m.maxHp*100)+'%'}
   for(let i=fallingCoco.length-1;i>=0;i--){const c=fallingCoco[i];c.y-=18*dt;c.m.position.y=c.y;if(c.y<=c.gy+.6){if(Math.hypot(PL.x-c.x,PL.z-c.z)<1.6)hurtPlayer(150);fx.burst(c.x,c.gy+.5,c.z,[.7,.5,.3],8);scene.remove(c.m);fallingCoco.splice(i,1);

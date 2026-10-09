@@ -16,7 +16,7 @@ function zoneText(){$('zone').textContent=G.field?'🌼 '+FIELDS[G.field].jp:PL.
 // 近くの「E」
 let nearI=null;
 function updPrompt(){let best=null,bd=1e9;
-  const pad=HIVES[MY_HIVE];const onPad=Math.hypot(PL.x-pad.x,PL.z-(HIVE_Z-5.5))<2.6&&PL.y<1;
+  const pad=HIVES[MY_HIVE];const onPad=Math.hypot(PL.x-pad.x,PL.z-HIVE_PADZ)<2.7&&PL.y<1.2;
   if(onPad)best={label:()=>G.converting?'ハチミツ作りをやめる':'ハチミツを作る',act:()=>{G.converting=!G.converting;if(G.converting){note('🍯 ハチミツを作っています…');calcStats()}}},bd=0;
   else if(G.converting&&!onPad){G.converting=false}
   if(!best)for(const o of INTER){const d=Math.hypot(PL.x-o.x,PL.z-o.z);if(d<o.r&&Math.abs(PL.y-o.y)<4&&d<bd){bd=d;best=o}}
@@ -52,8 +52,8 @@ const PANELS={
    const ub=H('div',{className:'row'});ub.innerHTML='<b>使う物：</b>';for(const k of usable){const b=btn(ITEMS[k].ic+ITEMS[k].jp+'×'+fmt(inv(k)),()=>{p.use=p.use===k?null:k;drawPanel()},p.use===k?'':'d');ub.appendChild(b)}if(!usable.length)ub.innerHTML+='<span class="small">（卵・おやつ・ゼリーがあるとここに出ます）</span>';el.appendChild(ub);
    if(p.use&&inv(p.use)>0){const it=ITEMS[p.use];el.appendChild(H('div',{className:'small',innerHTML:`👉 ${it.ic}${it.jp}を使うマスをタップしてください（${it.egg?'空いているマスで新しいハチ、ハチのいるマスは種類が変わります':it.jelly?'ハチの種類が変わります（レベルはそのまま）':'きずなが上がります'}）`}))}
    const hv=H('div',{className:'hive'});el.appendChild(hv);
-   for(let r=Math.ceil(ST.slots/5)-1;r>=0;r--)for(let c=0;c<5;c++){const i=r*5+c;if(i>=ST.slots){hv.appendChild(H('div'));continue}const d=ST.hive[i],cell=H('div',{className:'cell'+(d?'':' empty')+(p.sel===i?' sel':'')});
-     if(d){const B=BEES[d.t];cell.style.background=RARITY_COL[B.rar];cell.innerHTML=`<span class="lv">Lv${d.lv}</span><div class="fc" style="background:#${beeColHex(d.t)}">🐝</div>${d.g?'<span class="gf">★</span>':''}${(BEELIST.find(b=>b.slot===i)||{}).sleep>0?'<span class="zz">💤</span>':''}`}
+   for(let r=Math.ceil(ST.slots/5)-1;r>=0;r--)for(let c=0;c<5;c++){const i=r*5+(4-c);if(i>=ST.slots){hv.appendChild(H('div'));continue}const d=ST.hive[i],cell=H('div',{className:'cell'+(d?'':' empty')+(p.sel===i?' sel':'')});
+     if(d){const B=BEES[d.t];cell.style.background=RARITY_COL[B.rar];cell.innerHTML=`<span class="lv">Lv${d.lv}</span><img class="fc" src="${beeFaceURL(d.t)}" alt="">${d.g?'<span class="gf">★</span>':''}${(BEELIST.find(b=>b.slot===i)||{}).sleep>0?'<span class="zz">💤</span>':''}`}
      else cell.innerHTML='<span style="opacity:.6">＋</span>';
      cell.onclick=()=>{if(p.use){applyItem(p.use,i);drawPanel();return}p.sel=i;drawPanel()};hv.appendChild(cell)}
    if(p.sel!=null&&ST.hive[p.sel]){const d=ST.hive[p.sel],B=BEES[d.t],b={slot:p.sel};const need=bondForLv(d.lv+1)-bondForLv(d.lv),have=d.bond-bondForLv(d.lv);
@@ -84,9 +84,9 @@ const PANELS={
    ['運（ドロップ）','+'+P.loot+'%'],['トークンのハチミツ','+'+P.hft+'% ×'+P.hftMul.toFixed(2)],['ハチの変換量','+'+P.convAmt],['ハチのエネルギー','×'+P.energyMul.toFixed(2)],['歩いて集める',P.moveColl],
    ['サイエンスベアの強化',ST.sci+'（変換+'+25*ST.sci+'%）'],['ポーラーパワー',ST.polar+'（エネルギー×'+Math.pow(1.05,ST.polar).toFixed(2)+'）'],['タビーラブ',ST.tabby||0],['集めた花粉（合計）',fmt(ST.st.pollen)],['作ったハチミツ（合計）',fmt(ST.st.honey)]];
    el.innerHTML='<div class="stat">'+r.map(([a,b])=>`<span>${a}</span><b>${b}</b>`).join('')+'</div>'})},
- map(){openPanel('map','🗺️ 地図',null,(el)=>{const c=H('canvas');c.width=640;c.height=640;c.style.cssText='display:block;margin:0 auto;max-width:100%;max-height:60vh';el.appendChild(c);const g=c.getContext('2d');
-   const X0=-190,X1=130,Z0=-215,Z1=105,sx=x=>(x-X0)/(X1-X0)*c.width,sz=z=>(z-Z0)/(Z1-Z0)*c.height;g.fillStyle='#4f9e3a';g.fillRect(0,0,c.width,c.height);
-   for(const [x0,x1,z0,z1,y] of PLAT){g.fillStyle=`hsl(100,35%,${45-y*.5}%)`;g.fillRect(sx(x0),sz(z0),sx(x1)-sx(x0),sz(z1)-sz(z0))}
+ map(){openPanel('map','🗺️ 地図',null,(el)=>{const c=H('canvas');c.width=600;c.height=Math.round(600*(WB.z1-WB.z0)/(WB.x1-WB.x0));c.style.cssText='display:block;margin:0 auto;max-width:100%;max-height:60vh';el.appendChild(c);const g=c.getContext('2d');
+   const X0=WB.x0,X1=WB.x1,Z0=WB.z0,Z1=WB.z1,sx=x=>(x-X0)/(X1-X0)*c.width,sz=z=>(z-Z0)/(Z1-Z0)*c.height;g.fillStyle='#63c247';g.fillRect(0,0,c.width,c.height);
+   for(const [x0,x1,z0,z1,y,st] of PLAT){g.fillStyle='#'+PSTY[st].top.toString(16).padStart(6,'0');g.globalAlpha=1;g.fillRect(sx(x0),sz(z0),sx(x1)-sx(x0),sz(z1)-sz(z0))}
    for(const id in FIELDS){const f=FIELDS[id],ok=beeCount()>=f.zone;g.fillStyle=f.fc==='r'?'#e86a5a':f.fc==='b'?'#5a8ae8':f.fc==='w'?'#f4f0e0':'#c8a0e0';g.globalAlpha=ok?1:.45;g.fillRect(sx(f.x-f.w/2),sz(f.z-f.h/2),f.w/(X1-X0)*c.width,f.h/(Z1-Z0)*c.height);g.globalAlpha=1;
      g.fillStyle='#111';g.font='bold 11px sans-serif';g.textAlign='center';g.fillText(f.jp+(f.zone?'('+f.zone+')':''),sx(f.x),sz(f.z)+4)}
    for(let k=0;k<6;k++){g.fillStyle=k===MY_HIVE?'#ffd84a':'#c89040';g.fillRect(sx(HIVE_X(k))-4,sz(HIVE_Z)-3,8,6)}
@@ -172,7 +172,7 @@ function useItem(k){const it=ITEMS[k];if(!it||!it.use||inv(k)<1)return;const u=i
   if(u==='dice'){take(k,1);const f=k==='loadeddice'&&G.field?G.field:pick(FIELD_IDS.filter(x=>x!=='ant'));addFieldBoost(f,k==='fielddice'?1:2);return}
   if(u==='micro'){if(ST.pollen<=0){note('カバンに花粉がありません');return}take(k,1);note('🔋 '+fmt(instantConvert(ST.pollen))+'の花粉をハチミツにした');return}
   if(u==='suckle'){take(k,1);note('🌼 '+fmt(instantConvert(ST.pollen*.3+5000))+'の花粉をハチミツにした');return}
-  if(u==='whirl'){take(k,1);PL.inRoom=null;teleport(HIVE_X(MY_HIVE),-1,0);return}
+  if(u==='whirl'){take(k,1);PL.inRoom=null;teleport(HIVE_X(MY_HIVE),HIVE_PADZ);return}
   if(u==='beans'){take(k,1);addBuff(pick(['haste','focus','boost_r','boost_b','boost_w','babylove','melody','rage']),3);return}
   const buffMap={stinger:'stinger',redextract:'redextract',blueextract:'blueextract',enzymes:'enzymes',oil:'oil',glue:'glue',tropical:'tropical',purple:'purple',smoothie:'smoothie'};
   if(buffMap[u]){take(k,1);addBuff(buffMap[u]);note(it.ic+' '+it.jp+'を使った')}}
