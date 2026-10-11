@@ -7,7 +7,7 @@ const LSget=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch
 let _sd=7;const sseed=s=>{_sd=s>>>0||1},srnd=()=>{_sd=(Math.imul(_sd,1664525)+1013904223)>>>0;return _sd/4294967296},srr=(a,b)=>a+srnd()*(b-a);
 // ---- セーブ（名前・武器・成績・コイン） ----
 const SAVE_KEY='pgduel-save-1';
-const SV=Object.assign({name:'',weapon:'fists',wins:0,loses:0,draws:0,kills:0,coins:0,gems:0,skin:Math.floor(Math.random()*6)},(()=>{try{return JSON.parse(LSget(SAVE_KEY,'{}'))||{}}catch(e){return{}}})());
+const SV=Object.assign({name:'',weapon:'fists',sniper:'acr',wins:0,loses:0,draws:0,kills:0,coins:0,gems:0,skin:Math.floor(Math.random()*6)},(()=>{try{return JSON.parse(LSget(SAVE_KEY,'{}'))||{}}catch(e){return{}}})());
 function saveSV(){LSset(SAVE_KEY,JSON.stringify(SV))}
 // ---- 設定 ----
 const SET={sens:+LSget('pgduel-sens',100),sound:LSget('pgduel-sound','1')==='1',shadow:LSget('pgduel-shadow','1')==='1'};
@@ -24,7 +24,14 @@ const SFX={
  hit(w,head){if(w==='saber'){noise(.18,2500,600,.25);tone(220,.15,'sawtooth',.08,.6)}else if(w==='fists'){noise(.12,400,120,.45);tone(90,.12,'square',.12,.6)}else{noise(.08,3500,1500,.3)}if(head)tone(1200,.08,'square',.06)},
  hurt(){tone(300,.15,'square',.1,.5)},die(){tone(400,.5,'square',.12,.2)},kill(){tone(660,.1,'square',.1);tone(990,.18,'square',.1,1,.1)},
  jump(){tone(260,.1,'square',.05,1.6)},land(){noise(.06,300,100,.12)},step(){noise(.05,500,200,.05)},
- beep(hi){tone(hi?990:550,.15,'square',.12)},boom(){noise(.9,600,40,.8,0,.6);tone(60,.6,'sine',.4,.4)},click(){tone(700,.04,'square',.06)},burn(){noise(.2,900,300,.06)}};
+ beep(hi){tone(hi?990:550,.15,'square',.12)},
+ // スナイパー：ビーム（ACR）・彗星・弾（ほか）。dist で遠いほど小さく
+ shot(w,dist){const v=dist==null?1:clamp(1-dist/90,.15,1);if(w==='acr'){tone(1100,.32,'sawtooth',.12*v,.12);noise(.3,4000,300,.35*v);tone(80,.35,'sine',.3*v,.5)}
+   else if(w==='comet'){tone(260,.3,'sine',.14*v,6);tone(520,.28,'triangle',.08*v,3);noise(.35,6000,800,.25*v)}
+   else{noise(.45,2600,160,.75*v,0,.7);tone(62,.4,'sine',.4*v,.45);noise(.15,5000,2500,.25*v)}},
+ hitmark(head){tone(head?1500:1900,.05,'square',.08);if(head)tone(2300,.12,'triangle',.12,1,.06)},
+ empty(){tone(900,.03,'square',.06)},reload(){noise(.08,1500,700,.15);noise(.08,1200,500,.15,.35);tone(300,.05,'square',.05,1,.7)},
+ reloadEnd(){noise(.07,2000,800,.18);tone(620,.05,'square',.06,1,.05)},zoom(on){tone(on?1300:900,.04,'square',.05)},draw(){noise(.12,1600,600,.1)},boom(){noise(.9,600,40,.8,0,.6);tone(60,.6,'sine',.4,.4)},click(){tone(700,.04,'square',.06)},burn(){noise(.2,900,300,.06)}};
 // ランチャー（3dgame）の設定：音を出す・音量
 let HOME_VOL=1;function applyHome(o){if(!o||typeof o!=='object')return;if(typeof o.sound==='boolean')SET.homeMute=!o.sound;if(typeof o.vol==='number')HOME_VOL=clamp(o.vol,0,1);if(MASTER)MASTER.gain.value=SET.homeMute?0:.5*HOME_VOL}
 try{applyHome(JSON.parse(LSget('3dame-settings','null')))}catch(e){}

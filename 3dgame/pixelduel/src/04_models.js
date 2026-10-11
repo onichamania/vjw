@@ -27,18 +27,21 @@ function saberModel(){const g=new THREE.Group();bx(g,.07,.07,.14,0,0,.12,'#9a9aa
   const glow=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,1.02),new THREE.MeshBasicMaterial({color:0xff2010,transparent:true,opacity:.28,depthWrite:false}));glow.position.set(0,0,-.58);g.add(glow);g.userData.glow=glow;return g}
 function weaponModel(w){return w==='fists'?null:w==='knife'?knifeModel():saberModel()}
 // ---- 手に持った武器（画面の右下） ----
-const VIEW={g:new THREE.Group(),w:null,parts:{},swing:0,swingN:0,bob:0};
+const VIEW={g:new THREE.Group(),w:null,parts:{},swing:0,swingN:0,bob:0,shotT:9,relK:0,drawK:0};
 vscene.add(VIEW.g);vscene.add(new THREE.HemisphereLight(0xfff4dc,0x8a7a5a,.9));{const d=new THREE.DirectionalLight(0xffffff,.6);d.position.set(1,2,1);vscene.add(d)}
 function setViewWeapon(w){VIEW.g.clear();VIEW.w=w;VIEW.parts={};
-  if(w==='fists'){for(const s of[-1,1]){const gg=gauntlet(s);gg.scale.setScalar(.62);gg.position.set(s*.36,-.3,-.66);gg.rotation.set(.18,s*.22,0);VIEW.g.add(gg);VIEW.parts[s<0?'l':'r']=gg}}
+  if(WEAPONS[w].cat==='sniper')setViewSniper(w);
+  else if(w==='fists'){for(const s of[-1,1]){const gg=gauntlet(s);gg.scale.setScalar(.62);gg.position.set(s*.36,-.3,-.66);gg.rotation.set(.18,s*.22,0);VIEW.g.add(gg);VIEW.parts[s<0?'l':'r']=gg}}
   else{const m=weaponModel(w),hand=new THREE.Group(),piv=new THREE.Group();piv.rotation.order='ZXY';piv.add(m);bx(piv,.1,.1,.13,0,-.01,w==='knife'?.1:.06,'#e8b88a');hand.add(piv);VIEW.g.add(hand);VIEW.parts.r=hand;VIEW.parts.p=piv;
     if(w==='knife'){hand.position.set(.3,-.3,-.55);piv.rotation.set(1.1,0,.35)}else{hand.position.set(.32,-.42,-.62);piv.rotation.set(1.0,0,.45)}}}
 // 攻撃・歩くゆれの動き（毎フレーム）
 function updView(dt,moving,attackT){VIEW.bob+=dt*(moving?9:2);const b=Math.sin(VIEW.bob)*(moving?.018:.004),bc=Math.abs(Math.cos(VIEW.bob))*(moving?.012:.002);
   VIEW.g.position.set(b,bc,0);const w=VIEW.w,P=VIEW.parts,a=clamp(attackT/.3,0,1),s=Math.sin(a*Math.PI);
+  if(WEAPONS[w].cat==='sniper'){if(P.r)updViewSniper(dt,P,VIEW.shotT,VIEW.relK,VIEW.drawK);return}
   if(w==='fists'){for(const k of['l','r']){const p=P[k];if(!p)continue;const act=(VIEW.swingN%2===0)===(k==='r');const base=k==='r'?.36:-.36;p.position.set(base*(act?1-s*.6:1),-.3+(act?s*.12:0),-.66-(act?s*.5:0))}}
   else if(w==='knife'&&P.r){P.r.position.set(.3-s*.18,-.3+s*.06,-.55-s*.3);P.p.rotation.set(1.1-s*.95,0,.35-s*.25)}
-  else if(w==='saber'&&P.r){P.r.position.set(.32-s*.36,-.42+s*.14,-.62-s*.1);P.p.rotation.set(1.0-s*.45,0,.45-s*1.5)}}
+  else if(w==='saber'&&P.r){P.r.position.set(.32-s*.36,-.42+s*.14,-.62-s*.1);P.p.rotation.set(1.0-s*.45,0,.45-s*1.5)}
+  VIEW.g.position.y-=VIEW.drawK*.4}
 // ---- キャラクター（ピクセルガン風の四角い体） ----
 const SKINS=[{n:'ピクセルマン',skin:'#e8b88a',hair:'#5a3a1a',shirt:'#3a6ad8',pants:'#2a2a4a',shoe:'#3a2a1a'},{n:'カウボーイ',skin:'#d8a070',hair:'#7a4a20',shirt:'#c84a2a',pants:'#3a4a7a',shoe:'#5a3a1a',hat:'#7a4a20'},
  {n:'シェリフ',skin:'#e8c098',hair:'#3a2a1a',shirt:'#e8d8a8',pants:'#4a3a2a',shoe:'#2a1a10',hat:'#3a2a1a',star:1},{n:'ニンジャ',skin:'#e0b080',hair:'#1a1a1a',shirt:'#2a2a2e',pants:'#1e1e22',shoe:'#111',mask:'#1a1a1a'},
@@ -54,19 +57,22 @@ function charModel(si,w){const sk=SKINS[si%SKINS.length],g=new THREE.Group(),P={
   for(const s of[-1,1]){const a=new THREE.Group();a.position.set(s*.375,1.5,0);g.add(a);bx(a,.25,.75,.26,0,-.375,0,sk.shirt);bx(a,.25,.2,.26,0,-.65,0,sk.skin);P[s<0?'armL':'armR']=a;
     const l=new THREE.Group();l.position.set(s*.125,.75,0);g.add(l);bx(l,.25,.6,.26,0,-.3,0,sk.pants);bx(l,.26,.16,.28,0,-.68,0,sk.shoe);P[s<0?'legL':'legR']=l}
   // 持っている武器
-  P.wep=new THREE.Group();P.armR.add(P.wep);P.wep.position.set(0,-.72,-.06);setCharWeapon(P,w);
+  P.wep=new THREE.Group();P.armR.add(P.wep);P.wep.position.set(0,-.72,-.06);P.gun=new THREE.Group();P.gun.position.set(0,1.36,0);g.add(P.gun);setCharWeapon(P,w);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true}});g.userData.P=P;return g}
-function setCharWeapon(P,w){P.wep.clear();P.w=w;if(w==='fists'){for(const k of['armL','armR']){const gg=gauntlet(k==='armL'?-1:1);gg.scale.setScalar(1.15);gg.rotation.x=Math.PI/2;gg.position.set(0,-.62,0);gg.name='gl';P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));P[k].add(gg)}}
-  else{for(const k of['armL','armR'])P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));const m=weaponModel(w);m.scale.setScalar(1.2);m.rotation.x=Math.PI/2+.2;P.wep.add(m)}}
+function setCharWeapon(P,w){P.wep.clear();P.gun.clear();P.w=w;if(WEAPONS[w].cat==='sniper'){for(const k of['armL','armR'])P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));const m=sniperModel(w);m.scale.setScalar(.62);m.position.set(.13,-.06,-.32);P.gun.add(m);P.gun.userData.m=m}
+  else if(w==='fists'){for(const k of['armL','armR']){const gg=gauntlet(k==='armL'?-1:1);gg.scale.setScalar(1.15);gg.rotation.x=-Math.PI/2;gg.position.set(0,-.62,0);gg.name='gl';P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));P[k].add(gg)}}
+  else{for(const k of['armL','armR'])P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));const m=weaponModel(w);m.scale.setScalar(1.2);m.rotation.x=.3;P.wep.add(m)}}
 // 歩き・攻撃の動き
 function animChar(g,walk,att,pitch){const P=g.userData.P,s=Math.sin(walk)*.7*Math.min(1,Math.abs(walk)>0?1:0);
   P.legL.rotation.x=s;P.legR.rotation.x=-s;P.armL.rotation.x=-s*.8;P.head.rotation.x=clamp(-pitch,-.6,.6);
-  const a=clamp(att/.3,0,1),k=Math.sin(a*Math.PI);if(P.w==='fists'){P.armR.rotation.x=-k*1.6+s*.4;P.armL.rotation.x=-(1-k)*0-.2-s*.4}else P.armR.rotation.x=-.4-k*1.8}
+  const a=clamp(att/.3,0,1),k=Math.sin(a*Math.PI);P.armL.rotation.z=0;P.armR.rotation.z=0;
+  if(WEAPONS[P.w].cat==='sniper'){const p=clamp(pitch,-.9,.9),r=Math.exp(-att*9)*(att<1?1:0);P.gun.rotation.x=p+r*.25;P.armR.rotation.x=1.45+p;P.armL.rotation.x=1.55+p;P.armL.rotation.z=.42;P.armR.rotation.z=-.12}
+  else if(P.w==='fists'){P.armR.rotation.x=k*1.6+s*.4*(1-k);P.armL.rotation.x=.25-s*.4}else P.armR.rotation.x=.4+k*1.8}
 // 名前の札
 function nameTag(text,col){const c=document.createElement('canvas');c.width=256;c.height=48;const g=c.getContext('2d');g.font='bold 30px sans-serif';g.textAlign='center';g.textBaseline='middle';g.lineWidth=6;g.strokeStyle='#000';g.strokeText(text,128,26);g.fillStyle=col||'#ff6a6a';g.fillText(text,128,26);
   const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));s.scale.set(1.25,.234,1);s.renderOrder=10;return s}
 // ---- 武器のアイコン（ピクセル画、HUDとメニュー用） ----
-function iconURL(w,W,H){W=W||52;H=H||40;const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');const p=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
+function iconURL(w,W,H){if(SNIPER_ICON[w])return SNIPER_ICON[w];W=W||52;H=H||40;const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');const p=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
   if(w==='fists'){for(const o of[0,22]){p(4+o,16,18,16,'#000');p(5+o,17,16,14,'#2448c0');p(6+o,17,14,3,'#f0c840');p(5+o,24,16,2,'#e8b830');p(10+o,20,5,4,'#d82a2a');p(6+o,28,4,3,'#3ad8f0');p(8+o,10,10,7,'#000');p(9+o,11,8,6,'#1f3fb0');p(9+o,13,8,1,'#e8b830')}}
   else if(w==='knife'){for(let i=0;i<20;i++){p(10+i,30-i,3,3,'#000')}for(let i=0;i<19;i++){p(11+i,30-i,2,2,i<6?'#2a2a2e':'#d8dce2')}p(15,23,6,3,'#000');p(16,24,4,1,'#5a5a60');for(let i=8;i<18;i+=3)p(12+i,26-i,1,1,'#5a5e64')}
   else if(w==='saber'){for(let i=0;i<26;i++)p(8+i,34-i,4,4,'#000');for(let i=0;i<7;i++)p(9+i,34-i,3,3,i%3?'#2a2a2e':'#9a9aa0');for(let i=7;i<26;i++){p(9+i,34-i,3,3,'#ff2a2a');p(10+i,34-i,1,1,'#ffd0b0')}p(11,30,2,2,'#e82020')}
