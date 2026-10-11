@@ -197,19 +197,25 @@ function tone(f,dur,type,vol,slide,delay){if(!SET.sound)return;const a=ac();if(!
   g.gain.setValueAtTime((vol||.15)*VOLK,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(MASTER);o.start(t);o.stop(t+dur+.02);if(GRP)GRP.push(o)}
 function noise(dur,f0,f1,vol,delay,q){if(!SET.sound)return;const a=ac();if(!a)return;const t=a.currentTime+(delay||0),s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();s.buffer=noiseBuf();fl.type='bandpass';fl.Q.value=q||1.2;
   fl.frequency.setValueAtTime(f0,t);fl.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);g.gain.setValueAtTime((vol||.3)*VOLK,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(fl);fl.connect(g);g.connect(MASTER);s.start(t);s.stop(t+dur+.02);if(GRP)GRP.push(s)}
+// ヴォン（サーベル）：低いのこぎり波を少しずらして重ね（うなり）、こもった音にして、高さを上げて下げる（ふった感じ）
+function hum(f,dur,vol,dl,bend){if(!SET.sound)return;const a=ac();if(!a)return;const t=a.currentTime+(dl||0),g=a.createGain(),lp=a.createBiquadFilter(),b=bend||1.35,v=Math.max(.002,vol*VOLK);
+  lp.type='lowpass';lp.Q.value=5;lp.frequency.setValueAtTime(f*3,t);lp.frequency.linearRampToValueAtTime(f*10,t+dur*.35);lp.frequency.exponentialRampToValueAtTime(f*2.5,t+dur);
+  g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(v,t+dur*.2);g.gain.setValueAtTime(v,t+dur*.4);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  for(const [k,tp] of[[1,'sawtooth'],[1.013,'sawtooth'],[.5,'square']]){const o=a.createOscillator();o.type=tp;o.frequency.setValueAtTime(f*k,t);o.frequency.linearRampToValueAtTime(f*k*b,t+dur*.35);o.frequency.exponentialRampToValueAtTime(f*k*.85,t+dur);o.connect(lp);o.start(t);o.stop(t+dur+.02);if(GRP)GRP.push(o)}
+  lp.connect(g);g.connect(MASTER)}
 // カチッ（金属）・ガチャ（はめる）・シャッ（すべらせる）
 const clk=(v,dl)=>{tone(2600,.025,'square',.1*v,.7,dl);noise(.04,5000,3000,.4*v,dl,6)},
   clunk=(v,dl)=>{noise(.1,900,330,.75*v,dl,2);tone(170,.08,'square',.14*v,.6,dl);clk(v*.7,dl+.03)},
   slide=(v,dl,up)=>noise(.16,up?1300:2800,up?2800:1300,.35*v,dl,3);
 const SFX={
  // 接近武器：ふる・当たる・持つ。v は音の大きさ（相手が遠いと小さく）
- swing(w,v){v=v==null?1:v;loud(3.5,()=>{if(w==='saber'){tone(110,.32,'sawtooth',.13*v,1.9);tone(222,.3,'sawtooth',.07*v,1.7);noise(.28,2200,600,.4*v,0,1.5)}
+ swing(w,v){v=v==null?1:v;loud(3.5,()=>{if(w==='saber'){hum(rr(88,102),.46,.07*v,0,rr(1.3,1.45));noise(.3,1400,450,.12*v,.03,1.5)}
    else if(w==='fists'){noise(.2,750,240,.8*v,0,1.4);noise(.1,1600,600,.25*v,.02,2)}
    else{noise(.15,5200,1800,.42*v,0,2.5);tone(3300,.07,'sine',.03*v,.6)}})},
- hit(w,head){loud(w==='fists'?1:1.6,()=>{if(w==='saber'){tone(180,.24,'sawtooth',.17,.5);noise(.26,3500,800,.6,0,1.5);tone(90,.2,'square',.1,.7);noise(.3,6000,2500,.15,.08,2)}
+ hit(w,head){loud(w==='fists'?1:1.6,()=>{if(w==='saber'){hum(120,.38,.13,0,.7);noise(.14,3800,1500,.45,0,1.5);for(let i=0;i<4;i++)noise(.03,6500,3500,.35,.02+i*.045,4)}
    else if(w==='fists'){tone(150,.15,'sine',.7,.35);noise(.13,600,150,.9,0,1);noise(.05,2500,1200,.3)}
    else{noise(.12,2800,700,.7,0,2);tone(260,.08,'square',.12,.5);noise(.06,6000,3000,.3,.02,3)}});if(head)tone(1200,.08,'square',.07)},
- draw(w){loud(3,()=>{if(w==='saber'){tone(70,.45,'sawtooth',.16,2.4);tone(140,.4,'sawtooth',.06,2.2,.05);noise(.4,800,2400,.25,0,2)}
+ draw(w){loud(3,()=>{if(w==='saber'){hum(55,.5,.055,0,1.9);hum(95,.7,.045,.3,1.15);noise(.35,600,2600,.12,0,2)}
    else if(w==='knife'){noise(.28,4000,9000,.35,0,6);tone(4200,.25,'sine',.035,.9)}
    else if(w==='fists'){tone(120,.09,'sine',.45,.5);noise(.1,500,250,.4,0,1.5);tone(120,.09,'sine',.4,.5,.12);noise(.1,500,250,.35,.12,1.5)}
    else{slide(1,0,true);clk(1,.14)}})},
