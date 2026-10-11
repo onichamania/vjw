@@ -68,7 +68,7 @@
   .fsRow input { width:20px; height:20px; margin:0; accent-color:var(--green); }
   .fsRow.no { cursor:default; font-weight:400; font-size:12px; }
 
-  #stage { position:fixed; inset:0; z-index:50; background:#000; display:none; min-height:100vh; min-height:100lvh; }
+  #stage { position:fixed; inset:0; z-index:50; background:#000; display:none; min-height:100vh; min-height:100lvh; touch-action:none; overscroll-behavior:none; }
   #stage.open { display:block; }
   #stage iframe { width:100%; height:100%; border:0; display:block; }
   #gear { position:fixed; z-index:60; display:none; align-items:center; justify-content:center;
@@ -390,6 +390,49 @@
   document.getElementById('setFs').addEventListener('change', function (e) { fsSet(e.target.checked); });
   fsDraw();
 
+  // ---------------- 下へスワイプしても全画面が解除されないようにする ----------------
+  // ゲームの中で指を下へ動かす（下を向く）と、ブラウザが「全画面をやめる」「ページを引っぱって更新」と受け取ってしまう。
+  // そこで指の動きはブラウザに渡さず、ゲームだけが受け取るようにする（ただし、スクロールできる一覧やメニューの中は今までどおり動かせる）
+  function guardTouch(doc, win, onlyPlaying) {
+    if (!doc || doc.__h3dGuard) return;
+    doc.__h3dGuard = 1;
+    try {
+      var st = doc.createElement('style');
+      st.textContent = 'html,body{overscroll-behavior:none!important}';
+      (doc.head || doc.documentElement).appendChild(st);
+    } catch (e) {}
+    var lx = 0, ly = 0;
+    function scrollable(el, dx, dy) {
+      for (; el && el.nodeType === 1 && el !== doc.body && el !== doc.documentElement; el = el.parentElement) {
+        var tg = el.tagName;
+        if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return true;
+        var cs = win.getComputedStyle(el);
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          if (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+            if (dy > 0 && el.scrollTop > 0) return true;
+            if (dy < 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) return true;
+          }
+        } else if (/(auto|scroll)/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) {
+          if (dx > 0 && el.scrollLeft > 0) return true;
+          if (dx < 0 && el.scrollLeft + el.clientWidth < el.scrollWidth - 1) return true;
+        }
+      }
+      return false;
+    }
+    doc.addEventListener('touchstart', function (e) {
+      if (e.touches.length === 1) { lx = e.touches[0].clientX; ly = e.touches[0].clientY; }
+    }, { passive: true, capture: true });
+    doc.addEventListener('touchmove', function (e) {
+      if (onlyPlaying && !frame) return;
+      if (!e.cancelable) return;
+      if (e.touches.length > 1) { e.preventDefault(); return; }   // 2本指（ピンチ）も全画面をやめる合図になるので止める
+      var t = e.touches[0], dx = t.clientX - lx, dy = t.clientY - ly;
+      lx = t.clientX; ly = t.clientY;
+      if (!scrollable(e.target, dx, dy)) e.preventDefault();
+    }, { passive: false, capture: true });
+  }
+  guardTouch(document, window, true);
+
   function launch() {
     var g = DATA.games[current];
     if (fsOn) fsEnter();
@@ -406,6 +449,7 @@
     }
     stage.innerHTML = '';
     frame.addEventListener('load', sendSafe);
+    frame.addEventListener('load', function () { try { guardTouch(frame.contentDocument, frame.contentWindow, false); } catch (e) {} });
     stage.appendChild(frame);
     // キー入力がゲーム側に届くようにする
     setTimeout(function () {
@@ -420,6 +464,7 @@
     document.getElementById('homeGear').style.display = 'none';
     document.getElementById('exit').style.display = '';
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = document.body.style.overscrollBehavior = 'none';
     // 遊んでいる間はホームの中身を隠し、画面のすき間は黒にする（ゲームのアイコンが見えないように）
     document.querySelector('.wrap').style.visibility = 'hidden';
     document.documentElement.style.background = document.body.style.background = '#000';
@@ -479,6 +524,7 @@
     document.getElementById('exit').style.display = 'none';
     panel.className = '';
     document.body.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = document.body.style.overscrollBehavior = '';
     document.querySelector('.wrap').style.visibility = '';
     document.documentElement.style.background = document.body.style.background = '';
   }
