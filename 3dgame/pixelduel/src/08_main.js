@@ -6,7 +6,7 @@ addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;
   KEY[e.code]=true;
   if(e.code==='Space'){jumpQ=true;e.preventDefault()}
   if((e.code==='Escape'||e.code==='KeyP')&&G.mode&&G.phase!=='end'){if($('sPause').classList.contains('on'))resumeGame();else if(!inMenu())pauseGame()}
-  if(e.code==='Digit1')PEND.slot=0;if(e.code==='Digit2')PEND.slot=1;if(e.code==='KeyQ')PEND.slot=ME.cw?0:1;if(e.code==='Digit3')tip('ヘビーは準備中です');
+  if(e.code==='Digit1')PEND.slot=0;if(e.code==='Digit2')PEND.slot=1;if(e.code==='Digit3')PEND.slot=2;if(e.code==='KeyQ')PEND.slot=(ME.cw+1)%3;
   if(e.code==='KeyE'&&!e.repeat)PEND.scope=true;if(e.code==='KeyR')PEND.reload=true});
 addEventListener('keyup',e=>{KEY[e.code]=false});
 addEventListener('blur',()=>{for(const k in KEY)KEY[k]=false;mouseAtk=false});
@@ -18,7 +18,7 @@ function lockPointer(){if(isTouchUI()||lockFail)return;try{const r=renderer.domE
 document.addEventListener('pointerlockerror',lockFailed);
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&G.mode&&G.phase!=='end'&&!inMenu()&&!CHAT.open)pauseGame()});
 renderer.domElement.addEventListener('mousedown',e=>{if(!G.mode||isTouchUI())return;ac();if(!document.pointerLockElement&&!lockFail){lockPointer();return}if(e.button===0)mouseAtk=true;if(e.button===2&&document.pointerLockElement)PEND.scope=true});
-addEventListener('wheel',e=>{if(G.mode&&!inMenu()&&Math.abs(e.deltaY)>4)PEND.slot=ME.cw?0:1},{passive:true});
+addEventListener('wheel',e=>{if(G.mode&&!inMenu()&&Math.abs(e.deltaY)>4)PEND.slot=(ME.cw+(e.deltaY>0?1:2))%3},{passive:true});
 addEventListener('mouseup',e=>{if(e.button===0)mouseAtk=false});
 addEventListener('mousemove',e=>{if(!G.mode||G.paused||isTouchUI()||inMenu())return;if(document.pointerLockElement||(lockFail&&e.buttons))look(e.movementX||0,e.movementY||0,.0022)});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
@@ -64,5 +64,5 @@ function boot(){bindUI();$('bootTx').textContent='ゴーストタウンをつく
     setTimeout(()=>{buildNav();renderSniperIcons();applyLayout();hudReset();VIEW.g.visible=false;if(!SV.name)showName();else showMenu();last=performance.now();requestAnimationFrame(loop)},20)},20)}
 // テスト用
 window.__D={G,ME,get OPP(){return OPP},NET,SV,SET,BOT,TNTS,SPAWNS,NAV,LAD,SOL,WEAPONS,cam,scene,renderer,startMatch,endMatch,quitMatch,toMenu,again,showRooms,createRoom,enterRoom,leaveRoom,roomList,
-  meleeHit,startSwing,fireSniper,switchWeapon,setScope,startReload,traceShot,rayWorld,showLayout,PEND,get LAY(){return LAY},SNIPER_ICON,applyHit,explode,tntLight,respawn,step,render,scoreOf,ptsOf,groundAt,hitsBox,nearestNode,flowTo,moveBody,inp:null};
+  meleeHit,startSwing,fireSniper,fireHeavy,gunInput,PROJ,PORTALS,switchWeapon,setScope,startReload,traceShot,rayWorld,showLayout,PEND,get LAY(){return LAY},SNIPER_ICON,applyHit,explode,tntLight,respawn,step,render,scoreOf,ptsOf,groundAt,hitsBox,nearestNode,flowTo,moveBody,inp:null};
 boot();

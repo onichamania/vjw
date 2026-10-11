@@ -7,7 +7,7 @@ const LSget=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch
 let _sd=7;const sseed=s=>{_sd=s>>>0||1},srnd=()=>{_sd=(Math.imul(_sd,1664525)+1013904223)>>>0;return _sd/4294967296},srr=(a,b)=>a+srnd()*(b-a);
 // ---- セーブ（名前・武器・成績・コイン） ----
 const SAVE_KEY='pgduel-save-1';
-const SV=Object.assign({name:'',weapon:'fists',sniper:'acr',wins:0,loses:0,draws:0,kills:0,coins:0,gems:0,skin:Math.floor(Math.random()*6)},(()=>{try{return JSON.parse(LSget(SAVE_KEY,'{}'))||{}}catch(e){return{}}})());
+const SV=Object.assign({name:'',weapon:'fists',sniper:'acr',heavy:'rjumper',wins:0,loses:0,draws:0,kills:0,coins:0,gems:0,skin:Math.floor(Math.random()*6)},(()=>{try{return JSON.parse(LSget(SAVE_KEY,'{}'))||{}}catch(e){return{}}})());
 function saveSV(){LSset(SAVE_KEY,JSON.stringify(SV))}
 // ---- 設定 ----
 const SET={sens:+LSget('pgduel-sens',100),sound:LSget('pgduel-sound','1')==='1',shadow:LSget('pgduel-shadow','1')==='1'};
@@ -16,7 +16,7 @@ let AC=null,MASTER=null;
 function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();MASTER=AC.createGain();MASTER.gain.value=SET.homeMute?0:.5*HOME_VOL;MASTER.connect(AC.destination)}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
 let NOISE=null;function noiseBuf(){if(!NOISE){const a=ac();NOISE=a.createBuffer(1,a.sampleRate*.6,a.sampleRate);const d=NOISE.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}return NOISE}
 // リロードの音はまとめておき、途中で持ちかえたり倒れたりしたら止める
-let GRP=null,VOLK=1;const RELOAD_SND=[];
+let GRP=null,VOLK=1,CHG=null;const RELOAD_SND=[];
 const loud=(k,f)=>{VOLK=k;try{f()}finally{VOLK=1}};   // しばらくの間だけ音を大きくする
 function stopReloadSnd(){for(const n of RELOAD_SND)try{n.stop()}catch(e){}RELOAD_SND.length=0}
 function tone(f,dur,type,vol,slide,delay){if(!SET.sound)return;const a=ac();if(!a)return;const t=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,f*slide),t+dur);
@@ -57,9 +57,21 @@ const SFX={
  // リロード（T 秒）：マガジンを外す→（エネルギー武器はためる）→はめる→ボルトを引く。終わりは reloadEnd
  reload(w,T,v,mine){v=(v==null?1:v)*2.5;T=T||2;if(mine){stopReloadSnd();GRP=RELOAD_SND}
    clk(v,0);slide(v,.06,false);noise(.12,700,300,.3*v,.2,2);
-   if(w==='acr'||w==='comet'){for(let i=0;i<3;i++)tone(w==='acr'?180:300,T*.15,w==='acr'?'sawtooth':'sine',.06*v,2.2,T*(.22+i*.12))}
+   if(w==='acr'||w==='comet'||w==='portal'){for(let i=0;i<3;i++)tone(w==='acr'?180:300,T*.15,w==='acr'?'sawtooth':'sine',.06*v,2.2,T*(.22+i*.12))}
    slide(v,T*.45,true);clunk(v,T*.5);slide(v*.9,T*.72,true);clk(v,T*.72+.15);GRP=null},
  reloadEnd(w,v){v=(v==null?1:v)*2.5;noise(.08,3000,1400,.6*v,0,4);clk(v,.03);tone(620,.05,'square',.06*v,1,.12)},
+ // ヘビー：発射・爆発（大きさ s、距離で小さく）・ためる音・ポータル・ワープ
+ launch(w,dist){const v=dist==null?1:clamp(1-dist/90,.15,1);
+   if(w==='demo'){for(let i=0;i<4;i++)noise(.28,1800,450,.4*v,i*.035,1.2);tone(140,.15,'square',.08*v,.6)}
+   else if(w==='portal'){tone(300,.35,'sine',.25*v,3);tone(600,.3,'square',.06*v,2.5);noise(.3,3000,6000,.2*v,0,3)}
+   else{noise(.4,w==='destr'?2200:1400,300,.75*v,0,.9);tone(w==='destr'?110:85,.25,'sine',.5*v,.5);noise(.6,800,200,.25*v,.1,1);
+     if(w==='xmas'){tone(1568,.25,'triangle',.08*v,1,.05);tone(2093,.3,'triangle',.07*v,1,.12);tone(2637,.3,'triangle',.06*v,1,.19)}}},
+ blast(s,dist){const v=dist==null?1:clamp(1-dist/80,.12,1),k=clamp(s,.3,1.2);noise(.4+.4*k,700,40,.85*v*Math.min(1,k+.3),0,.6);tone(55,.45,'sine',.45*v*k,.4);noise(.22,3000,800,.22*v,0,1)},
+ charge(on,T){if(CHG){try{CHG.forEach(o=>o.stop())}catch(e){}CHG=null}if(!on||!SET.sound)return;const a=ac();if(!a)return;const t=a.currentTime,g=a.createGain(),os=[];
+   for(const [f,tp,k] of[[110,'sawtooth',1],[220,'sine',1.5]]){const o=a.createOscillator();o.type=tp;o.frequency.setValueAtTime(f,t);o.frequency.linearRampToValueAtTime(f*4,t+T);o.connect(g);o.start(t);o.stop(t+T+4);os.push(o)}
+   g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(.09,t+.15);g.connect(MASTER);CHG=os},
+ portal(dist){const v=dist==null?1:clamp(1-dist/60,.2,1);tone(200,.6,'sine',.22*v,4);tone(400,.5,'triangle',.08*v,3,.05);noise(.5,500,3000,.15*v,0,2)},
+ teleport(){tone(1600,.3,'sine',.15,.25);tone(800,.35,'square',.05,.4,.03);noise(.25,6000,2000,.2,0,3)},
  pickup(){tone(880,.08,'square',.08);tone(1320,.14,'square',.08,1,.07);tone(1760,.12,'triangle',.06,1,.14)},
  zoom(on){tone(on?1300:900,.04,'square',.05);noise(.05,on?4000:2500,on?2500:4000,.15,0,4)},boom(){noise(.9,600,40,.8,0,.6);tone(60,.6,'sine',.4,.4)},click(){tone(700,.04,'square',.06)},burn(){noise(.2,900,300,.06)}};
 // ランチャー（3dgame）の設定：音を出す・音量

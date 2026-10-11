@@ -31,6 +31,7 @@ const VIEW={g:new THREE.Group(),w:null,parts:{},swing:0,swingN:0,bob:0,shotT:9,r
 vscene.add(VIEW.g);vscene.add(new THREE.HemisphereLight(0xfff4dc,0x8a7a5a,.9));{const d=new THREE.DirectionalLight(0xffffff,.6);d.position.set(1,2,1);vscene.add(d)}
 function setViewWeapon(w){VIEW.g.clear();VIEW.w=w;VIEW.parts={};
   if(WEAPONS[w].cat==='sniper')setViewSniper(w);
+  else if(WEAPONS[w].cat==='heavy')setViewHeavy(w);
   else if(w==='fists'){for(const s of[-1,1]){const gg=gauntlet(s);gg.scale.setScalar(.62);gg.position.set(s*.36,-.3,-.66);gg.rotation.set(.18,s*.22,0);VIEW.g.add(gg);VIEW.parts[s<0?'l':'r']=gg}}
   else{const m=weaponModel(w),hand=new THREE.Group(),piv=new THREE.Group();piv.rotation.order='ZXY';piv.add(m);bx(piv,.1,.1,.13,0,-.01,w==='knife'?.1:.06,'#e8b88a');hand.add(piv);VIEW.g.add(hand);VIEW.parts.r=hand;VIEW.parts.p=piv;
     if(w==='knife'){hand.position.set(.3,-.3,-.55);piv.rotation.set(1.1,0,.35)}else{hand.position.set(.32,-.42,-.62);piv.rotation.set(1.0,0,.45)}}}
@@ -38,6 +39,7 @@ function setViewWeapon(w){VIEW.g.clear();VIEW.w=w;VIEW.parts={};
 function updView(dt,moving,attackT){VIEW.bob+=dt*(moving?9:2);const b=Math.sin(VIEW.bob)*(moving?.018:.004),bc=Math.abs(Math.cos(VIEW.bob))*(moving?.012:.002);
   VIEW.g.position.set(b,bc,0);const w=VIEW.w,P=VIEW.parts,a=clamp(attackT/.3,0,1),s=Math.sin(a*Math.PI);
   if(WEAPONS[w].cat==='sniper'){if(P.r)updViewSniper(dt,P,VIEW.shotT,VIEW.relK,VIEW.drawK);return}
+  if(WEAPONS[w].cat==='heavy'){if(P.r)updViewHeavy(dt,P,VIEW.shotT,VIEW.relK,VIEW.drawK);return}
   if(w==='fists'){for(const k of['l','r']){const p=P[k];if(!p)continue;const act=(VIEW.swingN%2===0)===(k==='r');const base=k==='r'?.36:-.36;p.position.set(base*(act?1-s*.6:1),-.3+(act?s*.12:0),-.66-(act?s*.5:0))}}
   else if(w==='knife'&&P.r){P.r.position.set(.3-s*.18,-.3+s*.06,-.55-s*.3);P.p.rotation.set(1.1-s*.95,0,.35-s*.25)}
   else if(w==='saber'&&P.r){P.r.position.set(.32-s*.36,-.42+s*.14,-.62-s*.1);P.p.rotation.set(1.0-s*.45,0,.45-s*1.5)}
@@ -59,14 +61,14 @@ function charModel(si,w){const sk=SKINS[si%SKINS.length],g=new THREE.Group(),P={
   // 持っている武器
   P.wep=new THREE.Group();P.armR.add(P.wep);P.wep.position.set(0,-.72,-.06);P.gun=new THREE.Group();P.gun.position.set(0,1.36,0);g.add(P.gun);setCharWeapon(P,w);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true}});g.userData.P=P;return g}
-function setCharWeapon(P,w){P.wep.clear();P.gun.clear();P.w=w;if(WEAPONS[w].cat==='sniper'){for(const k of['armL','armR'])P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));const m=sniperModel(w);m.scale.setScalar(.62);m.position.set(.13,-.06,-.32);P.gun.add(m);P.gun.userData.m=m}
+function setCharWeapon(P,w){P.wep.clear();P.gun.clear();P.w=w;if(isGun(w)){for(const k of['armL','armR'])P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));const m=gunModel(w);m.scale.setScalar(.62);m.position.set(.13,-.06,-.32);if(isHeavy(w))placeCharHeavy(m,w);P.gun.add(m);P.gun.userData.m=m}
   else if(w==='fists'){for(const k of['armL','armR']){const gg=gauntlet(k==='armL'?-1:1);gg.scale.setScalar(1.15);gg.rotation.x=-Math.PI/2;gg.position.set(0,-.62,0);gg.name='gl';P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));P[k].add(gg)}}
   else{for(const k of['armL','armR'])P[k].children.filter(c=>c.name==='gl').forEach(c=>P[k].remove(c));const m=weaponModel(w);m.scale.setScalar(1.2);m.rotation.x=.3;P.wep.add(m)}}
 // 歩き・攻撃の動き
 function animChar(g,walk,att,pitch){const P=g.userData.P,s=Math.sin(walk)*.7*Math.min(1,Math.abs(walk)>0?1:0);
   P.legL.rotation.x=s;P.legR.rotation.x=-s;P.armL.rotation.x=-s*.8;P.head.rotation.x=clamp(-pitch,-.6,.6);
   const a=clamp(att/.3,0,1),k=Math.sin(a*Math.PI);P.armL.rotation.z=0;P.armR.rotation.z=0;
-  if(WEAPONS[P.w].cat==='sniper'){const p=clamp(pitch,-.9,.9),r=Math.exp(-att*9)*(att<1?1:0);P.gun.rotation.x=p+r*.25;P.armR.rotation.x=1.45+p;P.armL.rotation.x=1.55+p;P.armL.rotation.z=.42;P.armR.rotation.z=-.12}
+  if(isGun(P.w)){const p=clamp(pitch,-.9,.9),r=Math.exp(-att*9)*(att<1?1:0);P.gun.rotation.x=p+r*.25;P.armR.rotation.x=1.45+p;P.armL.rotation.x=1.55+p;P.armL.rotation.z=.42;P.armR.rotation.z=-.12}
   else if(P.w==='fists'){P.armR.rotation.x=k*1.6+s*.4*(1-k);P.armL.rotation.x=.25-s*.4}else P.armR.rotation.x=.4+k*1.8}
 // 名前の札
 function nameTag(text,col){const c=document.createElement('canvas');c.width=256;c.height=48;const g=c.getContext('2d');g.font='bold 30px sans-serif';g.textAlign='center';g.textBaseline='middle';g.lineWidth=6;g.strokeStyle='#000';g.strokeText(text,128,26);g.fillStyle=col||'#ff6a6a';g.fillText(text,128,26);
