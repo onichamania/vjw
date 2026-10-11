@@ -24,7 +24,7 @@ body.play #hud{display:block}
 .ht:before{left:5px;top:0;width:5px;height:15px}.ht:after{left:0;top:5px;width:15px;height:5px}
 .ht.e:before,.ht.e:after{background:#3a1010}.ht.h:before,.ht.h:after{background:#ff7a7a}
 .ar{width:15px;height:15px;background:#3ad8f0;border:1px solid #000;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
-.ar.e{background:#16323a}.ar.g{background:#f08a1a}
+.ar.e{background:#16323a}.ar.g{background:#f08a1a}.ar.br{background:#c8783a}.ar.si{background:#d4dae4}.ar.go{background:#ffcf2a}
 #score{position:absolute;left:50%;top:calc(6px + var(--sa-t));transform:translateX(-50%);display:flex;align-items:stretch;border:2px solid #000;font-size:17px;font-weight:900}
 #score>div{display:flex;align-items:center;gap:5px;padding:2px 10px}
 #scB{background:var(--blue)}#scR{background:var(--red)}#scT{background:#1a1a1a;min-width:74px;justify-content:center}
@@ -105,6 +105,12 @@ body.lay #touch{display:block}body.lay .tb,body.lay #stick{outline:2px dashed #f
 @media (max-height:520px){.pd{width:120px}.pd canvas{width:70px;height:99px}.pd .nm{font-size:14px}.pd .base{height:12px}.pod{margin:4px 0;gap:14px}.vs{font-size:26px}.big{font-size:28px;margin:0}
  .box{padding:10px;max-height:94vh}.box h2{font-size:16px;margin-bottom:6px}.pb{padding:6px 16px;font-size:15px;min-width:170px;margin:3px}.logo{font-size:30px}.logo small{font-size:13px;margin-top:4px}.wc{width:150px;padding:5px}.wc img{width:84px;height:64px}.note{margin:3px 0}
  .ws{width:50px;height:40px}.ws img{width:44px;height:34px}#stick{width:96px;height:96px}#stick i{left:24px;top:24px;width:42px;height:42px}}
+#chatB{pointer-events:auto;cursor:pointer}
+#chatLog{position:fixed;left:calc(8px + var(--sa-l));top:calc(92px + var(--sa-t));z-index:12;pointer-events:none;display:flex;flex-direction:column;gap:3px;max-width:min(360px,60vw);font-size:13px;font-weight:800}
+#chatLog div{background:rgba(0,0,0,.5);padding:3px 8px;border-radius:4px;text-shadow:0 1px 0 #000;word-break:break-all}
+#chatBox{position:fixed;left:50%;top:calc(52px + var(--sa-t));transform:translateX(-50%);z-index:30;display:none;width:min(520px,94vw);background:rgba(25,30,40,.95);border:3px solid #000;border-radius:8px;padding:8px}
+#chatBox.on{display:block}#chatBox .row{flex-wrap:nowrap}#chatBox .inp{font-size:16px;padding:7px;flex:1;min-width:0}
+#chatQuick{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;justify-content:center}#chatQuick .pb{min-width:0;padding:4px 10px;font-size:13px;margin:0}
 kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-size:11px}
 </style>
 </head>
@@ -144,7 +150,7 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <h2 style="margin-top:12px;font-size:16px">参加できる部屋</h2><div class="rlist" id="rlist"></div><div class="row"><button class="pb g" id="rBack">もどる</button></div></div></div>
 <div class="scr" id="sWait"><div class="box" style="text-align:center"><h2 id="wTitle">対戦相手を待っています…</h2>
  <div class="pod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
- <p class="note" id="wNote"></p><div class="row"><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
+ <p class="note" id="wNote"></p><div class="row"><button class="pb b" id="wChat" style="min-width:140px">チャット</button><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
 <div class="scr" id="sResult"><div class="box" style="text-align:center"><div class="big" id="resT"></div>
  <div class="pod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
  <p class="note" id="resNote"></p><div class="row"><button class="pb" id="resAgain">もう一度</button><button class="pb g" id="resMenu">メニューへ</button></div></div></div>
@@ -160,6 +166,8 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
 <div class="scr" id="sLay"><div class="box"><h2 style="font-size:15px">ボタン配置（ドラッグで動かす）</h2>
  <div class="sl" style="margin:4px 0"><span id="layName">ボタンをえらんでね</span><input type="range" id="laySize" min="40" max="170" step="2"></div>
  <div class="row"><button class="pb g" id="layHide" style="min-width:110px;padding:5px 10px">かくす</button><button class="pb g" id="layReset" style="min-width:110px;padding:5px 10px">初期にもどす</button><button class="pb" id="layOk" style="min-width:110px;padding:5px 10px">OK</button></div></div></div>
+<div id="chatLog"></div>
+<div id="chatBox"><div class="row"><input class="inp" id="chatIn" maxlength="60" placeholder="メッセージ（60文字まで）" autocomplete="off"><button class="pb b" id="chatSend" style="min-width:70px;padding:6px 10px;margin:0">送信</button><button class="pb g" id="chatClose" style="min-width:44px;padding:6px 10px;margin:0">✕</button></div><div id="chatQuick"></div></div>
 <div id="tip"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -485,11 +493,12 @@ function rayDist(ax,ay,az,dx,dy,dz,max){let best=max;nearSol(Math.min(ax,ax+dx*m
 function onLadder(x,y,z){for(const l of LAD)if(x>l[0]&&x<l[3]&&z>l[2]&&z<l[5]&&y>=l[1]-.1&&y<l[4])return l;return null}
 // ================= CPUが歩くための道しるべ（歩いて行ける場所を広さ優先でさがす） =================
 const NAV={nodes:[],key:new Map(),out:[],inn:[]};
-function blockedAt(x,z,y){return !!hitsBox(x-.22,y+.12,z-.22,x+.22,y+1.7,z+.22)}
+function blockedAt(x,z,y){return !!hitsBox(x-.22,y+.58,z-.22,x+.22,y+1.7,z+.22)}
 function buildNav(){const S=1,q=[];const add=(i,j,y)=>{const k=i+','+j+','+Math.round(y*4);let id=NAV.key.get(k);if(id!=null)return id;id=NAV.nodes.length;NAV.nodes.push({i,j,x:i*S,z:j*S,y});NAV.key.set(k,id);NAV.out.push([]);NAV.inn.push([]);q.push(id);return id};
   const start=add(0,-38,0);let qh=0;
   while(qh<q.length){const id=q[qh++],n=NAV.nodes[id];for(const [di,dj] of[[1,0],[-1,0],[0,1],[0,-1]]){const ni=n.i+di,nj=n.j+dj,nx=ni*S,nz=nj*S;if(nx<MAP.x0+1||nx>MAP.x1-1||nz<MAP.z0+2||nz>MAP.z1-2)continue;
-    const ny=groundAt(nx,nz,n.y,.15);if(ny>n.y+.6||blockedAt(nx,nz,ny)||blockedAt((n.x+nx)/2,(n.z+nz)/2,Math.max(n.y,ny)))continue;const to=add(ni,nj,ny);if(!NAV.out[id].includes(to)){NAV.out[id].push(to);NAV.inn[to].push(id)}}}}
+    // 途中（半分の所）の床も見る：階段の段（0.4m）を1段ずつ上がれるように
+    const mx=(n.x+nx)/2,mz=(n.z+nz)/2,gm=groundAt(mx,mz,n.y,.15),ny=groundAt(nx,nz,Math.max(n.y,gm),.15);if(gm>n.y+.6||ny>Math.max(n.y,gm)+.6||blockedAt(nx,nz,ny)||blockedAt(mx,mz,Math.max(gm,Math.min(n.y,ny))))continue;const to=add(ni,nj,ny);if(!NAV.out[id].includes(to)){NAV.out[id].push(to);NAV.inn[to].push(id)}}}}
 function nearestNode(x,y,z){let best=-1,bd=1e9;const i0=Math.round(x),j0=Math.round(z);for(let di=-2;di<=2;di++)for(let dj=-2;dj<=2;dj++)for(let yk=-12;yk<=12;yk++){const id=NAV.key.get((i0+di)+','+(j0+dj)+','+(Math.round(y*4)+yk));if(id==null)continue;const n=NAV.nodes[id],d=Math.hypot(n.x-x,n.z-z)+Math.abs(n.y-y)*2;if(d<bd){bd=d;best=id}}return best}
 // 目的地への距離の表（逆向きにたどる）
 function flowTo(target){const N=NAV.nodes.length,dist=new Int32Array(N).fill(-1);if(target<0)return dist;const q=new Int32Array(N);let h=0,e=0;q[e++]=target;dist[target]=0;while(h<e){const id=q[h++];for(const p of NAV.inn[id])if(dist[p]<0){dist[p]=dist[id]+1;q[e++]=p}}return dist}
@@ -567,7 +576,7 @@ function animChar(g,walk,att,pitch){const P=g.userData.P,s=Math.sin(walk)*.7*Mat
   else if(P.w==='fists'){P.armR.rotation.x=k*1.6+s*.4*(1-k);P.armL.rotation.x=.25-s*.4}else P.armR.rotation.x=.4+k*1.8}
 // 名前の札
 function nameTag(text,col){const c=document.createElement('canvas');c.width=256;c.height=48;const g=c.getContext('2d');g.font='bold 30px sans-serif';g.textAlign='center';g.textBaseline='middle';g.lineWidth=6;g.strokeStyle='#000';g.strokeText(text,128,26);g.fillStyle=col||'#ff6a6a';g.fillText(text,128,26);
-  const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));s.scale.set(1.25,.234,1);s.renderOrder=10;return s}
+  const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:true,depthWrite:false,transparent:true}));s.scale.set(1.25,.234,1);s.renderOrder=10;return s}
 // ---- 武器のアイコン（ピクセル画、HUDとメニュー用） ----
 function iconURL(w,W,H){if(SNIPER_ICON[w])return SNIPER_ICON[w];W=W||52;H=H||40;const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');const p=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
   if(w==='fists'){for(const o of[0,22]){p(4+o,16,18,16,'#000');p(5+o,17,16,14,'#2448c0');p(6+o,17,14,3,'#f0c840');p(5+o,24,16,2,'#e8b830');p(10+o,20,5,4,'#d82a2a');p(6+o,28,4,3,'#3ad8f0');p(8+o,10,10,7,'#000');p(9+o,11,8,6,'#1f3fb0');p(9+o,13,8,1,'#e8b830')}}
@@ -604,7 +613,9 @@ const SNIPER_DATA={
    pierce:true,ricochet:true,beam:'#d060ff',scope:'comet',cross:'laser',col:'#a050f0',tag:'貫通・はね返る（1回）・8倍'},
  overseer:{jp:'監督',en:'Overseer',dmg:113,head:1.4,rof:74,cap:10,mob:65,zoom:8,reload:2.4,
    xray:true,scope:'thermal',cross:'bullet',col:'#3a6ad8',tag:'壁の向こうの敵が見える（X線）・8倍'}};
+SNIPER_DATA.oneshot.dmg=170;   // ワンショットはいちばん強い（シールド50%の体にも1発）
 for(const k in SNIPER_DATA){const d=SNIPER_DATA[k];d.cat='sniper';d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;d.hip=0;WEAPONS[k]=d;WIDS.push(k)}
+SNIPER_DATA.oneshot.weight=1.45;   // いちばん重い
 const MELEE=['fists','knife','saber'],SNIPERS=Object.keys(SNIPER_DATA);
 Object.assign(WEAPONS.fists,{short:'力の拳'});Object.assign(WEAPONS.knife,{short:'ナイフ'});Object.assign(WEAPONS.saber,{short:'サーベル'});
 Object.assign(SNIPER_DATA.acr,{short:'アンチチャンプ'});Object.assign(SNIPER_DATA.oneshot,{short:'ワンショット'});Object.assign(SNIPER_DATA.hsr,{short:'ヘビースナイパー'});Object.assign(SNIPER_DATA.comet,{short:'彗星'});Object.assign(SNIPER_DATA.overseer,{short:'監督'});
@@ -682,7 +693,7 @@ function renderSniperIcons(){const W=208,H=160,rt=new THREE.WebGLRenderTarget(W,
 
 // ---- 05_game.js ----
 // ===================== 試合：体の動き・攻撃・TNT・CPU・試合の流れ =====================
-const AR_MAX=100,PH=1.85,PR=.3,EYE=1.62,GRAV=24,JUMP_V=8.2,JUMP2_V=7.2,BASE_SP=7.2,MATCH_T=120,RESP_T=3,INV_T=1.5,HP_MAX=100,MSCALE=.925;
+const AR_MAX=100,AR_START=50,START_INV=5,PH=1.85,PR=.3,EYE=1.62,GRAV=24,JUMP_V=8.2,JUMP2_V=7.2,BASE_SP=7.2,MATCH_T=120,RESP_T=3,INV_T=1.5,HP_MAX=100,MSCALE=.925;
 // mode: null（メニュー） / 'bot'（CPUと練習） / 'online'。phase: 'count' 'play' 'end'
 const G={mode:null,phase:'idle',tl:MATCH_T,ct:0,paused:false,endT:0,res:null,shake:0,time:0};
 function fighter(o){return Object.assign({x:0,y:0,z:0,vx:0,vz:0,vy:0,yaw:0,pitch:0,onG:true,jumps:0,hp:HP_MAX,ar:0,alive:true,respT:0,inv:0,slowT:0,burn:null,
@@ -768,7 +779,7 @@ function traceShot(F,ox,oy,oz,d,W,max,bounce,segs,done){const V=F===ME?OPP:ME;
   const wall=W.wallbreak?{t:max,n:null,s:null}:rayWorld(ox,oy,oz,d,max);let hit=null;
   if(!done.v&&V.alive&&(G.mode!=='online'||F!==ME||OPP.here)){const th=raySphere(ox,oy,oz,d,V.x,V.y+1.62,V.z,.27),tb=rayBox(ox,oy,oz,d,[V.x-.34,V.y,V.z-.34,V.x+.34,V.y+1.42,V.z+.34]);
     let t=null,head=false;if(th!=null&&(tb==null||th<=tb+.2)){t=th;head=true}else if(tb!=null)t=tb;if(t!=null&&t<wall.t)hit={t,head}}
-  if(hit){done.v=1;deliverShot(F,V,W.dmg*(hit.head?W.head:1),hit.head,F.w)}
+  if(hit){done.v=1;const thru=W.wallbreak&&rayWorld(ox,oy,oz,d,hit.t).t<hit.t-.05;deliverShot(F,V,W.dmg*(hit.head?W.head:1)*(thru?.5:1),hit.head,F.w)}
   const end=hit&&!W.pierce?hit.t:wall.t;segs.push([ox,oy,oz,ox+d[0]*end,oy+d[1]*end,oz+d[2]*end]);
   if(hit&&!W.pierce)return;
   const px=ox+d[0]*wall.t,py=oy+d[1]*wall.t,pz=oz+d[2]*wall.t;
@@ -797,11 +808,11 @@ function killFighter(V,by){V.alive=false;V.scoped=false;V.relT=0;V.respT=RESP_T;
   addFeed(V.killer||V,V,V.killer?V.killer.w:'tnt',false);
   if(V===ME){SFX.die();VIEW.g.visible=false}else{SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
   if(V.model)V.model.visible=false}
-function respawn(F){const sp=pickSpawn(F===ME?OPP:ME);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
-  fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.hp=HP_MAX;F.ar=0;F.arB=WEAPONS[F.wm].armor||0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
+function respawn(F){const sp=pickSpawn(F===ME?OPP:ME,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
+  fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
   if(F===ME)VIEW.g.visible=true;if(F.model)F.model.visible=true}
 // 相手からいちばん遠い出現地点（上位3つからランダム）
-function pickSpawn(other){const c=SPAWNS.map(s=>({s,d:other&&other.alive!==undefined?Math.hypot(s[0]-other.x,s[2]-other.z)+(Math.abs(s[1]-other.y)>2?6:0):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
+function pickSpawn(other,needNav){const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:other&&other.alive!==undefined?Math.hypot(s[0]-other.x,s[2]-other.z)+(Math.abs(s[1]-other.y)>2?6:0):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
 // ---------------- 状態（遅い・燃える・無敵） ----------------
 function statusUpdate(F,dt){if(F.swT>0)F.swT-=dt;F.shotT+=dt;
   if(F.relT>0){F.relT-=dt;if(F.relT<=0){F.relT=0;const W=WEAPONS[F.ws],n=Math.min(W.cap-F.mag,F.res);F.mag+=n;F.res-=n;if(F===ME)SFX.reloadEnd()}}
@@ -862,10 +873,14 @@ function botUpdate(dt){const F=OPP,T=ME;if(!F.alive)return;let wx=0,wz=0,jump=fa
     if(cur>=0&&BOT.dist&&BOT.dist[cur]>0){let n=cur;for(let s=0;s<3;s++){let bn=-1,bd=BOT.dist[n];for(const o of NAV.out[n]){const d=BOT.dist[o];if(d>=0&&d<bd){bd=d;bn=o}}if(bn<0)break;
         if(s>0){const N=NAV.nodes[bn];if(Math.abs(N.y-F.y)>.3||!segFree(F.x,F.y+.7,F.z,N.x,N.y+.7,N.z))break}n=bn}
       const N=NAV.nodes[n],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.05){wx=ddx/l;wz=ddz/l}}
-    else if(T.alive){wx=dx/hd;wz=dz/hd}}
+    else{   // 道の外にいる：いちばん近い道の点へ向かう
+      BOT.farT=(BOT.farT||0)-dt;if(BOT.farT<=0||BOT.far==null){BOT.farT=.6;let b=-1,bd=1e9;for(let i=0;i<NAV.nodes.length;i++){const q=NAV.nodes[i],d=Math.hypot(q.x-F.x,q.z-F.z)+Math.abs(q.y-F.y)*3;if(d<bd){bd=d;b=i}}BOT.far=b}
+      if(BOT.far>=0){const N=NAV.nodes[BOT.far],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.5){wx=ddx/l;wz=ddz/l}else if(!(BOT.escT>0)){BOT.far=null;BOT.farT=1;BOT.escT=1;BOT.escA=Math.random()*TAU}}else if(T.alive){wx=dx/hd;wz=dz/hd}}}
   let wantYaw=F.yaw,wantPitch=0;if(see&&(snip||hd<14)){wantYaw=Math.atan2(-dx,-dz);wantPitch=Math.atan2(T.y+(BOT.aimHead?1.62:1.0)-(F.y+EYE),hd)}else if(wx||wz)wantYaw=Math.atan2(-wx,-wz);
   F.yaw+=clamp(angDiff(F.yaw,wantYaw),-(snip?4:7)*dt,(snip?4:7)*dt);F.pitch=lerp(F.pitch,wantPitch,Math.min(1,dt*6));
-  BOT.stuckT+=dt;if(BOT.stuckT>.45){if(Math.hypot(F.x-BOT.lx,F.z-BOT.lz)<.2&&(wx||wz)&&!(snip&&see))jump=true;BOT.lx=F.x;BOT.lz=F.z;BOT.stuckT=0}
+  BOT.stuckT+=dt;if(BOT.stuckT>.45){const stk=Math.hypot(F.x-BOT.lx,F.z-BOT.lz)<.2&&(wx||wz)&&!(snip&&see);if(stk){jump=true;BOT.stuckN=(BOT.stuckN||0)+1}else BOT.stuckN=0;BOT.lx=F.x;BOT.lz=F.z;BOT.stuckT=0;
+    if(BOT.stuckN>=4){BOT.stuckN=0;BOT.wander=(Math.random()*NAV.nodes.length)|0;BOT.goal=-2;BOT.dist=null;BOT.ig=-1;BOT.itT=3;BOT.escT=.9;BOT.escA=Math.random()*TAU}}
+  if(BOT.escT>0){BOT.escT-=dt;wx=Math.cos(BOT.escA);wz=Math.sin(BOT.escA)}
   if(!snip&&see&&hd<7&&Math.random()<dt*.35)jump=true;
   const wl=Math.hypot(wx,wz);if(wl>1){wx/=wl;wz/=wl}
   if(G.phase!=='play'){wx=wz=0;jump=false}
@@ -884,10 +899,10 @@ function startMatch(mode,o){o=o||{};G.mode=mode;G.phase='count';G.ct=3;G.tl=MATC
   const om=o.oppW||pick(MELEE);setupFighter(OPP,{name:o.oppName||pick(BOT_NAMES),w:om,wm:om,ws:o.oppWs||pick(SNIPERS),sk:o.oppSk!=null?o.oppSk:(SV.skin+1+Math.floor(Math.random()*5))%6,bot:mode==='bot',here:mode==='bot'});
   makeOppModel(OPP);
   const sA=SPAWNS[o.side===1?1:0],sB=SPAWNS[o.side===1?0:1];
-  for(const [F,s] of[[ME,sA],[OPP,sB]]){F.x=s[0];F.z=s[2];F.y=groundAt(s[0],s[2],s[1]+.2,PR-.03);F.yaw=s[3];F.ar=0;F.arB=WEAPONS[F.wm].armor||0;F.camY=F.y;fillAmmo(F)}
+  for(const [F,s] of[[ME,sA],[OPP,sB]]){F.x=s[0];F.z=s[2];F.y=groundAt(s[0],s[2],s[1]+.2,PR-.03);F.yaw=s[3];F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.camY=F.y;fillAmmo(F)}
   Object.assign(BOT,{distT:0,dist:null,goal:-1,react:.4,aimT:0,aimNeed:1});for(const q of SHOTS)scene.remove(q.m);SHOTS.length=0;itemsReset();
   setViewWeapon(ME.w);VIEW.g.visible=true;buildWBar();
-  document.body.classList.add('play');showScr(null);hudReset()}
+  document.body.classList.add('play');showScr(null);hudReset();if(mode==='bot')botSay(pick(['よろしく！','よろしくお願いします！','勝負だ！']),2200)}
 function endMatch(why){if(G.phase==='end')return;G.phase='end';G.endT=0;const a=scoreOf(ME),b=scoreOf(OPP),pa=ptsOf(ME),pb=ptsOf(OPP);
   let r=a>b?'win':a<b?'lose':pa>pb?'win':pa<pb?'lose':'draw';if(why==='left')r='win';if(why==='quit')r='lose';
   G.res={r,a,b,pa,pb,why};const coins=r==='win'?15:r==='draw'?6:3;SV.coins+=coins;if(r==='win'){SV.wins++;SV.gems+=1}else if(r==='lose')SV.loses++;else SV.draws++;SV.kills+=Math.max(0,OPP.dd);saveSV();G.res.coins=coins;
@@ -895,7 +910,7 @@ function endMatch(why){if(G.phase==='end')return;G.phase='end';G.endT=0;const a=
 function quitToMenu(){G.mode=null;G.phase='idle';document.body.classList.remove('play');if(OPP.model){scene.remove(OPP.model);OPP.model=null}VIEW.g.visible=false;msg('');if(document.pointerLockElement)document.exitPointerLock();showMenu()}
 // 試合の1コマ
 function gameUpdate(dt){G.time+=dt;
-  if(G.phase==='count'){if(G.mode!=='online'||NET.host){G.ct-=dt}const c=Math.ceil(G.ct);if(c!==G.lastCt){G.lastCt=c;if(c>0){msg(String(c));SFX.beep(false)}}if(G.ct<=0){G.phase='play';msg('FIGHT!',null,1);SFX.beep(true)}}
+  if(G.phase==='count'){if(G.mode!=='online'||NET.host){G.ct-=dt}const c=Math.ceil(G.ct);if(c!==G.lastCt){G.lastCt=c;if(c>0){msg(String(c));SFX.beep(false)}}if(G.ct<=0){G.phase='play';msg('FIGHT!',null,1);SFX.beep(true);ME.inv=START_INV;if(G.mode==='bot')OPP.inv=START_INV}}
   else if(G.phase==='play'){if(G.mode!=='online'||NET.host)G.tl-=dt;else G.tl=Math.max(0,G.tl-dt);if(G.tl<=0&&(G.mode!=='online'||NET.host)){G.tl=0;endMatch()}}
   else if(G.phase==='end'){G.endT+=dt;if(G.endT>2.2&&!$('sResult').classList.contains('on'))showResult()}
   // 自分
@@ -1001,7 +1016,7 @@ async function leaveRoom(silent){const g=NET.game;NET.gunsub.forEach(u=>{try{u()
 // 自分の presence（毎秒20回まで）
 function myState(){const p={n:cleanName(SV.name),sk:SV.skin,w:G.mode==='online'?ME.w:SV.weapon,wm:SV.weapon,ws:SV.sniper,sc:ME.scoped?1:0,sh:NET.shot||null,rdy:NET.rdy,r:NET.rd,
   s:[+ME.x.toFixed(2),+ME.y.toFixed(2),+ME.z.toFixed(2),+ME.yaw.toFixed(3),+ME.pitch.toFixed(3)],a:ME.seq,al:ME.alive?1:0,hp:Math.round(ME.hp),ar:Math.round(ME.ar),
-  dd:ME.dd,sd:ME.sd,tk:Math.round(ME.tk),gt:G.mode==='online'?IT.got:[],h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
+  dd:ME.dd,sd:ME.sd,tk:Math.round(ME.tk),cm:CHAT.out,gt:G.mode==='online'?IT.got:[],h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
   if(NET.host)Object.assign(p,{it:G.mode==='online'?itemsList():[],ph:NET.ph,rd:NET.rd,tl:+Math.max(0,G.tl).toFixed(1),ct:+Math.max(0,G.ct).toFixed(1),op:NET.oppPeer,t:NET.title});return p}
 function sendNow(){if(!NET.game)return;NET.sendT=0;NET.game.presence(myState()).catch(e=>{if(e&&e.code==='invalid_argument')console.warn(e)})}
 function netTick(dt){if(!NET.game)return;NET.sendT+=dt;if(NET.sendT>=.05)sendNow();
@@ -1016,7 +1031,7 @@ function gamePeers(){const others=NET.gpeers.filter(p=>!p.sameTab&&p.kind==='vie
   else{const h=others.find(p=>typeof p.presence.ph==='string');
     if(!h){if(NET.hostP&&performance.now()-NET.joinT>1500){NET.hostP=null;NET.oppP=null;oppLeft(true)}else if(!NET.hostP&&performance.now()-NET.joinT>12000){leaveRoom();tip('部屋が見つかりませんでした',3)}}
     else{NET.hostP=h;NET.oppP=h;NET.oppPeer=h.peer;if(h.presence.op&&NET.myPeer&&h.presence.op!==NET.myPeer){leaveRoom();tip('この部屋はもう対戦中です',3);return}guestLogic()}}
-  readOpp();if($('sWait').classList.contains('on'))showWait()}
+  if(NET.oppP)readChat(NET.oppP.peer,NET.oppP.presence);readOpp();if($('sWait').classList.contains('on'))showWait()}
 function oppLeft(hostGone){OPP.here=false;if(G.mode==='online'&&G.phase!=='end'){endMatch('left')}else if(hostGone&&!G.mode){leaveRoom();tip('ホストが部屋を出ました',3);return}
   NET.ph='wait';if(!G.mode&&$('sWait').classList.contains('on'))showWait()}
 // ホスト：ふたりとも準備できたら次のラウンドを始める。試合中は段階を出す
@@ -1105,7 +1120,7 @@ let crossT=0,msgT=0;
 function updHUD(dt){const hp=ME.alive?ME.hp:0;
   setC('hp',Math.ceil(hp/HP_MAX*18),v=>{[...$('hearts').children].forEach((e,i)=>e.className='ht'+(v>=i*2+2?'':v===i*2+1?' h':' e'))});
   // シールド（アーマー）：9こ。拾ったアーマー（100まで）は水色、力の拳の+25はオレンジで重ねる
-  setC('ar',ME.alive?Math.min(9,Math.round(ME.ar/AR_MAX*9))+'|'+Math.min(9,Math.round(ME.arB/AR_MAX*9)):'0|0',v=>{const [n,o]=v.split('|').map(Number);[...$('armors').children].forEach((e,i)=>e.className='ar'+(i<o?' g':i<n?'':' e'))});
+  setC('ar',ME.alive?Math.round(clamp(ME.ar+ME.arB,0,AR_MAX)):0,v=>{const cl=shieldClasses(v);[...$('armors').children].forEach((e,i)=>e.className='ar '+cl[i])});
   setC('sB',scoreOf(ME),v=>$('sB').textContent=v);setC('sR',scoreOf(OPP),v=>$('sR').textContent=v);
   const t=Math.max(0,Math.ceil(G.tl));setC('tl',t,v=>$('sT').textContent=Math.floor(v/60)+':'+String(v%60).padStart(2,'0'));
   setC('coins',SV.coins,v=>$('coins').textContent=v);setC('gems',SV.gems,v=>$('gems').textContent=v);
@@ -1118,6 +1133,8 @@ function updHUD(dt){const hp=ME.alive?ME.hp:0;
   if(sc&&WEAPONS[ME.w].scope==='tracking'){const d=aimDir(ME.yaw,ME.pitch),r=rayWorld(ME.x,ME.y+EYE,ME.z,d,140);$('scopeTx').textContent=(r.t>=140?'RNG ----':'RNG '+r.t.toFixed(1)+'m')+'\nAZ  '+(((-ME.yaw*180/Math.PI)%360+360)%360).toFixed(0).padStart(3,'0')+'\nEL '+(ME.pitch*180/Math.PI).toFixed(1)}
   if(msgT>0){msgT-=dt;if(msgT<=0)msg('')}
   for(const e of[...$('feed').children]){e._t-=dt;if(e._t<=0)e.remove()}}
+// シールド9こ：0〜25%は銅がふえる、25〜50%は銀におきかわる、50〜100%は金におきかわる
+function shieldClasses(p){const r=[];for(let i=0;i<9;i++){if(p<=25)r.push(i<Math.round(p/25*9)?'br':'e');else if(p<=50)r.push(i<Math.round((p-25)/25*9)?'si':'br');else r.push(i<Math.round((p-50)/50*9)?'go':'si')}return r}
 function crossHit(head){crossT=head?.3:.18;drawCross(head?2:1);hitMark(head)}
 // 照準（Wikiの照準画像の形と寸法どおり。当たると赤くなる）
 const crossScale=()=>clamp(innerHeight/760,.7,1.35);
@@ -1207,7 +1224,7 @@ function bindUI(){const on=(id,f)=>$(id).addEventListener('click',e=>{e.stopProp
   $('sSens').addEventListener('input',e=>{SET.sens=+e.target.value;LSset('pgduel-sens',SET.sens);$('sSensV').textContent=SET.sens+'%'});
   on('sSnd',()=>{SET.sound=!SET.sound;LSset('pgduel-sound',SET.sound?'1':'0');showSet(setBack);SFX.click()});on('sShadow',()=>{setShadow(!SET.shadow);showSet(setBack)});
   $('pauseB').addEventListener('click',e=>{e.stopPropagation();pauseGame()});$('pauseB').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();pauseGame()},{passive:false});
-  $('chatB').style.pointerEvents='none';on('sLayB',()=>{SFX.click();showLayout()});on('layOk',()=>{SFX.click();endLayout()});on('layReset',()=>{SFX.click();LAY=JSON.parse(JSON.stringify(LAY_DEF));layoutSave();applyLayout();laySel(null)});on('layHide',()=>{if(LSEL&&LAY_HIDE.includes(LSEL)){LAY[LSEL].hide=!LAY[LSEL].hide;layoutSave();applyLayout();laySel(LSEL)}});
+  bindChat();on('sLayB',()=>{SFX.click();showLayout()});on('layOk',()=>{SFX.click();endLayout()});on('layReset',()=>{SFX.click();LAY=JSON.parse(JSON.stringify(LAY_DEF));layoutSave();applyLayout();laySel(null)});on('layHide',()=>{if(LSEL&&LAY_HIDE.includes(LSEL)){LAY[LSEL].hide=!LAY[LSEL].hide;layoutSave();applyLayout();laySel(LSEL)}});
   $('laySize').addEventListener('input',e=>{if(LSEL){LAY[LSEL].s=+e.target.value;applyLayout();layoutSave()}})}
 // ---------------- スマホのボタン配置（ドラッグで動かす・大きさ・かくす） ----------------
 const LAY_DEF={stick:{x:.13,y:.74,s:120},tAtk:{x:.76,y:.77,s:88},tJump:{x:.92,y:.83,s:70},tAim:{x:.88,y:.44,s:62},tRel:{x:.95,y:.61,s:54},tAtk2:{x:.2,y:.42,s:68,hide:false}};
@@ -1226,11 +1243,38 @@ for(const id in LAY_DEF){const e=$(id);e.addEventListener('pointerdown',ev=>{if(
   e.addEventListener('pointermove',ev=>{if(!LDRAG||LDRAG.id!==id)return;LAY[id].x=clamp((ev.clientX-LDRAG.dx)/innerWidth,0,1);LAY[id].y=clamp((ev.clientY-LDRAG.dy)/innerHeight,0,1);applyLayout()});
   e.addEventListener('pointerup',()=>{if(LDRAG&&LDRAG.id===id){LDRAG=null;layoutSave()}})}
 
+// ---- 07b_chat.js ----
+// ===================== チャット（左上の吹き出しボタン・待合室） =====================
+// オンラインは presence の cm に最新3つ [番号, 文] をのせる。CPU戦ではCPUが返事をする
+const CHAT={open:false,seq:0,out:[],seen:-1,peer:''};
+const QUICK=['よろしく！','GG','ナイス！','まって！','ありがとう','おしい！'];
+const cleanText=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g,'').trim().slice(0,60);
+function openChat(){if(CHAT.open)return;CHAT.open=true;for(const k in KEY)KEY[k]=false;mouseAtk=false;$('chatBox').classList.add('on');if(document.pointerLockElement)document.exitPointerLock();setTimeout(()=>{try{$('chatIn').focus()}catch(e){}},30)}
+function closeChat(){CHAT.open=false;$('chatBox').classList.remove('on');try{$('chatIn').blur()}catch(e){}if(G.mode&&!inMenu())lockPointer()}
+function sendChat(t){t=cleanText(t);if(!t)return;chatLine(cleanName(SV.name)||'あなた',t,true);SFX.click();
+  if(NET.game){CHAT.seq++;CHAT.out.push([CHAT.seq,t]);if(CHAT.out.length>3)CHAT.out.shift();sendNow()}else if(G.mode==='bot')botReply(t)}
+function chatLine(name,text,mine){const L=$('chatLog'),d=document.createElement('div'),n=document.createElement('b');n.textContent=name+'：';n.style.color=mine?'#7ab8ff':'#ff8a8a';d.appendChild(n);d.appendChild(document.createTextNode(text));d._t=9;L.appendChild(d);while(L.children.length>6)L.firstChild.remove()}
+function chatUpdate(dt){for(const e of[...$('chatLog').children]){e._t-=dt;if(e._t<=0)e.remove();else e.style.opacity=Math.min(1,e._t)}}
+// 相手の presence から新しい文を読む（はじめて見る相手の古い文は出さない）
+function readChat(peer,p){const cm=p&&p.cm;if(!Array.isArray(cm))return;if(peer!==CHAT.peer){CHAT.peer=peer;CHAT.seen=cm.reduce((m,e)=>Array.isArray(e)&&e[0]>m?e[0]:m,-1);return}
+  for(const e of cm){if(!Array.isArray(e)||!(e[0]>CHAT.seen))continue;CHAT.seen=e[0];const t=cleanText(e[1]);if(t){chatLine(cleanName(p.n)||'???',t,false);SFX.click()}}}
+// CPUの返事
+function botSay(t,delay){setTimeout(()=>{if(G.mode==='bot')chatLine(OPP.name,t,false)},delay||0)}
+function botReply(t){const r=/よろしく|宜しく|hi|hello/i.test(t)?'よろしく！':/gg/i.test(t)?'GG!':/ナイス|nice/i.test(t)?'ありがとう！':/まって|待って/.test(t)?'まてないｗ':pick(['ｗ','まけないよ！','いい勝負！','そっちこそ！']);botSay(r,1200+Math.random()*1200)}
+function bindChat(){const box=$('chatQuick');box.textContent='';for(const q of QUICK){const b=document.createElement('button');b.className='pb g';b.textContent=q;b.onclick=e=>{e.stopPropagation();sendChat(q);closeChat()};box.appendChild(b)}
+  $('chatB').addEventListener('click',e=>{e.stopPropagation();openChat()});$('chatB').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();openChat()},{passive:false});
+  $('wChat').addEventListener('click',e=>{e.stopPropagation();openChat()});
+  $('chatSend').addEventListener('click',e=>{e.stopPropagation();sendChat($('chatIn').value);$('chatIn').value='';closeChat()});
+  $('chatClose').addEventListener('click',e=>{e.stopPropagation();closeChat()});
+  $('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&!e.isComposing){sendChat($('chatIn').value);$('chatIn').value='';closeChat()}else if(e.key==='Escape')closeChat()})}
+
 // ---- 08_main.js ----
 // ===================== 操作（PC・スマホ）とメインループ =====================
 const KEY={};let jumpQ=false,mouseAtk=false,lockFail=false;const PEND={slot:null,scope:false,reload:false};const LAYM=()=>document.body.classList.contains('lay');
 const inMenu=()=>[...document.querySelectorAll('.scr')].some(e=>e.classList.contains('on'));
-addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;KEY[e.code]=true;
+addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;
+  if((e.code==='KeyT'||e.code==='Enter')&&!CHAT.open&&(G.mode&&!inMenu()||$('sWait').classList.contains('on'))){e.preventDefault();openChat();return}
+  KEY[e.code]=true;
   if(e.code==='Space'){jumpQ=true;e.preventDefault()}
   if((e.code==='Escape'||e.code==='KeyP')&&G.mode&&G.phase!=='end'){if($('sPause').classList.contains('on'))resumeGame();else if(!inMenu())pauseGame()}
   if(e.code==='Digit1')PEND.slot=0;if(e.code==='Digit2')PEND.slot=1;if(e.code==='KeyQ')PEND.slot=ME.cw?0:1;if(e.code==='Digit3')tip('ヘビーは準備中です');
@@ -1243,7 +1287,7 @@ function isTouchUI(){return document.body.classList.contains('touch')}
 function lockFailed(){if(lockFail)return;lockFail=true;tip('この画面ではマウスを固定できません。右ボタンを押しながら動かすと見回せます（左ボタンで攻撃）',5)}
 function lockPointer(){if(isTouchUI()||lockFail)return;try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(lockFailed)}catch(e){lockFailed()}}
 document.addEventListener('pointerlockerror',lockFailed);
-document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&G.mode&&G.phase!=='end'&&!inMenu())pauseGame()});
+document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&G.mode&&G.phase!=='end'&&!inMenu()&&!CHAT.open)pauseGame()});
 renderer.domElement.addEventListener('mousedown',e=>{if(!G.mode||isTouchUI())return;ac();if(!document.pointerLockElement&&!lockFail){lockPointer();return}if(e.button===0)mouseAtk=true;if(e.button===2&&document.pointerLockElement)PEND.scope=true});
 addEventListener('wheel',e=>{if(G.mode&&!inMenu()&&Math.abs(e.deltaY)>4)PEND.slot=ME.cw?0:1},{passive:true});
 addEventListener('mouseup',e=>{if(e.button===0)mouseAtk=false});
@@ -1273,7 +1317,7 @@ function readInput(){const P={slot:PEND.slot,scope:PEND.scope,reload:PEND.reload
 // ---- メインループ ----
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);if(window.__D&&__D.noLoop){last=now;return}let dt=(now-last)/1000;last=now;if(!(dt>0))dt=1/60;dt=Math.min(dt,.05);step(dt);render()}
-function step(dt){if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.display='none'}tumbleUpdate(dt);
+function step(dt){chatUpdate(dt);if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.display='none'}tumbleUpdate(dt);
   if(G.mode){if(!G.paused)gameUpdate(dt)}else menuCam(dt);netTick(dt)}
 // X線（監督）：壁の向こうの相手をオレンジの影で重ねる
 const XSC=new THREE.Scene();XSC.add(new THREE.HemisphereLight(0xfff4dc,0xb89a68,1.1));

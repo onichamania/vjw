@@ -1,7 +1,9 @@
 // ===================== 操作（PC・スマホ）とメインループ =====================
 const KEY={};let jumpQ=false,mouseAtk=false,lockFail=false;const PEND={slot:null,scope:false,reload:false};const LAYM=()=>document.body.classList.contains('lay');
 const inMenu=()=>[...document.querySelectorAll('.scr')].some(e=>e.classList.contains('on'));
-addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;KEY[e.code]=true;
+addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;
+  if((e.code==='KeyT'||e.code==='Enter')&&!CHAT.open&&(G.mode&&!inMenu()||$('sWait').classList.contains('on'))){e.preventDefault();openChat();return}
+  KEY[e.code]=true;
   if(e.code==='Space'){jumpQ=true;e.preventDefault()}
   if((e.code==='Escape'||e.code==='KeyP')&&G.mode&&G.phase!=='end'){if($('sPause').classList.contains('on'))resumeGame();else if(!inMenu())pauseGame()}
   if(e.code==='Digit1')PEND.slot=0;if(e.code==='Digit2')PEND.slot=1;if(e.code==='KeyQ')PEND.slot=ME.cw?0:1;if(e.code==='Digit3')tip('ヘビーは準備中です');
@@ -14,7 +16,7 @@ function isTouchUI(){return document.body.classList.contains('touch')}
 function lockFailed(){if(lockFail)return;lockFail=true;tip('この画面ではマウスを固定できません。右ボタンを押しながら動かすと見回せます（左ボタンで攻撃）',5)}
 function lockPointer(){if(isTouchUI()||lockFail)return;try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(lockFailed)}catch(e){lockFailed()}}
 document.addEventListener('pointerlockerror',lockFailed);
-document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&G.mode&&G.phase!=='end'&&!inMenu())pauseGame()});
+document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&G.mode&&G.phase!=='end'&&!inMenu()&&!CHAT.open)pauseGame()});
 renderer.domElement.addEventListener('mousedown',e=>{if(!G.mode||isTouchUI())return;ac();if(!document.pointerLockElement&&!lockFail){lockPointer();return}if(e.button===0)mouseAtk=true;if(e.button===2&&document.pointerLockElement)PEND.scope=true});
 addEventListener('wheel',e=>{if(G.mode&&!inMenu()&&Math.abs(e.deltaY)>4)PEND.slot=ME.cw?0:1},{passive:true});
 addEventListener('mouseup',e=>{if(e.button===0)mouseAtk=false});
@@ -44,7 +46,7 @@ function readInput(){const P={slot:PEND.slot,scope:PEND.scope,reload:PEND.reload
 // ---- メインループ ----
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);if(window.__D&&__D.noLoop){last=now;return}let dt=(now-last)/1000;last=now;if(!(dt>0))dt=1/60;dt=Math.min(dt,.05);step(dt);render()}
-function step(dt){if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.display='none'}tumbleUpdate(dt);
+function step(dt){chatUpdate(dt);if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.display='none'}tumbleUpdate(dt);
   if(G.mode){if(!G.paused)gameUpdate(dt)}else menuCam(dt);netTick(dt)}
 // X線（監督）：壁の向こうの相手をオレンジの影で重ねる
 const XSC=new THREE.Scene();XSC.add(new THREE.HemisphereLight(0xfff4dc,0xb89a68,1.1));

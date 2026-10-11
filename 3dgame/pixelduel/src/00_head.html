@@ -24,7 +24,7 @@ body.play #hud{display:block}
 .ht:before{left:5px;top:0;width:5px;height:15px}.ht:after{left:0;top:5px;width:15px;height:5px}
 .ht.e:before,.ht.e:after{background:#3a1010}.ht.h:before,.ht.h:after{background:#ff7a7a}
 .ar{width:15px;height:15px;background:#3ad8f0;border:1px solid #000;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
-.ar.e{background:#16323a}.ar.g{background:#f08a1a}
+.ar.e{background:#16323a}.ar.g{background:#f08a1a}.ar.br{background:#c8783a}.ar.si{background:#d4dae4}.ar.go{background:#ffcf2a}
 #score{position:absolute;left:50%;top:calc(6px + var(--sa-t));transform:translateX(-50%);display:flex;align-items:stretch;border:2px solid #000;font-size:17px;font-weight:900}
 #score>div{display:flex;align-items:center;gap:5px;padding:2px 10px}
 #scB{background:var(--blue)}#scR{background:var(--red)}#scT{background:#1a1a1a;min-width:74px;justify-content:center}
@@ -105,6 +105,12 @@ body.lay #touch{display:block}body.lay .tb,body.lay #stick{outline:2px dashed #f
 @media (max-height:520px){.pd{width:120px}.pd canvas{width:70px;height:99px}.pd .nm{font-size:14px}.pd .base{height:12px}.pod{margin:4px 0;gap:14px}.vs{font-size:26px}.big{font-size:28px;margin:0}
  .box{padding:10px;max-height:94vh}.box h2{font-size:16px;margin-bottom:6px}.pb{padding:6px 16px;font-size:15px;min-width:170px;margin:3px}.logo{font-size:30px}.logo small{font-size:13px;margin-top:4px}.wc{width:150px;padding:5px}.wc img{width:84px;height:64px}.note{margin:3px 0}
  .ws{width:50px;height:40px}.ws img{width:44px;height:34px}#stick{width:96px;height:96px}#stick i{left:24px;top:24px;width:42px;height:42px}}
+#chatB{pointer-events:auto;cursor:pointer}
+#chatLog{position:fixed;left:calc(8px + var(--sa-l));top:calc(92px + var(--sa-t));z-index:12;pointer-events:none;display:flex;flex-direction:column;gap:3px;max-width:min(360px,60vw);font-size:13px;font-weight:800}
+#chatLog div{background:rgba(0,0,0,.5);padding:3px 8px;border-radius:4px;text-shadow:0 1px 0 #000;word-break:break-all}
+#chatBox{position:fixed;left:50%;top:calc(52px + var(--sa-t));transform:translateX(-50%);z-index:30;display:none;width:min(520px,94vw);background:rgba(25,30,40,.95);border:3px solid #000;border-radius:8px;padding:8px}
+#chatBox.on{display:block}#chatBox .row{flex-wrap:nowrap}#chatBox .inp{font-size:16px;padding:7px;flex:1;min-width:0}
+#chatQuick{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;justify-content:center}#chatQuick .pb{min-width:0;padding:4px 10px;font-size:13px;margin:0}
 kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-size:11px}
 </style>
 </head>
@@ -144,7 +150,7 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <h2 style="margin-top:12px;font-size:16px">参加できる部屋</h2><div class="rlist" id="rlist"></div><div class="row"><button class="pb g" id="rBack">もどる</button></div></div></div>
 <div class="scr" id="sWait"><div class="box" style="text-align:center"><h2 id="wTitle">対戦相手を待っています…</h2>
  <div class="pod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
- <p class="note" id="wNote"></p><div class="row"><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
+ <p class="note" id="wNote"></p><div class="row"><button class="pb b" id="wChat" style="min-width:140px">チャット</button><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
 <div class="scr" id="sResult"><div class="box" style="text-align:center"><div class="big" id="resT"></div>
  <div class="pod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
  <p class="note" id="resNote"></p><div class="row"><button class="pb" id="resAgain">もう一度</button><button class="pb g" id="resMenu">メニューへ</button></div></div></div>
@@ -160,6 +166,8 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
 <div class="scr" id="sLay"><div class="box"><h2 style="font-size:15px">ボタン配置（ドラッグで動かす）</h2>
  <div class="sl" style="margin:4px 0"><span id="layName">ボタンをえらんでね</span><input type="range" id="laySize" min="40" max="170" step="2"></div>
  <div class="row"><button class="pb g" id="layHide" style="min-width:110px;padding:5px 10px">かくす</button><button class="pb g" id="layReset" style="min-width:110px;padding:5px 10px">初期にもどす</button><button class="pb" id="layOk" style="min-width:110px;padding:5px 10px">OK</button></div></div></div>
+<div id="chatLog"></div>
+<div id="chatBox"><div class="row"><input class="inp" id="chatIn" maxlength="60" placeholder="メッセージ（60文字まで）" autocomplete="off"><button class="pb b" id="chatSend" style="min-width:70px;padding:6px 10px;margin:0">送信</button><button class="pb g" id="chatClose" style="min-width:44px;padding:6px 10px;margin:0">✕</button></div><div id="chatQuick"></div></div>
 <div id="tip"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>

@@ -208,11 +208,12 @@ function rayDist(ax,ay,az,dx,dy,dz,max){let best=max;nearSol(Math.min(ax,ax+dx*m
 function onLadder(x,y,z){for(const l of LAD)if(x>l[0]&&x<l[3]&&z>l[2]&&z<l[5]&&y>=l[1]-.1&&y<l[4])return l;return null}
 // ================= CPUが歩くための道しるべ（歩いて行ける場所を広さ優先でさがす） =================
 const NAV={nodes:[],key:new Map(),out:[],inn:[]};
-function blockedAt(x,z,y){return !!hitsBox(x-.22,y+.12,z-.22,x+.22,y+1.7,z+.22)}
+function blockedAt(x,z,y){return !!hitsBox(x-.22,y+.58,z-.22,x+.22,y+1.7,z+.22)}
 function buildNav(){const S=1,q=[];const add=(i,j,y)=>{const k=i+','+j+','+Math.round(y*4);let id=NAV.key.get(k);if(id!=null)return id;id=NAV.nodes.length;NAV.nodes.push({i,j,x:i*S,z:j*S,y});NAV.key.set(k,id);NAV.out.push([]);NAV.inn.push([]);q.push(id);return id};
   const start=add(0,-38,0);let qh=0;
   while(qh<q.length){const id=q[qh++],n=NAV.nodes[id];for(const [di,dj] of[[1,0],[-1,0],[0,1],[0,-1]]){const ni=n.i+di,nj=n.j+dj,nx=ni*S,nz=nj*S;if(nx<MAP.x0+1||nx>MAP.x1-1||nz<MAP.z0+2||nz>MAP.z1-2)continue;
-    const ny=groundAt(nx,nz,n.y,.15);if(ny>n.y+.6||blockedAt(nx,nz,ny)||blockedAt((n.x+nx)/2,(n.z+nz)/2,Math.max(n.y,ny)))continue;const to=add(ni,nj,ny);if(!NAV.out[id].includes(to)){NAV.out[id].push(to);NAV.inn[to].push(id)}}}}
+    // 途中（半分の所）の床も見る：階段の段（0.4m）を1段ずつ上がれるように
+    const mx=(n.x+nx)/2,mz=(n.z+nz)/2,gm=groundAt(mx,mz,n.y,.15),ny=groundAt(nx,nz,Math.max(n.y,gm),.15);if(gm>n.y+.6||ny>Math.max(n.y,gm)+.6||blockedAt(nx,nz,ny)||blockedAt(mx,mz,Math.max(gm,Math.min(n.y,ny))))continue;const to=add(ni,nj,ny);if(!NAV.out[id].includes(to)){NAV.out[id].push(to);NAV.inn[to].push(id)}}}}
 function nearestNode(x,y,z){let best=-1,bd=1e9;const i0=Math.round(x),j0=Math.round(z);for(let di=-2;di<=2;di++)for(let dj=-2;dj<=2;dj++)for(let yk=-12;yk<=12;yk++){const id=NAV.key.get((i0+di)+','+(j0+dj)+','+(Math.round(y*4)+yk));if(id==null)continue;const n=NAV.nodes[id],d=Math.hypot(n.x-x,n.z-z)+Math.abs(n.y-y)*2;if(d<bd){bd=d;best=id}}return best}
 // 目的地への距離の表（逆向きにたどる）
 function flowTo(target){const N=NAV.nodes.length,dist=new Int32Array(N).fill(-1);if(target<0)return dist;const q=new Int32Array(N);let h=0,e=0;q[e++]=target;dist[target]=0;while(h<e){const id=q[h++];for(const p of NAV.inn[id])if(dist[p]<0){dist[p]=dist[id]+1;q[e++]=p}}return dist}
