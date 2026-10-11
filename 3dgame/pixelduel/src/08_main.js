@@ -48,12 +48,17 @@ let last=performance.now();
 function loop(now){requestAnimationFrame(loop);if(window.__D&&__D.noLoop){last=now;return}let dt=(now-last)/1000;last=now;if(!(dt>0))dt=1/60;dt=Math.min(dt,.05);step(dt);render()}
 function step(dt){chatUpdate(dt);if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.display='none'}tumbleUpdate(dt);
   if(G.mode){if(!G.paused)gameUpdate(dt)}else menuCam(dt);netTick(dt)}
-// X線（監督）：壁の向こうの相手をオレンジの影で重ねる
-const XSC=new THREE.Scene();XSC.add(new THREE.HemisphereLight(0xfff4dc,0xb89a68,1.1));
+// X線（監督）：スコープをのぞいている間だけ、壁にかくれた相手を青いシルエットで見せる
+// 相手の材質は町や小物と共有なので書きかえない（上書き用の材質で別に描く）
+// ①見えている部分にしるし（ステンシル）をつける ②しるしのない、かくれた部分だけを青くぬる
+const XSC=new THREE.Scene(),
+  XMARK=new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,stencilWrite:true,stencilRef:1,stencilFunc:THREE.AlwaysStencilFunc,stencilZPass:THREE.ReplaceStencilOp}),
+  XBLUE=new THREE.MeshBasicMaterial({color:0x3a8cff,transparent:true,opacity:.75,depthWrite:false,depthFunc:THREE.GreaterDepth,stencilWrite:true,stencilRef:1,stencilFunc:THREE.NotEqualStencilFunc,stencilZPass:THREE.ReplaceStencilOp});
+const xrayOn=()=>G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray&&OPP.alive&&OPP.model&&OPP.model.visible&&(G.mode!=='online'||OPP.here);
 function render(){renderer.clear();renderer.render(scene,cam);
-  if(G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray&&OPP.model&&OPP.model.visible){const m=OPP.model,sv=[];if(OPP.tag)OPP.tag.visible=false;
-    m.traverse(o=>{if(o.isMesh)for(const mt of(Array.isArray(o.material)?o.material:[o.material])){sv.push([mt,mt.depthTest,mt.transparent,mt.opacity]);mt.depthTest=false;mt.transparent=true;mt.opacity=.55}});
-    XSC.add(m);renderer.render(XSC,cam);scene.add(m);for(const [mt,d,t,o] of sv){mt.depthTest=d;mt.transparent=t;mt.opacity=o}if(OPP.tag)OPP.tag.visible=true}if(G.mode&&ME.alive&&VIEW.g.visible){renderer.clearDepth();renderer.render(vscene,vcam)}}
+  if(xrayOn()){const m=OPP.model,par=m.parent||scene,tv=OPP.tag?OPP.tag.visible:false;if(OPP.tag)OPP.tag.visible=false;
+    XSC.add(m);XSC.overrideMaterial=XMARK;renderer.render(XSC,cam);XSC.overrideMaterial=XBLUE;renderer.render(XSC,cam);XSC.overrideMaterial=null;par.add(m);if(OPP.tag)OPP.tag.visible=tv}
+  if(G.mode&&ME.alive&&VIEW.g.visible){renderer.clearDepth();renderer.render(vscene,vcam)}}
 function boot(){bindUI();$('bootTx').textContent='ゴーストタウンをつくっています…';
   setTimeout(()=>{buildMap();$('bootTx').textContent='道を調べています…';
     setTimeout(()=>{buildNav();renderSniperIcons();applyLayout();hudReset();VIEW.g.visible=false;if(!SV.name)showName();else showMenu();last=performance.now();requestAnimationFrame(loop)},20)},20)}
