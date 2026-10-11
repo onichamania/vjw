@@ -34,9 +34,9 @@ function updHUD(dt){const hp=ME.alive?ME.hp:0;
   setC('hp',Math.ceil(hp/HP_MAX*18),v=>{[...$('hearts').children].forEach((e,i)=>e.className='ht'+(v>=i*2+2?'':v===i*2+1?' h':' e'))});
   // シールド（アーマー）：9こ。拾ったアーマー（100まで）は水色、力の拳の+25はオレンジで重ねる
   setC('ar',ME.alive?Math.round(clamp(ME.ar+ME.arB,0,AR_MAX)):0,v=>{const cl=shieldClasses(v);[...$('armors').children].forEach((e,i)=>e.className='ar '+cl[i])});
-  // 上のスコア：1対1は自分と相手、デスマッチは自分と（自分以外の）1位。右に順位
+  // 上のスコア：1対1は自分と相手、デスマッチは自分の得点だけ（順位は右に）
   const rk=G.dm?ranking():null,top=G.dm?rk.find(F=>F!==ME):OPP;setC('sB',scoreOf(ME),v=>$('sB').textContent=v);setC('sR',top?scoreOf(top):0,v=>$('sR').textContent=v);
-  setC('dm',!!G.dm,v=>$('rank').style.display=v?'block':'none');
+  setC('dm',!!G.dm,v=>{$('rank').style.display=v?'block':'none';$('scR').style.display=v?'none':''});   // デスマッチは上に自分の得点だけ
   if(G.dm)setC('rk',rk.map(F=>(F===ME?'*':'')+F.name+':'+scoreOf(F)).join('|'),()=>{const R=$('rank');R.textContent='';const h=document.createElement('b');h.textContent='デスマッチ（'+DM_KILLS+'キルで勝ち）';R.appendChild(h);
     const row=(F,i)=>{const d=document.createElement('div');if(F===ME)d.className='me';d.textContent=(i+1)+'. '+(F.name||'???')+'　'+scoreOf(F);R.appendChild(d)};rk.slice(0,6).forEach(row);const mi=rk.indexOf(ME);if(mi>=6)row(ME,mi)});
   const t=Math.max(0,Math.ceil(G.tl));setC('tl',t,v=>$('sT').textContent=Math.floor(v/60)+':'+String(v%60).padStart(2,'0'));
