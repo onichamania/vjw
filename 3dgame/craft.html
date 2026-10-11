@@ -26,8 +26,8 @@ body.hudoff #hud>*:not(#touchUI){visibility:hidden}
 .hs{width:var(--hs);height:var(--hs);position:relative;display:grid;place-items:center;border:2px solid #0000;box-shadow:inset 0 0 0 1px #5a5a5a80}
 .hs img{width:78%;height:78%;image-rendering:pixelated;pointer-events:none}
 .hs.on{outline:4px solid #fff;outline-offset:-2px;box-shadow:inset 0 0 0 2px #000,0 0 0 2px #000;z-index:1}
-#tInv{width:var(--hs);height:var(--hs);background:#1f1f1fa0;border:2px solid #000;font-size:20px;display:none;margin-left:4px;pointer-events:auto}
-body.touch #tInv{display:grid;place-items:center}
+#tInv,#tDrop{width:var(--hs);height:var(--hs);background:#1f1f1fa0;border:2px solid #000;font-size:20px;display:none;margin-left:4px;pointer-events:auto;color:#fff}
+body.touch #tInv,body.touch #tDrop{display:grid;place-items:center}
 #bottomRow{display:flex;align-items:flex-end}
 #debug{position:absolute;left:4px;top:calc(env(safe-area-inset-top,0px) + 44px);font-size:14px;line-height:1.35;display:none;font-family:monospace}
 #debug div{background:#50505090;padding:0 4px;display:table;margin-bottom:1px;color:#e0e0e0}
@@ -104,7 +104,8 @@ body.flying #tDown{display:grid}
 .is{width:var(--is);height:var(--is);background:#8b8b8b;box-shadow:inset 2px 2px 0 #373737,inset -2px -2px 0 #fff;display:grid;place-items:center;cursor:pointer;position:relative}
 .is img{width:80%;height:80%;image-rendering:pixelated;pointer-events:none}
 .is:hover{background:#a8a8a8}
-.ihot{display:grid;grid-template-columns:repeat(9,var(--is));margin-top:8px;--is:min(44px,9.4vw)}
+.ihot{display:grid;grid-template-columns:repeat(10,var(--is));margin-top:8px;--is:min(44px,8.6vw)}
+.ihot>.is:first-child{margin-right:6px;background:#8b4a4a}
 .ihot .is.sel{box-shadow:inset 0 0 0 3px #fff,inset 2px 2px 0 5px #373737}
 #tip{position:fixed;z-index:30;background:#100010f0;border:2px solid #2b0a5a;color:#fff;font-size:14px;padding:3px 7px;pointer-events:none;display:none;white-space:nowrap}
 .help{width:min(640px,94vw);background:#00000080;padding:10px 14px;font-size:14px;line-height:1.8;margin-bottom:10px}
@@ -159,7 +160,7 @@ body.surv #itemName{margin-bottom:calc(var(--hs) * .9)}
 <div id="hud">
  <div id="fxHurt"></div><div id="fxFire"></div><div id="fxPortal"></div>
  <div id="cross"></div><div id="debug"></div><div id="chatLog"></div><div id="toast"></div><div id="clickHint">クリックで操作できます（Escでメニュー）</div>
- <div id="bottom"><div id="itemName"></div><div id="bars"><div id="armorbar"></div><div id="hearts"></div><div id="airbar"></div><div id="foodbar"></div></div><div id="xpbar"><div id="xpfill"></div><span id="xplv"></span></div><div id="bottomRow"><div id="hotbar"></div><button id="tInv">⋯</button></div></div>
+ <div id="bottom"><div id="itemName"></div><div id="bars"><div id="armorbar"></div><div id="hearts"></div><div id="airbar"></div><div id="foodbar"></div></div><div id="xpbar"><div id="xpfill"></div><span id="xplv"></span></div><div id="bottomRow"><div id="hotbar"></div><button id="tInv">⋯</button><button id="tDrop" title="捨てる（長おしで全部）">⇩</button></div></div>
  <div id="bossbar"><div id="bossName"></div><div class="bar"><i id="bossFill"></i></div></div><div id="atk"><i></i></div><div id="effects"></div>
  <div id="touchUI"><div id="joy"><i></i></div><div id="breakRing"></div>
   <button class="tb" id="tJump">▲</button><button class="tb" id="tSneak">◆</button><button class="tb" id="tDown">▼</button>
@@ -171,7 +172,13 @@ body.surv #itemName{margin-bottom:calc(var(--hs) * .9)}
  <div class="foot"><span>BlockCraft 2.0（3dame版）</span><span>three.js r160・全部プログラムで描画</span></div></div>
 <div class="scr dirt" id="worlds"><div class="ttl">ワールドを選択</div><div class="list" id="wlist"></div>
  <div class="row2"><button class="mcb" id="bPlay" disabled>選択したワールドで遊ぶ</button><button class="mcb" id="bNew">ワールド新規作成</button></div>
+ <div class="row2"><button class="mcb" id="bExp" disabled>セーブコードを出す</button><button class="mcb" id="bImp">コードから読みこむ</button></div>
  <div class="row2"><button class="mcb" id="bDel" disabled>削除</button><button class="mcb" id="bWBack">キャンセル</button></div></div>
+<div class="scr dirt" id="code"><div class="ttl" id="codeTtl">セーブコード</div><div class="note" id="codeNote" style="max-width:520px;text-align:center;line-height:1.6;margin-bottom:6px"></div>
+ <textarea id="codeTxt" spellcheck="false" style="width:520px;max-width:90vw;height:150px;font:12px monospace;background:#000c;color:#e0e0e0;border:2px solid #a0a0a0;padding:6px;word-break:break-all;-webkit-user-select:text;user-select:text"></textarea>
+ <div class="row2"><button class="mcb" id="codeCopy">コピー</button><button class="mcb" id="codeFile">ファイルに保存</button></div>
+ <div class="row2"><button class="mcb" id="codeLoad">このコードで読みこむ</button><button class="mcb" id="codePick">ファイルから読む</button></div>
+ <button class="mcb" id="codeBack">もどる</button><input type="file" id="codeIn" accept=".txt,text/plain" style="display:none"></div>
 <div class="scr dirt" id="create"><div class="ttl">ワールド新規作成</div>
  <div class="fld"><label>ワールド名</label><input id="cName" maxlength="32" value="新規ワールド"></div>
  <div class="fld"><label>シード値（空欄ならランダム）</label><input id="cSeed" maxlength="32" placeholder=""></div>
@@ -180,7 +187,7 @@ body.surv #itemName{margin-bottom:calc(var(--hs) * .9)}
  <div class="row2"><button class="mcb" id="cGo">ワールド新規作成</button><button class="mcb" id="cBack">キャンセル</button></div></div>
 <div class="scr dirt" id="loading"><div class="ttl" id="loadTxt">地形を生成しています…</div><div id="loadBar"><i></i></div></div>
 <div class="scr dim" id="pause"><div class="ttl">ゲームメニュー</div><button class="mcb" id="pBack">ゲームに戻る</button>
- <div class="row2"><button class="mcb" id="pSet">設定...</button><button class="mcb" id="pHelp">遊び方</button></div><button class="mcb" id="p3d">3dameの設定（横画面・音量）</button><button class="mcb" id="pQuit">セーブしてタイトルへ</button></div>
+ <div class="row2"><button class="mcb" id="pSet">設定...</button><button class="mcb" id="pHelp">遊び方</button></div><button class="mcb" id="p3d">3dameの設定（横画面・音量）</button><button class="mcb" id="pCode">セーブコードを出す（引きつぎ用）</button><button class="mcb" id="pQuit">セーブしてタイトルへ</button></div>
 <div class="scr dirt" id="settings"><div class="ttl">設定</div><div class="grid2" id="setList"></div><div style="height:10px"></div><button class="mcb" id="sDone">完了</button></div>
 <div class="scr dirt" id="help"><div class="ttl">遊び方</div><div class="help" id="helpTxt"></div><button class="mcb" id="hDone">完了</button></div>
 <div class="scr" id="inv"><div class="win"><div class="tabs" id="tabs"></div><div class="ihead"><span id="tabName">建築ブロック</span><input id="search" placeholder="🔍 アイテムを検索"></div>
@@ -406,6 +413,9 @@ def('crying_obsidian','泣く黒曜石',{t:'crying_obsidian',emit:10,glow:3,cat:
 def('end_stone','エンドストーン',{t:'end_stone',cat:'nature'});
 def('end_stone_bricks','エンドストーンレンガ',{t:'end_stone_bricks'});
 def('purpur_block','プルプァブロック',{t:'purpur_block'});
+// 樹皮をはいだ原木（斧で原木を右クリック）。セーブのブロック番号がずれないよう最後に足す
+for(const [k,n] of[['oak_log','オーク'],['birch_log','シラカバ'],['spruce_log','トウヒ'],['mangrove_log','マングローブ'],['crimson_stem','真紅の'],['warped_stem','歪んだ']]){const st=k.endsWith('stem');
+  def('stripped_'+k,'樹皮をはいだ'+n+(st?'幹':'原木'),{t:{top:'stripped_'+k+'_top',side:'stripped_'+k},rot:'log',sound:W,cat:'nature'})}
 const NB=B.length;
 for(const b of B)if(b.base!=null&&typeof b.base==='string')b.base=ID[b.base];
 
@@ -1108,6 +1118,9 @@ function texCobble(r,moss){const a=mkImg(),S=[];for(let i=0;i<10;i++)S.push([r()
 function texLogSide(r,cols,birch){const a=mkImg(),C=cols.map(hexc);for(let x=0;x<16;x++){let seg=r()*C.length|0;for(let y=0;y<16;y++){if(r()<.3)seg=r()*C.length|0;sp(a,x,y,C[seg])}}
   if(birch){for(let i=0;i<9;i++){const y=r()*16|0,x=r()*14|0,w=1+(r()*3|0);for(let k=0;k<w;k++)sp(a,x+k,y,hexc(r()<.5?'#2f2f2f':'#4a4a45'))}}
   else for(let i=0;i<14;i++){const x=r()*16|0,y=r()*16|0;shade(a,x,y,.8)}return a}
+// 樹皮をはいだ原木の横：木目のたてすじ
+function texStripped(r,base){const a=mkImg(),B0=hexc(base);for(let x=0;x<16;x++){let k=.9+r()*.14;for(let y=0;y<16;y++){if(r()<.12)k=.86+r()*.18;sp(a,x,y,mulc(B0,k*(x%4===0?.9:1)))}}return a}
+const STRIP_COL={oak_log:['#b29158','#a2824e','#8f7140'],birch_log:['#d0bd85','#c5b17a','#b39f6a'],spruce_log:['#8a6a3f','#735531','#5e4527'],mangrove_log:['#8a4034','#7a3a2f','#6b3027'],crimson_stem:['#8a3a5a','#7a2f4c','#6b2742'],warped_stem:['#3a9a8a','#2f8a7a','#287565']};
 function texLogTop(r,ring,bark){const a=mkImg(),R=ring.map(hexc),Bk=hexc(bark);for(let y=0;y<16;y++)for(let x=0;x<16;x++){const d=Math.max(Math.abs(x-7.5),Math.abs(y-7.5));
     if(d>6.6)sp(a,x,y,mulc(Bk,.9+r()*.2));else{const k=(Math.floor(d*1.15)%2);sp(a,x,y,mulc(R[k],.94+r()*.1))}}return a}
 function texPlanks(r,base){const a=mkImg(),B0=hexc(base);const seams=[3,11,7,1];
@@ -1140,6 +1153,8 @@ function drawTex(name){const r=mulberry(hashStr(name));let a;
   case'sand':a=mkImg();pal(a,r,['#dbd3a0','#d4c893','#e4dcb2','#c9bd87','#efe8c3'],[6,4,3,2,.6]);return a;
   case'gravel':{a=mkImg();const C=['#857b7b','#6d6464','#9b9191','#5a5252','#7a6a60','#b0a8a4'].map(hexc);for(let y=0;y<16;y+=2)for(let x=0;x<16;x+=2){const c=C[r()*C.length|0];for(let k=0;k<4;k++)sp(a,x+(k&1),y+(k>>1),mulc(c,.9+r()*.2))}return a}
   case'clay':a=mkImg();pal(a,r,['#a0a6b3','#9aa0ad','#a9afbc','#939aa6'],[5,4,3,2]);return a;
+  case'stripped_oak_log':case'stripped_birch_log':case'stripped_spruce_log':case'stripped_mangrove_log':case'stripped_crimson_stem':case'stripped_warped_stem':return texStripped(r,STRIP_COL[name.slice(9)][0]);
+  case'stripped_oak_log_top':case'stripped_birch_log_top':case'stripped_spruce_log_top':case'stripped_mangrove_log_top':case'stripped_crimson_stem_top':case'stripped_warped_stem_top':{const c=STRIP_COL[name.slice(9,-4)];return texLogTop(r,[c[1],c[2]],c[0])}
   case'oak_log':return texLogSide(r,['#6b5130','#5c452a','#735a36','#4c3a21']);
   case'oak_log_top':return texLogTop(r,['#b8945f','#9e7c4a'],'#6b5130');
   case'oak_planks':return texPlanks(r,'#a2824e');
@@ -1222,8 +1237,12 @@ function drawTex(name){const r=mulberry(hashStr(name));let a;
   a=mkImg();pal(a,r,['#ff00ff','#000000']);return a}
 // 全部のテクスチャを配列テクスチャにする（上下を入れかえて：t=1が絵の上）
 const PICS={};
-function buildTextures(){const N=TEX.length,data=new Uint8Array(1024*N);
-  for(let i=0;i<N;i++){const p=drawTex(TEX[i]);PICS[TEX[i]]=p;for(let y=0;y<16;y++)data.set(p.subarray(y*64,y*64+64),i*1024+(15-y)*64)}
+function buildTextures(){const N=TEX.length,data=new Uint8Array(1024*N),lk=new Uint8Array(4*N);
+  for(let i=0;i<N;i++){const p=drawTex(TEX[i]);PICS[TEX[i]]=p;for(let y=0;y<16;y++)data.set(p.subarray(y*64,y*64+64),i*1024+(15-y)*64);
+    // 雪のような白っぽいブロックは、日なたで白くとびすぎて光って見えるので、模様を残したまま全体を少し暗くする（アイコンはそのまま）
+    let n=0,tn=0,sum=0,chr=0;for(let j=0;j<256;j++){const a=p[j*4+3],r=p[j*4],g=p[j*4+1],bb=p[j*4+2];if(a>=250){n++;sum+=.2126*(r/255)**2.2+.7152*(g/255)**2.2+.0722*(bb/255)**2.2;chr+=(Math.max(r,g,bb)-Math.min(r,g,bb))/255}else if(a>=150&&a<230)tn++}
+    const m=n?sum/n:0,k=n>=64&&tn<8&&m>.45&&chr/n<.12?(.45+(m-.45)*.2)/m:1;lk[i*4]=Math.round(k*255);lk[i*4+3]=255}
+  LAYERK=new THREE.DataTexture(lk,N,1,THREE.RGBAFormat);LAYERK.magFilter=LAYERK.minFilter=THREE.NearestFilter;LAYERK.needsUpdate=true;
   const t=new THREE.DataArrayTexture(data,16,16,N);t.format=THREE.RGBAFormat;t.type=THREE.UnsignedByteType;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestMipmapLinearFilter;
   t.generateMipmaps=true;t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());t.needsUpdate=true;return t}
 // ---- アイコン（インベントリ・ホットバー用：本家と同じ斜めから見た立方体）----
@@ -1547,6 +1566,7 @@ bp('stone',1.5,'pickaxe',0,'cobblestone');bp('cobblestone mossy_cobblestone bric
 bp('deepslate',3,'pickaxe',0,'cobbled_deepslate');bp('cobbled_deepslate deepslate_bricks deepslate_tiles',3.5,'pickaxe',0);
 bp('bedrock end_portal_frame end_portal nether_portal reinforced_deepslate',-1);
 bp('sand soul_sand soul_soil',.5,'shovel');bp('gravel',.6,'shovel',-1,'gravel');bp('clay',.6,'shovel',-1,['clay_ball',4,4]);
+bp('stripped_oak_log stripped_birch_log stripped_spruce_log stripped_mangrove_log stripped_crimson_stem stripped_warped_stem',2,'axe');
 bp('oak_log birch_log spruce_log mangrove_log crimson_stem warped_stem oak_planks birch_planks spruce_planks mangrove_planks crimson_planks warped_planks',2,'axe');
 bp('oak_leaves birch_leaves spruce_leaves mangrove_leaves',.2,'hoe',-1,'leaves');bp('glass glass_pane',.3,null,-1,0);bp('mangrove_roots',.7,'axe');
 bp('coal_ore',3,'pickaxe',0,['coal',1,1],[0,2]);bp('deepslate_coal_ore',4.5,'pickaxe',0,['coal',1,1],[0,2]);
@@ -1591,13 +1611,13 @@ BPROP[ID.tall_grass].drop='seeds';{const f=dropsOf;dropsOf=function(id,meta,it){
 
 // ================= レシピ =================
 // 形のあるレシピ：pat（行の文字列）と key（文字→材料）。材料は番号か 'tag:名前'
-const TAGS={planks:[ID.oak_planks,ID.birch_planks,ID.spruce_planks,ID.mangrove_planks,ID.crimson_planks,ID.warped_planks],log:[ID.oak_log,ID.birch_log,ID.spruce_log,ID.mangrove_log,ID.crimson_stem,ID.warped_stem],
+const TAGS={planks:[ID.oak_planks,ID.birch_planks,ID.spruce_planks,ID.mangrove_planks,ID.crimson_planks,ID.warped_planks],log:[ID.oak_log,ID.birch_log,ID.spruce_log,ID.mangrove_log,ID.crimson_stem,ID.warped_stem,ID.stripped_oak_log,ID.stripped_birch_log,ID.stripped_spruce_log,ID.stripped_mangrove_log,ID.stripped_crimson_stem,ID.stripped_warped_stem],
   stonecraft:[ID.cobblestone,ID.cobbled_deepslate,ID.blackstone],coals:[IID.coal,IID.charcoal],wool:COLORS.map(c=>ID[c[0]+'_wool'])};
 const RECIPES=[];
 const matchIng=(ing,id)=>typeof ing==='string'?TAGS[ing.slice(4)].includes(id):ing===id;
 function shaped(res,n,pat,key){const k={};for(const c in key){const v=key[c];k[c]=typeof v==='string'&&!v.startsWith('tag:')?(ID[v]!=null?ID[v]:IID[v]):v}const r=typeof res==='string'?(ID[res]!=null?ID[res]:IID[res]):res;if(r==null)console.warn('recipe?',res);RECIPES.push({res:r,n,pat,key:k})}
 function shapeless(res,n,list){const r=typeof res==='string'?(ID[res]!=null?ID[res]:IID[res]):res;RECIPES.push({res:r,n,list:list.map(v=>typeof v==='string'&&!v.startsWith('tag:')?(ID[v]!=null?ID[v]:IID[v]):v)})}
-for(const [l,p] of[['oak_log','oak_planks'],['birch_log','birch_planks'],['spruce_log','spruce_planks'],['mangrove_log','mangrove_planks'],['crimson_stem','crimson_planks'],['warped_stem','warped_planks']])shapeless(p,4,[l]);
+for(const [l,p] of[['oak_log','oak_planks'],['birch_log','birch_planks'],['spruce_log','spruce_planks'],['mangrove_log','mangrove_planks'],['crimson_stem','crimson_planks'],['warped_stem','warped_planks']]){shapeless(p,4,[l]);shapeless(p,4,['stripped_'+l])}
 shaped('stick',4,['P','P'],{P:'tag:planks'});shaped('crafting_table',1,['PP','PP'],{P:'tag:planks'});shaped('furnace',1,['CCC','C C','CCC'],{C:'tag:stonecraft'});shaped('chest',1,['PPP','P P','PPP'],{P:'tag:planks'});
 shaped('torch',4,['C','S'],{C:'tag:coals',S:'stick'});shaped('ladder',3,['S S','SSS','S S'],{S:'stick'});shaped('oak_fence',3,['PSP','PSP'],{P:'oak_planks',S:'stick'});shaped('spruce_fence',3,['PSP','PSP'],{P:'spruce_planks',S:'stick'});
 shaped('oak_door',3,['PP','PP','PP'],{P:'oak_planks'});shaped('spruce_door',3,['PP','PP','PP'],{P:'spruce_planks'});shaped('red_bed',1,['WWW','PPP'],{W:'tag:wool',P:'tag:planks'});
@@ -1689,7 +1709,7 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.
 renderer.setClearColor(0x000000,1);
 const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(70,1,.05,1000);scene.add(camera);
 const handScene=new THREE.Scene(),handCam=new THREE.PerspectiveCamera(70,1,.01,10);
-const ARR=buildTextures();
+let LAYERK=null;const ARR=buildTextures();
 // 影（太陽から見た深さ）
 let SHADOW=null;
 let DUMMYSH=null;
@@ -1697,7 +1717,7 @@ function makeShadow(size){if(SHADOW){SHADOW.rt.dispose();SHADOW=null}if(!size){i
   rt.depthTexture=new THREE.DepthTexture(size,size);rt.depthTexture.type=THREE.UnsignedIntType;rt.depthTexture.compareFunction=THREE.LessEqualCompare;
   rt.depthTexture.minFilter=rt.depthTexture.magFilter=THREE.LinearFilter;const cam=new THREE.OrthographicCamera(-1,1,1,-1,1,420);cam.layers.set(1);
   SHADOW={rt,cam,size,R:48};U.uShadowMap.value=rt.depthTexture;U.uShadowTexel.value=1/size;renderer.setRenderTarget(rt);renderer.clear();renderer.setRenderTarget(null)}
-const U={uTex:{value:ARR},uTime:{value:0},uSunDir:{value:new THREE.Vector3(0,1,0)},uLightDir:{value:new THREE.Vector3(0,1,0)},uSunCol:{value:new THREE.Color(1,1,1)},uAmb:{value:new THREE.Color(.5,.6,.8)},
+const U={uTex:{value:ARR},uLayerK:{value:LAYERK},uTime:{value:0},uSunDir:{value:new THREE.Vector3(0,1,0)},uLightDir:{value:new THREE.Vector3(0,1,0)},uSunCol:{value:new THREE.Color(1,1,1)},uAmb:{value:new THREE.Color(.5,.6,.8)},
   uBlockCol:{value:new THREE.Color(1.0,.62,.3)},uZenith:{value:new THREE.Color()},uHorizon:{value:new THREE.Color()},uSunset:{value:new THREE.Color(1,.4,.15)},uSunsetAmt:{value:0},uNight:{value:0},
   uFogStart:{value:60},uFogEnd:{value:100},uUnderwater:{value:0},uWaterFog:{value:new THREE.Color(.02,.1,.16)},uRain:{value:0},uBright:{value:.5},
   uShadowMap:{value:null},uShadowMat:{value:new THREE.Matrix4()},uShadowOn:{value:0},uShadowTexel:{value:1/2048},uDyn:{value:new THREE.Vector4(0,-999,0,0)},uFlash:{value:0},uDim:{value:0},uDimAmb:{value:new THREE.Color(0,0,0)},uDark:{value:0}};
@@ -1754,7 +1774,7 @@ void main(){vec4 wp=modelMatrix*vec4(position,1.0);int f=int(tnt.w*255.0+0.5);if
   vW=wp.xyz;vN=normal;vUvL=vec3(uv,dat.x);vAO=dat.y/255.0;vLight=dat.zw/255.0;vTint=tnt.rgb;vF=f;
   vSC=uShadowMat*vec4(wp.xyz+normal*0.045,1.0);vFog=fogV(wp.xyz);
   gl_Position=projectionMatrix*viewMatrix*wp;}`;
-const CHUNK_FS=(trans)=>FH+`precision highp sampler2DArray;uniform sampler2DArray uTex;${COMMON}
+const CHUNK_FS=(trans)=>FH+`precision highp sampler2DArray;uniform sampler2DArray uTex;uniform sampler2D uLayerK;${COMMON}
 in vec3 vUvL;in float vAO;in vec2 vLight;in vec3 vTint;flat in int vF;in vec3 vW;in vec3 vN;in vec4 vSC;in vec4 vFog;
 void main(){vec2 uv=vUvL.xy;int an=(vF&128)!=0?int(vTint.r*255.0+0.5):0;if((vF&8)!=0){uv=uv+vec2(uTime*0.013,uTime*0.009)+0.04*vec2(sin(uTime*0.7+vW.z),cos(uTime*0.6+vW.x));}
   if(an==1){uv.x+=sin(uTime*9.0+uv.y*8.0+vW.x*3.1+vW.z*2.3)*0.05*uv.y;uv.y=clamp(uv.y*(0.92+0.08*sin(uTime*6.0+vW.x*5.0+vW.z*3.0)),0.0,0.999);}
@@ -1767,7 +1787,8 @@ void main(){vec2 uv=vUvL.xy;int an=(vF&128)!=0?int(vTint.r*255.0+0.5):0;if((vF&8
   vec3 alb=tx.rgb;if((vF&64)!=0&&tx.a<0.9)alb*=vTint;alb=pow(alb,vec3(2.2));
   vec3 n=normalize(vN);float ao=mix(0.3,1.0,vAO*vAO);
   vec3 col;bool part=(vF&4)!=0&&(vF&64)!=0;if((vF&4)!=0&&!part){col=alb*((vF&8)!=0?3.6:an==1?2.8:an==2?2.2:3.0);}
-  else{float sh=shadowAt(vSC);col=alb*lightAt(n,vW,vLight.x,vLight.y,ao,sh);if(part&&tx.a>0.86&&tx.a<0.95)col=alb*2.6;}
+  else{float sh=shadowAt(vSC);vec3 ab=alb*texelFetch(uLayerK,ivec2(int(vUvL.z+0.5),0),0).r;float la=dot(ab,vec3(0.2126,0.7152,0.0722));if(la>0.55)ab*=(0.55+(la-0.55)*0.25)/la;
+    col=ab*lightAt(n,vW,vLight.x,vLight.y,ao,sh);if(part&&tx.a>0.86&&tx.a<0.95)col=alb*2.6;}
   col=mix(col,vFog.rgb,vFog.a);gl_FragColor=vec4(col,${trans?'(an==2?0.78:tx.a*0.92)':'1.0'});${TONE}}`;
 const chunkMat=new THREE.ShaderMaterial({glslVersion:THREE.GLSL3,uniforms:U,vertexShader:CHUNK_VS,fragmentShader:CHUNK_FS(false)});
 const transMat=new THREE.ShaderMaterial({glslVersion:THREE.GLSL3,uniforms:U,vertexShader:CHUNK_VS,fragmentShader:CHUNK_FS(true),transparent:true,depthWrite:false});
@@ -2085,7 +2106,9 @@ function breakBlock(x,y,z,quiet,it){const id=getB(x,y,z);if(id<=0)return;const m
   if(id===ID.ice&&!isCreative()&&DIM!=='n'&&getB(x,y-1,z)!==0){setBlock(x,y,z,ID.water,0)}else setBlock(x,y,z,0,0);
   breakFx(x,y,z,id);if(!quiet)SFX.brk(id);if(!(SHP[id]===8&&m&8))dropBlockItems(x,y,z,id,m,it);else if(!isCreative())dropItem(id,1,0,x+.5,y-.5,z+.5,0,2,0,.4);removeDeps(x,y,z,id,m);
   if(LOGS.has(id))scheduleLeafCheck(x,y,z);vibrate(x,y,z,2)}
-const LOGS=new Set([ID.oak_log,ID.birch_log,ID.spruce_log,ID.mangrove_log,ID.crimson_stem,ID.warped_stem]);
+const LOGS=new Set(TAGS.log);
+// 斧で右クリック：原木 → 樹皮をはいだ原木（向きはそのまま）
+const STRIP={};for(const k of['oak_log','birch_log','spruce_log','mangrove_log','crimson_stem','warped_stem'])STRIP[ID[k]]=ID['stripped_'+k];
 // クリエイティブ：すぐこわす
 function doBreak(){const h=TARGET;if(!h)return;swingHand();if(heldTool()==='sword'&&isCreative())return;breakBlock(h.x,h.y,h.z,false,held());flushSets();PL.breakCd=.25}
 const heldTool=()=>{const s=held();return s&&isItem(s.id)&&ITEMS[s.id].tool||null};
@@ -2165,6 +2188,7 @@ function useItem(it){const h=TARGET;const I=ITEMS[it.id],k=I.key;
     if(k==='water_bucket'&&DIM==='n'){SFX.fizz();smoke(tx+.5,ty+.3,tz+.5,10,.3,[.8,.8,.8,.8],1)}else setBlock(tx,ty,tz,k==='water_bucket'?ID.water:ID.lava,0);SFX.bucket(k==='lava_bucket');if(!isCreative()){PL.inv[PL.sel]={id:IID.bucket,n:1,d:0};invDirty()}return true}
   if(I.mob){if(!h)return false;const t=FN[h.f];const m=spawnMob(I.mob,h.x+.5+t[0]*.6,h.f===2?h.y+1:h.y+Math.max(0,t[1]),h.z+.5+t[2]*.6);if(m)m.persist=true;consumeHeld(1);return true}
   if(k==='bone_meal'){if(!h)return false;if(boneMeal(h.x,h.y,h.z)){consumeHeld(1);return true}return false}
+  if(I.tool==='axe'&&h&&STRIP[h.id]){setBlock(h.x,h.y,h.z,STRIP[h.id],getM(h.x,h.y,h.z));flushSets();SFX.place(h.id);breakFx(h.x,h.y,h.z,h.id);damageHeld(1);return true}
   if(I.tool==='hoe'&&h&&(h.id===ID.grass||h.id===ID.dirt||h.id===ID.dirt_path)&&h.f!==3&&getB(h.x,h.y+1,h.z)===0){setBlock(h.x,h.y,h.z,ID.farmland,0);SFX.place(ID.dirt);damageHeld(1);return true}
   if(I.tool==='shovel'&&h&&(h.id===ID.grass||h.id===ID.dirt)&&h.f!==3&&getB(h.x,h.y+1,h.z)===0){setBlock(h.x,h.y,h.z,ID.dirt_path,0);SFX.place(ID.grass);damageHeld(1);return true}
   if(k==='wheat_seeds'||k==='carrot'||k==='potato'){if(h&&h.id===ID.farmland&&h.f===2&&getB(h.x,h.y+1,h.z)===0){setBlock(h.x,h.y+1,h.z,k==='wheat_seeds'?ID.wheat:k==='carrot'?ID.carrots:ID.potatoes,0);SFX.place(ID.grass);consumeHeld(1);return true}}
@@ -2436,7 +2460,7 @@ const ENV={time:1000,weather:'clear',wT:600,rain:0,thunder:0,flashT:0,nextBolt:1
 let RULES={daylight:true,weather:true};
 const TILT=25*Math.PI/180;
 const C3=(r,g,b)=>new THREE.Color(r,g,b);
-const SKY={zD:C3(.13,.32,.78),zN:C3(.004,.008,.024),hD:C3(.44,.62,.88),hN:C3(.018,.028,.06),hS:C3(.95,.48,.26),ambD:C3(.5,.6,.82),ambN:C3(.03,.04,.075),sunH:C3(1.25,.52,.22),sunD:C3(2.3,2.18,1.95),moon:C3(.13,.17,.27)};
+const SKY={zD:C3(.13,.32,.78),zN:C3(.012,.02,.05),hD:C3(.44,.62,.88),hN:C3(.04,.055,.1),hS:C3(.95,.48,.26),ambD:C3(.5,.6,.82),ambN:C3(.19,.22,.33),sunH:C3(1.25,.52,.22),sunD:C3(2.3,2.18,1.95),moon:C3(.24,.29,.42)};
 const _c=new THREE.Color();
 const NFOG={20:C3(.2,.03,.02),21:C3(.2,.025,.02),22:C3(.06,.02,.08),23:C3(.07,.16,.16),24:C3(.26,.22,.25)};const _fc=new THREE.Color(.2,.03,.02);
 function updEnv(dt){if(RULES.daylight&&STATE!=='title')ENV.time=(ENV.time+dt*20)%24000;
@@ -2448,8 +2472,9 @@ function updEnv(dt){if(RULES.daylight&&STATE!=='title')ENV.time=(ENV.time+dt*20)
   U.uDimAmb.value.setRGB(0,0,0);U.uDark.value=PL.effects&&PL.effects.darkness?(.35+.3*Math.sin(performance.now()/1000*1.6)):0;
   if(RULES.weather&&STATE==='play'&&DIM==='o'){ENV.wT-=dt;if(ENV.wT<=0){if(ENV.weather==='clear'){ENV.weather=Math.random()<.3?'thunder':'rain';ENV.wT=180+Math.random()*240}else{ENV.weather='clear';ENV.wT=500+Math.random()*700}}}
   const wantR=ENV.weather==='clear'?0:1;ENV.rain+=(wantR-ENV.rain)*Math.min(1,dt*.25);
-  const th=ENV.time/24000*Math.PI*2,sd=U.uSunDir.value.set(Math.cos(th),Math.sin(th)*Math.cos(TILT),Math.sin(th)*Math.sin(TILT)).normalize(),e=sd.y;ENV.e=e;
-  const day=smooth(-.14,.22,e),ss=(1-smooth(0,.42,Math.abs(e+.02)))*smooth(-.32,-.04,e);ENV.day=day;
+  const fq=((ENV.time/24000-.25)%1+1)%1,ca=(fq*2+(.5-Math.cos(fq*Math.PI)/2))/3,th=Math.PI/2+ca*Math.PI*2,sd=U.uSunDir.value.set(Math.cos(th),Math.sin(th)*Math.cos(TILT),Math.sin(th)*Math.sin(TILT)).normalize(),e=sd.y;ENV.e=e;
+  // 本家と同じ：太陽の角度（正午が0）と空の明るさ（昼10分・夕方1分半・夜7分・明け方1分半）
+  const day=Math.min(1,Math.max(0,Math.sin(th)*2+.5)),ss=(1-smooth(0,.42,Math.abs(e+.02)))*smooth(-.32,-.04,e);ENV.day=day;
   const R=ENV.rain;
   U.uZenith.value.copy(SKY.zN).lerp(SKY.zD,day).multiplyScalar(1-.45*R);
   U.uHorizon.value.copy(SKY.hN).lerp(SKY.hD,day).lerp(SKY.hS,ss*.45).multiplyScalar(1-.4*R);
@@ -2457,7 +2482,7 @@ function updEnv(dt){if(RULES.daylight&&STATE!=='title')ENV.time=(ENV.time+dt*20)
   const useSun=e>-.04;U.uLightDir.value.copy(sd);if(!useSun)U.uLightDir.value.negate();
   if(useSun){_c.copy(SKY.sunH).lerp(SKY.sunD,smooth(.02,.4,e)).multiplyScalar(smooth(-.04,.09,e))}else{_c.copy(SKY.moon).multiplyScalar(smooth(-.04,.12,-e))}
   U.uSunCol.value.copy(_c).multiplyScalar(1-.82*R);
-  U.uAmb.value.copy(SKY.ambN).lerp(SKY.ambD,day).add(_c.setRGB(.2,.1,.05).multiplyScalar(ss)).multiplyScalar(1-.35*R);
+  U.uAmb.value.copy(SKY.ambN).multiplyScalar(.6+.8*CFG.bright).lerp(SKY.ambD,day).add(_c.setRGB(.2,.1,.05).multiplyScalar(ss)).multiplyScalar(1-.35*R);
   skyMat.uniforms.uSkyRot.value=th;U.uRain.value=R;
   // 雷
   if(ENV.weather==='thunder'&&STATE==='play'){ENV.nextBolt-=dt;if(ENV.nextBolt<=0){ENV.nextBolt=6+Math.random()*20;ENV.flashT=.35;setTimeout(()=>SFX.thunder(),300+Math.random()*1500)}}
@@ -2901,9 +2926,13 @@ function useOnMob(m,s){const D=MOBDEF[m.type],id=s?s.id:0;
 function naturalSpawn(c){if(!WORLD||WORLD.demo||!c.bm)return;const k=DIM+ck(c.cx,c.cz);WORLD.spawned=WORLD.spawned||{};if(WORLD.spawned[k])return;WORLD.spawned[k]=1;
   // 構造物の村人・ゴーレム・動物
   if(c.sp)for(const s of c.sp){const m=spawnMob(s[0],s[1],s[2],s[3],null,{prof:s[4],persist:true});if(m&&(s[0]==='villager'||s[0]==='iron_golem'))m.home=[s[1],s[3]]}
-  if(DIM!=='o'||MOBS.length>70)return;const r=mulberry(hashStr(WORLD.seed+':'+k));if(r()>.1)return;
-  const lx0=r()*16|0,lz0=r()*16|0,bi=c.bm[lz0*16+lx0];const T={2:['pig','cow','sheep','chicken','rabbit'],3:['pig','cow','sheep','chicken','wolf'],4:['pig','cow','sheep','chicken','rabbit'],5:['wolf','fox','rabbit','sheep'],6:['rabbit','fox','polar_bear'],7:['rabbit'],8:['goat','sheep','goat'],10:['frog','frog','chicken'],1:['chicken']}[bi];if(!T)return;
-  const type=T[r()*T.length|0],n=type==='polar_bear'||type==='wolf'?1+(r()*2|0):2+(r()*3|0);
+  if(DIM!=='o'||MOBS.length>70)return;const r=mulberry(hashStr(WORLD.seed+':'+k));const roll=r();
+  const lx0=r()*16|0,lz0=r()*16|0,bi=c.bm[lz0*16+lx0];
+  // 出やすさは本家と同じ重み（ヒツジ12・ブタ10・ニワトリ10・ウシ8…）。ヒツジは4頭前後の群れ
+  const W={2:{sheep:12,pig:10,chicken:10,cow:8,rabbit:3},3:{sheep:12,pig:10,chicken:10,cow:8,wolf:5},4:{sheep:12,pig:10,chicken:10,cow:8,rabbit:3},5:{sheep:12,wolf:8,rabbit:4,fox:8},6:{rabbit:10,fox:8,polar_bear:1},7:{rabbit:4},8:{goat:10,sheep:12},10:{frog:10,chicken:10},1:{chicken:10}}[bi];if(!W)return;
+  let type=null;if(roll<=.1){let tot=0;for(const t in W)tot+=W[t];let q=r()*tot;for(const t in W){q-=W[t];if(q<0){type=t;break}}}
+  else if(roll<=.14&&W.sheep)type='sheep';
+  if(!type)return;const n=type==='polar_bear'||type==='wolf'?1+(r()*2|0):type==='sheep'?3+(r()*3|0):2+(r()*3|0);
   for(let i=0;i<n;i++){const lx=clamp(lx0+(r()*6|0)-3,0,15),lz=clamp(lz0+(r()*6|0)-3,0,15);let y=WH-1;while(y>0&&(!c.b[lx|(lz<<4)|(y<<8)]||SHP[c.b[lx|(lz<<4)|(y<<8)]]===2))y--;
     const top=c.b[lx|(lz<<4)|(y<<8)];if(!SOL[top]||top===ID.water||LEAF[top])continue;const m=spawnMob(type,c.cx*16+lx+.5,y+1,c.cz*16+lz+.5,null,{persist:true});if(m&&type==='sheep'&&r()<.15)m.col=['black','gray','light_gray','brown','pink'][r()*5|0]}}
 let spawnAcc=0;
@@ -3179,12 +3208,14 @@ function autoFill(r,w,h){for(let i=0;i<9;i++){const s=CRAFT.grid[i];if(s){giveIt
   else r.pat.forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=row[x];if(c!==' ')CRAFT.grid[y*3+x]=take(r.key[c])}});SFX.click2();refreshCont()}
 function showRecipe(r,w){const names=[];const L=r.list||r.pat.join('').split('').filter(c=>c!==' ').map(c=>r.key[c]);const cnt=new Map();for(const ing of L){const n=typeof ing==='string'?{planks:'板材',log:'原木',stonecraft:'丸石など',coals:'石炭か木炭',wool:'羊毛'}[ing.slice(4)]:itemName(ing);cnt.set(n,(cnt.get(n)||0)+1)}
   toast(itemName(r.res)+'：'+[...cnt].map(([n,k])=>n+'×'+k).join('・'))}
-function openInvScreen(){if(isCreative()){openInv();return}openCont('inv','持ち物',(W,add)=>{
+function openInvScreen(){if(isCreative()){openInv();return}openBag()}
+function openBag(){openCont('inv','持ち物',(W,add)=>{
+    if(isCreative()){const b=document.createElement('button');b.className='mcb';b.style.cssText='width:auto;height:32px;font-size:14px;margin:0 0 6px';b.textContent='← クリエイティブのアイテム一覧';b.onclick=()=>{closeCont();openInv()};W.appendChild(b)}
     const top=document.createElement('div');top.className='itop';
     const arm=[0,1,2,3].map(i=>add(SA(PL.armor,i,{max:1,accept:id=>isItem(id)&&ITEMS[id].armor===i||i===0&&id===ID.carved_pumpkin,cls:'arm a'+i})));
     const cr=[0,1,3,4].map(i=>add(SA(CRAFT.grid,i)));const res=add(craftSlot(2,2));
     top.innerHTML=`<div class="acol">${arm.map(s=>`<div data-s="${s.k}"></div>`).join('')}</div><div class="pview"><canvas id="pvc" width="120" height="180"></canvas></div><div class="craft2"><div class="ttl2">クラフト</div><div class="sg" style="grid-template-columns:repeat(2,var(--is))">${cr.map(s=>`<div data-s="${s.k}"></div>`).join('')}</div><div class="arrow">➜</div><div data-s="${res.k}"></div></div>`;
-    W.appendChild(top);const pl=plSlots().map(add);W.insertAdjacentHTML('beforeend',`<div class="ttl2">持ち物</div>`+gridHTML(pl.slice(9),9)+`<div style="height:6px"></div>`+gridHTML(pl.slice(0,9),9));
+    W.appendChild(top);const pl=plSlots().map(add);W.insertAdjacentHTML('beforeend',`<div class="ttl2">持ち物（バックパック）</div>`+gridHTML(pl.slice(9),9)+`<div style="height:6px"></div>`+gridHTML(pl.slice(0,9),9)+`<div class="note" style="font-size:11px;color:#555;margin-top:4px">つかんだアイテムを窓の外に置くと、地面に捨てられます</div>`);
     const rb=recipeBook(W,2,2);CONT.after=()=>{rb&&rb.redraw;drawPlayerView()};CONT.rb=rb})}
 function openCraft(n){openCont('craft','作業台',(W,add)=>{const cr=[0,1,2,3,4,5,6,7,8].map(i=>add(SA(CRAFT.grid,i)));const res=add(craftSlot(3,3));
   W.insertAdjacentHTML('beforeend',`<div class="ttl2">作業台</div><div class="crow">${gridHTML(cr,3)}<div class="arrow">➜</div><div data-s="${res.k}"></div></div>`);const pl=plSlots().map(add);
@@ -3226,11 +3257,17 @@ let curTab='build';
 function itemsOf(tab,q){const out=[];for(const b of B){if(b.hidden||!b.id)continue;if(tab!=='all'&&b.cat!==tab&&!q)continue;out.push(b.id)}for(const id in ITEMS){const I=ITEMS[id];if(tab==='all'||q||I.cat===tab)out.push(+id)}
   if(q){const s=q.toLowerCase();return out.filter(id=>itemName(id).toLowerCase().includes(s)||itemKey(id).includes(s))}return out}
 function drawInv(){const T=$('tabs');T.innerHTML='';for(const [k,n,ic] of TABS){const b=document.createElement('button');b.className='tab'+(k===curTab?' on':'');b.innerHTML=`<img src="${ICON[ic]}">`;b.title=n;b.onclick=()=>{curTab=k;$('search').value='';drawInv()};T.appendChild(b)}
+  {const b=document.createElement('button');b.className='tab';b.innerHTML='<span style="font-size:22px">🎒</span>';b.title='持ち物（バックパック）';b.onclick=()=>{SFX.click();closeInv();openBag()};T.appendChild(b)}
   $('tabName').textContent=TABS.find(t=>t[0]===curTab)[1];const G2=$('igrid');G2.innerHTML='';const q=$('search').value.trim();
   for(const id of itemsOf(curTab,q)){const d=document.createElement('div');d.className='is';d.innerHTML=`<img src="${ICON[id]}">`;d.onclick=e=>{PL.inv[PL.sel]={id,n:e.shiftKey?maxStack(id):maxStack(id),d:0};SFX.pop();invDirty();drawInv();drawHotbar(true)};
     d.draggable=true;d.ondragstart=e=>{e.dataTransfer.setData('text',String(id))};d.onmouseenter=e=>tip(itemName(id),e);d.onmousemove=e=>tip(itemName(id),e);d.onmouseleave=()=>tip(null);
     d.dataset.id=id;G2.appendChild(d)}
-  const H=$('ihot');H.innerHTML='';for(let i=0;i<9;i++){const s=PL.inv[i],d=document.createElement('div');d.className='is'+(i===PL.sel?' sel':'');fillSlot(d,s);
+  const H=$('ihot');H.innerHTML='';
+  {const d=document.createElement('div');d.className='is';d.title='えらんでいるアイテムを地面に捨てる（ここにドラッグしても捨てられます）';d.innerHTML='<span style="font-size:22px;line-height:1">🗑️</span>';
+   const drop=(id,n)=>{const [dx,dy,dz]=lookDir();dropItem(id,n,0,PL.x,PL.y+PL.eye-.3,PL.z,dx*6,dy*6+1.5,dz*6,2);SFX.pop()};
+   d.onclick=()=>{const s=PL.inv[PL.sel];if(!s)return;drop(s.id,s.n);PL.inv[PL.sel]=null;invDirty();drawInv();drawHotbar(true)};
+   d.ondragover=e=>e.preventDefault();d.ondrop=e=>{e.preventDefault();const id=+e.dataTransfer.getData('text');if(id)drop(id,maxStack(id))};H.appendChild(d)}
+  for(let i=0;i<9;i++){const s=PL.inv[i],d=document.createElement('div');d.className='is'+(i===PL.sel?' sel':'');fillSlot(d,s);
     d.onclick=()=>{PL.sel=i;drawInv();drawHotbar(true)};d.ondragover=e=>e.preventDefault();d.ondrop=e=>{e.preventDefault();const id=+e.dataTransfer.getData('text');if(id){PL.inv[i]={id,n:maxStack(id),d:0};PL.sel=i;invDirty();drawInv();drawHotbar(true)}};
     d.oncontextmenu=e=>{e.preventDefault();PL.inv[i]=null;invDirty();drawInv();drawHotbar()};if(s){d.onmouseenter=e=>tip(itemName(s.id),e);d.onmouseleave=()=>tip(null)}H.appendChild(d)}}
 let hoverId=0;
@@ -3407,10 +3444,10 @@ $('hDone').onclick=()=>{SFX.click();showScr(helpFrom)};let helpFrom='title';
 // ---- タイトル・ワールド一覧 ----
 let selWorld=null;const DIFFN=['ピースフル','イージー','ノーマル','ハード'];
 async function openWorlds(){showScr('worlds');const L=$('wlist');L.innerHTML='<div style="padding:10px;color:#a0a0a0">読みこみ中…</div>';let ws=[];try{ws=await DB.all('worlds')}catch(e){}
-  ws.sort((a,b)=>(b.played||0)-(a.played||0));L.innerHTML='';selWorld=null;$('bPlay').disabled=$('bDel').disabled=true;
+  ws.sort((a,b)=>(b.played||0)-(a.played||0));L.innerHTML='';selWorld=null;$('bPlay').disabled=$('bDel').disabled=$('bExp').disabled=true;
   if(!ws.length)L.innerHTML='<div style="padding:10px;color:#a0a0a0">ワールドがありません。「ワールド新規作成」でつくろう！</div>';
   for(const w of ws){const d=document.createElement('div');d.className='wi';const mode=w.mode==='survival'?'サバイバル':'クリエイティブ';d.innerHTML=`<img class="ic" src="${ICON[w.mode==='survival'?IID.iron_sword:ID.grass]}"><div><b>${esc(w.name)}</b><small>${new Date(w.played||w.created).toLocaleString('ja-JP')}</small><small>${w.type==='flat'?'フラット':'標準'}・${mode}${w.mode==='survival'?'・'+DIFFN[w.diff!=null?w.diff:2]:''}・シード ${esc(String(w.seed))}</small></div>`;
-    d.onclick=()=>{for(const e of L.children)e.classList.remove('on');d.classList.add('on');selWorld=w;$('bPlay').disabled=$('bDel').disabled=false};d.ondblclick=()=>enterWorld(w);L.appendChild(d)}}
+    d.onclick=()=>{for(const e of L.children)e.classList.remove('on');d.classList.add('on');selWorld=w;$('bPlay').disabled=$('bDel').disabled=$('bExp').disabled=false};d.ondblclick=()=>enterWorld(w);L.appendChild(d)}}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 $('bSingle').onclick=()=>{SFX.click();openWorlds()};$('bSet').onclick=()=>{SFX.click();openSettings('title')};$('bHelp').onclick=()=>{SFX.click();helpFrom='title';showScr('help')};
 $('bWBack').onclick=()=>{SFX.click();showScr('title')};$('bPlay').onclick=()=>{if(selWorld){SFX.click();enterWorld(selWorld)}};
@@ -3430,6 +3467,31 @@ function resumeGame(){if(STATE!=='paused'&&STATE!=='inv')return;showScr(null);ST
 $('pBack').onclick=()=>{SFX.click();resumeGame()};$('pSet').onclick=()=>{SFX.click();openSettings('pause')};$('pHelp').onclick=()=>{SFX.click();helpFrom='pause';showScr('help')};
 $('p3d').onclick=()=>{try{parent.postMessage({h3dOpenPanel:1},'*')}catch(e){}};
 $('pQuit').onclick=async()=>{SFX.click();await saveWorld();toTitle()};
+// ---- セーブコード：ワールドを1つの文字列にする。ブラウザの履歴やデータが消えても、貼りつければ続きから遊べる ----
+const b64e=u8=>{let t='';for(let i=0;i<u8.length;i+=0x8000)t+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+const b64d=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const a=atob(t),u=new Uint8Array(a.length);for(let i=0;i<a.length;i++)u[i]=a.charCodeAt(i);return u};
+async function zipBytes(u8,inflate){const cs=inflate?new DecompressionStream('deflate-raw'):new CompressionStream('deflate-raw');return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(cs)).arrayBuffer())}
+async function worldCode(w){const pack={v:1,w,e:{}};for(const d of['o','n','e']){try{const r=await DB.get('edits',editKey(w,d));if(r&&r.data)pack.e[d]=r.data}catch(e){}}
+  const raw=new TextEncoder().encode(JSON.stringify(pack));if(typeof CompressionStream!=='undefined'){try{return'BC1.'+b64e(await zipBytes(raw))}catch(e){}}return'BC0.'+b64e(raw)}
+async function readCode(code){code=String(code||'').replace(/\s+/g,'');const m=code.match(/^BC([01])\.([A-Za-z0-9_-]+)$/);if(!m)throw new Error('セーブコードの形ではありません（BC1. で始まる文字です）');
+  let u=b64d(m[2]);if(m[1]==='1')u=await zipBytes(u,true);const p=JSON.parse(new TextDecoder().decode(u));if(!p||!p.w||!p.w.id)throw new Error('コードの中身がこわれています');return p}
+async function importCode(code){const p=await readCode(code),w=p.w;let ex=null;try{ex=await DB.get('worlds',w.id)}catch(e){}
+  if(ex&&!confirm(`「${ex.name}」はすでにあります。コードの内容で上書きしますか？\n（キャンセルを押すと、別のワールドとして追加します）`)){w.id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);w.name=(w.name||'ワールド')+'（コピー）'}
+  for(const d of['o','n','e'])try{await DB.del('edits',editKey(w,d))}catch(e){}
+  await DB.put('worlds',w);for(const d in p.e)await DB.put('edits',{id:editKey(w,d),data:p.e[d]});return w}
+let codeFrom='worlds',codeName='world';
+function showCode(txt,from,title,name){codeFrom=from;codeName=name||'world';$('codeTtl').textContent=title;$('codeTxt').value=txt||'';const imp=from==='worlds';$('codeLoad').style.display=$('codePick').style.display=imp?'':'none';let emb=true;try{emb=window.top!==window}catch(e){}$('codeFile').style.display=emb||!txt?'none':'';
+  $('codeNote').textContent=txt?`この文字（${txt.length.toLocaleString()}文字）を「コピー」して、メモ帳などに貼りつけてとっておいてください。ブラウザの履歴やデータが消えても、ワールド選択の「コードから読みこむ」に貼りつければ続きから遊べます。`:'とっておいたセーブコードを下に貼りつけて（またはファイルから読んで）「このコードで読みこむ」を押してください。';showScr('code')}
+$('bExp').onclick=async()=>{if(!selWorld)return;SFX.click();$('codeNote').textContent='';try{showCode(await worldCode(selWorld),'worlds','セーブコード：'+selWorld.name,selWorld.name)}catch(e){alert('コードを作れませんでした：'+e.message)}};
+$('bImp').onclick=()=>{SFX.click();showCode('','worlds','コードから読みこむ')};
+$('pCode').onclick=async()=>{SFX.click();if(!WORLD||WORLD.demo){alert('このワールドはセーブされません');return}await saveWorld();let w=null;try{w=await DB.get('worlds',WORLD.id)}catch(e){}if(!w)return;showCode(await worldCode(w),'pause','セーブコード：'+w.name,w.name)};
+$('codeBack').onclick=()=>{SFX.click();if(codeFrom==='pause')showScr('pause');else openWorlds()};
+$('codeCopy').onclick=async()=>{const t=$('codeTxt');t.focus();t.select();let ok=false;try{await navigator.clipboard.writeText(t.value);ok=true}catch(e){try{ok=document.execCommand('copy')}catch(e2){}}
+  $('codeNote').textContent=ok?'コピーしました。メモ帳などに貼りつけてとっておいてください。':'自動でコピーできませんでした。上の文字は全部えらばれているので、そのままコピーしてください。'};
+$('codeFile').onclick=()=>{const t=$('codeTxt').value;if(!t)return;try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download='blockcraft-'+codeName.replace(/[\\/:*?"<>|]/g,'_')+'.txt';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}catch(e){$('codeNote').textContent='ファイルに保存できませんでした。「コピー」を使ってください。'}};
+$('codePick').onclick=()=>$('codeIn').click();
+$('codeIn').onchange=async()=>{const f=$('codeIn').files[0];if(!f)return;$('codeTxt').value=(await f.text()).trim();$('codeIn').value=''};
+$('codeLoad').onclick=async()=>{SFX.click();try{const w=await importCode($('codeTxt').value);await openWorlds();for(const e of $('wlist').children)if(e.querySelector('b')&&e.querySelector('b').textContent===w.name){e.click();break}}catch(e){$('codeNote').textContent='読みこめませんでした：'+e.message}};
 // ---- チャットとコマンド ----
 const CC={0:'#000',1:'#00a',2:'#0a0',3:'#0aa',4:'#a00',5:'#a0a',6:'#fa0',7:'#aaa',8:'#555',9:'#55f',a:'#5f5',b:'#5ff',c:'#f55',d:'#f5f',e:'#ff5',f:'#fff'};
 function chat(msg){const L=$('chatLog');const d=document.createElement('div');let html='';const parts=String(msg).split('§');html=esc(parts[0]);for(let i=1;i<parts.length;i++){const c=CC[parts[i][0]];html+=`<span style="color:${c||'#fff'}">${esc(parts[i].slice(1))}</span>`}
@@ -3513,6 +3575,8 @@ tb('tSneak',()=>{TOUCH.sneakT=!TOUCH.sneakT;if(!PL.fly)TOUCH.sneak=TOUCH.sneakT;
 tb('tDown',()=>{TOUCH.sneak=true},()=>{TOUCH.sneak=false});
 tb('tPause',()=>pauseGame());tb('tView',()=>{PL.view=(PL.view+1)%3});tb('tChat',()=>openChat(''));
 $('tInv').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();openInvScreen()});
+{let dlp=null;$('tDrop').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();dlp=setTimeout(()=>{dlp=null;if(STATE==='play')dropHeld(true)},500)});
+ $('tDrop').addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();if(dlp){clearTimeout(dlp);dlp=null;if(STATE==='play')dropHeld(false)}})}
 const R0=$('rot');
 R0.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;body.classList.add('touch');TOUCH.active=true;initAudio();if(STATE==='sleep'){wakeUp();return}if(STATE!=='play')return;if(e.target.closest('button,.hs,#hotbar'))return;e.preventDefault();
   const p=P(e),W=ROT?innerHeight:innerWidth;
@@ -3571,7 +3635,7 @@ async function enterWorld(w){const demo=!!w.demo;if(WORLD&&!WORLD.demo&&WORLD!==
   while(PL.inv.length<36)PL.inv.push(null);PL.armor=w.armor?w.armor.map(s=>s?{id:s.id,n:1,d:s.d||0}:null):[null,null,null,null];PL.sel=w.sel||0;
   const st=w.stats||{};PL.hp=st.hp!=null?st.hp:20;PL.food=st.food!=null?st.food:20;PL.sat=st.sat!=null?st.sat:5;PL.exh=st.exh||0;PL.air=st.air!=null?st.air:15;PL.xp=st.xp||0;PL.lvl=st.lvl||0;PL.fireT=st.fire||0;PL.effects=st.eff||{};PL.absorb=st.absorb||0;PL.spawn=w.spawn||null;
   if(PL.hp<=0)PL.hp=20;ENV.time=w.time!=null?w.time:1000;ENV.weather=w.weather||'clear';ENV.rain=ENV.weather==='clear'||DIM!=='o'?0:1;RULES=Object.assign({daylight:true,weather:true},w.rules||{});handKey='';invDirty();drawHotbar();
-  if(demo){STATE='title';ENV.time=11400;ENV.weather='clear';ENV.rain=0;showScr('title');body.classList.remove('play')}
+  if(demo){STATE='title';ENV.time=12200;ENV.weather='clear';ENV.rain=0;showScr('title');body.classList.remove('play')}
   else{STATE='loading';showScr('loading');body.classList.remove('play');loadT=performance.now();$('loadTxt').textContent='地形を生成しています…'}
   lastReq='';camera.position.set(PL.x,PL.y+1.6,PL.z);requestChunks(true);
   if(!demo){const ms=w.mobsD?w.mobsD[DIM]:DIM==='o'&&w.mobs?w.mobs.map(m=>({t:m.t,x:m.x,y:m.y,z:m.z,yaw:m.yaw})):null;if(ms)for(const o of ms){const m=spawnMob(o.t,o.x,o.y,o.z,o.yaw,{persist:true,prof:o.prof,tame:o.tame,sit:o.sit,baby:o.baby,col:o.col});if(m&&o.hp)m.hp=o.hp}
@@ -3649,7 +3713,7 @@ addEventListener('pagehide',()=>{saveWorld()});
   $('splash').textContent=SPL[Math.random()*SPL.length|0];$('splash').style.left='calc(50% + min(200px,30vw))';$('splash').style.top='calc(50% - 150px)';
   if(matchMedia('(hover:none)').matches){body.classList.add('touch');TOUCH.active=true}
   buildPlayerModel();startPanorama();showScr('title');requestAnimationFrame(frame);
-  window.__C={PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
+  window.__C={worldCode,importCode,readCode,openBag,dropHeld,TABS,PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
     doBreak,doUse,TARGET:()=>TARGET,TMOB:()=>TMOB,updTarget,PART,saveWorld,toTitle,WORLD:()=>WORLD,SH,flushSets,giveItem,IID,ITEMS,DROPS,dropItem,hurtPlayer,switchDim,DIM:()=>DIM,GENF:()=>GENF,CRAFT,clickSlot,CONT:()=>CONT,CUR:()=>CUR,
     matchRecipe,RECIPES,beMap,chestOf,furnaceOf,updMining,attackMob,held,setMode,killPlayer,respawn,CRYSTALS,explode,tryLightPortal,checkEndPortal,addXp,MODELS,buildModel,PROJ,XPO,rayMob,updUse,hurtMob,checkWitherSummon,placeBlock,useBed,updSculk,setWarn:v=>{WARN=v},getWarn:()=>WARN,addEffect,eatDone,interact,showCredits,countItem}})();
 
