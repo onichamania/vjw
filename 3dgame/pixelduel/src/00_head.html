@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>ピクセル・デュエル</title>
+<style>
+:root{--sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px);--sa-l:env(safe-area-inset-left,0px);--sa-r:env(safe-area-inset-right,0px);--blue:#2463d6;--red:#d6242e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#a8d4ee;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
+#c{position:fixed;inset:0}canvas{display:block}
+.px{font-family:"Courier New",monospace;font-weight:900;letter-spacing:.5px}
+/* ---------- 試合中のHUD（2018年ごろのピクセルガン風） ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5;display:none}
+body.play #hud{display:block}
+#pauseB{position:absolute;left:calc(8px + var(--sa-l));top:calc(8px + var(--sa-t));width:30px;height:30px;background:#f0a01a;border:2px solid #000;border-radius:4px;pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:inset 0 -3px 0 #b86a00}
+#pauseB i{display:block;width:5px;height:14px;background:#3a2400}
+#chatB{position:absolute;left:calc(8px + var(--sa-l));top:calc(44px + var(--sa-t));width:30px;height:26px;background:rgba(40,40,40,.75);border:2px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center}
+#chatB i{display:block;width:16px;height:11px;background:#e8e8e8;border-radius:2px;box-shadow:inset 0 3px 0 -1px #e8e8e8}
+#bars{position:absolute;left:calc(44px + var(--sa-l));top:calc(8px + var(--sa-t))}
+#hearts,#armors{display:flex;gap:1px;height:15px}#armors{margin-top:2px}
+.ht{width:15px;height:15px;position:relative}
+.ht:before,.ht:after{content:"";position:absolute;background:#e01616;border:1px solid #000}
+.ht:before{left:5px;top:0;width:5px;height:15px}.ht:after{left:0;top:5px;width:15px;height:5px}
+.ht.e:before,.ht.e:after{background:#3a1010}.ht.h:before,.ht.h:after{background:#ff7a7a}
+.ar{width:15px;height:15px;background:#3ad8f0;border:1px solid #000;clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
+.ar.e{background:#16323a}.ar.g{background:#f08a1a}
+#score{position:absolute;left:50%;top:calc(6px + var(--sa-t));transform:translateX(-50%);display:flex;align-items:stretch;border:2px solid #000;font-size:17px;font-weight:900}
+#score>div{display:flex;align-items:center;gap:5px;padding:2px 10px}
+#scB{background:var(--blue)}#scR{background:var(--red)}#scT{background:#1a1a1a;min-width:74px;justify-content:center}
+.man{width:10px;height:16px;position:relative}.man:before{content:"";position:absolute;left:2px;top:0;width:6px;height:6px;background:#fff}.man:after{content:"";position:absolute;left:0;top:7px;width:10px;height:9px;background:#fff}
+#scB .man:before,#scB .man:after{background:#7ab8ff}#scR .man:before,#scR .man:after{background:#ff8a8a}
+.glass{width:10px;height:14px;background:linear-gradient(#ffd23f 0 30%,#1a1a1a 30% 70%,#ffd23f 70%);border:2px solid #ddd;border-width:2px 0}
+#money{position:absolute;right:calc(52px + var(--sa-r));top:calc(8px + var(--sa-t));display:flex;border:2px solid #000;font-weight:900;font-size:14px}
+#money>div{display:flex;align-items:center;gap:5px;padding:2px 8px;background:rgba(50,50,50,.8)}
+#money>div+div{border-left:2px solid #000}
+.coin{width:14px;height:14px;border-radius:50%;background:#ffcf2a;border:2px solid #9a6a00}
+.gem{width:14px;height:12px;background:#4ab8ff;clip-path:polygon(20% 0,80% 0,100% 35%,50% 100%,0 35%)}
+#feed{position:absolute;right:calc(8px + var(--sa-r));top:calc(40px + var(--sa-t));display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:13px;font-weight:800}
+#feed div{background:rgba(0,0,0,.45);padding:2px 8px;border-radius:3px}
+#cross{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}
+#cross i{position:absolute;width:3px;height:3px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+#cross i:nth-child(1){left:9px;top:0}#cross i:nth-child(2){left:9px;bottom:0}#cross i:nth-child(3){left:0;top:9px}#cross i:nth-child(4){right:0;top:9px}
+#cross.hit i{background:#ff3a3a}
+#wbar{position:absolute;left:50%;bottom:calc(6px + var(--sa-b));transform:translateX(-50%);display:flex;gap:3px;background:rgba(0,0,0,.35);border:2px solid #000;padding:3px;pointer-events:auto}
+.ws{width:58px;height:46px;background:rgba(60,60,60,.85);border:2px solid #111;position:relative;display:flex;align-items:center;justify-content:center}
+.ws.on{background:#3ec02a;border-color:#a8ff8a}.ws img{width:52px;height:40px;image-rendering:pixelated}
+.ws.lk{opacity:.55}.ws small{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;font-weight:900;text-shadow:0 1px 0 #000}
+.ws .lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+#dmg{position:fixed;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 120px 40px rgba(255,0,0,.55);opacity:0;transition:opacity .25s}
+#msg{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);font-size:34px;font-weight:900;text-align:center;text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.6);white-space:nowrap}
+#msg small{display:block;font-size:16px;margin-top:4px}
+#burn{position:absolute;left:calc(44px + var(--sa-l));top:calc(46px + var(--sa-t));font-size:12px;font-weight:900;color:#ffb03a}
+#net{position:absolute;left:50%;top:calc(40px + var(--sa-t));transform:translateX(-50%);font-size:12px;font-weight:800;background:rgba(0,0,0,.45);padding:2px 8px;border-radius:3px;display:none}
+/* スマホ操作 */
+#touch{position:fixed;inset:0;z-index:6;pointer-events:none;display:none}
+body.play.touch #touch{display:block}
+#stick{position:absolute;left:calc(30px + var(--sa-l));bottom:calc(30px + var(--sa-b));width:110px;height:110px;border-radius:50%;border:3px solid rgba(255,255,255,.55);background:rgba(255,255,255,.08);pointer-events:auto}
+#stick i{position:absolute;left:31px;top:31px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.55)}
+.tb{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.6);background:rgba(255,255,255,.12);pointer-events:auto;display:flex;align-items:center;justify-content:center}
+#tAtk{right:calc(96px + var(--sa-r));bottom:calc(26px + var(--sa-b));width:84px;height:84px}
+#tJump{right:calc(14px + var(--sa-r));bottom:calc(20px + var(--sa-b));width:68px;height:68px}
+#tAtk svg,#tJump svg{width:56%;height:56%}
+/* ---------- メニュー画面 ---------- */
+.scr{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;padding:calc(12px + var(--sa-t)) 14px calc(12px + var(--sa-b));background:linear-gradient(rgba(20,28,40,.55),rgba(20,28,40,.8));overflow-y:auto}
+.scr.on{display:flex}
+.logo{font-size:44px;font-weight:900;color:#ffd23f;text-shadow:0 4px 0 #8a4a00,0 6px 0 #000;letter-spacing:2px;text-align:center;line-height:1}
+.logo small{display:block;font-size:16px;color:#fff;text-shadow:0 2px 0 #000;letter-spacing:0;margin-top:8px}
+.pb{font:inherit;font-size:18px;font-weight:900;color:#fff;background:linear-gradient(#5fd84a,#2f9a22);border:3px solid #000;border-radius:6px;padding:10px 22px;min-width:240px;margin:5px;cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,.45);box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.pb:active{transform:translateY(2px)}.pb.b{background:linear-gradient(#4a9aff,#1f5ad0)}.pb.y{background:linear-gradient(#ffd23f,#e09a10);color:#3a2400;text-shadow:none}.pb.g{background:linear-gradient(#8a8a8a,#555)}.pb.r{background:linear-gradient(#ff5a4a,#c0201a)}
+.pb:disabled{opacity:.45}
+.box{background:rgba(25,30,40,.92);border:3px solid #000;border-radius:8px;padding:14px;width:min(560px,94vw);max-height:84vh;overflow-y:auto;box-shadow:0 6px 0 rgba(0,0,0,.4)}
+.box h2{margin:0 0 10px;font-size:20px;color:#ffd23f;text-shadow:0 2px 0 #000}
+.inp{font:inherit;font-size:18px;font-weight:800;width:100%;padding:10px;border:3px solid #000;border-radius:6px;background:#fff;color:#111;user-select:text;-webkit-user-select:text}
+.note{font-size:12px;color:#c8d0dc;line-height:1.6;margin:6px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.rlist{display:flex;flex-direction:column;gap:6px;margin:8px 0;min-height:60px}
+.ri{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:2px solid #000;border-radius:6px;padding:8px 10px}
+.ri b{flex:1;font-size:16px}.ri small{color:#aab;font-size:12px}
+.wpk{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.wc{width:168px;background:rgba(255,255,255,.07);border:3px solid #000;border-radius:6px;padding:8px;cursor:pointer;text-align:center}
+.wc.on{background:rgba(62,192,42,.35);border-color:#a8ff8a}
+.wc img{width:120px;height:90px;image-rendering:pixelated}.wc b{display:block;font-size:14px;margin:2px 0}
+.st{display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0}.st span{width:74px;white-space:nowrap;text-align:left;color:#cdd}.st i{flex:1;height:7px;background:#111;border:1px solid #000;position:relative}
+.st i u{position:absolute;left:0;top:0;bottom:0;background:#ffd23f}
+.pod{display:flex;gap:30px;align-items:flex-end;justify-content:center;margin:10px 0}
+.pd{width:170px;text-align:center}.pd canvas{width:120px;height:170px;image-rendering:pixelated}
+.pd .nm{font-weight:900;font-size:17px;background:rgba(0,0,0,.5);border:2px solid #000;padding:3px;margin-top:4px;border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pd .base{height:20px;background:linear-gradient(#bbb,#777);border:3px solid #000;border-radius:4px}
+.pd.blue .nm{background:var(--blue)}.pd.red .nm{background:var(--red)}
+.vs{font-size:40px;font-weight:900;color:#ffd23f;text-shadow:0 3px 0 #000;align-self:center}
+.big{font-size:42px;font-weight:900;text-shadow:0 4px 0 #000;margin:4px 0}
+#tip{position:fixed;left:50%;bottom:calc(18px + var(--sa-b));transform:translateX(-50%);z-index:20;background:rgba(0,0,0,.75);padding:6px 14px;border-radius:6px;font-weight:800;font-size:14px;display:none;text-align:center}
+.sl{display:flex;align-items:center;gap:10px;margin:8px 0}.sl span{min-width:110px}.sl input{flex:1}
+@media (max-height:520px){.pd{width:120px}.pd canvas{width:70px;height:99px}.pd .nm{font-size:14px}.pd .base{height:12px}.pod{margin:4px 0;gap:14px}.vs{font-size:26px}.big{font-size:28px;margin:0}
+ .box{padding:10px;max-height:94vh}.box h2{font-size:16px;margin-bottom:6px}.pb{padding:6px 16px;font-size:15px;min-width:170px;margin:3px}.logo{font-size:30px}.logo small{font-size:13px;margin-top:4px}.wc{width:150px;padding:5px}.wc img{width:84px;height:64px}.note{margin:3px 0}
+ .ws{width:50px;height:40px}.ws img{width:44px;height:34px}#stick{width:96px;height:96px}#stick i{left:24px;top:24px;width:42px;height:42px}}
+kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-size:11px}
+</style>
+</head>
+<body>
+<div id="c"></div>
+<div id="dmg"></div>
+<div id="hud">
+ <div id="pauseB"><i></i><i></i></div><div id="chatB"><i></i></div>
+ <div id="bars"><div id="hearts"></div><div id="armors"></div></div><div id="burn"></div>
+ <div id="score"><div id="scB"><div class="man"></div><span id="sB">0</span></div><div id="scT"><div class="glass"></div><span id="sT">2:00</span></div><div id="scR"><div class="man"></div><span id="sR">0</span></div></div>
+ <div id="net"></div>
+ <div id="money"><div><div class="coin"></div><span id="coins">0</span></div><div><div class="gem"></div><span id="gems">0</span></div></div>
+ <div id="feed"></div>
+ <div id="cross"><i></i><i></i><i></i><i></i></div>
+ <div id="msg"></div>
+ <div id="wbar"></div>
+</div>
+<div id="touch"><div id="stick"><i></i></div>
+ <div class="tb" id="tAtk"><svg viewBox="0 0 24 24" fill="#fff"><path d="M4 2l8 8-2 2L2 4zM20 2l-8 8 2 2 8-8zM9 13l2 2-6 6-2-2zM15 13l-2 2 6 6 2-2z"/></svg></div>
+ <div class="tb" id="tJump"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 3l8 9h-5v9H9v-9H4z"/></svg></div></div>
+<!-- 画面 -->
+<div class="scr on" id="sBoot"><div class="logo">PIXEL DUEL<small>ゴーストタウン 1v1</small></div><p class="note" id="bootTx">読みこみ中…</p></div>
+<div class="scr" id="sName"><div class="logo">PIXEL DUEL<small>ゴーストタウン 1v1</small></div><div class="box" style="margin-top:16px"><h2>プレイヤーの名前</h2>
+ <input class="inp" id="nameIn" maxlength="14" placeholder="なまえ（14文字まで）"><p class="note">対戦相手に表示される名前です。あとでメニューから変えられます。</p><div class="row"><button class="pb" id="nameOk">けってい</button></div></div></div>
+<div class="scr" id="sMenu"><div class="logo">PIXEL DUEL<small id="hello"></small></div><div style="height:12px"></div>
+ <button class="pb b" id="mOnline">オンライン対戦（1v1）</button><button class="pb" id="mBot">練習（CPUと対戦）</button><button class="pb y" id="mArmory">武器を選ぶ</button>
+ <div class="row"><button class="pb g" id="mName" style="min-width:116px">名前</button><button class="pb g" id="mSet" style="min-width:116px">設定</button></div><p class="note" id="recTx" style="text-align:center"></p></div>
+<div class="scr" id="sArmory"><div class="box"><h2>武器を選ぶ（接近武器）</h2><div class="wpk" id="wpick"></div>
+ <p class="note">スナイパーとヘビーは準備中です。重さが軽いほど速く走れます（力の拳を1としたとき：コンバットナイフ1.1・ダークフォースサーベル0.9）。</p><div class="row"><button class="pb" id="aOk">OK</button></div></div></div>
+<div class="scr" id="sRooms"><div class="box"><h2>オンライン対戦</h2><div id="netState" class="note"></div>
+ <div class="row"><input class="inp" id="roomIn" maxlength="16" placeholder="部屋の名前（なくてもOK）" style="flex:1;min-width:180px"><button class="pb b" id="rMake" style="min-width:120px">部屋を作る</button></div>
+ <h2 style="margin-top:12px;font-size:16px">参加できる部屋</h2><div class="rlist" id="rlist"></div><div class="row"><button class="pb g" id="rBack">もどる</button></div></div></div>
+<div class="scr" id="sWait"><div class="box" style="text-align:center"><h2 id="wTitle">対戦相手を待っています…</h2>
+ <div class="pod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
+ <p class="note" id="wNote"></p><div class="row"><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
+<div class="scr" id="sResult"><div class="box" style="text-align:center"><div class="big" id="resT"></div>
+ <div class="pod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
+ <p class="note" id="resNote"></p><div class="row"><button class="pb" id="resAgain">もう一度</button><button class="pb g" id="resMenu">メニューへ</button></div></div></div>
+<div class="scr" id="sPause"><div class="box" style="text-align:center"><h2>ポーズ</h2><p class="note" id="pNote"></p>
+ <div class="row"><button class="pb" id="pBack">つづける</button><button class="pb g" id="pSet">設定</button><button class="pb r" id="pQuit">試合をやめる</button></div></div></div>
+<div class="scr" id="sSet"><div class="box"><h2>設定</h2>
+ <div class="sl"><span>視点の感度</span><input type="range" id="sSens" min="20" max="300" step="10"><b id="sSensV"></b></div>
+ <div class="sl"><span>音</span><button class="pb g" id="sSnd" style="min-width:100px;padding:6px"></button></div>
+ <div class="sl"><span>かげ</span><button class="pb g" id="sShadow" style="min-width:100px;padding:6px"></button></div>
+ <p class="note">PC：<kbd>WASD</kbd>移動・マウスで見回す・<kbd>クリック</kbd>攻撃・<kbd>スペース</kbd>ジャンプ（空中でもう一回で2段ジャンプ）・<kbd>Esc</kbd>ポーズ。スマホ：左のスティックで移動、右側をなぞって見回す、⚔で攻撃、↑でジャンプ。</p>
+ <div class="row"><button class="pb" id="sOk">OK</button></div></div></div>
+<div id="tip"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
