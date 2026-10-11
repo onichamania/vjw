@@ -73,7 +73,7 @@ function readOpp(){const P=NET.oppP;if(!P)return;const o=P.presence;
   if(MELEE.includes(o.wm))OPP.wm=o.wm;if(SNIPERS.includes(o.ws))OPP.ws=o.ws;if(o.w===OPP.wm||o.w===OPP.ws)OPP.w=o.w;OPP.scoped=!!o.sc;
   if(Array.isArray(o.sh)&&o.sh[0]!==NET.lastShot&&o.sh.length>=5&&o.sh.every(Number.isFinite)){NET.lastShot=o.sh[0];const w=WIDS[o.sh[1]];if(isSniper(w)){const m=muzzleOf(OPP),segs=[[m.x,m.y,m.z,o.sh[2],o.sh[3],o.sh[4]]];if(o.sh.length>=8)segs.push([o.sh[2],o.sh[3],o.sh[4],o.sh[5],o.sh[6],o.sh[7]]);drawShot(w,segs,false);SFX.shot(w,Math.hypot(OPP.x-ME.x,OPP.z-ME.z))}}OPP.alive=!!o.al;OPP.hp=+o.hp||0;OPP.ar=+o.ar||0;OPP.inv=o.iv?1:0;OPP.netBurn=!!o.bn;OPP.tk=+o.tk||0;
   const s=o.s;if(Array.isArray(s)&&s.length===5&&s.every(Number.isFinite)){const L=NET.buf[NET.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i]))NET.buf.push({t:performance.now(),s:s.slice()});if(NET.buf.length>30)NET.buf.shift()}
-  if(typeof o.a==='number'&&o.a!==NET.lastA){if(o.a>NET.lastA){OPP.atkT=0;if(!isSniper(OPP.w)&&Math.hypot(OPP.x-ME.x,OPP.z-ME.z)<14)SFX.swing(OPP.w)}NET.lastA=o.a}
+  if(typeof o.a==='number'&&o.a!==NET.lastA){if(o.a>NET.lastA){OPP.atkT=0;const dd=Math.hypot(OPP.x-ME.x,OPP.z-ME.z);if(!isSniper(OPP.w)&&dd<16)SFX.swing(OPP.w,clamp(1-dd/16,.2,.8))}NET.lastA=o.a}
   // アイテム：ホストは相手が取ったものを消す、ゲストはホストの一覧に合わせる
   if(NET.host)itemsTakenBy(o.gt);else itemsFromHost(o.it);
   // やられた回数（キルの表示）
