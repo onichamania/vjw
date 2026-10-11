@@ -19,7 +19,7 @@ const SNIPER_DATA={
    pierce:true,ricochet:true,beam:'#d060ff',scope:'comet',cross:'laser',col:'#a050f0',tag:'貫通・はね返る（1回）・8倍'},
  overseer:{jp:'監督',en:'Overseer',dmg:113,head:1.4,rof:74,cap:10,mob:65,zoom:8,reload:2.4,
    xray:true,scope:'thermal',cross:'bullet',col:'#3a6ad8',tag:'壁の向こうの敵が見える（X線）・8倍'}};
-for(const k in SNIPER_DATA){const d=SNIPER_DATA[k];d.cat='sniper';d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;d.hip=.045;WEAPONS[k]=d;WIDS.push(k)}
+for(const k in SNIPER_DATA){const d=SNIPER_DATA[k];d.cat='sniper';d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;d.hip=0;WEAPONS[k]=d;WIDS.push(k)}
 const MELEE=['fists','knife','saber'],SNIPERS=Object.keys(SNIPER_DATA);
 Object.assign(WEAPONS.fists,{short:'力の拳'});Object.assign(WEAPONS.knife,{short:'ナイフ'});Object.assign(WEAPONS.saber,{short:'サーベル'});
 Object.assign(SNIPER_DATA.acr,{short:'アンチチャンプ'});Object.assign(SNIPER_DATA.oneshot,{short:'ワンショット'});Object.assign(SNIPER_DATA.hsr,{short:'ヘビースナイパー'});Object.assign(SNIPER_DATA.comet,{short:'彗星'});Object.assign(SNIPER_DATA.overseer,{short:'監督'});

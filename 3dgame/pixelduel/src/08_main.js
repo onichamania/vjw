@@ -47,9 +47,11 @@ function loop(now){requestAnimationFrame(loop);if(window.__D&&__D.noLoop){last=n
 function step(dt){if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.display='none'}tumbleUpdate(dt);
   if(G.mode){if(!G.paused)gameUpdate(dt)}else menuCam(dt);netTick(dt)}
 // X線（監督）：壁の向こうの相手をオレンジの影で重ねる
-const XSC=new THREE.Scene();XSC.overrideMaterial=new THREE.MeshBasicMaterial({color:0xff3a10,transparent:true,opacity:.72,depthTest:false,depthWrite:false});
+const XSC=new THREE.Scene();XSC.add(new THREE.HemisphereLight(0xfff4dc,0xb89a68,1.1));
 function render(){renderer.clear();renderer.render(scene,cam);
-  if(G.mode&&ME.alive&&WEAPONS[ME.w].xray&&OPP.model&&OPP.model.visible){const m=OPP.model;if(OPP.tag)OPP.tag.visible=false;XSC.add(m);renderer.render(XSC,cam);scene.add(m);if(OPP.tag)OPP.tag.visible=true}if(G.mode&&ME.alive&&VIEW.g.visible){renderer.clearDepth();renderer.render(vscene,vcam)}}
+  if(G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray&&OPP.model&&OPP.model.visible){const m=OPP.model,sv=[];if(OPP.tag)OPP.tag.visible=false;
+    m.traverse(o=>{if(o.isMesh)for(const mt of(Array.isArray(o.material)?o.material:[o.material])){sv.push([mt,mt.depthTest,mt.transparent,mt.opacity]);mt.depthTest=false;mt.transparent=true;mt.opacity=.55}});
+    XSC.add(m);renderer.render(XSC,cam);scene.add(m);for(const [mt,d,t,o] of sv){mt.depthTest=d;mt.transparent=t;mt.opacity=o}if(OPP.tag)OPP.tag.visible=true}if(G.mode&&ME.alive&&VIEW.g.visible){renderer.clearDepth();renderer.render(vscene,vcam)}}
 function boot(){bindUI();$('bootTx').textContent='ゴーストタウンをつくっています…';
   setTimeout(()=>{buildMap();$('bootTx').textContent='道を調べています…';
     setTimeout(()=>{buildNav();renderSniperIcons();applyLayout();hudReset();VIEW.g.visible=false;if(!SV.name)showName();else showMenu();last=performance.now();requestAnimationFrame(loop)},20)},20)}

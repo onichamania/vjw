@@ -31,6 +31,7 @@ const SFX={
    else{noise(.45,2600,160,.75*v,0,.7);tone(62,.4,'sine',.4*v,.45);noise(.15,5000,2500,.25*v)}},
  hitmark(head){tone(head?1500:1900,.05,'square',.08);if(head)tone(2300,.12,'triangle',.12,1,.06)},
  empty(){tone(900,.03,'square',.06)},reload(){noise(.08,1500,700,.15);noise(.08,1200,500,.15,.35);tone(300,.05,'square',.05,1,.7)},
+ pickup(){tone(880,.08,'square',.08);tone(1320,.14,'square',.08,1,.07);tone(1760,.12,'triangle',.06,1,.14)},
  reloadEnd(){noise(.07,2000,800,.18);tone(620,.05,'square',.06,1,.05)},zoom(on){tone(on?1300:900,.04,'square',.05)},draw(){noise(.12,1600,600,.1)},boom(){noise(.9,600,40,.8,0,.6);tone(60,.6,'sine',.4,.4)},click(){tone(700,.04,'square',.06)},burn(){noise(.2,900,300,.06)}};
 // ランチャー（3dgame）の設定：音を出す・音量
 let HOME_VOL=1;function applyHome(o){if(!o||typeof o!=='object')return;if(typeof o.sound==='boolean')SET.homeMute=!o.sound;if(typeof o.vol==='number')HOME_VOL=clamp(o.vol,0,1);if(MASTER)MASTER.gain.value=SET.homeMute?0:.5*HOME_VOL}

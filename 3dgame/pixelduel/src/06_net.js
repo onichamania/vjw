@@ -6,7 +6,7 @@
 // ・当たり判定は攻撃した側。やられた側が受け取って自分の体力をへらす
 const NET={st:'off',room:null,game:null,code:'',title:'',host:false,myPeer:'',oppPeer:'',rd:0,rdy:0,ph:'wait',
   hits:[],ex:[],hseq:0,eseq:0,seenHit:-1,seenEx:-1,seenPeer:'',buf:[],lastA:-1,lastDD:0,lastSD:0,sendT:0,conn:false,lobby:[],gpeers:[],unsub:[],gunsub:[],errMsg:'',oppP:null,hostP:null,lostT:0,
-  pushHit(dmg,head,w){this.hseq++;this.hits.push([this.hseq,Math.round(dmg*10)/10,head?1:0,WIDS.indexOf(w)]);if(this.hits.length>6)this.hits.shift();sendNow()},
+  pushHit(dmg,head,w){this.lastHitHead=head;this.hseq++;this.hits.push([this.hseq,Math.round(dmg*10)/10,head?1:0,WIDS.indexOf(w)]);if(this.hits.length>6)this.hits.shift();sendNow()},
   pushShot(w,segs){this.sseq=(this.sseq||0)+1;const r=v=>Math.round(v*100)/100,a=segs[0],b=segs[1];this.shot=[this.sseq,WIDS.indexOf(w),r(a[3]),r(a[4]),r(a[5])].concat(b?[r(b[3]),r(b[4]),r(b[5])]:[]);sendNow()},
   pushEx(id){this.eseq++;this.ex.push([this.eseq,id]);if(this.ex.length>4)this.ex.shift();sendNow()},
   oppUpdate(dt){oppUpdate(dt)}};
@@ -39,8 +39,8 @@ async function leaveRoom(silent){const g=NET.game;NET.gunsub.forEach(u=>{try{u()
 // 自分の presence（毎秒20回まで）
 function myState(){const p={n:cleanName(SV.name),sk:SV.skin,w:G.mode==='online'?ME.w:SV.weapon,wm:SV.weapon,ws:SV.sniper,sc:ME.scoped?1:0,sh:NET.shot||null,rdy:NET.rdy,r:NET.rd,
   s:[+ME.x.toFixed(2),+ME.y.toFixed(2),+ME.z.toFixed(2),+ME.yaw.toFixed(3),+ME.pitch.toFixed(3)],a:ME.seq,al:ME.alive?1:0,hp:Math.round(ME.hp),ar:Math.round(ME.ar),
-  dd:ME.dd,sd:ME.sd,tk:Math.round(ME.tk),h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
-  if(NET.host)Object.assign(p,{ph:NET.ph,rd:NET.rd,tl:+Math.max(0,G.tl).toFixed(1),ct:+Math.max(0,G.ct).toFixed(1),op:NET.oppPeer,t:NET.title});return p}
+  dd:ME.dd,sd:ME.sd,tk:Math.round(ME.tk),gt:G.mode==='online'?IT.got:[],h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
+  if(NET.host)Object.assign(p,{it:G.mode==='online'?itemsList():[],ph:NET.ph,rd:NET.rd,tl:+Math.max(0,G.tl).toFixed(1),ct:+Math.max(0,G.ct).toFixed(1),op:NET.oppPeer,t:NET.title});return p}
 function sendNow(){if(!NET.game)return;NET.sendT=0;NET.game.presence(myState()).catch(e=>{if(e&&e.code==='invalid_argument')console.warn(e)})}
 function netTick(dt){if(!NET.game)return;NET.sendT+=dt;if(NET.sendT>=.05)sendNow();
   if(!NET.conn&&G.mode==='online'){NET.lostT+=dt}else NET.lostT=0;const n=$('net');
@@ -74,8 +74,10 @@ function readOpp(){const P=NET.oppP;if(!P)return;const o=P.presence;
   if(Array.isArray(o.sh)&&o.sh[0]!==NET.lastShot&&o.sh.length>=5&&o.sh.every(Number.isFinite)){NET.lastShot=o.sh[0];const w=WIDS[o.sh[1]];if(isSniper(w)){const m=muzzleOf(OPP),segs=[[m.x,m.y,m.z,o.sh[2],o.sh[3],o.sh[4]]];if(o.sh.length>=8)segs.push([o.sh[2],o.sh[3],o.sh[4],o.sh[5],o.sh[6],o.sh[7]]);drawShot(w,segs,false);SFX.shot(w,Math.hypot(OPP.x-ME.x,OPP.z-ME.z))}}OPP.alive=!!o.al;OPP.hp=+o.hp||0;OPP.ar=+o.ar||0;OPP.inv=o.iv?1:0;OPP.netBurn=!!o.bn;OPP.tk=+o.tk||0;
   const s=o.s;if(Array.isArray(s)&&s.length===5&&s.every(Number.isFinite)){const L=NET.buf[NET.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i]))NET.buf.push({t:performance.now(),s:s.slice()});if(NET.buf.length>30)NET.buf.shift()}
   if(typeof o.a==='number'&&o.a!==NET.lastA){if(o.a>NET.lastA){OPP.atkT=0;if(!isSniper(OPP.w)&&Math.hypot(OPP.x-ME.x,OPP.z-ME.z)<14)SFX.swing(OPP.w)}NET.lastA=o.a}
+  // アイテム：ホストは相手が取ったものを消す、ゲストはホストの一覧に合わせる
+  if(NET.host)itemsTakenBy(o.gt);else itemsFromHost(o.it);
   // やられた回数（キルの表示）
-  const dd=o.dd|0,sd=o.sd|0;if(dd>NET.lastDD){addFeed(ME,OPP,ME.w,false);SFX.kill();fx(OPP.x,OPP.y+1,OPP.z,'#c81e1e',22,5,.9,.12)}if(sd>NET.lastSD)addFeed(OPP,OPP,'tnt',false);NET.lastDD=dd;NET.lastSD=sd;OPP.dd=dd;OPP.sd=sd;
+  const dd=o.dd|0,sd=o.sd|0;if(dd>NET.lastDD){addFeed(ME,OPP,ME.w,false);SFX.kill();killPop(!!NET.lastHitHead);fx(OPP.x,OPP.y+1,OPP.z,'#c81e1e',22,5,.9,.12)}if(sd>NET.lastSD)addFeed(OPP,OPP,'tnt',false);NET.lastDD=dd;NET.lastSD=sd;OPP.dd=dd;OPP.sd=sd;
   // 相手の攻撃が自分に当たった
   if(Array.isArray(o.h))for(const h of o.h){if(!Array.isArray(h)||!(h[0]>NET.seenHit))continue;NET.seenHit=h[0];const w=WIDS[h[3]],W=WEAPONS[w];if(!W)continue;
     const dmg=Math.min(+h[1]||0,W.dmg*W.head+.5);if(G.phase==='play'&&Math.hypot(OPP.x-ME.x,OPP.y-ME.y,OPP.z-ME.z)<W.range+3.5)applyHit(ME,dmg,!!h[2],w,OPP)}
