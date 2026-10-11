@@ -68,7 +68,8 @@ body.play.touch #touch{display:block}
 #tAim{right:calc(60px + var(--sa-r));bottom:calc(150px + var(--sa-b));width:62px;height:62px}#tRel{right:calc(8px + var(--sa-r));bottom:calc(110px + var(--sa-b));width:54px;height:54px}
 #tAtk2{left:calc(150px + var(--sa-l));bottom:calc(150px + var(--sa-b));width:68px;height:68px}
 .tb.off{display:none!important}.tb.dim{opacity:.35}
-body.lay #touch{display:block}body.lay .tb,body.lay #stick{outline:2px dashed #ffd23f;outline-offset:2px}body.lay .sel{outline:3px solid #ff5a3a!important}
+body.lay #touch{display:block}body.lay .tb,body.lay #stick,body.lay #wbar{outline:2px dashed #ffd23f;outline-offset:2px}
+body.lay #hud{display:block}body.lay:not(.play) #hud>*:not(#wbar){visibility:hidden}body.lay .sel{outline:3px solid #ff5a3a!important}
 #sLay{background:rgba(20,28,40,.25);justify-content:flex-start;padding-top:calc(10px + var(--sa-t));z-index:7;pointer-events:none}
 #sLay .box{pointer-events:auto;width:min(520px,94vw);padding:8px 12px}
 /* ---------- メニュー画面 ---------- */
@@ -161,11 +162,11 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <div class="sl"><span>視点の感度</span><input type="range" id="sSens" min="20" max="300" step="10"><b id="sSensV"></b></div>
  <div class="sl"><span>音</span><button class="pb g" id="sSnd" style="min-width:100px;padding:6px"></button></div>
  <div class="sl"><span>かげ</span><button class="pb g" id="sShadow" style="min-width:100px;padding:6px"></button></div>
- <div class="sl"><span>スマホのボタン</span><button class="pb b" id="sLayB" style="min-width:160px;padding:6px">ボタン配置を変える</button></div>
- <p class="note">PC：<kbd>WASD</kbd>移動・マウスで見回す・<kbd>クリック</kbd>攻撃（撃つ）・<kbd>右クリック</kbd>か<kbd>E</kbd>スコープ・<kbd>R</kbd>リロード・<kbd>1</kbd><kbd>2</kbd>/<kbd>Q</kbd>/ホイールで持ちかえ・<kbd>スペース</kbd>ジャンプ（空中でもう一回で2段ジャンプ）・<kbd>Esc</kbd>ポーズ。スマホ：左のスティックで移動、右側をなぞって見回す、撃つボタン・スコープ・リロード・↑ジャンプ、下のバーで持ちかえ。</p>
+ <div class="sl"><span>ボタン・武器欄</span><button class="pb b" id="sLayB" style="min-width:160px;padding:6px">配置と大きさを変える</button></div>
+ <p class="note">PC：<kbd>WASD</kbd>移動・マウスで見回す・<kbd>クリック</kbd>攻撃（撃つ）・<kbd>右クリック</kbd>か<kbd>E</kbd>スコープ・<kbd>R</kbd>リロード・<kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>/<kbd>Q</kbd>/ホイールで持ちかえ・<kbd>スペース</kbd>ジャンプ（空中でもう一回で2段ジャンプ）・<kbd>Esc</kbd>ポーズ。スマホ：左のスティックで移動、右側をなぞって見回す、撃つボタン・スコープ・リロード・↑ジャンプ、下のバーで持ちかえ。</p>
  <div class="row"><button class="pb" id="sOk">OK</button></div></div></div>
-<div class="scr" id="sLay"><div class="box"><h2 style="font-size:15px">ボタン配置（ドラッグで動かす）</h2>
- <div class="sl" style="margin:4px 0"><span id="layName">ボタンをえらんでね</span><input type="range" id="laySize" min="40" max="170" step="2"></div>
+<div class="scr" id="sLay"><div class="box"><h2 style="font-size:15px">ボタン・武器欄の配置（ドラッグで動かす）</h2>
+ <div class="sl" style="margin:4px 0"><span id="layName">ボタンか武器欄をえらんでね</span><input type="range" id="laySize" min="40" max="170" step="2"></div>
  <div class="row"><button class="pb g" id="layHide" style="min-width:110px;padding:5px 10px">かくす</button><button class="pb g" id="layReset" style="min-width:110px;padding:5px 10px">初期にもどす</button><button class="pb" id="layOk" style="min-width:110px;padding:5px 10px">OK</button></div></div></div>
 <div id="chatLog"></div>
 <div id="chatBox"><div class="row"><input class="inp" id="chatIn" maxlength="60" placeholder="メッセージ（60文字まで）" autocomplete="off"><button class="pb b" id="chatSend" style="min-width:70px;padding:6px 10px;margin:0">送信</button><button class="pb g" id="chatClose" style="min-width:44px;padding:6px 10px;margin:0">✕</button></div><div id="chatQuick"></div></div>
@@ -840,7 +841,7 @@ const scoreOf=F=>(F===ME?OPP:ME).dd-F.sd,ptsOf=F=>Math.round((F===ME?OPP:ME).tk)
 function speedOf(F){return BASE_SP/WEAPONS[F.w].weight*(F.slowT>0?WEAPONS.fists.slow.k:1)}
 // 地面では入力どおりにすぐ動き・すぐ止まる（すべらない）。空中も素早く向きを変えられる
 function moveBody(F,dt,wx,wz,jump){const sp=speedOf(F);
-  if(F.onG&&!(F.kbT>0)){F.vx=wx*sp;F.vz=wz*sp}else{const k=Math.min(1,dt*(F.kbT>0?2:12));F.vx=lerp(F.vx,wx*sp,k);F.vz=lerp(F.vz,wz*sp,k)}if(F.kbT>0)F.kbT-=dt;
+  if(F.onG&&!(F.kbT>0)){F.vx=wx*sp;F.vz=wz*sp}else{const k=Math.min(1,dt*(F.kbT>0?2:F.rj?4:12));/* ロケットジャンプ中は勢いが残る */F.vx=lerp(F.vx,wx*sp,k);F.vz=lerp(F.vz,wz*sp,k)}if(F.kbT>0)F.kbT-=dt;
   const lad=onLadder(F.x,F.y,F.z);
   if(lad&&(wx*lad[6]+wz*lad[7]<-.3||jump)){F.vy=4;F.jumps=0;F.onG=false}   // はしごに向かって進むと登る
   else if(lad&&!F.onG){F.vy=Math.max(F.vy-GRAV*dt,-2.5)}
@@ -1130,7 +1131,7 @@ function botItemGoal(F){if(!ITEMS.length||(F.hp>70&&F.ar>40))return -1;let best=
 // ===================== ヘビー：飛んでいく弾・爆発・ロケットジャンプ・ポータル =====================
 // 弾は目の高さから照準の方向へ飛ぶ（見た目だけ銃口から出て、すぐ照準の線に重なる）。
 // 当たり判定は撃った側：CPU戦は自分の画面で全部、オンラインは自分の弾だけ（相手の弾は見た目だけ）。
-const RJ_V=11.5,RJ_GRAV=.7,PROJ=[],PORTALS=[];let SHOTKEY=0;
+const RJ_V=14,RJ_GRAV=.65,RJ_MAX=16,PROJ=[],PORTALS=[];let SHOTKEY=0;
 // ---- 弾の形（+z が前） ----
 function projMesh(kind,c){const g=new THREE.Group();
   if(kind==='rocket'){bx(g,.11,.11,.4,0,0,0,'#9aa0a6');bx(g,.08,.08,.1,0,0,.24,'#d82a2a');bx(g,.24,.02,.1,0,0,-.16,'#1a1a1a');bx(g,.02,.24,.1,0,0,-.16,'#1a1a1a');bx(g,.08,.08,.16,0,0,-.26,emat('#ffb030'));bx(g,.16,.16,.26,0,0,-.3,tmat('#ff7a10',.45))}
@@ -1176,8 +1177,8 @@ function blast(p,x,y,z,direct,d){const W=WEAPONS[p.w],R=p.rad,dist=Math.hypot(ME
 function knock(V,kb){if(!V.alive)return;V.vx=kb[0];V.vz=kb[2];V.vy=Math.max(V.vy,kb[1]);V.onG=false;V.kbT=Math.max(V.kbT||0,.45)}
 // ロケットジャンプ：爆発から遠ざかる向きに飛ばす（下で爆発すれば上へ）。同じ弾の爆発（4発同時など）は重ねない
 function rocketPush(F,ux,uy,uz,k,rj,key){const m=RJ_V*rj*(.55+.45*k);
-  if(F.rjK===key){if(uy>0)F.vy=Math.min(12.5,Math.max(F.vy,uy*m));return}F.rjK=key;
-  F.vx=F.vx*.4+ux*m*.75;F.vz=F.vz*.4+uz*m*.75;F.vy=Math.min(12.5,uy>0?Math.max(F.vy,0)+uy*m:F.vy+uy*m*.5);
+  if(F.rjK===key){if(uy>0)F.vy=Math.min(RJ_MAX,Math.max(F.vy,uy*m));return}F.rjK=key;
+  F.vx=F.vx*.8+ux*m*.95;F.vz=F.vz*.8+uz*m*.95;F.vy=Math.min(RJ_MAX,uy>0?Math.max(F.vy,0)+uy*m:F.vy+uy*m*.5);   // 走っていた勢いも残す
   F.onG=false;F.rj=true;F.kbT=.8;F.jumps=Math.min(F.jumps||1,1)}
 // ---- 撃つ ----
 function podPos(F,i){const f=aimDir(F.yaw,F.pitch),r=[Math.cos(F.yaw),0,-Math.sin(F.yaw)],s=i%2?1:-1,up=i<2?.12:-.02,a=F===ME?.55:.38,b=F===ME?.12+up:up,c=F===ME?.6:.3;
@@ -1472,7 +1473,7 @@ function buildWBar(){const B=$('wbar');B.textContent='';
   [[ME.wm,WEAPONS[ME.wm].short,false],[ME.ws,WEAPONS[ME.ws].short,false],[ME.wh,WEAPONS[ME.wh].short,false]].forEach(([k,lb,lock],i)=>{const s=document.createElement('div');s.className='ws'+(lock?' lk':'')+(i===ME.cw?' on':'');
     if(!lock){const im=document.createElement('img');im.src=icon(k);s.appendChild(im)}else{const l=document.createElement('div');l.className='lock';l.textContent='🔒';s.appendChild(l)}
     const sm=document.createElement('small');sm.textContent=lb;s.appendChild(sm);if(i>0){sm.style.bottom='9px';const am=document.createElement('div');am.className='am';s.appendChild(am);s._am=am}
-    s.onclick=e=>{e.stopPropagation();if(lock)tip(lb+'は準備中です');else PEND.slot=i};s.ontouchstart=e=>{e.stopPropagation();if(!lock){e.preventDefault();PEND.slot=i}};B.appendChild(s)});
+    s.onclick=e=>{e.stopPropagation();if(LAYM())return;if(lock)tip(lb+'は準備中です');else PEND.slot=i};s.ontouchstart=e=>{e.stopPropagation();if(LAYM())return;if(!lock){e.preventDefault();PEND.slot=i}};B.appendChild(s)});
   for(const k of['cw','am','sc'])delete HC[k]}
 // ---------------- ポーズ・結果 ----------------
 function pauseGame(){if(!G.mode||G.phase==='end')return;if(G.mode==='bot')G.paused=true;$('pNote').textContent=G.mode==='online'?'オンライン対戦中は試合が止まりません。':'';showScr('sPause');if(document.pointerLockElement)document.exitPointerLock()}
@@ -1498,18 +1499,27 @@ function bindUI(){const on=(id,f)=>$(id).addEventListener('click',e=>{e.stopProp
   $('pauseB').addEventListener('click',e=>{e.stopPropagation();pauseGame()});$('pauseB').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();pauseGame()},{passive:false});
   bindChat();on('sLayB',()=>{SFX.click();showLayout()});on('layOk',()=>{SFX.click();endLayout()});on('layReset',()=>{SFX.click();LAY=JSON.parse(JSON.stringify(LAY_DEF));layoutSave();applyLayout();laySel(null)});on('layHide',()=>{if(LSEL&&LAY_HIDE.includes(LSEL)){LAY[LSEL].hide=!LAY[LSEL].hide;layoutSave();applyLayout();laySel(LSEL)}});
   $('laySize').addEventListener('input',e=>{if(LSEL){LAY[LSEL].s=+e.target.value;applyLayout();layoutSave()}})}
-// ---------------- スマホのボタン配置（ドラッグで動かす・大きさ・かくす） ----------------
-const LAY_DEF={stick:{x:.13,y:.74,s:120},tAtk:{x:.76,y:.77,s:88},tJump:{x:.92,y:.83,s:70},tAim:{x:.88,y:.44,s:62},tRel:{x:.95,y:.61,s:54},tAtk2:{x:.2,y:.42,s:68,hide:false}};
-const LAY_NAME={stick:'移動スティック',tAtk:'攻撃（撃つ）',tJump:'ジャンプ',tAim:'スコープ',tRel:'リロード',tAtk2:'左の攻撃ボタン'},LAY_HIDE=['tAim','tRel','tAtk2'];
-let LAY=(()=>{const d=JSON.parse(JSON.stringify(LAY_DEF));try{const o=JSON.parse(LSget('pgduel-layout','null'));if(o)for(const k in d)if(o[k]&&typeof o[k].x==='number'){d[k].x=clamp(o[k].x,0,1);d[k].y=clamp(o[k].y,0,1);d[k].s=clamp(+o[k].s||d[k].s,40,170);d[k].hide=!!o[k].hide}}catch(e){}return d})();
+// ---------------- ボタン配置（ドラッグで動かす・大きさ・かくす）。武器欄（下の武器のバー）はPCでも大きさと場所を変えられる ----------------
+// 武器欄の s は大きさ（%）。x が null のあいだは下の真ん中のまま大きさだけ変わる
+const LAY_DEF={stick:{x:.13,y:.74,s:120},tAtk:{x:.76,y:.77,s:88},tJump:{x:.92,y:.83,s:70},tAim:{x:.88,y:.44,s:62},tRel:{x:.95,y:.61,s:54},tAtk2:{x:.2,y:.42,s:68,hide:false},wbar:{x:null,y:null,s:100}};
+const LAY_NAME={stick:'移動スティック',tAtk:'攻撃（撃つ）',tJump:'ジャンプ',tAim:'スコープ',tRel:'リロード',tAtk2:'左の攻撃ボタン',wbar:'武器欄'},LAY_HIDE=['tAim','tRel','tAtk2'];
+const WBAR_MIN=60,WBAR_MAX=220;
+let LAY=(()=>{const d=JSON.parse(JSON.stringify(LAY_DEF));try{const o=JSON.parse(LSget('pgduel-layout','null'));if(o)for(const k in d){const q=o[k];if(!q)continue;
+  if(k==='wbar'){d.wbar.s=clamp(+q.s||100,WBAR_MIN,WBAR_MAX);if(typeof q.x==='number'&&typeof q.y==='number'){d.wbar.x=clamp(q.x,0,1);d.wbar.y=clamp(q.y,0,1)}}
+  else if(typeof q.x==='number'){d[k].x=clamp(q.x,0,1);d[k].y=clamp(q.y,0,1);d[k].s=clamp(+q.s||d[k].s,40,170);d[k].hide=!!q.hide}}}catch(e){}return d})();
 let LSEL=null,LDRAG=null;
 function layoutSave(){LSset('pgduel-layout',JSON.stringify(LAY))}
-function applyLayout(){for(const k in LAY){const e=$(k),L=LAY[k],s=L.s;e.style.left=clamp(L.x*innerWidth-s/2,0,innerWidth-s)+'px';e.style.top=clamp(L.y*innerHeight-s/2,0,innerHeight-s)+'px';e.style.right=e.style.bottom='auto';e.style.width=e.style.height=s+'px';e.classList.toggle('off',!!L.hide&&!document.body.classList.contains('lay'));e.style.opacity=L.hide?'.3':''}
+function placeWBar(){const e=$('wbar'),L=LAY.wbar,sc=L.s/100;
+  if(L.x==null){e.style.left='50%';e.style.top='auto';e.style.bottom='';e.style.transformOrigin='50% 100%';e.style.transform='translateX(-50%) scale('+sc+')'}
+  else{const w=e.offsetWidth*sc/2,h=e.offsetHeight*sc/2;e.style.left=clamp(L.x*innerWidth,w,Math.max(w,innerWidth-w))+'px';e.style.top=clamp(L.y*innerHeight,h,Math.max(h,innerHeight-h))+'px';e.style.bottom='auto';e.style.transformOrigin='50% 50%';e.style.transform='translate(-50%,-50%) scale('+sc+')'}}
+function applyLayout(){for(const k in LAY){if(k==='wbar'){placeWBar();continue}const e=$(k),L=LAY[k],s=L.s;e.style.left=clamp(L.x*innerWidth-s/2,0,innerWidth-s)+'px';e.style.top=clamp(L.y*innerHeight-s/2,0,innerHeight-s)+'px';e.style.right=e.style.bottom='auto';e.style.width=e.style.height=s+'px';e.classList.toggle('off',!!L.hide&&!document.body.classList.contains('lay'));e.style.opacity=L.hide?'.3':''}
   const k=$('stick').firstElementChild,ks=LAY.stick.s*.38;k.style.width=k.style.height=ks+'px';k.style.left=k.style.top=(LAY.stick.s-ks)/2-3+'px'}
 addEventListener('resize',applyLayout);
-function laySel(k){LSEL=k;for(const id in LAY)$(id).classList.toggle('sel',id===k);$('layName').textContent=k?LAY_NAME[k]+'の大きさ':'ボタンをえらんでね';$('laySize').disabled=!k;if(k)$('laySize').value=LAY[k].s;
+function laySel(k){LSEL=k;for(const id in LAY)$(id).classList.toggle('sel',id===k);$('layName').textContent=k?LAY_NAME[k]+'の大きさ':'ボタンか武器欄をえらんでね';const sl=$('laySize');sl.disabled=!k;
+  if(k==='wbar'){sl.min=WBAR_MIN;sl.max=WBAR_MAX;sl.step=5}else{sl.min=40;sl.max=170;sl.step=2}if(k)sl.value=LAY[k].s;
   $('layHide').disabled=!(k&&LAY_HIDE.includes(k));$('layHide').textContent=k&&LAY[k].hide?'表示する':'かくす'}
-function showLayout(){LAYBACK=document.querySelector('.scr.on')?document.querySelector('.scr.on').id:'sMenu';document.body.classList.add('lay');showScr('sLay');applyLayout();laySel(null)}
+function showLayout(){LAYBACK=document.querySelector('.scr.on')?document.querySelector('.scr.on').id:'sMenu';document.body.classList.add('lay');
+  if(!G.mode){Object.assign(ME,{wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',w:SV.weapon,cw:0});buildWBar()}/* メニューから開いたときも武器欄を見せる */showScr('sLay');applyLayout();laySel(null)}
 let LAYBACK='sMenu';function endLayout(){document.body.classList.remove('lay');laySel(null);applyLayout();if(LAYBACK==='sSet')showSet(setBack);else showScr(LAYBACK)}
 for(const id in LAY_DEF){const e=$(id);e.addEventListener('pointerdown',ev=>{if(!document.body.classList.contains('lay'))return;ev.preventDefault();ev.stopPropagation();laySel(id);const r=e.getBoundingClientRect();LDRAG={id,dx:ev.clientX-(r.left+r.width/2),dy:ev.clientY-(r.top+r.height/2),pid:ev.pointerId};try{e.setPointerCapture(ev.pointerId)}catch(x){}});
   e.addEventListener('pointermove',ev=>{if(!LDRAG||LDRAG.id!==id)return;LAY[id].x=clamp((ev.clientX-LDRAG.dx)/innerWidth,0,1);LAY[id].y=clamp((ev.clientY-LDRAG.dy)/innerHeight,0,1);applyLayout()});

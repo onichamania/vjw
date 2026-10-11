@@ -68,7 +68,8 @@ body.play.touch #touch{display:block}
 #tAim{right:calc(60px + var(--sa-r));bottom:calc(150px + var(--sa-b));width:62px;height:62px}#tRel{right:calc(8px + var(--sa-r));bottom:calc(110px + var(--sa-b));width:54px;height:54px}
 #tAtk2{left:calc(150px + var(--sa-l));bottom:calc(150px + var(--sa-b));width:68px;height:68px}
 .tb.off{display:none!important}.tb.dim{opacity:.35}
-body.lay #touch{display:block}body.lay .tb,body.lay #stick{outline:2px dashed #ffd23f;outline-offset:2px}body.lay .sel{outline:3px solid #ff5a3a!important}
+body.lay #touch{display:block}body.lay .tb,body.lay #stick,body.lay #wbar{outline:2px dashed #ffd23f;outline-offset:2px}
+body.lay #hud{display:block}body.lay:not(.play) #hud>*:not(#wbar){visibility:hidden}body.lay .sel{outline:3px solid #ff5a3a!important}
 #sLay{background:rgba(20,28,40,.25);justify-content:flex-start;padding-top:calc(10px + var(--sa-t));z-index:7;pointer-events:none}
 #sLay .box{pointer-events:auto;width:min(520px,94vw);padding:8px 12px}
 /* ---------- メニュー画面 ---------- */
@@ -161,11 +162,11 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <div class="sl"><span>視点の感度</span><input type="range" id="sSens" min="20" max="300" step="10"><b id="sSensV"></b></div>
  <div class="sl"><span>音</span><button class="pb g" id="sSnd" style="min-width:100px;padding:6px"></button></div>
  <div class="sl"><span>かげ</span><button class="pb g" id="sShadow" style="min-width:100px;padding:6px"></button></div>
- <div class="sl"><span>スマホのボタン</span><button class="pb b" id="sLayB" style="min-width:160px;padding:6px">ボタン配置を変える</button></div>
- <p class="note">PC：<kbd>WASD</kbd>移動・マウスで見回す・<kbd>クリック</kbd>攻撃（撃つ）・<kbd>右クリック</kbd>か<kbd>E</kbd>スコープ・<kbd>R</kbd>リロード・<kbd>1</kbd><kbd>2</kbd>/<kbd>Q</kbd>/ホイールで持ちかえ・<kbd>スペース</kbd>ジャンプ（空中でもう一回で2段ジャンプ）・<kbd>Esc</kbd>ポーズ。スマホ：左のスティックで移動、右側をなぞって見回す、撃つボタン・スコープ・リロード・↑ジャンプ、下のバーで持ちかえ。</p>
+ <div class="sl"><span>ボタン・武器欄</span><button class="pb b" id="sLayB" style="min-width:160px;padding:6px">配置と大きさを変える</button></div>
+ <p class="note">PC：<kbd>WASD</kbd>移動・マウスで見回す・<kbd>クリック</kbd>攻撃（撃つ）・<kbd>右クリック</kbd>か<kbd>E</kbd>スコープ・<kbd>R</kbd>リロード・<kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>/<kbd>Q</kbd>/ホイールで持ちかえ・<kbd>スペース</kbd>ジャンプ（空中でもう一回で2段ジャンプ）・<kbd>Esc</kbd>ポーズ。スマホ：左のスティックで移動、右側をなぞって見回す、撃つボタン・スコープ・リロード・↑ジャンプ、下のバーで持ちかえ。</p>
  <div class="row"><button class="pb" id="sOk">OK</button></div></div></div>
-<div class="scr" id="sLay"><div class="box"><h2 style="font-size:15px">ボタン配置（ドラッグで動かす）</h2>
- <div class="sl" style="margin:4px 0"><span id="layName">ボタンをえらんでね</span><input type="range" id="laySize" min="40" max="170" step="2"></div>
+<div class="scr" id="sLay"><div class="box"><h2 style="font-size:15px">ボタン・武器欄の配置（ドラッグで動かす）</h2>
+ <div class="sl" style="margin:4px 0"><span id="layName">ボタンか武器欄をえらんでね</span><input type="range" id="laySize" min="40" max="170" step="2"></div>
  <div class="row"><button class="pb g" id="layHide" style="min-width:110px;padding:5px 10px">かくす</button><button class="pb g" id="layReset" style="min-width:110px;padding:5px 10px">初期にもどす</button><button class="pb" id="layOk" style="min-width:110px;padding:5px 10px">OK</button></div></div></div>
 <div id="chatLog"></div>
 <div id="chatBox"><div class="row"><input class="inp" id="chatIn" maxlength="60" placeholder="メッセージ（60文字まで）" autocomplete="off"><button class="pb b" id="chatSend" style="min-width:70px;padding:6px 10px;margin:0">送信</button><button class="pb g" id="chatClose" style="min-width:44px;padding:6px 10px;margin:0">✕</button></div><div id="chatQuick"></div></div>

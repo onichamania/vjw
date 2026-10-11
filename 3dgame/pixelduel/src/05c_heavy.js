@@ -1,7 +1,7 @@
 // ===================== ヘビー：飛んでいく弾・爆発・ロケットジャンプ・ポータル =====================
 // 弾は目の高さから照準の方向へ飛ぶ（見た目だけ銃口から出て、すぐ照準の線に重なる）。
 // 当たり判定は撃った側：CPU戦は自分の画面で全部、オンラインは自分の弾だけ（相手の弾は見た目だけ）。
-const RJ_V=11.5,RJ_GRAV=.7,PROJ=[],PORTALS=[];let SHOTKEY=0;
+const RJ_V=14,RJ_GRAV=.65,RJ_MAX=16,PROJ=[],PORTALS=[];let SHOTKEY=0;
 // ---- 弾の形（+z が前） ----
 function projMesh(kind,c){const g=new THREE.Group();
   if(kind==='rocket'){bx(g,.11,.11,.4,0,0,0,'#9aa0a6');bx(g,.08,.08,.1,0,0,.24,'#d82a2a');bx(g,.24,.02,.1,0,0,-.16,'#1a1a1a');bx(g,.02,.24,.1,0,0,-.16,'#1a1a1a');bx(g,.08,.08,.16,0,0,-.26,emat('#ffb030'));bx(g,.16,.16,.26,0,0,-.3,tmat('#ff7a10',.45))}
@@ -47,8 +47,8 @@ function blast(p,x,y,z,direct,d){const W=WEAPONS[p.w],R=p.rad,dist=Math.hypot(ME
 function knock(V,kb){if(!V.alive)return;V.vx=kb[0];V.vz=kb[2];V.vy=Math.max(V.vy,kb[1]);V.onG=false;V.kbT=Math.max(V.kbT||0,.45)}
 // ロケットジャンプ：爆発から遠ざかる向きに飛ばす（下で爆発すれば上へ）。同じ弾の爆発（4発同時など）は重ねない
 function rocketPush(F,ux,uy,uz,k,rj,key){const m=RJ_V*rj*(.55+.45*k);
-  if(F.rjK===key){if(uy>0)F.vy=Math.min(12.5,Math.max(F.vy,uy*m));return}F.rjK=key;
-  F.vx=F.vx*.4+ux*m*.75;F.vz=F.vz*.4+uz*m*.75;F.vy=Math.min(12.5,uy>0?Math.max(F.vy,0)+uy*m:F.vy+uy*m*.5);
+  if(F.rjK===key){if(uy>0)F.vy=Math.min(RJ_MAX,Math.max(F.vy,uy*m));return}F.rjK=key;
+  F.vx=F.vx*.8+ux*m*.95;F.vz=F.vz*.8+uz*m*.95;F.vy=Math.min(RJ_MAX,uy>0?Math.max(F.vy,0)+uy*m:F.vy+uy*m*.5);   // 走っていた勢いも残す
   F.onG=false;F.rj=true;F.kbT=.8;F.jumps=Math.min(F.jumps||1,1)}
 // ---- 撃つ ----
 function podPos(F,i){const f=aimDir(F.yaw,F.pitch),r=[Math.cos(F.yaw),0,-Math.sin(F.yaw)],s=i%2?1:-1,up=i<2?.12:-.02,a=F===ME?.55:.38,b=F===ME?.12+up:up,c=F===ME?.6:.3;

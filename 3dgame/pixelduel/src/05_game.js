@@ -11,7 +11,7 @@ const scoreOf=F=>(F===ME?OPP:ME).dd-F.sd,ptsOf=F=>Math.round((F===ME?OPP:ME).tk)
 function speedOf(F){return BASE_SP/WEAPONS[F.w].weight*(F.slowT>0?WEAPONS.fists.slow.k:1)}
 // 地面では入力どおりにすぐ動き・すぐ止まる（すべらない）。空中も素早く向きを変えられる
 function moveBody(F,dt,wx,wz,jump){const sp=speedOf(F);
-  if(F.onG&&!(F.kbT>0)){F.vx=wx*sp;F.vz=wz*sp}else{const k=Math.min(1,dt*(F.kbT>0?2:12));F.vx=lerp(F.vx,wx*sp,k);F.vz=lerp(F.vz,wz*sp,k)}if(F.kbT>0)F.kbT-=dt;
+  if(F.onG&&!(F.kbT>0)){F.vx=wx*sp;F.vz=wz*sp}else{const k=Math.min(1,dt*(F.kbT>0?2:F.rj?4:12));/* ロケットジャンプ中は勢いが残る */F.vx=lerp(F.vx,wx*sp,k);F.vz=lerp(F.vz,wz*sp,k)}if(F.kbT>0)F.kbT-=dt;
   const lad=onLadder(F.x,F.y,F.z);
   if(lad&&(wx*lad[6]+wz*lad[7]<-.3||jump)){F.vy=4;F.jumps=0;F.onG=false}   // はしごに向かって進むと登る
   else if(lad&&!F.onG){F.vy=Math.max(F.vy-GRAV*dt,-2.5)}
