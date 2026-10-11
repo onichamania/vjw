@@ -36,6 +36,10 @@ body.play #hud{display:block}
 #money>div+div{border-left:2px solid #000}
 .coin{width:14px;height:14px;border-radius:50%;background:#ffcf2a;border:2px solid #9a6a00}
 .gem{width:14px;height:12px;background:#4ab8ff;clip-path:polygon(20% 0,80% 0,100% 35%,50% 100%,0 35%)}
+#rank{position:absolute;right:calc(8px + var(--sa-r));top:calc(132px + var(--sa-t));min-width:130px;background:rgba(0,0,0,.45);border:2px solid #000;border-radius:4px;padding:3px 7px;font-size:12px;font-weight:800;display:none}
+#rank div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}#rank .me{color:#7ab8ff}#rank b{display:block;font-size:11px;color:#ffd23f}
+.wlist{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}.wl{background:rgba(255,255,255,.1);border:2px solid #000;border-radius:5px;padding:5px 10px;font-weight:800}.wl.me{color:#7ab8ff}
+.rtab{margin:8px auto;border-collapse:collapse;min-width:min(420px,90vw)}.rtab td{padding:3px 10px;border-bottom:1px solid rgba(255,255,255,.15);font-weight:800}.rtab tr.me td{color:#7ab8ff}.rtab td:first-child{color:#ffd23f}
 #feed{position:absolute;right:calc(8px + var(--sa-r));top:calc(40px + var(--sa-t));display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:13px;font-weight:800}
 #feed div{background:rgba(0,0,0,.45);padding:2px 8px;border-radius:3px}
 #cross,#hitm{position:absolute;left:50%;top:50%;width:128px;height:128px;transform:translate(-50%,-50%);image-rendering:pixelated}#hitm{width:96px;height:96px;opacity:0;z-index:2}
@@ -128,6 +132,7 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <div id="feed"></div>
  <canvas id="cross" width="128" height="128"></canvas><canvas id="hitm" width="96" height="96"></canvas><div id="pop"></div><div id="hs">HEADSHOT</div>
  <div id="msg"></div>
+ <div id="rank"></div>
  <div id="wbar"></div>
 </div>
 <div id="touch"><div id="stick"><i></i></div>
@@ -141,20 +146,22 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
 <div class="scr" id="sName"><div class="logo">PIXEL DUEL<small>ゴーストタウン 1v1</small></div><div class="box" style="margin-top:16px"><h2>プレイヤーの名前</h2>
  <input class="inp" id="nameIn" maxlength="14" placeholder="なまえ（14文字まで）"><p class="note">対戦相手に表示される名前です。あとでメニューから変えられます。</p><div class="row"><button class="pb" id="nameOk">けってい</button></div></div></div>
 <div class="scr" id="sMenu"><div class="logo">PIXEL DUEL<small id="hello"></small></div><div style="height:12px"></div>
- <button class="pb b" id="mOnline">オンライン対戦（1v1）</button><button class="pb" id="mBot">練習（CPUと対戦）</button><button class="pb y" id="mArmory">武器を選ぶ</button>
+ <button class="pb b" id="mOnline">オンライン対戦（1対1・デスマッチ）</button><button class="pb" id="mBot">1対1の練習（CPU）</button><button class="pb r" id="mDm">デスマッチ（CPU5人）</button><button class="pb y" id="mArmory">武器を選ぶ</button>
  <div class="row"><button class="pb g" id="mName" style="min-width:116px">名前</button><button class="pb g" id="mSet" style="min-width:116px">設定</button></div><p class="note" id="recTx" style="text-align:center"></p></div>
 <div class="scr" id="sArmory"><div class="box" style="width:min(900px,96vw)"><h2>接近武器</h2><div class="wpk" id="wpick"></div>
  <h2 style="margin-top:12px">スナイパー</h2><div class="note" style="margin:0 0 6px">1回の攻撃でへる体力は最大90。シールドがなくても1発ではたおれません。</div><div class="wpk" id="spick"></div>
  <h2 style="margin-top:12px">ヘビー</h2><div class="note" style="margin:0 0 6px">弾が飛んでいき、爆発のまわりにもダメージ（壁の向こうには届かない）。足もとを撃つとロケットジャンプ（ポータルキャノン以外）。</div><div class="wpk" id="hpick"></div>
  <p class="note">持っている武器の重さで走る速さが変わります（力の拳を1として、軽いほど速い）。スナイパーは重め（1.2〜1.45）なので、走るときは接近武器に持ちかえよう。ダメージはバージョン15ごろ（体力100）が基準。1・2・3 か Q・ホイールで持ちかえ。</p><div class="row"><button class="pb" id="aOk">OK</button></div></div></div>
 <div class="scr" id="sRooms"><div class="box"><h2>オンライン対戦</h2><div id="netState" class="note"></div>
- <div class="row"><input class="inp" id="roomIn" maxlength="16" placeholder="部屋の名前（なくてもOK）" style="flex:1;min-width:180px"><button class="pb b" id="rMake" style="min-width:120px">部屋を作る</button></div>
+ <div class="row"><input class="inp" id="roomIn" maxlength="16" placeholder="部屋の名前（なくてもOK）" style="flex:1;min-width:180px"></div><div class="row"><button class="pb b" id="rMake" style="min-width:150px">1対1の部屋を作る</button><button class="pb r" id="rMakeDm" style="min-width:150px">デスマッチの部屋を作る</button></div>
  <h2 style="margin-top:12px;font-size:16px">参加できる部屋</h2><div class="rlist" id="rlist"></div><div class="row"><button class="pb g" id="rBack">もどる</button></div></div></div>
 <div class="scr" id="sWait"><div class="box" style="text-align:center"><h2 id="wTitle">対戦相手を待っています…</h2>
- <div class="pod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
- <p class="note" id="wNote"></p><div class="row"><button class="pb b" id="wChat" style="min-width:140px">チャット</button><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
+ <div class="wlist" id="wList" style="display:none"></div>
+ <div class="pod" id="wPod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
+ <p class="note" id="wNote"></p><div class="row"><button class="pb y" id="wStart" style="min-width:140px;display:none">スタート</button><button class="pb b" id="wChat" style="min-width:140px">チャット</button><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
 <div class="scr" id="sResult"><div class="box" style="text-align:center"><div class="big" id="resT"></div>
- <div class="pod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
+ <table class="rtab" id="resList" style="display:none"></table>
+ <div class="pod" id="resPod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
  <p class="note" id="resNote"></p><div class="row"><button class="pb" id="resAgain">もう一度</button><button class="pb g" id="resMenu">メニューへ</button></div></div></div>
 <div class="scr" id="sPause"><div class="box" style="text-align:center"><h2>ポーズ</h2><p class="note" id="pNote"></p>
  <div class="row"><button class="pb" id="pBack">つづける</button><button class="pb g" id="pSet">設定</button><button class="pb r" id="pQuit">試合をやめる</button></div></div></div>
@@ -834,9 +841,13 @@ const AR_MAX=100,AR_START=50,START_INV=5,ONE_HIT=90,PH=1.85,PR=.3,EYE=1.62,GRAV=
 // mode: null（メニュー） / 'bot'（CPUと練習） / 'online'。phase: 'count' 'play' 'end'
 const G={mode:null,phase:'idle',tl:MATCH_T,ct:0,paused:false,endT:0,res:null,shake:0,time:0};
 function fighter(o){return Object.assign({x:0,y:0,z:0,vx:0,vz:0,vy:0,yaw:0,pitch:0,onG:true,jumps:0,hp:HP_MAX,ar:0,alive:true,respT:0,inv:0,slowT:0,burn:null,
-  atkT:9,atkCD:0,hitT:-1,swingN:0,seq:0,arB:0,lastHead:false,w:'fists',wm:'fists',ws:'acr',wh:'rjumper',stash:{},chg:0,rj:false,kbT:0,tpCD:0,cw:0,mag:0,res:0,relT:0,swT:0,scoped:false,shotT:9,sk:0,name:'',walk:0,spd:0,dd:0,sd:0,tk:0,model:null,tag:null,camY:0,stepD:0,deadT:0,killer:null,bot:false},o||{})}
-let ME=fighter(),OPP=fighter();
-const scoreOf=F=>(F===ME?OPP:ME).dd-F.sd,ptsOf=F=>Math.round((F===ME?OPP:ME).tk);
+  atkT:9,atkCD:0,hitT:-1,swingN:0,seq:0,arB:0,kills:0,dealt:0,kb:{},lastHead:false,w:'fists',wm:'fists',ws:'acr',wh:'rjumper',stash:{},chg:0,rj:false,kbT:0,tpCD:0,cw:0,mag:0,res:0,relT:0,swT:0,scoped:false,shotT:9,sk:0,name:'',walk:0,spd:0,dd:0,sd:0,tk:0,model:null,tag:null,camY:0,stepD:0,deadT:0,killer:null,bot:false},o||{})}
+// 自分（ME）と相手たち（FOES）。1対1では FOES=[OPP]、デスマッチでは何人も。OPP はいつも FOES[0]（いなければ空の人）
+let ME=fighter(),OPP=fighter(),FOES=[OPP];const NOBODY=fighter({alive:false,here:false,name:'???'});
+const ALL=()=>[ME].concat(FOES),live=V=>V===ME||G.mode!=='online'||!!V.here,enemiesOf=F=>ALL().filter(V=>V!==F&&V.alive&&live(V));
+// 得点：キル数−自爆。ポイント：あたえたダメージ（同じキル数のときに使う）
+const scoreOf=F=>(F.kills|0)-(F.sd|0),ptsOf=F=>Math.round(F.dealt||0);
+const DM_BOTS=5,DM_KILLS=15,DM_T=180;   // デスマッチ：CPU5人・15キルか3分で終わり
 // ---------------- 体の動き（プレイヤーとCPUで同じ） ----------------
 function speedOf(F){return BASE_SP/WEAPONS[F.w].weight*(F.slowT>0?WEAPONS.fists.slow.k:1)}
 // 地面では入力どおりにすぐ動き・すぐ止まる（すべらない）。空中も素早く向きを変えられる
@@ -875,11 +886,11 @@ function meleeHit(A,B,range,yaw,pitch){if(!B.alive)return null;const ex=A.x,ey=A
   return segFree(ex,ey,ez,B.x,cy,B.z)?{head:false,d:dist}:null}
 function startSwing(F){if(!F.alive||F.atkCD>0||F.swT>0||G.phase!=='play'||isGun(F.w))return false;const W=WEAPONS[F.w];F.atkCD=W.rate;F.atkT=0;F.hitT=.1;F.swingN++;F.seq++;
   if(F===ME){VIEW.swingN=F.swingN;SFX.swing(F.w)}else{const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(dd<16)SFX.swing(F.w,clamp(1-dd/16,.2,.8))}return true}
-function resolveSwing(F){const W=WEAPONS[F.w],V=F===ME?OPP:ME;let yaw=F.yaw,pitch=F.pitch;if(F.bot){yaw+=rr(-.1,.1);pitch+=rr(-.08,.08)}
-  const h=(V.alive&&(G.mode!=='online'||OPP.here))?meleeHit(F,V,W.range,yaw,pitch):null;
+function resolveSwing(F){const W=WEAPONS[F.w];let yaw=F.yaw,pitch=F.pitch;if(F.bot){yaw+=rr(-.1,.1);pitch+=rr(-.08,.08)}
+  let V=null,h=null;for(const E of enemiesOf(F)){const q=meleeHit(F,E,W.range,yaw,pitch);if(q&&(!h||q.d<h.d)){h=q;V=E}}
   if(h){const dmg=W.dmg*(h.head?W.head:1);
     if(F===ME){crossHit(h.head);SFX.hit(F.w,h.head)}
-    if(G.mode==='online'&&F===ME){NET.pushHit(dmg,h.head,F.w);hitFx(V,F.w,h.head)}else applyHit(V,dmg,h.head,F.w,F);return}
+    if(G.mode==='online'&&F===ME){NET.pushHit(V,dmg,h.head,F.w);hitFx(V,F.w,h.head)}else applyHit(V,dmg,h.head,F.w,F);return}
   // TNT をたたいた
   const ex=F.x,ey=F.y+EYE,ez=F.z,d=aimDir(yaw,pitch);
   for(const t of TNTS){if(!t.alive||t.fuse>0)continue;const tb=rayBox(ex,ey,ez,d,[t.s[0]-.15,t.s[1]-.15,t.s[2]-.15,t.s[3]+.15,t.s[4]+.15,t.s[5]+.15]);
@@ -900,7 +911,7 @@ function fireSniper(F,err){const W=WEAPONS[F.w];if(!F.alive||G.phase!=='play'||F
   if(F.mag<=0){if(F===ME&&F.atkCD<=0){SFX.empty();F.atkCD=.3}startReload(F);return false}
   F.mag--;F.atkCD=W.rate;F.shotT=0;F.atkT=0;F.seq++;let yaw=F.yaw,pitch=F.pitch;
   const sp=F.scoped?0:W.hip;yaw+=rr(-sp,sp);pitch+=rr(-sp,sp)*.6;if(err){yaw+=gauss()*err;pitch+=gauss()*err*.7}
-  const d=aimDir(yaw,pitch),segs=[];traceShot(F,F.x,F.y+EYE,F.z,d,W,W.range,W.ricochet?1:0,segs,{});
+  const d=aimDir(yaw,pitch),segs=[];traceShot(F,F.x,F.y+EYE,F.z,d,W,W.range,W.ricochet?1:0,segs,new Set());
   const mz=muzzleOf(F);if(segs.length){segs[0][0]=mz.x;segs[0][1]=mz.y;segs[0][2]=mz.z}
   drawShot(F.w,segs,F===ME&&F.scoped);if(F===ME){SFX.shot(F.w);G.shake=Math.max(G.shake,.08);if(G.mode==='online')NET.pushShot(F.w,segs)}
   else SFX.shot(F.w,Math.hypot(F.x-ME.x,F.z-ME.z));
@@ -916,18 +927,19 @@ function rayWorld(ox,oy,oz,d,max){let best=max,n=null,hs=null;const ex=ox+d[0]*m
     if(t0<best&&ax>=0){best=t0;n=[0,0,0];n[ax]=sg;hs=s}});
   if(d[1]<-1e-6){const tg=-oy/d[1];if(tg<best){best=tg;n=[0,1,0];hs=null}}return{t:best,n,s:hs}}
 // 弾の道すじ：相手に当たったか・TNT・はね返り
-function traceShot(F,ox,oy,oz,d,W,max,bounce,segs,done){const V=F===ME?OPP:ME;
-  const wall=W.wallbreak?{t:max,n:null,s:null}:rayWorld(ox,oy,oz,d,max);let hit=null;
-  if(!done.v&&V.alive&&(G.mode!=='online'||F!==ME||OPP.here)){const th=raySphere(ox,oy,oz,d,V.x,V.y+1.62,V.z,.27),tb=rayBox(ox,oy,oz,d,[V.x-.34,V.y,V.z-.34,V.x+.34,V.y+1.42,V.z+.34]);
-    let t=null,head=false;if(th!=null&&(tb==null||th<=tb+.2)){t=th;head=true}else if(tb!=null)t=tb;if(t!=null&&t<wall.t)hit={t,head}}
-  if(hit){done.v=1;const thru=W.wallbreak&&rayWorld(ox,oy,oz,d,hit.t).t<hit.t-.05;deliverShot(F,V,W.dmg*(hit.head?W.head:1)*(thru?.5:1),hit.head,F.w)}
+function traceShot(F,ox,oy,oz,d,W,max,bounce,segs,done){
+  const wall=W.wallbreak?{t:max,n:null,s:null}:rayWorld(ox,oy,oz,d,max);const hs=[];
+  for(const V of enemiesOf(F)){if(done.has(V))continue;const th=raySphere(ox,oy,oz,d,V.x,V.y+1.62,V.z,.27),tb=rayBox(ox,oy,oz,d,[V.x-.34,V.y,V.z-.34,V.x+.34,V.y+1.42,V.z+.34]);
+    let t=null,head=false;if(th!=null&&(tb==null||th<=tb+.2)){t=th;head=true}else if(tb!=null)t=tb;if(t!=null&&t<wall.t)hs.push({V,t,head})}
+  hs.sort((a,b)=>a.t-b.t);const use=W.pierce?hs:hs.slice(0,1),hit=use[0]||null;   // 貫通する弾は線上の敵みんなに当たる
+  for(const q of use){done.add(q.V);const thru=W.wallbreak&&rayWorld(ox,oy,oz,d,q.t).t<q.t-.05;deliverShot(F,q.V,W.dmg*(q.head?W.head:1)*(thru?.5:1),q.head,F.w)}
   const end=hit&&!W.pierce?hit.t:wall.t;segs.push([ox,oy,oz,ox+d[0]*end,oy+d[1]*end,oz+d[2]*end]);
   if(hit&&!W.pierce)return;
   const px=ox+d[0]*wall.t,py=oy+d[1]*wall.t,pz=oz+d[2]*wall.t;
   if(wall.s){const t=TNTS.find(q=>q.s===wall.s);if(t&&t.alive){tntLight(t,F);t.fuse=Math.min(t.fuse,.12);if(F===ME&&G.mode==='online')NET.pushEx(t.id)}}
   if(wall.n&&wall.t<max){fx(px+wall.n[0]*.05,py+wall.n[1]*.05,pz+wall.n[2]*.05,W.beam||'#d8c8a0',W.beam?6:5,1.6,.35,.07,6);
     if(bounce>0){const k=2*(d[0]*wall.n[0]+d[1]*wall.n[1]+d[2]*wall.n[2]),nd=[d[0]-k*wall.n[0],d[1]-k*wall.n[1],d[2]-k*wall.n[2]];traceShot(F,px+wall.n[0]*.02,py+wall.n[1]*.02,pz+wall.n[2]*.02,nd,W,max-wall.t,bounce-1,segs,done)}}}
-function deliverShot(F,V,dmg,head,w){if(F===ME){crossHit(head);SFX.hitmark(head);if(head)headshotMsg();if(G.mode==='online'){NET.pushHit(dmg,head,w);hitFx(V,w,head)}else applyHit(V,dmg,head,w,F)}else applyHit(V,dmg,head,w,F)}
+function deliverShot(F,V,dmg,head,w){if(F===ME){crossHit(head);SFX.hitmark(head);if(head)headshotMsg();if(G.mode==='online'){NET.pushHit(V,dmg,head,w);hitFx(V,w,head)}else applyHit(V,dmg,head,w,F)}else applyHit(V,dmg,head,w,F)}
 // 弾の光・線
 const SHOTS=[],SGEO=new THREE.BoxGeometry(1,1,1);
 function drawShot(w,segs,scoped){const W=WEAPONS[w];for(const g of segs){const a=new THREE.Vector3(g[0],g[1],g[2]),b=new THREE.Vector3(g[3],g[4],g[5]),len=a.distanceTo(b);if(len<.05)continue;
@@ -940,21 +952,21 @@ function shotsUpdate(dt){for(let i=SHOTS.length-1;i>=0;i--){const s=SHOTS[i];s.t
 // ダメージ（アーマーが先にへる）。たおしたら true
 function applyDamage(V,dmg,by,key){if(!V.alive||V.inv>0||dmg<=0)return false;let d=dmg;if(V.arB>0){const a=Math.min(V.arB,d);V.arB-=a;d-=a}if(V.ar>0){const a=Math.min(V.ar,d);V.ar-=a;d-=a}
   const ab=dmg-d;let cap=ONE_HIT;if(key!=null){if(V.hk!==key){V.hk=key;V.hkA=0}cap=Math.max(0,ONE_HIT-V.hkA)}d=Math.min(d,cap);if(key!=null)V.hkA+=d;   // 1回の攻撃でへる体力は最大90（4発同時なども合わせて）：シールドがなくても1発ではたおれない
-  const real=Math.min(V.hp,d)+ab;V.hp-=d;if(by&&by!==V)V.tk+=real;
+  const real=Math.min(V.hp,d)+ab;V.hp-=d;if(by&&by!==V)by.dealt=(by.dealt||0)+real;
   if(V===ME){$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,120);G.shake=Math.max(G.shake,.18);SFX.hurt()}
   if(V.hp<=.001){V.hp=0;killFighter(V,by);return true}return false}
 function applyHit(V,dmg,head,w,by,key){if(!V.alive||V.inv>0)return;const W=WEAPONS[w];hitFx(V,w,head);V.lastHead=head;
   if(!applyDamage(V,dmg,by,key)){if(W.slow)V.slowT=W.slow.t;if(W.burn)V.burn={n:W.burn.n,t:W.burn.iv,by,dmg:W.burn.dmg}}}
 function killFighter(V,by){if(V===ME){stopReloadSnd();SFX.charge(false)}clearPortals(V);V.chg=0;V.rj=false;V.alive=false;V.scoped=false;V.relT=0;V.respT=RESP_T;V.deadT=0;V.burn=null;V.slowT=0;V.hitT=-1;V.killer=by&&by!==V?by:null;
-  if(V.killer)V.dd++;else V.sd++;if(V.killer===ME&&V!==ME)killPop(V.lastHead);
+  if(V.killer){V.dd++;V.killer.kills=(V.killer.kills|0)+1;if(V===ME&&V.killer.peer)ME.kb[V.killer.peer]=(ME.kb[V.killer.peer]|0)+1}else V.sd++;if(V.killer===ME&&V!==ME)killPop(V.lastHead);
   addFeed(V.killer||V,V,V.killer?V.killer.w:'tnt',false);
-  if(V===ME){SFX.die();VIEW.g.visible=false}else{SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
+  if(V===ME){SFX.die();VIEW.g.visible=false}else{if(V.killer===ME)SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
   if(V.model)V.model.visible=false}
-function respawn(F){const sp=pickSpawn(F===ME?OPP:ME,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
+function respawn(F){const sp=pickSpawn(F,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
   fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.chg=0;F.rj=false;F.kbT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
   if(F===ME)VIEW.g.visible=true;if(F.model)F.model.visible=true}
 // 相手からいちばん遠い出現地点（上位3つからランダム）
-function pickSpawn(other,needNav){const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:other&&other.alive!==undefined?Math.hypot(s[0]-other.x,s[2]-other.z)+(Math.abs(s[1]-other.y)>2?6:0):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
+function pickSpawn(F,needNav){const os=ALL().filter(o=>o!==F&&o.alive&&live(o));const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:os.length?Math.min(...os.map(o=>Math.hypot(s[0]-o.x,s[2]-o.z)+(Math.abs(s[1]-o.y)>2?6:0))):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
 // ---------------- 状態（遅い・燃える・無敵） ----------------
 function statusUpdate(F,dt){if(F.swT>0)F.swT-=dt;F.shotT+=dt;
   if(F.relT>0){F.relT-=dt;if(F.relT<=0){F.relT=0;if(isGun(F.w)){const W=WEAPONS[F.w],n=Math.min(W.cap-F.mag,F.res);F.mag+=n;F.res-=n;if(F===ME)SFX.reloadEnd(F.w);else{const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(dd<20)SFX.reloadEnd(F.w,clamp(1-dd/20,.2,.6))}}}}
@@ -965,13 +977,13 @@ function statusUpdate(F,dt){if(F.swT>0)F.swT-=dt;F.shotT+=dt;
 // ---------------- TNT ----------------
 function tntLight(t,by){if(!t.alive||t.fuse>0)return;t.fuse=.6;t.by=by;SFX.beep(true)}
 function tntUpdate(dt){for(const t of TNTS){if(t.alive&&t.fuse>0){t.fuse-=dt;t.m.scale.setScalar(1.04+Math.sin(t.fuse*45)*.06);t.m.material=(Math.floor(t.fuse*12)%2)?TNTMAT:whiteMat();if(t.fuse<=0)explode(t)}
-  else if(!t.alive){t.back-=dt;if(t.back<=0){const near=[ME,OPP].some(F=>F.alive&&Math.abs(F.x-t.x)<1&&Math.abs(F.z-t.z)<1&&F.y<t.y+1&&F.y+PH>t.y);if(!near){t.alive=true;t.m.visible=true;t.s.off=false;t.m.scale.setScalar(1);t.m.material=TNTMAT}}}}}
+  else if(!t.alive){t.back-=dt;if(t.back<=0){const near=ALL().some(F=>F.alive&&Math.abs(F.x-t.x)<1&&Math.abs(F.z-t.z)<1&&F.y<t.y+1&&F.y+PH>t.y);if(!near){t.alive=true;t.m.visible=true;t.s.off=false;t.m.scale.setScalar(1);t.m.material=TNTMAT}}}}}
 let WMAT=null;const whiteMat=()=>WMAT||(WMAT=new THREE.MeshBasicMaterial({color:0xffffff}));
 function explode(t){t.alive=false;t.fuse=0;t.m.visible=false;t.s.off=true;t.back=25;t.m.material=TNTMAT;SFX.boom();boomFx(t.x,t.y+.45,t.z);
   const cx=t.x,cy=t.y+.45,cz=t.z;G.shake=Math.max(G.shake,Math.max(0,.6-Math.hypot(ME.x-cx,ME.z-cz)*.03));
   const hurt=F=>{if(!F.alive)return;const dx=F.x-cx,dy=F.y+.9-cy,dz=F.z-cz,d=Math.hypot(dx,dy,dz);if(d>5)return;const dmg=d<2?60:60*(5-d)/3;
     const l=Math.max(.3,Math.hypot(dx,dz));F.vx+=dx/l*7;F.vz+=dz/l*7;F.vy=Math.max(F.vy,6);F.onG=false;F.kbT=.5;applyDamage(F,dmg,t.by)};
-  hurt(ME);if(G.mode==='bot')hurt(OPP);
+  for(const F of ALL())if(F===ME||F.bot)hurt(F);
   for(const o of TNTS)if(o!==t&&o.alive&&o.fuse<=0&&Math.hypot(o.x-t.x,o.y-t.y,o.z-t.z)<3.2){o.fuse=.25;o.by=t.by}}
 function resetTNT(){for(const t of TNTS){t.alive=true;t.fuse=0;t.back=0;t.m.visible=true;t.s.off=false;t.m.scale.setScalar(1);t.m.material=TNTMAT}}
 // ---------------- つぶ（血・火花・爆発） ----------------
@@ -995,76 +1007,90 @@ function updModel(F,dt){const m=F.model;if(!m)return;m.visible=F.alive&&!(F.inv>
 // ---------------- CPU（練習相手） ----------------
 const BOT={itT:0,ig:-1,distT:0,dist:null,goal:-1,wander:-1,react:.3,strafeT:0,strafeS:1,stuckT:0,lx:0,lz:0,aimHead:false};
 const BOT_NAMES=['ならず者ボット','保安官ボット','カウボーイボット','さすらいボット','ガンマンボット'];
-function botUpdate(dt){const F=OPP,T=ME;if(!F.alive)return;let wx=0,wz=0,jump=false;
+const newAI=()=>({itT:0,ig:-1,distT:0,dist:null,goal:-1,wander:-1,react:.4,strafeT:0,strafeS:1,stuckT:0,stuckN:0,lx:0,lz:0,aimHead:false,aimT:0,aimNeed:1,wT:0,lostT:0,tgt:null,tgtT:0,escT:0});
+// ねらう相手：近くて見えている敵（デスマッチではCPUどうしも戦う）
+function botTarget(F,dt){const A=F.ai;A.tgtT-=dt;if(A.tgtT<=0||!A.tgt||!A.tgt.alive){A.tgtT=.6;let best=null,bs=1e9;
+  for(const V of ALL()){if(V===F||!V.alive||!live(V))continue;const d=Math.hypot(V.x-F.x,V.z-F.z)+Math.abs(V.y-F.y)*2,sc=d*(segFree(F.x,F.y+EYE,F.z,V.x,V.y+1.2,V.z)?1:2.2)*(V===A.tgt?.8:1);if(sc<bs){bs=sc;best=V}}A.tgt=best}
+  return A.tgt||NOBODY}
+function botUpdate(F,dt){const A=F.ai,T=botTarget(F,dt);if(!F.alive)return;let wx=0,wz=0,jump=false;
   const dx=T.x-F.x,dz=T.z-F.z,hd=Math.hypot(dx,dz)||1e-3,dy=T.y-F.y;
   const see=T.alive&&hd<60&&segFree(F.x,F.y+EYE,F.z,T.x,T.y+1.2,T.z);
   // 遠くに見えたらスナイパー、近いと接近武器（行ったり来たりしないように幅をもたせる）
   // 近い＝接近武器、中くらい（6.5〜24m）＝ヘビー、遠い（30m〜）＝スナイパー
-  BOT.wT=(BOT.wT||0)-dt;if(F.swT<=0&&F.relT<=0&&F.chg<=0&&BOT.wT<=0){let want=F.cw;if(see)want=hd<6.5?0:hd<24?2:hd>30?1:F.cw===0?2:F.cw;else if(BOT.lostT>2.5)want=0;
-    if(want===2){const a=ammoOf(F,F.wh);if(a[0]<=0&&a[1]<=0)want=1}if(want!==F.cw){switchWeapon(F,want);BOT.wT=1.2}}
-  BOT.lostT=see?0:(BOT.lostT||0)+dt;const W=WEAPONS[F.w],snip=isSniper(F.w),hv=isHeavy(F.w),gun=snip||hv;
+  A.wT=(A.wT||0)-dt;if(F.swT<=0&&F.relT<=0&&F.chg<=0&&A.wT<=0){let want=F.cw;if(see)want=hd<6.5?0:hd<24?2:hd>30?1:F.cw===0?2:F.cw;else if(A.lostT>2.5)want=0;
+    if(want===2){const a=ammoOf(F,F.wh);if(a[0]<=0&&a[1]<=0)want=1}if(want!==F.cw){switchWeapon(F,want);A.wT=1.2}}
+  A.lostT=see?0:(A.lostT||0)+dt;const W=WEAPONS[F.w],snip=isSniper(F.w),hv=isHeavy(F.w),gun=snip||hv;
   // 体力が少ない・相手が見えないときはアイテムを取りに行く（近くの相手は無視しない）
-  BOT.itT-=dt;if(BOT.itT<=0){BOT.itT=.5;BOT.ig=(hd>6&&(F.hp<45||!see))?botItemGoal(F):-1}const seek=BOT.ig>=0;
+  A.itT-=dt;if(A.itT<=0){A.itT=.5;A.ig=(hd>6&&(F.hp<45||!see))?botItemGoal(F):-1}const seek=A.ig>=0;
   if(seek){if(F.cw!==0&&F.swT<=0&&F.relT<=0&&F.chg<=0&&!see)switchWeapon(F,0)}
   else if(gun&&see){   // 狙う：少し横に動きながら止まって撃つ
-    BOT.strafeT-=dt;if(BOT.strafeT<=0){BOT.strafeT=rr(.6,1.6);BOT.strafeS=pick([-1,1,0,0,0])}wx=-dz/hd*BOT.strafeS*.45;wz=dx/hd*BOT.strafeS*.45}
+    A.strafeT-=dt;if(A.strafeT<=0){A.strafeT=rr(.6,1.6);A.strafeS=pick([-1,1,0,0,0])}wx=-dz/hd*A.strafeS*.45;wz=dx/hd*A.strafeS*.45}
   else if(!gun&&see&&hd<14&&Math.abs(dy)<1.2){if(hd>W.range*.65){wx=dx/hd;wz=dz/hd}
-    BOT.strafeT-=dt;if(BOT.strafeT<=0){BOT.strafeT=rr(.4,1.1);BOT.strafeS=pick([-1,1,0,0])}
-    if(hd<5){wx+=-dz/hd*BOT.strafeS*.7;wz+=dx/hd*BOT.strafeS*.7}}
-  if(seek||!(gun&&see)&&!(!gun&&see&&hd<14&&Math.abs(dy)<1.2)){BOT.distT-=dt;if(BOT.distT<=0||!BOT.dist){BOT.distT=.45;let goal=seek?BOT.ig:T.alive?nearestNode(T.x,T.y,T.z):-1;
-      if(goal<0){if(BOT.wander<0||Math.random()<.08)BOT.wander=(Math.random()*NAV.nodes.length)|0;goal=BOT.wander}
-      if(goal!==BOT.goal||!BOT.dist){BOT.goal=goal;BOT.dist=flowTo(goal)}}
+    A.strafeT-=dt;if(A.strafeT<=0){A.strafeT=rr(.4,1.1);A.strafeS=pick([-1,1,0,0])}
+    if(hd<5){wx+=-dz/hd*A.strafeS*.7;wz+=dx/hd*A.strafeS*.7}}
+  if(seek||!(gun&&see)&&!(!gun&&see&&hd<14&&Math.abs(dy)<1.2)){A.distT-=dt;if(A.distT<=0||!A.dist){A.distT=.45;let goal=seek?A.ig:T.alive?nearestNode(T.x,T.y,T.z):-1;
+      if(goal<0){if(A.wander<0||Math.random()<.08)A.wander=(Math.random()*NAV.nodes.length)|0;goal=A.wander}
+      if(goal!==A.goal||!A.dist){A.goal=goal;A.dist=flowTo(goal)}}
     const cur=nearestNode(F.x,F.y,F.z);
-    if(cur>=0&&BOT.dist&&BOT.dist[cur]>0){let n=cur;for(let s=0;s<3;s++){let bn=-1,bd=BOT.dist[n];for(const o of NAV.out[n]){const d=BOT.dist[o];if(d>=0&&d<bd){bd=d;bn=o}}if(bn<0)break;
+    if(cur>=0&&A.dist&&A.dist[cur]>0){let n=cur;for(let s=0;s<3;s++){let bn=-1,bd=A.dist[n];for(const o of NAV.out[n]){const d=A.dist[o];if(d>=0&&d<bd){bd=d;bn=o}}if(bn<0)break;
         if(s>0){const N=NAV.nodes[bn];if(Math.abs(N.y-F.y)>.3||!segFree(F.x,F.y+.7,F.z,N.x,N.y+.7,N.z))break}n=bn}
       const N=NAV.nodes[n],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.05){wx=ddx/l;wz=ddz/l}}
     else{   // 道の外にいる：いちばん近い道の点へ向かう
-      BOT.farT=(BOT.farT||0)-dt;if(BOT.farT<=0||BOT.far==null){BOT.farT=.6;let b=-1,bd=1e9;for(let i=0;i<NAV.nodes.length;i++){const q=NAV.nodes[i],d=Math.hypot(q.x-F.x,q.z-F.z)+Math.abs(q.y-F.y)*3;if(d<bd){bd=d;b=i}}BOT.far=b}
-      if(BOT.far>=0){const N=NAV.nodes[BOT.far],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.5){wx=ddx/l;wz=ddz/l}else if(!(BOT.escT>0)){BOT.far=null;BOT.farT=1;BOT.escT=1;BOT.escA=Math.random()*TAU}}else if(T.alive){wx=dx/hd;wz=dz/hd}}}
+      A.farT=(A.farT||0)-dt;if(A.farT<=0||A.far==null){A.farT=.6;let b=-1,bd=1e9;for(let i=0;i<NAV.nodes.length;i++){const q=NAV.nodes[i],d=Math.hypot(q.x-F.x,q.z-F.z)+Math.abs(q.y-F.y)*3;if(d<bd){bd=d;b=i}}A.far=b}
+      if(A.far>=0){const N=NAV.nodes[A.far],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.5){wx=ddx/l;wz=ddz/l}else if(!(A.escT>0)){A.far=null;A.farT=1;A.escT=1;A.escA=Math.random()*TAU}}else if(T.alive){wx=dx/hd;wz=dz/hd}}}
   // ヘビーは足もとを、動いている相手は少し先をねらう
   let wantYaw=F.yaw,wantPitch=0;if(see&&(gun||hd<14)){if(hv){const tof=hd/W.speed,tx=T.x+(T.vx||0)*tof*.8,tz=T.z+(T.vz||0)*tof*.8,ty=T.y+(T.onG?.3:.9),ax=tx-F.x,az=tz-F.z;wantYaw=Math.atan2(-ax,-az);wantPitch=Math.atan2(ty-(F.y+EYE),Math.hypot(ax,az))}
-    else{wantYaw=Math.atan2(-dx,-dz);wantPitch=Math.atan2(T.y+(BOT.aimHead?1.62:1.0)-(F.y+EYE),hd)}}else if(wx||wz)wantYaw=Math.atan2(-wx,-wz);
+    else{wantYaw=Math.atan2(-dx,-dz);wantPitch=Math.atan2(T.y+(A.aimHead?1.62:1.0)-(F.y+EYE),hd)}}else if(wx||wz)wantYaw=Math.atan2(-wx,-wz);
   F.yaw+=clamp(angDiff(F.yaw,wantYaw),-(gun?4:7)*dt,(gun?4:7)*dt);F.pitch=lerp(F.pitch,wantPitch,Math.min(1,dt*6));
-  BOT.stuckT+=dt;if(BOT.stuckT>.45){const stk=Math.hypot(F.x-BOT.lx,F.z-BOT.lz)<.2&&(wx||wz)&&!(gun&&see);if(stk){jump=true;BOT.stuckN=(BOT.stuckN||0)+1}else BOT.stuckN=0;BOT.lx=F.x;BOT.lz=F.z;BOT.stuckT=0;
-    if(BOT.stuckN>=4){BOT.stuckN=0;BOT.wander=(Math.random()*NAV.nodes.length)|0;BOT.goal=-2;BOT.dist=null;BOT.ig=-1;BOT.itT=3;BOT.escT=.9;BOT.escA=Math.random()*TAU}}
-  if(BOT.escT>0){BOT.escT-=dt;wx=Math.cos(BOT.escA);wz=Math.sin(BOT.escA)}
+  A.stuckT+=dt;if(A.stuckT>.45){const stk=Math.hypot(F.x-A.lx,F.z-A.lz)<.2&&(wx||wz)&&!(gun&&see);if(stk){jump=true;A.stuckN=(A.stuckN||0)+1}else A.stuckN=0;A.lx=F.x;A.lz=F.z;A.stuckT=0;
+    if(A.stuckN>=4){A.stuckN=0;A.wander=(Math.random()*NAV.nodes.length)|0;A.goal=-2;A.dist=null;A.ig=-1;A.itT=3;A.escT=.9;A.escA=Math.random()*TAU}}
+  if(A.escT>0){A.escT-=dt;wx=Math.cos(A.escA);wz=Math.sin(A.escA)}
   if(!gun&&see&&hd<7&&Math.random()<dt*.35)jump=true;
   const wl=Math.hypot(wx,wz);if(wl>1){wx/=wl;wz/=wl}
   if(G.phase!=='play'){wx=wz=0;jump=false}
   moveBody(F,dt,wx,wz,jump);
   if(snip){F.scoped=see&&F.relT<=0;
-    if(see&&Math.abs(angDiff(F.yaw,wantYaw))<.08){BOT.aimT+=dt;if(BOT.aimT>BOT.aimNeed&&F.atkCD<=0&&F.relT<=0&&F.swT<=0){if(F.mag>0){fireSniper(F,.012+hd*.0007);BOT.aimT=0;BOT.aimNeed=rr(.6,1.3);BOT.aimHead=Math.random()<.3}else startReload(F)}}
-    else BOT.aimT=Math.max(0,BOT.aimT-dt*2);
+    if(see&&Math.abs(angDiff(F.yaw,wantYaw))<.08){A.aimT+=dt;if(A.aimT>A.aimNeed&&F.atkCD<=0&&F.relT<=0&&F.swT<=0){if(F.mag>0){fireSniper(F,.012+hd*.0007);A.aimT=0;A.aimNeed=rr(.6,1.3);A.aimHead=Math.random()<.3}else startReload(F)}}
+    else A.aimT=Math.max(0,A.aimT-dt*2);
     if(!see&&F.mag<WEAPONS[F.w].cap&&F.relT<=0)startReload(F)}
   else if(hv){F.scoped=false;   // ヘビー：近すぎると自分もまきこむので撃たない。ポータルキャノンはためてから
-    if(see&&hd>4.5&&Math.abs(angDiff(F.yaw,wantYaw))<.07){BOT.aimT+=dt;const ok=F.atkCD<=0&&F.relT<=0&&F.swT<=0;
-      if(W.charge){if(F.chg>0||(BOT.aimT>BOT.aimNeed&&ok)){if(F.mag<6){if(F.chg<=0)startReload(F)}else{if(F.chg<=0)BOT.chgWant=rr(.45,1);F.chg=Math.min(1,F.chg+dt/W.charge);if(F.chg>=BOT.chgWant){const c=F.chg;F.chg=0;fireHeavy(F,.02+hd*.0008,c);BOT.aimT=0;BOT.aimNeed=rr(.5,1.1)}}}}
-      else if(BOT.aimT>BOT.aimNeed&&ok){if(F.mag>0){fireHeavy(F,.02+hd*.0008);BOT.aimT=0;BOT.aimNeed=rr(.35,.9)}else startReload(F)}}
-    else{BOT.aimT=Math.max(0,BOT.aimT-dt*2);if(F.chg>0){const c=F.chg;F.chg=0;if(see&&hd>4.5)fireHeavy(F,.03,c)}}
+    if(see&&hd>4.5&&Math.abs(angDiff(F.yaw,wantYaw))<.07){A.aimT+=dt;const ok=F.atkCD<=0&&F.relT<=0&&F.swT<=0;
+      if(W.charge){if(F.chg>0||(A.aimT>A.aimNeed&&ok)){if(F.mag<6){if(F.chg<=0)startReload(F)}else{if(F.chg<=0)A.chgWant=rr(.45,1);F.chg=Math.min(1,F.chg+dt/W.charge);if(F.chg>=A.chgWant){const c=F.chg;F.chg=0;fireHeavy(F,.02+hd*.0008,c);A.aimT=0;A.aimNeed=rr(.5,1.1)}}}}
+      else if(A.aimT>A.aimNeed&&ok){if(F.mag>0){fireHeavy(F,.02+hd*.0008);A.aimT=0;A.aimNeed=rr(.35,.9)}else startReload(F)}}
+    else{A.aimT=Math.max(0,A.aimT-dt*2);if(F.chg>0){const c=F.chg;F.chg=0;if(see&&hd>4.5)fireHeavy(F,.03,c)}}
     if(!see&&F.mag<W.cap&&F.relT<=0&&F.chg<=0)startReload(F)}
-  else if(see&&Math.hypot(dx,dy*.6,dz)<W.range+.25&&Math.abs(angDiff(F.yaw,wantYaw))<.35){BOT.react-=dt;if(BOT.react<=0&&F.atkCD<=0&&startSwing(F)){BOT.aimHead=Math.random()<.22;BOT.react=rr(0,.12)}}else BOT.react=rr(.18,.4)}
+  else if(see&&Math.hypot(dx,dy*.6,dz)<W.range+.25&&Math.abs(angDiff(F.yaw,wantYaw))<.35){A.react-=dt;if(A.react<=0&&F.atkCD<=0&&startSwing(F)){A.aimHead=Math.random()<.22;A.react=rr(0,.12)}}else A.react=rr(.18,.4)}
 // ---------------- 試合の流れ ----------------
 function setupFighter(F,o){Object.assign(F,fighter(),o)}
 function startMatch(mode,o){o=o||{};G.mode=mode;G.phase='count';G.ct=3;G.tl=MATCH_T;G.paused=false;G.res=null;G.endT=0;G.lastCt=4;
   for(const p of FX)scene.remove(p.m);FX.length=0;resetTNT();clearFeed();
   setupFighter(ME,{name:SV.name,w:SV.weapon,wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',sk:SV.skin});
-  if(OPP.model)scene.remove(OPP.model);
-  const om=o.oppW||pick(MELEE);setupFighter(OPP,{name:o.oppName||pick(BOT_NAMES),w:om,wm:om,ws:o.oppWs||pick(SNIPERS),wh:o.oppWh||pick(HEAVIES),sk:o.oppSk!=null?o.oppSk:(SV.skin+1+Math.floor(Math.random()*5))%6,bot:mode==='bot',here:mode==='bot'});
-  makeOppModel(OPP);
-  const sA=SPAWNS[o.side===1?1:0],sB=SPAWNS[o.side===1?0:1];
-  for(const [F,s] of[[ME,sA],[OPP,sB]]){F.x=s[0];F.z=s[2];F.y=groundAt(s[0],s[2],s[1]+.2,PR-.03);F.yaw=s[3];F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.camY=F.y;fillAmmo(F)}
-  Object.assign(BOT,{distT:0,dist:null,goal:-1,react:.4,aimT:0,aimNeed:1});for(const q of SHOTS)scene.remove(q.m);SHOTS.length=0;itemsReset();projReset();SFX.charge(false);
+  G.dm=!!o.dm;if(G.dm)G.tl=DM_T;clearFoes();
+  // 相手：CPU戦の1対1はひとり、デスマッチはCPU5人（CPUどうしも戦う）。オンラインは部屋の人が来たら足す（06_net）
+  if(mode==='bot'){const names=G.dm?BOT_NAMES.slice().sort(()=>Math.random()-.5):[pick(BOT_NAMES)],n=G.dm?DM_BOTS:1;
+    for(let i=0;i<n;i++){const om=!G.dm&&o.oppW||pick(MELEE),F=fighter();setupFighter(F,{name:names[i%names.length],w:om,wm:om,ws:!G.dm&&o.oppWs||pick(SNIPERS),wh:!G.dm&&o.oppWh||pick(HEAVIES),sk:i===0&&o.oppSk!=null?o.oppSk:(SV.skin+1+i+Math.floor(Math.random()*5))%6,bot:true,here:true});
+      F.ai=i===0?Object.assign(BOT,newAI()):newAI();makeOppModel(F);FOES.push(F)}}
+  OPP=FOES[0]||NOBODY;
+  // 出現地点：1対1は向かい合わせ、デスマッチはばらばら
+  const sp=i=>SPAWNS[((o.side|0)+i)%SPAWNS.length];
+  ALL().forEach((F,i)=>{const s=G.dm||i>1?sp(i):SPAWNS[(o.side===1)===(i===0)?1:0];F.x=s[0];F.z=s[2];F.y=groundAt(s[0],s[2],s[1]+.2,PR-.03);F.yaw=s[3];F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.camY=F.y;fillAmmo(F)});for(const q of SHOTS)scene.remove(q.m);SHOTS.length=0;itemsReset();projReset();SFX.charge(false);
   setViewWeapon(ME.w);VIEW.g.visible=true;buildWBar();
   document.body.classList.add('play');showScr(null);hudReset();if(mode==='bot')botSay(pick(['よろしく！','よろしくお願いします！','勝負だ！']),2200)}
-function endMatch(why){if(G.phase==='end')return;G.phase='end';G.endT=0;const a=scoreOf(ME),b=scoreOf(OPP),pa=ptsOf(ME),pb=ptsOf(OPP);
-  let r=a>b?'win':a<b?'lose':pa>pb?'win':pa<pb?'lose':'draw';if(why==='left')r='win';if(why==='quit')r='lose';
-  G.res={r,a,b,pa,pb,why};const coins=r==='win'?15:r==='draw'?6:3;SV.coins+=coins;if(r==='win'){SV.wins++;SV.gems+=1}else if(r==='lose')SV.loses++;else SV.draws++;SV.kills+=Math.max(0,OPP.dd);saveSV();G.res.coins=coins;
-  msg(why==='left'?'相手が退出しました':why==='quit'?'':'TIME UP!');if(why==='quit')G.endT=9}
-function quitToMenu(){G.mode=null;G.phase='idle';document.body.classList.remove('play');if(OPP.model){scene.remove(OPP.model);OPP.model=null}VIEW.g.visible=false;msg('');if(document.pointerLockElement)document.exitPointerLock();showMenu()}
+function clearFoes(){for(const F of FOES){if(F.model)scene.remove(F.model);F.model=null;clearPortals(F)}FOES=[];OPP=NOBODY}
+// 順位（得点→ポイント）
+const ranking=()=>ALL().slice().sort((a,b)=>scoreOf(b)-scoreOf(a)||ptsOf(b)-ptsOf(a));
+function endMatch(why){if(G.phase==='end')return;G.phase='end';G.endT=0;const a=scoreOf(ME),b=scoreOf(OPP),pa=ptsOf(ME),pb=ptsOf(OPP),rk=ranking(),place=rk.indexOf(ME)+1;
+  let r;if(G.dm){const top=rk[0]===ME?rk[1]:rk[0],tie=top&&scoreOf(top)===a&&ptsOf(top)===pa;r=why==='quit'?'lose':place===1?(tie?'draw':'win'):'lose'}
+  else{r=a>b?'win':a<b?'lose':pa>pb?'win':pa<pb?'lose':'draw';if(why==='left')r='win';if(why==='quit')r='lose'}
+  G.res={r,a,b,pa,pb,why,dm:G.dm,place,on:OPP.name||'???',osk:OPP.sk|0,ow:OPP.w||'fists',n:rk.length,rank:rk.map(F=>({name:F.name||'???',me:F===ME,k:scoreOf(F),p:ptsOf(F)}))};
+  const coins=G.dm?(why==='quit'?2:[20,12,8][place-1]||4):r==='win'?15:r==='draw'?6:3;SV.coins+=coins;if(r==='win'){SV.wins++;SV.gems+=1}else if(r==='lose')SV.loses++;else SV.draws++;SV.kills+=Math.max(0,ME.kills|0);saveSV();G.res.coins=coins;
+  msg(why==='kills'?(rk[0]===ME?'あなたが':(rk[0].name||'???')+' が')+DM_KILLS+'キル！':why==='left'?(G.dm?'ホストが退出しました':'相手が退出しました'):why==='quit'?'':'TIME UP!');if(why==='quit')G.endT=9}
+function quitToMenu(){G.mode=null;G.phase='idle';document.body.classList.remove('play');clearFoes();VIEW.g.visible=false;msg('');if(document.pointerLockElement)document.exitPointerLock();showMenu()}
 // 試合の1コマ
 function gameUpdate(dt){G.time+=dt;
-  if(G.phase==='count'){if(G.mode!=='online'||NET.host){G.ct-=dt}const c=Math.ceil(G.ct);if(c!==G.lastCt){G.lastCt=c;if(c>0){msg(String(c));SFX.beep(false)}}if(G.ct<=0){G.phase='play';msg('FIGHT!',null,1);SFX.beep(true);ME.inv=START_INV;if(G.mode==='bot')OPP.inv=START_INV}}
-  else if(G.phase==='play'){if(G.mode!=='online'||NET.host)G.tl-=dt;else G.tl=Math.max(0,G.tl-dt);if(G.tl<=0&&(G.mode!=='online'||NET.host)){G.tl=0;endMatch()}}
+  if(G.phase==='count'){if(G.mode!=='online'||NET.host){G.ct-=dt}const c=Math.ceil(G.ct);if(c!==G.lastCt){G.lastCt=c;if(c>0){msg(String(c));SFX.beep(false)}}if(G.ct<=0){G.phase='play';msg('FIGHT!',null,1);SFX.beep(true);ME.inv=START_INV;if(G.mode==='bot')for(const F of FOES)F.inv=START_INV}}
+  else if(G.phase==='play'){if(G.mode!=='online'||NET.host)G.tl-=dt;else G.tl=Math.max(0,G.tl-dt);if(G.tl<=0&&(G.mode!=='online'||NET.host)){G.tl=0;endMatch()}
+    else if(G.dm&&(G.mode!=='online'||NET.host)&&ALL().some(F=>scoreOf(F)>=DM_KILLS))endMatch('kills')}   // デスマッチは15キルで終わり
   else if(G.phase==='end'){G.endT+=dt;if(G.endT>2.2&&!$('sResult').classList.contains('on'))showResult()}
   // 自分
   const canAct=G.phase==='play'||G.phase==='count';
@@ -1075,9 +1101,9 @@ function gameUpdate(dt){G.time+=dt;
   else if(G.phase!=='end'){ME.deadT+=dt;ME.respT-=dt;const k=ME.killer&&ME.killer.alive?ME.killer.name:'';msg('やられた！',(k?k+' にたおされた　':'')+Math.max(1,Math.ceil(ME.respT))+'秒後に復活');if(ME.respT<=0){respawn(ME);msg('')}}
   statusUpdate(ME,dt);
   // 相手
-  if(G.mode==='bot'){if(OPP.alive){if(!BOT.frozen)botUpdate(dt)}else if(G.phase!=='end'){OPP.respT-=dt;if(OPP.respT<=0)respawn(OPP)}statusUpdate(OPP,dt)}
+  if(G.mode==='bot')for(const F of FOES){if(F.alive){if(!BOT.frozen)botUpdate(F,dt)}else if(G.phase!=='end'){F.respT-=dt;if(F.respT<=0)respawn(F)}statusUpdate(F,dt)}
   else if(G.mode==='online')NET.oppUpdate(dt);
-  updModel(OPP,dt);tntUpdate(dt);projUpdate(dt);portalUpdate(dt);fxUpdate(dt);boomUpdate(dt);shotsUpdate(dt);itemsUpdate(dt);
+  for(const F of FOES)updModel(F,dt);tntUpdate(dt);projUpdate(dt);portalUpdate(dt);fxUpdate(dt);boomUpdate(dt);shotsUpdate(dt);itemsUpdate(dt);
   VIEW.shotT=ME.shotT;VIEW.relK=ME.relT>0?1-ME.relT/ME.relMax:0;VIEW.drawK=Math.max(0,ME.swT/.4);
   updView(dt,ME.onG&&ME.spd>1,ME.atkT);updCam(dt);updHUD(dt)}
 function updCam(dt){const fov=ME.alive&&ME.scoped?ZOOM_FOV(WEAPONS[ME.w].zoom):70;if(cam.fov!==fov){cam.fov=fov;cam.updateProjectionMatrix()}
@@ -1118,7 +1144,7 @@ function takeItem(F,it){const K=ITEM_KIND[it.kind];if(K.hp)F.hp=Math.min(HP_MAX,
 function itemsUpdate(dt){
   if(G.phase==='play'&&itemBoss()){IT.t+=dt;if(IT.t>=30){IT.t-=30;const free=[0,1,2,3,4].filter(i=>!ITEMS.some(it=>it.spot===i));if(free.length){spawnItem(pick(free),pickKind(),IT.nid++);if(G.mode==='online')sendNow()}}}
   for(const it of ITEMS){const s=it.mesh.userData.spin;s.rotation.y+=dt*2.2;s.position.y=.75+Math.sin(G.time*3+it.id)*.12}
-  for(const F of G.mode==='bot'?[ME,OPP]:[ME]){if(!F.alive)continue;for(const it of ITEMS.slice())if(Math.hypot(F.x-it.x,F.z-it.z)<1&&Math.abs(F.y-it.y)<1.4&&canTake(F,it.kind))takeItem(F,it)}}
+  for(const F of G.mode==='bot'?ALL():[ME]){if(!F.alive)continue;for(const it of ITEMS.slice())if(Math.hypot(F.x-it.x,F.z-it.z)<1&&Math.abs(F.y-it.y)<1.4&&canTake(F,it.kind))takeItem(F,it)}}
 // オンライン：ホストの一覧（[id, 場所, 種類]）に合わせる。自分が取ったものは出さない
 function itemsFromHost(list){if(!Array.isArray(list))return;const ids=new Set();for(const e of list){if(!Array.isArray(e)||e.length<3)continue;const [id,sp,ki]=e;if(!Number.isInteger(id)||!(sp>=0&&sp<5)||!ITEM_KEYS[ki])continue;ids.add(id);if(!IT.got.includes(id))spawnItem(sp,ITEM_KEYS[ki],id)}
   for(const it of ITEMS.slice())if(!ids.has(it.id))removeItem(it)}
@@ -1143,7 +1169,7 @@ function projMesh(kind,c){const g=new THREE.Group();
   else bx(g,.13,.13,.13,0,0,0,emat(pick(['#ff3030','#ffd040','#40a0ff','#ffffff','#30e060'])));
   return g}
 const TRAIL={rocket:'#b4b4b4',missile:'#c8c8c8',mini:'#c8f0ff',tree:'#ffe080',orb:'#80ff80',bomb:'#ffd040'};
-function projReset(){for(const p of PROJ)dropMesh(p.m);PROJ.length=0;for(const q of PORTALS.slice())removePortal(q);RPK=''}
+function projReset(){for(const p of PROJ)dropMesh(p.m);PROJ.length=0;for(const q of PORTALS.slice())removePortal(q)}
 function dropMesh(m){scene.remove(m);m.traverse(o=>{if(o.isMesh)o.geometry.dispose()})}
 // o: {w, owner, x,y,z, d:[向き], off:[見た目のずれ], key, dmg, rad, c, remote, kind, sp, grav, life}
 function spawnProj(o){const W=WEAPONS[o.w],kind=o.kind||W.proj,sp=o.sp||W.speed,m=projMesh(kind,o.c);scene.add(m);
@@ -1153,7 +1179,7 @@ function placeProj(p){const e=Math.exp(-p.t*9),x=p.x+p.off[0]*e,y=p.y+p.off[1]*e
 function projUpdate(dt){for(let i=PROJ.length-1;i>=0;i--){const p=PROJ[i];p.t+=dt;if(p.grav)p.vy-=p.grav*dt;
   const sp=Math.hypot(p.vx,p.vy,p.vz)||1e-3,d=[p.vx/sp,p.vy/sp,p.vz/sp],len=sp*dt;let hitT=len,direct=null;
   const wr=rayWorld(p.x,p.y,p.z,d,len);if(wr.t<hitT)hitT=wr.t;
-  if(p.kind!=='bomb')for(const V of[ME,OPP]){if(V===p.owner||!V.alive||(G.mode==='online'&&V===OPP&&!OPP.here))continue;const r=.12,t=rayBox(p.x,p.y,p.z,d,[V.x-PR-r,V.y,V.z-PR-r,V.x+PR+r,V.y+PH+.1,V.z+PR+r]);if(t!=null&&t<hitT){hitT=t;direct=V}}
+  if(p.kind!=='bomb')for(const V of ALL()){if(V===p.owner||!V.alive||!live(V))continue;const r=.12,t=rayBox(p.x,p.y,p.z,d,[V.x-PR-r,V.y,V.z-PR-r,V.x+PR+r,V.y+PH+.1,V.z+PR+r]);if(t!=null&&t<hitT){hitT=t;direct=V}}
   if(hitT<len||p.t>=p.life){const h=Math.max(0,Math.min(hitT,len)-.05);PROJ.splice(i,1);dropMesh(p.m);blast(p,p.x+d[0]*h,p.y+d[1]*h,p.z+d[2]*h,direct,d);continue}
   p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;placeProj(p);
   p.trT-=dt;if(p.trT<=0){p.trT=.03;const q=p.m.position;fx(q.x-d[0]*.3,q.y-d[1]*.3,q.z-d[2]*.3,TRAIL[p.kind]||'#c0c0c0',1,.25,p.kind==='bomb'?.25:.55,p.kind==='mini'?.08:.13,-.6)}}}
@@ -1166,14 +1192,14 @@ function blast(p,x,y,z,direct,d){const W=WEAPONS[p.w],R=p.rad,dist=Math.hypot(ME
   if(p.kind==='orb'&&p.c>=.999)makePortal(p.owner,x,y,z,d);
   for(const t of TNTS){if(!t.alive||t.fuse>0)continue;if(Math.hypot(t.x-x,t.y+.45-y,t.z-z)<R+.4){tntLight(t,p.owner);t.fuse=Math.min(t.fuse,.15);if(p.owner===ME&&G.mode==='online')NET.pushEx(t.id)}}
   const ox=x-d[0]*.15,oy=y-d[1]*.15,oz=z-d[2]*.15;
-  for(const V of[ME,OPP]){if(!V.alive||(G.mode==='online'&&V===OPP&&!OPP.here))continue;
+  for(const V of ALL()){if(!V.alive||!live(V))continue;
     const cx=clamp(x,V.x-PR,V.x+PR),cy=clamp(y,V.y,V.y+PH),cz=clamp(z,V.z-PR,V.z+PR),dd=V===direct?0:Math.hypot(cx-x,cy-y,cz-z);if(dd>R)continue;
     if(V!==direct&&!segFree(ox,oy,oz,V.x,V.y+1,V.z)&&!segFree(ox,oy,oz,cx,cy,cz))continue;   // 壁の向こうには届かない
     const k=1-dd/R,ux=V.x-x,uy=V.y+.9-y,uz=V.z-z,ul=Math.hypot(ux,uy,uz)||1;
     if(V===p.owner){if(p.kind==='bomb')continue;if(W.self>0)applyDamage(V,p.dmg*W.self*(.4+.6*k),V,p.key);if(W.rj>0)rocketPush(V,ux/ul,uy/ul,uz/ul,k,W.rj,p.key);continue}
     const dmg=p.dmg*(V===direct?1:.35+.65*k),kb=[ux/ul*(2.5+4*k),1.5+4.5*k,uz/ul*(2.5+4*k)];
     if(p.owner===ME){crossHit(false);SFX.hitmark(false)}
-    if(G.mode==='online'&&p.owner===ME&&V===OPP){NET.pushHit(dmg,false,p.w,kb,p.key);hitFx(V,p.w,false)}else{applyHit(V,dmg,false,p.w,p.owner,p.key);knock(V,kb)}}}
+    if(G.mode==='online'&&p.owner===ME&&V!==ME){NET.pushHit(V,dmg,false,p.w,kb,p.key);hitFx(V,p.w,false)}else{applyHit(V,dmg,false,p.w,p.owner,p.key);knock(V,kb)}}}
 function knock(V,kb){if(!V.alive)return;V.vx=kb[0];V.vz=kb[2];V.vy=Math.max(V.vy,kb[1]);V.onG=false;V.kbT=Math.max(V.kbT||0,.45)}
 // ロケットジャンプ：爆発から遠ざかる向きに飛ばす（下で爆発すれば上へ）。同じ弾の爆発（4発同時など）は重ねない
 function rocketPush(F,ux,uy,uz,k,rj,key){const m=RJ_V*rj*(.55+.45*k);
@@ -1212,34 +1238,39 @@ function makePortal(F,x,y,z,d){const fl=Math.hypot(d[0],d[2])||1,fx_=-d[0]/fl,fz
   addPortal(F,px,gy,pz,fx_,fz_);SFX.portal(Math.hypot(ME.x-px,ME.z-pz));fx(px,gy+1,pz,'#80ff90',14,2.5,.6,.1,0);
   if(F===ME&&G.mode==='online')sendNow()}
 function portalUpdate(dt){for(const q of PORTALS.slice()){q.m.userData.sw.rotation.z-=dt*4;if(!q.remote){q.life-=dt;if(q.life<=0)removePortal(q)}}
-  for(const F of G.mode==='bot'?[ME,OPP]:[ME]){if(F.tpCD>0)F.tpCD-=dt;if(!F.alive||F.tpCD>0)continue;const mine=PORTALS.filter(q=>q.owner===F&&!q.remote);if(mine.length<2)continue;
+  for(const F of G.mode==='bot'?ALL():[ME]){if(F.tpCD>0)F.tpCD-=dt;if(!F.alive||F.tpCD>0)continue;const mine=PORTALS.filter(q=>q.owner===F&&!q.remote);if(mine.length<2)continue;
     for(const [A,B] of[[mine[0],mine[1]],[mine[1],mine[0]]]){if(Math.hypot(F.x-A.x,F.z-A.z)>.75||F.y<A.y-.6||F.y>A.y+1.6)continue;
       let tx=B.x+B.fx*.9,tz=B.z+B.fz*.9,ty=groundAt(tx,tz,B.y+.5,PR);if(hitsBox(tx-PR,ty+.05,tz-PR,tx+PR,ty+PH,tz+PR)){tx=B.x;tz=B.z;ty=B.y}
       fx(F.x,F.y+1,F.z,'#80ff90',12,2,.5,.1,0);F.x=tx;F.z=tz;F.y=ty;F.vy=0;F.tpCD=1.2;F.camY=F.y;fx(tx,ty+1,tz,'#80ff90',12,2,.5,.1,0);
       if(F===ME){SFX.teleport();if(G.mode==='online')sendNow()}break}}}
 // ---- オンライン：自分の弾とポータルを presence にのせる・相手のものを見た目だけ出す ----
 const myPortals=()=>PORTALS.filter(q=>q.owner===ME&&!q.remote).map(q=>[+q.x.toFixed(2),+q.y.toFixed(2),+q.z.toFixed(2),+q.fx.toFixed(2),+q.fz.toFixed(2)]);
-function spawnRemoteProj(e){const w=WIDS[e[1]];if(!isHeavy(w)||!OPP.alive)return;const W=WEAPONS[w],l=Math.hypot(e[5],e[6],e[7])||1,d=[e[5]/l,e[6]/l,e[7]/l],c=clamp(e[8]/100,0,1);
-  const mz=W.multi?podPos(OPP,(e[0]%4+4)%4):muzzleOf(OPP);spawnProj({w,owner:OPP,x:e[2],y:e[3],z:e[4],d,off:[mz.x-e[2],mz.y-e[3],mz.z-e[4]],key:0,dmg:0,rad:W.rad*(W.charge?.5+.5*c:1),c,remote:true});
-  if(!W.multi||e[0]%4===0)SFX.launch(w,Math.hypot(OPP.x-ME.x,OPP.z-ME.z))}
-let RPK='';function syncRemotePortals(list){const ok=Array.isArray(list)?list.filter(a=>Array.isArray(a)&&a.length===5&&a.every(Number.isFinite)).slice(0,2):[];const k=JSON.stringify(ok);if(k===RPK)return;RPK=k;
-  for(const q of PORTALS.slice())if(q.remote)removePortal(q);for(const a of ok)addPortal(OPP,a[0],a[1],a[2],a[3],a[4],true)}
+function spawnRemoteProj(F,e){const w=WIDS[e[1]];if(!isHeavy(w)||!F.alive)return;const W=WEAPONS[w],l=Math.hypot(e[5],e[6],e[7])||1,d=[e[5]/l,e[6]/l,e[7]/l],c=clamp(e[8]/100,0,1);
+  const mz=W.multi?podPos(F,(e[0]%4+4)%4):muzzleOf(F);spawnProj({w,owner:F,x:e[2],y:e[3],z:e[4],d,off:[mz.x-e[2],mz.y-e[3],mz.z-e[4]],key:0,dmg:0,rad:W.rad*(W.charge?.5+.5*c:1),c,remote:true});
+  if(!W.multi||e[0]%4===0)SFX.launch(w,Math.hypot(F.x-ME.x,F.z-ME.z))}
+// 相手ひとりずつのポータル（F.rpk に前の形をおぼえて、変わったときだけ作りなおす）
+function syncRemotePortals(F,list){const ok=Array.isArray(list)?list.filter(a=>Array.isArray(a)&&a.length===5&&a.every(Number.isFinite)).slice(0,2):[];const k=JSON.stringify(ok);if(k===F.rpk)return;F.rpk=k;
+  for(const q of PORTALS.slice())if(q.remote&&q.owner===F)removePortal(q);for(const a of ok)addPortal(F,a[0],a[1],a[2],a[3],a[4],true)}
 
 // ---- 06_net.js ----
-// ===================== オンライン対戦（アーティファクトの room で 1対1） =====================
-// ・ロビー（room 本体）の presence に {pd:{n,c,t,st}} を出して「部屋の一覧」にする
+// ===================== オンライン対戦（アーティファクトの room）：1対1とデスマッチ（8人まで） =====================
+// ・ロビー（room 本体）の presence に {pd:{n,c,t,st,md,np}} を出して「部屋の一覧」にする（md：'duel' 1対1 / 'dm' デスマッチ、np：人数）
 // ・部屋は room.join('pd-xxxxxx')。presence だけで同期する（イベント送信は閲覧者には使えないため）
-//   みんな：名前・見た目・武器・位置・攻撃の回数・体力・やられた回数・当てた攻撃（h）・TNT（ex）・ヘビーの弾（pj）・ポータル（pt）
-//   ホスト：試合の段階（ph）・ラウンド（rd）・残り時間（tl）・相手に決めた人（op）
-// ・当たり判定は攻撃した側。やられた側が受け取って自分の体力をへらす
-const NET={st:'off',room:null,game:null,code:'',title:'',host:false,myPeer:'',oppPeer:'',rd:0,rdy:0,ph:'wait',
-  hits:[],ex:[],hseq:0,eseq:0,seenHit:-1,seenEx:-1,seenPeer:'',buf:[],lastA:-1,lastDD:0,lastSD:0,sendT:0,conn:false,lobby:[],gpeers:[],unsub:[],gunsub:[],errMsg:'',oppP:null,hostP:null,lostT:0,
-  // kb：爆発で飛ばす向きと強さ、key：同じ弾（4発同時など）をまとめて90までにするための番号
-  pushHit(dmg,head,w,kb,key){this.lastHitHead=head;this.hseq++;const r=v=>Math.round(v*100)/100;this.hits.push([this.hseq,Math.round(dmg*10)/10,head?1:0,WIDS.indexOf(w)].concat(kb?[r(kb[0]),r(kb[1]),r(kb[2]),key|0]:[]));if(this.hits.length>8)this.hits.shift();sendNow()},
-  pushProj(w,x,y,z,d,c){this.pseq=(this.pseq||0)+1;const r=v=>Math.round(v*100)/100,q=v=>Math.round(v*1000)/1000;this.pj=(this.pj||[]).concat([[this.pseq,WIDS.indexOf(w),r(x),r(y),r(z),q(d[0]),q(d[1]),q(d[2]),Math.round((c||0)*100)]]).slice(-8);sendNow()},
+//   みんな：名前・見た目・武器・位置・攻撃の回数・体力・やられた回数・だれにやられたか（kb）・あたえたダメージ（dl）
+//           当てた攻撃（h：相手の peer つき）・TNT（ex）・ヘビーの弾（pj）・ポータル（pt）
+//   ホスト：試合の段階（ph）・ラウンド（rd）・残り時間（tl）・この試合の参加者（pl）・ルール（md）・アイテム（it）
+// ・当たり判定は攻撃した側。やられた側が受け取って自分の体力をへらし、だれにやられたかを kb に書く（キル数は全員の kb を足して出す）
+// ・デスマッチはホストが「スタート」でラウンドを始める。試合中に来た人もとちゅうから入れる
+const CAP={duel:2,dm:8};
+const NET={st:'off',room:null,game:null,code:'',title:'',md:'duel',host:false,myPeer:'',rd:0,rdy:0,ph:'wait',pl:[],
+  hits:[],ex:[],hseq:0,eseq:0,sendT:0,conn:false,lobby:[],gpeers:[],unsub:[],gunsub:[],errMsg:'',hostP:null,lostT:0,joinT:0,goT:0,npSent:-1,
+  // V：当てた相手。kb：爆発で飛ばす向きと強さ、key：同じ弾（4発同時など）をまとめて90までにするための番号
+  pushHit(V,dmg,head,w,kb,key){if(!V||!V.peer)return;this.lastHitHead=head;this.hseq++;const r=v=>Math.round(v*100)/100;if(!(V.inv>0)&&V.alive)ME.dealt+=Math.min(dmg,Math.max(0,V.hp+V.ar));
+    this.hits.push([this.hseq,Math.round(dmg*10)/10,head?1:0,WIDS.indexOf(w),kb?r(kb[0]):0,kb?r(kb[1]):0,kb?r(kb[2]):0,key|0,V.peer]);if(this.hits.length>12)this.hits.shift();sendNow()},
   pushShot(w,segs){this.sseq=(this.sseq||0)+1;const r=v=>Math.round(v*100)/100,a=segs[0],b=segs[1];this.shot=[this.sseq,WIDS.indexOf(w),r(a[3]),r(a[4]),r(a[5])].concat(b?[r(b[3]),r(b[4]),r(b[5])]:[]);sendNow()},
+  pushProj(w,x,y,z,d,c){this.pseq=(this.pseq||0)+1;const r=v=>Math.round(v*100)/100,q=v=>Math.round(v*1000)/1000;this.pj=(this.pj||[]).concat([[this.pseq,WIDS.indexOf(w),r(x),r(y),r(z),q(d[0]),q(d[1]),q(d[2]),Math.round((c||0)*100)]]).slice(-8);sendNow()},
   pushEx(id){this.eseq++;this.ex.push([this.eseq,id]);if(this.ex.length>4)this.ex.shift();sendNow()},
-  oppUpdate(dt){oppUpdate(dt)}};
+  oppUpdate(dt){foesUpdate(dt)}};
 const CODE_RE=/^pd-[a-z0-9]{6}$/;
 const cleanName=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g,'').trim().slice(0,14);
 function claudeObj(){try{if(window.claude&&window.claude.use)return window.claude}catch(e){}try{if(window.parent&&window.parent!==window&&window.parent.claude&&window.parent.claude.use)return window.parent.claude}catch(e){}return null}
@@ -1252,94 +1283,124 @@ async function netInit(){if(NET.st!=='off'&&NET.st!=='none')return;NET.st='wait'
   NET.unsub.push(room.onPeers(ch=>{NET.lobby=ch.peers;renderRooms()},e=>netErr(e)));
   NET.unsub.push(room.onConnection(c=>{NET.conn=c;renderNet()},e=>netErr(e)));
   lobbyPresence(true);renderNet();renderRooms()}
-// ロビーでの自分（部屋を開いているときだけ一覧に出る）
-function lobbyPresence(on){if(!NET.room)return;const pd=on?{n:cleanName(SV.name),c:NET.code||'',t:NET.title||'',st:NET.game?(NET.host&&!NET.oppPeer?'wait':'play'):'look'}:null;NET.room.presence({pd}).catch(()=>{})}
+// 部屋の中のほかの人
+const others=()=>NET.gpeers.filter(p=>!p.sameTab&&p.kind==='viewer'&&p.presence&&typeof p.presence.n==='string');
+// ロビーでの自分（ホストだけが部屋を一覧に出す。デスマッチは満員になるまで、試合中でも入れる）
+function lobbyPresence(on){if(!NET.room)return;const np=NET.game?others().length+1:0;NET.npSent=np;
+  const st=!NET.game?'look':!NET.host?'play':NET.md==='dm'?(np<CAP.dm?'wait':'full'):(np<2?'wait':'play');
+  const pd=on?{n:cleanName(SV.name),c:NET.code||'',t:NET.title||'',st,md:NET.md,np}:null;NET.room.presence({pd}).catch(()=>{})}
 function roomList(){const out=[];for(const p of NET.lobby){if(p.sameTab||p.kind!=='viewer')continue;const pd=p.presence&&p.presence.pd;if(!pd||typeof pd!=='object')continue;
-  if(pd.st!=='wait'||typeof pd.c!=='string'||!CODE_RE.test(pd.c))continue;out.push({c:pd.c,n:cleanName(pd.n)||'???',t:cleanName(pd.t)||'部屋',guest:p.guest,mine:p.isMe})}return out}
+  if(pd.st!=='wait'||typeof pd.c!=='string'||!CODE_RE.test(pd.c))continue;out.push({c:pd.c,n:cleanName(pd.n)||'???',t:cleanName(pd.t)||'部屋',md:pd.md==='dm'?'dm':'duel',np:clamp(pd.np|0,1,8),guest:p.guest,mine:p.isMe})}return out}
 // ---------------- 部屋 ----------------
-async function createRoom(){if(!NET.room)return;const code='pd-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');
-  await enterRoom(code,true,cleanName($('roomIn').value)||(cleanName(SV.name)+'の部屋'))}
-async function enterRoom(code,host,title){if(NET.game)await leaveRoom(true);$('rMake').disabled=true;let g=null;
-  try{g=await NET.room.join(code)}catch(e){$('rMake').disabled=false;tip(e&&e.code==='limit_reached'?'今は部屋に入れません。少し待ってからもう一度':'部屋に入れませんでした',3);return}
-  $('rMake').disabled=false;Object.assign(NET,{game:g,code,host,title,oppPeer:'',rd:0,rdy:1,ph:'wait',seenPeer:'',buf:[],oppP:null,hostP:null,joinT:performance.now()});
+async function createRoom(md){if(!NET.room)return;const code='pd-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');md=md==='dm'?'dm':'duel';
+  await enterRoom(code,true,cleanName($('roomIn').value)||(cleanName(SV.name)+(md==='dm'?'のデスマッチ':'の部屋')),md)}
+async function enterRoom(code,host,title,md){if(NET.game)await leaveRoom(true);for(const b of['rMake','rMakeDm'])$(b).disabled=true;let g=null;
+  try{g=await NET.room.join(code)}catch(e){for(const b of['rMake','rMakeDm'])$(b).disabled=false;tip(e&&e.code==='limit_reached'?'今は部屋に入れません。少し待ってからもう一度':'部屋に入れませんでした',3);return}
+  for(const b of['rMake','rMakeDm'])$(b).disabled=false;Object.assign(NET,{game:g,code,host,title,md:md==='dm'?'dm':'duel',rd:0,rdy:1,ph:'wait',pl:[],hostP:null,joinT:performance.now(),goT:0});
   NET.gunsub=[g.onPeers(ch=>{NET.gpeers=ch.peers;gamePeers()},e=>netErr(e,true))];
   sendNow();lobbyPresence(true);showWait()}
-async function leaveRoom(silent){const g=NET.game;NET.gunsub.forEach(u=>{try{u()}catch(e){}});NET.gunsub=[];NET.game=null;NET.code='';NET.oppPeer='';NET.oppP=null;NET.hostP=null;OPP.here=false;
+async function leaveRoom(silent){const g=NET.game;NET.gunsub.forEach(u=>{try{u()}catch(e){}});NET.gunsub=[];NET.game=null;NET.code='';NET.pl=[];NET.hostP=null;
   if(g){try{await g.leave()}catch(e){}}lobbyPresence(true);if(!silent)showRooms()}
 // 自分の presence（毎秒20回まで）
 function myState(){const p={n:cleanName(SV.name),sk:SV.skin,w:G.mode==='online'?ME.w:SV.weapon,wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',sc:ME.scoped?1:0,sh:NET.shot||null,pj:NET.pj||[],pt:G.mode==='online'?myPortals():[],rdy:NET.rdy,r:NET.rd,
   s:[+ME.x.toFixed(2),+ME.y.toFixed(2),+ME.z.toFixed(2),+ME.yaw.toFixed(3),+ME.pitch.toFixed(3)],a:ME.seq,al:ME.alive?1:0,hp:Math.round(ME.hp),ar:Math.round(ME.ar),
-  dd:ME.dd,sd:ME.sd,tk:Math.round(ME.tk),cm:CHAT.out,gt:G.mode==='online'?IT.got:[],h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
-  if(NET.host)Object.assign(p,{it:G.mode==='online'?itemsList():[],ph:NET.ph,rd:NET.rd,tl:+Math.max(0,G.tl).toFixed(1),ct:+Math.max(0,G.ct).toFixed(1),op:NET.oppPeer,t:NET.title});return p}
+  dd:ME.dd,sd:ME.sd,kb:ME.kb,dl:Math.round(ME.dealt||0),cm:CHAT.out,gt:G.mode==='online'?IT.got:[],h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
+  if(NET.host)Object.assign(p,{it:G.mode==='online'?itemsList():[],ph:NET.ph,rd:NET.rd,tl:+Math.max(0,G.tl).toFixed(1),ct:+Math.max(0,G.ct).toFixed(1),pl:NET.pl,md:NET.md,t:NET.title});return p}
 function sendNow(){if(!NET.game)return;NET.sendT=0;NET.game.presence(myState()).catch(e=>{if(e&&e.code==='invalid_argument')console.warn(e)})}
 function netTick(dt){if(!NET.game)return;NET.sendT+=dt;if(NET.sendT>=.05)sendNow();
   if(!NET.conn&&G.mode==='online'){NET.lostT+=dt}else NET.lostT=0;const n=$('net');
   if(G.mode==='online'&&NET.lostT>2){n.style.display='block';n.textContent='接続が切れています…'}else n.style.display='none';
   if(NET.host)hostLogic(dt)}
 // 部屋の人が変わった
-function gamePeers(){const others=NET.gpeers.filter(p=>!p.sameTab&&p.kind==='viewer'&&p.presence&&typeof p.presence.n==='string');const me=NET.gpeers.find(p=>p.sameTab);if(me)NET.myPeer=me.peer;
-  if(NET.host){if(NET.oppPeer&&!others.some(p=>p.peer===NET.oppPeer)){oppLeft();NET.oppPeer=''}
-    if(!NET.oppPeer&&others.length){NET.oppPeer=others[0].peer;lobbyPresence(true);sendNow()}
-    NET.oppP=others.find(p=>p.peer===NET.oppPeer)||null}
-  else{const h=others.find(p=>typeof p.presence.ph==='string');
-    if(!h){if(NET.hostP&&performance.now()-NET.joinT>1500){NET.hostP=null;NET.oppP=null;oppLeft(true)}else if(!NET.hostP&&performance.now()-NET.joinT>12000){leaveRoom();tip('部屋が見つかりませんでした',3)}}
-    else{NET.hostP=h;NET.oppP=h;NET.oppPeer=h.peer;if(h.presence.op&&NET.myPeer&&h.presence.op!==NET.myPeer){leaveRoom();tip('この部屋はもう対戦中です',3);return}guestLogic()}}
-  if(NET.oppP)readChat(NET.oppP.peer,NET.oppP.presence);readOpp();if($('sWait').classList.contains('on'))showWait()}
-function oppLeft(hostGone){OPP.here=false;if(G.mode==='online'&&G.phase!=='end'){endMatch('left')}else if(hostGone&&!G.mode){leaveRoom();tip('ホストが部屋を出ました',3);return}
-  NET.ph='wait';if(!G.mode&&$('sWait').classList.contains('on'))showWait()}
-// ホスト：ふたりとも準備できたら次のラウンドを始める。試合中は段階を出す
-function hostLogic(dt){const o=NET.oppP&&NET.oppP.presence;
-  if(G.mode==='online'){NET.ph=G.phase==='count'?'count':G.phase==='play'?'play':'end';NET.goT=0}
-  else if(o&&NET.rdy===NET.rd+1&&o.rdy===NET.rd+1){NET.goT=(NET.goT||0)+dt;if(NET.goT>1.6){NET.goT=0;NET.rd++;NET.ph='count';beginOnline(0,o);sendNow()}}else NET.goT=0}
+function gamePeers(){const os=others(),me=NET.gpeers.find(p=>p.sameTab);if(me)NET.myPeer=me.peer;
+  if(!NET.host){const h=os.find(p=>typeof p.presence.ph==='string');
+    if(!h){if(NET.hostP&&performance.now()-NET.joinT>1500){NET.hostP=null;hostGone()}else if(!NET.hostP&&performance.now()-NET.joinT>12000){leaveRoom();tip('部屋が見つかりませんでした',3)}}
+    else{NET.hostP=h;if(h.presence.md==='dm'||h.presence.md==='duel')NET.md=h.presence.md;guestLogic();if(!NET.game)return}}
+  for(const p of os)readChat(p.peer,p.presence);
+  syncFoes(os);for(const F of FOES){const p=os.find(q=>q.peer===F.peer);if(p)readFoe(F,p.presence)}tallyKills();
+  if(!NET.host&&NET.hostP&&G.mode==='online'&&NET.hostP.presence.rd===NET.rd)itemsFromHost(NET.hostP.presence.it);
+  if(NET.host&&os.length+1!==NET.npSent)lobbyPresence(true);
+  if($('sWait').classList.contains('on'))showWait()}
+// ホストがいなくなった
+function hostGone(){if(G.mode==='online'&&G.phase!=='end'){endMatch('left');return}if(!G.mode){leaveRoom();tip('ホストが部屋を出ました',3)}}
+// ホスト：1対1はふたりとも準備できたら自動で、デスマッチは「スタート」で始める。試合中は段階を出し、デスマッチはとちゅう参加を受け入れる
+const wantsIn=o=>(o.rdy|0)>(o.r|0);
+function hostLogic(dt){const os=others();
+  if(G.mode==='online'){NET.ph=G.phase==='count'?'count':G.phase==='play'?'play':'end';NET.goT=0;
+    if(NET.md==='dm'&&G.phase!=='end')for(const p of os){if(!NET.pl.includes(p.peer)&&NET.pl.length<CAP.dm&&wantsIn(p.presence))NET.pl.push(p.peer)}}
+  else if(NET.md==='duel'){const p=os[0],o=p&&p.presence;if(o&&NET.rdy>NET.rd&&wantsIn(o)){NET.goT+=dt;if(NET.goT>1.6){NET.goT=0;hostStart()}}else NET.goT=0}}
+function hostStart(){if(!NET.host||G.mode)return false;const os=others().filter(p=>wantsIn(p.presence));if(!os.length){tip('いっしょに遊ぶ人がまだいません',2);return false}
+  NET.rdy=Math.max(NET.rdy,NET.rd+1);NET.rd++;NET.ph='count';NET.pl=[NET.myPeer].concat(os.slice(0,CAP[NET.md]-1).map(p=>p.peer));beginOnline();sendNow();lobbyPresence(true);return true}
 // ゲスト：ホストの段階についていく
-function guestLogic(){const h=NET.hostP.presence;if(typeof h.rd!=='number')return;
-  if(h.op===NET.myPeer&&h.rd>NET.rd&&(h.ph==='count'||h.ph==='play')&&NET.rdy===h.rd){NET.rd=h.rd;beginOnline(1,h)}
+function guestLogic(){const h=NET.hostP.presence;if(typeof h.rd!=='number')return;const pl=Array.isArray(h.pl)?h.pl:[],inPl=pl.includes(NET.myPeer),going=h.ph==='count'||h.ph==='play';
+  if(going&&inPl&&h.rd>NET.rd&&NET.rdy>NET.rd&&G.mode!=='online'){NET.rd=h.rd;beginOnline()}
+  else if(going&&!inPl&&!G.mode&&NET.myPeer&&performance.now()-NET.joinT>2500){if(NET.md==='duel'&&pl.length>=2){leaveRoom();tip('この部屋はもう対戦中です',3);return}if(NET.md==='dm'&&pl.length>=CAP.dm){leaveRoom();tip('この部屋は満員です',3);return}}
   if(G.mode==='online'&&h.rd===NET.rd){if(typeof h.tl==='number')G.tl=h.tl;if(h.ph==='count'&&typeof h.ct==='number')G.ct=h.ct;if(h.ph==='play'&&G.phase==='count')G.ct=0;if(h.ph==='end'&&G.phase==='play')endMatch()}}
-function beginOnline(side,o){startMatch('online',{side,oppName:cleanName(o.n)||'???',oppW:MELEE.includes(o.wm)?o.wm:'fists',oppWs:SNIPERS.includes(o.ws)?o.ws:'acr',oppWh:HEAVIES.includes(o.wh)?o.wh:'rjumper',oppSk:(o.sk|0)%6});NET.seenPj=maxSeq(o.pj);NET.buf=[];NET.lastShot=Array.isArray(o.sh)?o.sh[0]:-1;NET.lastA=typeof o.a==='number'?o.a:-1;NET.lastDD=0;NET.lastSD=0;OPP.here=false;sendNow()}
-// 相手の presence を読む
-function readOpp(){const P=NET.oppP;if(!P)return;const o=P.presence;
-  if(P.peer!==NET.seenPeer){NET.seenPeer=P.peer;NET.seenHit=maxSeq(o.h);NET.seenEx=maxSeq(o.ex);NET.seenPj=maxSeq(o.pj);NET.lastA=typeof o.a==='number'?o.a:-1;NET.lastShot=Array.isArray(o.sh)?o.sh[0]:-1}
-  if(G.mode!=='online')return;const same=o.r===NET.rd&&o.ig===1;OPP.here=same;if(!same)return;
-  if(MELEE.includes(o.wm))OPP.wm=o.wm;if(SNIPERS.includes(o.ws))OPP.ws=o.ws;if(HEAVIES.includes(o.wh))OPP.wh=o.wh;if(o.w===OPP.wm||o.w===OPP.ws||o.w===OPP.wh)OPP.w=o.w;OPP.scoped=!!o.sc;
-  if(Array.isArray(o.pj))for(const e of o.pj){if(!Array.isArray(e)||e.length<9||!e.every(Number.isFinite)||!(e[0]>NET.seenPj))continue;NET.seenPj=e[0];spawnRemoteProj(e)}
-  syncRemotePortals(o.pt);
-  if(Array.isArray(o.sh)&&o.sh[0]!==NET.lastShot&&o.sh.length>=5&&o.sh.every(Number.isFinite)){NET.lastShot=o.sh[0];const w=WIDS[o.sh[1]];if(isSniper(w)){const m=muzzleOf(OPP),segs=[[m.x,m.y,m.z,o.sh[2],o.sh[3],o.sh[4]]];if(o.sh.length>=8)segs.push([o.sh[2],o.sh[3],o.sh[4],o.sh[5],o.sh[6],o.sh[7]]);drawShot(w,segs,false);SFX.shot(w,Math.hypot(OPP.x-ME.x,OPP.z-ME.z))}}OPP.alive=!!o.al;OPP.hp=+o.hp||0;OPP.ar=+o.ar||0;OPP.inv=o.iv?1:0;OPP.netBurn=!!o.bn;OPP.tk=+o.tk||0;
-  const s=o.s;if(Array.isArray(s)&&s.length===5&&s.every(Number.isFinite)){const L=NET.buf[NET.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i]))NET.buf.push({t:performance.now(),s:s.slice()});if(NET.buf.length>30)NET.buf.shift()}
-  if(typeof o.a==='number'&&o.a!==NET.lastA){if(o.a>NET.lastA){OPP.atkT=0;const dd=Math.hypot(OPP.x-ME.x,OPP.z-ME.z);if(!isGun(OPP.w)&&dd<16)SFX.swing(OPP.w,clamp(1-dd/16,.2,.8))}NET.lastA=o.a}
-  // アイテム：ホストは相手が取ったものを消す、ゲストはホストの一覧に合わせる
-  if(NET.host)itemsTakenBy(o.gt);else itemsFromHost(o.it);
-  // やられた回数（キルの表示）
-  const dd=o.dd|0,sd=o.sd|0;if(dd>NET.lastDD){addFeed(ME,OPP,ME.w,false);SFX.kill();killPop(!!NET.lastHitHead);fx(OPP.x,OPP.y+1,OPP.z,'#c81e1e',22,5,.9,.12)}if(sd>NET.lastSD)addFeed(OPP,OPP,'tnt',false);NET.lastDD=dd;NET.lastSD=sd;OPP.dd=dd;OPP.sd=sd;
-  // 相手の攻撃が自分に当たった
-  if(Array.isArray(o.h))for(const h of o.h){if(!Array.isArray(h)||!(h[0]>NET.seenHit))continue;NET.seenHit=h[0];const w=WIDS[h[3]],W=WEAPONS[w];if(!W)continue;
-    const dmg=Math.min(+h[1]||0,W.dmg*W.head+.5);if(G.phase==='play'&&Math.hypot(OPP.x-ME.x,OPP.y-ME.y,OPP.z-ME.z)<W.range+3.5){const kb=h.length>=8?[h[4],h[5],h[6]].map(v=>clamp(+v||0,-12,12)):null;
-      applyHit(ME,dmg,!!h[2],w,OPP,kb?-1-(h[7]|0):undefined);if(kb&&ME.alive)knock(ME,kb)}}
-  if(Array.isArray(o.ex))for(const e of o.ex){if(!Array.isArray(e)||!(e[0]>NET.seenEx))continue;NET.seenEx=e[0];const t=TNTS[e[1]|0];if(t)tntLight(t,OPP)}}
+function beginOnline(){const side=Math.max(0,NET.pl.indexOf(NET.myPeer));startMatch('online',{side,dm:NET.md==='dm'});sendNow()}
+// ---------------- 相手たち（同じラウンドで試合中の人） ----------------
 const maxSeq=a=>Array.isArray(a)?a.reduce((m,h)=>Array.isArray(h)&&h[0]>m?h[0]:m,-1):-1;
+const cleanKB=kb=>{const o={};if(kb&&typeof kb==='object')for(const k in kb){const n=kb[k]|0;if(n>0&&k.length<=80)o[k]=Math.min(n,999)}return o};
+function syncFoes(os){if(G.mode!=='online')return;
+  for(const p of os){const o=p.presence;if(o.r===NET.rd&&o.ig===1&&!FOES.some(F=>F.peer===p.peer)&&FOES.length<CAP[NET.md]-1)addFoe(p.peer,o)}
+  for(const F of FOES.slice())if(!os.some(p=>p.peer===F.peer))removeFoe(F)}
+function addFoe(peer,o){const wm=MELEE.includes(o.wm)?o.wm:'fists',ws=SNIPERS.includes(o.ws)?o.ws:'acr',wh=HEAVIES.includes(o.wh)?o.wh:'rjumper';
+  const F=fighter({peer,name:cleanName(o.n)||'???',w:wm,wm,ws,wh,sk:(o.sk|0)%6,here:true,rpk:'',kb:cleanKB(o.kb),
+    net:{buf:[],seenHit:maxSeq(o.h),seenEx:maxSeq(o.ex),seenPj:maxSeq(o.pj),lastShot:Array.isArray(o.sh)?o.sh[0]:-1,lastA:typeof o.a==='number'?o.a:-1,lastSD:o.sd|0}});
+  if(Array.isArray(o.s)&&o.s.length===5&&o.s.every(Number.isFinite)){F.x=o.s[0];F.y=o.s[1];F.z=o.s[2];F.yaw=o.s[3]}
+  makeOppModel(F);FOES.push(F);OPP=FOES[0];return F}
+function removeFoe(F){const i=FOES.indexOf(F);if(i<0)return;if(G.mode==='online'&&G.phase!=='end'&&!G.dm)endMatch('left');FOES.splice(i,1);if(F.model)scene.remove(F.model);F.model=null;clearPortals(F);OPP=FOES[0]||NOBODY;
+  if(G.mode==='online'&&G.phase!=='end'&&G.dm){{tip((F.name||'???')+' が部屋を出ました',2);if(!FOES.length&&!NET.host)endMatch('left')}}}
+// ひとりの presence を読む
+function readFoe(F,o){const N=F.net,same=o.r===NET.rd&&o.ig===1;F.here=same;if(!same)return;
+  if(MELEE.includes(o.wm))F.wm=o.wm;if(SNIPERS.includes(o.ws))F.ws=o.ws;if(HEAVIES.includes(o.wh))F.wh=o.wh;if(o.w===F.wm||o.w===F.ws||o.w===F.wh)F.w=o.w;F.scoped=!!o.sc;
+  if(Array.isArray(o.sh)&&o.sh[0]!==N.lastShot&&o.sh.length>=5&&o.sh.every(Number.isFinite)){N.lastShot=o.sh[0];const w=WIDS[o.sh[1]];if(isSniper(w)){const m=muzzleOf(F),segs=[[m.x,m.y,m.z,o.sh[2],o.sh[3],o.sh[4]]];if(o.sh.length>=8)segs.push([o.sh[2],o.sh[3],o.sh[4],o.sh[5],o.sh[6],o.sh[7]]);drawShot(w,segs,false);SFX.shot(w,Math.hypot(F.x-ME.x,F.z-ME.z))}}
+  if(Array.isArray(o.pj))for(const e of o.pj){if(!Array.isArray(e)||e.length<9||!e.every(Number.isFinite)||!(e[0]>N.seenPj))continue;N.seenPj=e[0];spawnRemoteProj(F,e)}
+  syncRemotePortals(F,o.pt);
+  F.alive=!!o.al;F.hp=+o.hp||0;F.ar=+o.ar||0;F.inv=o.iv?1:0;F.netBurn=!!o.bn;F.dealt=+o.dl||0;F.dd=o.dd|0;F.sd=o.sd|0;
+  const s=o.s;if(Array.isArray(s)&&s.length===5&&s.every(Number.isFinite)){const L=N.buf[N.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i]))N.buf.push({t:performance.now(),s:s.slice()});if(N.buf.length>30)N.buf.shift()}
+  if(typeof o.a==='number'&&o.a!==N.lastA){if(o.a>N.lastA){F.atkT=0;const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(!isGun(F.w)&&dd<16)SFX.swing(F.w,clamp(1-dd/16,.2,.8))}N.lastA=o.a}
+  // アイテム：ホストは取られたものを消す
+  if(NET.host)itemsTakenBy(o.gt);
+  // だれにやられたか（ふえた分をキルの表示に）
+  const kb=cleanKB(o.kb);for(const k in kb){const add=kb[k]-(F.kb[k]|0);if(add>0){const K=k===NET.myPeer?ME:FOES.find(x=>x.peer===k);if(K){addFeed(K,F,K.w,false);if(K===ME){SFX.kill();killPop(!!NET.lastHitHead)}}fx(F.x,F.y+1,F.z,'#c81e1e',22,5,.9,.12)}}F.kb=kb;
+  if(F.sd>N.lastSD)addFeed(F,F,'tnt',false);N.lastSD=F.sd;
+  // 自分あての攻撃
+  if(Array.isArray(o.h))for(const h of o.h){if(!Array.isArray(h)||!(h[0]>N.seenHit))continue;N.seenHit=h[0];if(h[8]!==NET.myPeer)continue;const w=WIDS[h[3]],W=WEAPONS[w];if(!W)continue;
+    const dmg=Math.min(+h[1]||0,W.dmg*W.head+.5);if(G.phase==='play'&&Math.hypot(F.x-ME.x,F.y-ME.y,F.z-ME.z)<W.range+3.5){const kb=[h[4],h[5],h[6]].map(v=>clamp(+v||0,-12,12));
+      applyHit(ME,dmg,!!h[2],w,F,h[7]?F.peer+':'+(h[7]|0):undefined);   /* 同じ弾の番号があるときだけまとめて90まで */if(ME.alive&&kb.some(v=>v))knock(ME,kb)}}
+  if(Array.isArray(o.ex))for(const e of o.ex){if(!Array.isArray(e)||!(e[0]>N.seenEx))continue;N.seenEx=e[0];const t=TNTS[e[1]|0];if(t)tntLight(t,F)}}
+// キル数：みんなの「だれにやられたか」を足す
+function tallyKills(){if(G.mode!=='online')return;ME.kills=FOES.reduce((a,F)=>a+(F.kb[NET.myPeer]|0),0);for(const F of FOES)F.kills=(ME.kb[F.peer]|0)+FOES.reduce((a,V)=>a+(V!==F?V.kb[F.peer]|0:0),0)}
 // 相手の位置：0.1秒前の位置をなめらかにつなぐ
-function oppUpdate(dt){readOpp();const B=NET.buf;if(!B.length)return;const rt=performance.now()-110;let a=B[0],b=B[0];
+function foesUpdate(dt){for(const F of FOES){const B=F.net&&F.net.buf;if(!B||!B.length)continue;const rt=performance.now()-110;let a=B[0],b=B[0];
   for(let i=0;i<B.length;i++){if(B[i].t<=rt)a=B[i];if(B[i].t>=rt){b=B[i];break}b=B[i]}
-  const k=b.t>a.t?clamp((rt-a.t)/(b.t-a.t),0,1):1;const px=OPP.x,pz=OPP.z;
-  OPP.x=lerp(a.s[0],b.s[0],k);OPP.y=lerp(a.s[1],b.s[1],k);OPP.z=lerp(a.s[2],b.s[2],k);OPP.yaw=a.s[3]+angDiff(a.s[3],b.s[3])*k;OPP.pitch=lerp(a.s[4],b.s[4],k);
-  OPP.spd=lerp(OPP.spd,Math.hypot(OPP.x-px,OPP.z-pz)/Math.max(dt,1e-3),Math.min(1,dt*10));OPP.atkT+=dt;
-  if(OPP.netBurn&&OPP.alive&&Math.random()<dt*14)fx(OPP.x+rr(-.3,.3),OPP.y+rr(.3,1.6),OPP.z+rr(-.3,.3),pick(['#ff7a1a','#ffd23f','#ff3a1a']),1,1,.5,.1,-2)}
+  const k=b.t>a.t?clamp((rt-a.t)/(b.t-a.t),0,1):1;const px=F.x,pz=F.z;
+  F.x=lerp(a.s[0],b.s[0],k);F.y=lerp(a.s[1],b.s[1],k);F.z=lerp(a.s[2],b.s[2],k);F.yaw=a.s[3]+angDiff(a.s[3],b.s[3])*k;F.pitch=lerp(a.s[4],b.s[4],k);
+  F.spd=lerp(F.spd,Math.hypot(F.x-px,F.z-pz)/Math.max(dt,1e-3),Math.min(1,dt*10));F.atkT+=dt;
+  if(F.netBurn&&F.alive&&Math.random()<dt*14)fx(F.x+rr(-.3,.3),F.y+rr(.3,1.6),F.z+rr(-.3,.3),pick(['#ff7a1a','#ffd23f','#ff3a1a']),1,1,.5,.1,-2)}}
 // ---------------- 画面 ----------------
 function renderNet(){const e=$('netState');if(!e)return;let t='';
   if(NET.st==='wait')t='オンラインに接続しています…';
   else if(NET.st==='none')t='オンライン対戦は、Claude のアーティファクトとして開いたときに使えます（このページだけでは CPU と練習できます）。';
   else if(NET.st==='err')t=NET.errMsg;
   else if(NET.st==='ok')t=(NET.conn?'🟢 接続中・このページを開いている人：'+NET.lobby.filter(p=>p.kind==='viewer').length+'人':'🟡 接続を待っています…')+'\n参加できるのは、このアーティファクトを開ける人（同じ組織のメンバーか招待された人）です。';
-  e.textContent=t;e.style.whiteSpace='pre-line';$('rMake').disabled=NET.st!=='ok';$('roomIn').disabled=NET.st!=='ok'}
+  e.textContent=t;e.style.whiteSpace='pre-line';for(const b of['rMake','rMakeDm'])$(b).disabled=NET.st!=='ok';$('roomIn').disabled=NET.st!=='ok'}
 function renderRooms(){renderNet();const L=$('rlist');if(!L)return;L.textContent='';const rs=NET.st==='ok'?roomList():[];
   if(!rs.length){const d=document.createElement('div');d.className='note';d.style.textAlign='center';d.textContent=NET.st==='ok'?'まだ部屋がありません。部屋を作って相手を待とう！':'—';L.appendChild(d);return}
-  for(const r of rs){const d=document.createElement('div');d.className='ri';const b=document.createElement('b');b.textContent=r.t;const s=document.createElement('small');s.textContent='ホスト：'+r.n+(r.mine?'（あなたの別のタブ）':'')+(r.guest?'（ゲスト）':'');
+  for(const r of rs){const d=document.createElement('div');d.className='ri';const b=document.createElement('b');b.textContent=(r.md==='dm'?'【デスマッチ '+r.np+'/'+CAP.dm+'人】':'【1対1】')+r.t;const s=document.createElement('small');s.textContent='ホスト：'+r.n+(r.mine?'（あなたの別のタブ）':'')+(r.guest?'（ゲスト）':'');
     const box=document.createElement('div');box.style.flex='1';box.appendChild(b);box.appendChild(document.createElement('br'));box.appendChild(s);const j=document.createElement('button');j.className='pb b';j.style.minWidth='90px';j.style.padding='6px 12px';j.textContent='参加';
-    j.onclick=()=>{SFX.click();enterRoom(r.c,false,r.t)};d.appendChild(box);d.appendChild(j);L.appendChild(d)}}
+    j.onclick=()=>{SFX.click();enterRoom(r.c,false,r.t,r.md)};d.appendChild(box);d.appendChild(j);L.appendChild(d)}}
 function showRooms(){showScr('sRooms');netInit();lobbyPresence(true);renderRooms()}
-function showWait(){showScr('sWait');const o=NET.oppP&&NET.oppP.presence;$('podAn').textContent=cleanName(SV.name);drawPodium($('podA'),SV.skin,SV.weapon);
+// 待合室：1対1は表彰台、デスマッチは参加者の一覧（ホストは「スタート」）
+function showWait(){showScr('sWait');const os=others(),dm=NET.md==='dm';$('wPod').style.display=dm?'none':'';$('wList').style.display=dm?'':'none';$('wStart').style.display=dm&&NET.host?'':'none';
+  if(dm){const L=$('wList');L.textContent='';const going=NET.hostP&&(NET.hostP.presence.ph==='count'||NET.hostP.presence.ph==='play');
+    for(const [n,me] of[[SV.name,true]].concat(os.map(p=>[p.presence.n,false]))){const d=document.createElement('div');d.className='wl'+(me?' me':'');d.textContent=(cleanName(n)||'???')+(me?'（あなた）':'');L.appendChild(d)}
+    $('wTitle').textContent='デスマッチ（'+(os.length+1)+'/'+CAP.dm+'人）';$('wStart').disabled=!os.some(p=>wantsIn(p.presence));
+    $('wNote').textContent=NET.host?'人が集まったら「スタート」。試合中に来た人も、とちゅうから入れます。':going?'試合中です。まもなく参加します…':'ホストがスタートするのを待っています…';return}
+  const o=os[0]&&os[0].presence;$('podAn').textContent=cleanName(SV.name);drawPodium($('podA'),SV.skin,SV.weapon);
   if(o){$('podBn').textContent=cleanName(o.n)||'???';drawPodium($('podB'),(o.sk|0)%6,MELEE.includes(o.wm)?o.wm:'fists')}else{$('podBn').textContent='？？？';$('podB').getContext('2d').clearRect(0,0,60,85)}
   $('wTitle').textContent=o?'まもなく対戦がはじまります':'対戦相手を待っています…';
-  $('wNote').textContent=(NET.host?'部屋「'+NET.title+'」を作りました。'+(o?'':'相手がこの部屋に入るのを待っています。'):'部屋「'+NET.title+'」に入りました。'+(o?'':'ホストを待っています…'))+(o&&o.rdy!==NET.rd+1&&NET.rd>0?'（相手が「もう一度」をおすのを待っています）':'')}
+  $('wNote').textContent=(NET.host?'部屋「'+NET.title+'」を作りました。'+(o?'':'相手がこの部屋に入るのを待っています。'):'部屋「'+NET.title+'」に入りました。'+(o?'':'ホストを待っています…'))+(o&&!wantsIn(o)&&NET.rd>0?'（相手が「もう一度」をおすのを待っています）':'')}
 // ページを閉じたら部屋を出る（ランチャーで別のゲームに切りかえたときも）
 addEventListener('pagehide',()=>{try{NET.gunsub.forEach(u=>u());NET.unsub.forEach(u=>u());if(NET.game)NET.game.leave().catch(()=>{});if(NET.room)NET.room.presence({pd:null}).catch(()=>{})}catch(e){}});
 
@@ -1380,7 +1441,11 @@ function updHUD(dt){const hp=ME.alive?ME.hp:0;
   setC('hp',Math.ceil(hp/HP_MAX*18),v=>{[...$('hearts').children].forEach((e,i)=>e.className='ht'+(v>=i*2+2?'':v===i*2+1?' h':' e'))});
   // シールド（アーマー）：9こ。拾ったアーマー（100まで）は水色、力の拳の+25はオレンジで重ねる
   setC('ar',ME.alive?Math.round(clamp(ME.ar+ME.arB,0,AR_MAX)):0,v=>{const cl=shieldClasses(v);[...$('armors').children].forEach((e,i)=>e.className='ar '+cl[i])});
-  setC('sB',scoreOf(ME),v=>$('sB').textContent=v);setC('sR',scoreOf(OPP),v=>$('sR').textContent=v);
+  // 上のスコア：1対1は自分と相手、デスマッチは自分と（自分以外の）1位。右に順位
+  const rk=G.dm?ranking():null,top=G.dm?rk.find(F=>F!==ME):OPP;setC('sB',scoreOf(ME),v=>$('sB').textContent=v);setC('sR',top?scoreOf(top):0,v=>$('sR').textContent=v);
+  setC('dm',!!G.dm,v=>$('rank').style.display=v?'block':'none');
+  if(G.dm)setC('rk',rk.map(F=>(F===ME?'*':'')+F.name+':'+scoreOf(F)).join('|'),()=>{const R=$('rank');R.textContent='';const h=document.createElement('b');h.textContent='デスマッチ（'+DM_KILLS+'キルで勝ち）';R.appendChild(h);
+    const row=(F,i)=>{const d=document.createElement('div');if(F===ME)d.className='me';d.textContent=(i+1)+'. '+(F.name||'???')+'　'+scoreOf(F);R.appendChild(d)};rk.slice(0,6).forEach(row);const mi=rk.indexOf(ME);if(mi>=6)row(ME,mi)});
   const t=Math.max(0,Math.ceil(G.tl));setC('tl',t,v=>$('sT').textContent=Math.floor(v/60)+':'+String(v%60).padStart(2,'0'));
   setC('coins',SV.coins,v=>$('coins').textContent=v);setC('gems',SV.gems,v=>$('gems').textContent=v);
   const st=(ME.burn?'🔥 燃えている　':'')+(ME.slowT>0?'🐢 遅くなっている':'');setC('st',st,v=>$('burn').textContent=v);
@@ -1478,20 +1543,23 @@ function buildWBar(){const B=$('wbar');B.textContent='';
 // ---------------- ポーズ・結果 ----------------
 function pauseGame(){if(!G.mode||G.phase==='end')return;if(G.mode==='bot')G.paused=true;$('pNote').textContent=G.mode==='online'?'オンライン対戦中は試合が止まりません。':'';showScr('sPause');if(document.pointerLockElement)document.exitPointerLock()}
 function resumeGame(){G.paused=false;showScr(null);lockPointer()}
-function showResult(){const R=G.res;if(!R)return;if(document.pointerLockElement)document.exitPointerLock();showScr('sResult');msg('');
-  $('resT').textContent=R.r==='win'?'勝利！':R.r==='lose'?'敗北…':'引き分け';$('resT').style.color=R.r==='win'?'#ffd23f':R.r==='lose'?'#ff8a8a':'#fff';
-  $('resAn').textContent=ME.name;$('resBn').textContent=OPP.name;drawPodium($('resA'),ME.sk,ME.w);drawPodium($('resB'),OPP.sk,OPP.w);$('resK').textContent=R.a+' - '+R.b;
-  $('resNote').textContent=(R.why==='left'?'相手が退出したので勝ちになりました。　':R.why==='quit'?'試合をやめました。　':'')+'ポイント '+R.pa+' - '+R.pb+'　・　コイン +'+R.coins+(R.r==='win'?'　ジェム +1':'');
-  $('resAgain').style.display=(G.mode==='online'&&(!NET.game||!NET.oppP))?'none':''}
-function cleanupMatch(){$('scope').classList.remove('on');ME.scoped=false;G.mode=null;G.phase='idle';G.paused=false;document.body.classList.remove('play');if(OPP.model){scene.remove(OPP.model);OPP.model=null}OPP.here=false;VIEW.g.visible=false;msg('')}
-function again(){SFX.click();if(G.mode==='online'){cleanupMatch();NET.rdy=NET.rd+1;sendNow();showWait()}else{cleanupMatch();startMatch('bot');lockPointer()}}
+function showResult(){const R=G.res;if(!R)return;if(document.pointerLockElement)document.exitPointerLock();showScr('sResult');msg('');$('resPod').style.display=R.dm?'none':'';$('resList').style.display=R.dm?'':'none';
+  $('resT').textContent=R.dm?(R.r==='win'?'1位！':R.place+'位'+(R.r==='draw'?'（同点）':'')):R.r==='win'?'勝利！':R.r==='lose'?'敗北…':'引き分け';$('resT').style.color=R.r==='win'?'#ffd23f':R.r==='lose'?'#ff8a8a':'#fff';
+  if(R.dm){const T=$('resList');T.textContent='';const hd=T.insertRow();for(const t of['順位','名前','キル','ポイント'])hd.insertCell().textContent=t;
+    R.rank.forEach((q,i)=>{const tr=T.insertRow();if(q.me)tr.className='me';for(const t of[(i+1)+'位',q.name+(q.me?'（あなた）':''),q.k,q.p])tr.insertCell().textContent=t});
+    $('resNote').textContent=(R.why==='left'?'ホストが退出したので試合が終わりました。　':R.why==='quit'?'試合をやめました。　':'')+R.n+'人中 '+R.place+'位　・　キル '+R.a+'　・　コイン +'+R.coins+(R.r==='win'?'　ジェム +1':'')}
+  else{$('resAn').textContent=ME.name;$('resBn').textContent=R.on;drawPodium($('resA'),ME.sk,ME.w);drawPodium($('resB'),R.osk,R.ow);$('resK').textContent=R.a+' - '+R.b;
+    $('resNote').textContent=(R.why==='left'?'相手が退出したので勝ちになりました。　':R.why==='quit'?'試合をやめました。　':'')+'ポイント '+R.pa+' - '+R.pb+'　・　コイン +'+R.coins+(R.r==='win'?'　ジェム +1':'')}
+  $('resAgain').style.display=(G.mode==='online'&&(!NET.game||(!NET.host&&!NET.hostP)))?'none':''}
+function cleanupMatch(){$('scope').classList.remove('on');ME.scoped=false;G.mode=null;G.phase='idle';G.paused=false;document.body.classList.remove('play');clearFoes();VIEW.g.visible=false;msg('')}
+function again(){SFX.click();if(G.mode==='online'){cleanupMatch();NET.rdy=NET.rd+1;sendNow();showWait()}else{const dm=G.dm;cleanupMatch();startMatch('bot',{dm});lockPointer()}}
 function toMenu(){SFX.click();const on=G.mode==='online';cleanupMatch();if(on||NET.game){leaveRoom(true)}showMenu()}
 function quitMatch(){SFX.click();if(G.phase!=='end'&&G.mode){endMatch('quit');showResult()}else toMenu()}
 // ---------------- ボタン ----------------
 function bindUI(){const on=(id,f)=>$(id).addEventListener('click',e=>{e.stopPropagation();ac();f(e)});
-  on('nameOk',nameOk);$('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')nameOk();e.stopPropagation()});$('roomIn').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom();e.stopPropagation()});
-  on('mOnline',()=>{SFX.click();showRooms()});on('mBot',()=>{SFX.click();startMatch('bot');lockPointer()});on('mArmory',()=>{SFX.click();showArmory()});on('mName',()=>{SFX.click();showName()});on('mSet',()=>{SFX.click();showSet('sMenu')});
-  on('aOk',()=>{SFX.click();showMenu()});on('rMake',()=>{SFX.click();createRoom()});on('rBack',()=>{SFX.click();showMenu()});on('wLeave',()=>{SFX.click();leaveRoom()});
+  on('nameOk',nameOk);$('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')nameOk();e.stopPropagation()});$('roomIn').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom('duel');e.stopPropagation()});
+  on('mOnline',()=>{SFX.click();showRooms()});on('mBot',()=>{SFX.click();startMatch('bot');lockPointer()});on('mDm',()=>{SFX.click();startMatch('bot',{dm:true});lockPointer()});on('mArmory',()=>{SFX.click();showArmory()});on('mName',()=>{SFX.click();showName()});on('mSet',()=>{SFX.click();showSet('sMenu')});
+  on('aOk',()=>{SFX.click();showMenu()});on('rMake',()=>{SFX.click();createRoom('duel')});on('rMakeDm',()=>{SFX.click();createRoom('dm')});on('wStart',()=>{SFX.click();hostStart()});on('rBack',()=>{SFX.click();showMenu()});on('wLeave',()=>{SFX.click();leaveRoom()});
   on('resAgain',again);on('resMenu',toMenu);on('pBack',()=>{SFX.click();resumeGame()});on('pSet',()=>{SFX.click();showSet('sPause')});on('pQuit',quitMatch);
   on('sOk',()=>{SFX.click();if(setBack==='sPause')showScr('sPause');else showMenu()});
   $('sSens').addEventListener('input',e=>{SET.sens=+e.target.value;LSset('pgduel-sens',SET.sens);$('sSensV').textContent=SET.sens+'%'});
@@ -1528,7 +1596,7 @@ for(const id in LAY_DEF){const e=$(id);e.addEventListener('pointerdown',ev=>{if(
 // ---- 07b_chat.js ----
 // ===================== チャット（左上の吹き出しボタン・待合室） =====================
 // オンラインは presence の cm に最新3つ [番号, 文] をのせる。CPU戦ではCPUが返事をする
-const CHAT={open:false,seq:0,out:[],seen:-1,peer:''};
+const CHAT={open:false,seq:0,out:[],seen:{}};   // seen：人ごとに読んだ番号
 const QUICK=['よろしく！','GG','ナイス！','まって！','ありがとう','おしい！'];
 const cleanText=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g,'').trim().slice(0,60);
 function openChat(){if(CHAT.open)return;CHAT.open=true;for(const k in KEY)KEY[k]=false;mouseAtk=false;$('chatBox').classList.add('on');if(document.pointerLockElement)document.exitPointerLock();setTimeout(()=>{try{$('chatIn').focus()}catch(e){}},30)}
@@ -1538,10 +1606,10 @@ function sendChat(t){t=cleanText(t);if(!t)return;chatLine(cleanName(SV.name)||'�
 function chatLine(name,text,mine){const L=$('chatLog'),d=document.createElement('div'),n=document.createElement('b');n.textContent=name+'：';n.style.color=mine?'#7ab8ff':'#ff8a8a';d.appendChild(n);d.appendChild(document.createTextNode(text));d._t=9;L.appendChild(d);while(L.children.length>6)L.firstChild.remove()}
 function chatUpdate(dt){for(const e of[...$('chatLog').children]){e._t-=dt;if(e._t<=0)e.remove();else e.style.opacity=Math.min(1,e._t)}}
 // 相手の presence から新しい文を読む（はじめて見る相手の古い文は出さない）
-function readChat(peer,p){const cm=p&&p.cm;if(!Array.isArray(cm))return;if(peer!==CHAT.peer){CHAT.peer=peer;CHAT.seen=cm.reduce((m,e)=>Array.isArray(e)&&e[0]>m?e[0]:m,-1);return}
-  for(const e of cm){if(!Array.isArray(e)||!(e[0]>CHAT.seen))continue;CHAT.seen=e[0];const t=cleanText(e[1]);if(t){chatLine(cleanName(p.n)||'???',t,false);SFX.click()}}}
+function readChat(peer,p){const cm=p&&p.cm;if(!Array.isArray(cm))return;if(!(peer in CHAT.seen)){CHAT.seen[peer]=cm.reduce((m,e)=>Array.isArray(e)&&e[0]>m?e[0]:m,-1);return}
+  for(const e of cm){if(!Array.isArray(e)||!(e[0]>CHAT.seen[peer]))continue;CHAT.seen[peer]=e[0];const t=cleanText(e[1]);if(t){chatLine(cleanName(p.n)||'???',t,false);SFX.click()}}}
 // CPUの返事
-function botSay(t,delay){setTimeout(()=>{if(G.mode==='bot')chatLine(OPP.name,t,false)},delay||0)}
+function botSay(t,delay){setTimeout(()=>{if(G.mode==='bot')chatLine((G.dm&&FOES.length?pick(FOES):OPP).name,t,false)},delay||0)}
 function botReply(t){const r=/よろしく|宜しく|hi|hello/i.test(t)?'よろしく！':/gg/i.test(t)?'GG!':/ナイス|nice/i.test(t)?'ありがとう！':/まって|待って/.test(t)?'まてないｗ':pick(['ｗ','まけないよ！','いい勝負！','そっちこそ！']);botSay(r,1200+Math.random()*1200)}
 function bindChat(){const box=$('chatQuick');box.textContent='';for(const q of QUICK){const b=document.createElement('button');b.className='pb g';b.textContent=q;b.onclick=e=>{e.stopPropagation();sendChat(q);closeChat()};box.appendChild(b)}
   $('chatB').addEventListener('click',e=>{e.stopPropagation();openChat()});$('chatB').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();openChat()},{passive:false});
@@ -1607,16 +1675,16 @@ function step(dt){chatUpdate(dt);if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.d
 const XSC=new THREE.Scene(),
   XMARK=new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,stencilWrite:true,stencilRef:1,stencilFunc:THREE.AlwaysStencilFunc,stencilZPass:THREE.ReplaceStencilOp}),
   XBLUE=new THREE.MeshBasicMaterial({color:0x3a8cff,transparent:true,opacity:.75,depthWrite:false,depthFunc:THREE.GreaterDepth,stencilWrite:true,stencilRef:1,stencilFunc:THREE.NotEqualStencilFunc,stencilZPass:THREE.ReplaceStencilOp});
-const xrayOn=()=>G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray&&OPP.alive&&OPP.model&&OPP.model.visible&&(G.mode!=='online'||OPP.here);
+const xrayOn=()=>G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray;
 function render(){renderer.clear();renderer.render(scene,cam);
-  if(xrayOn()){const m=OPP.model,par=m.parent||scene,tv=OPP.tag?OPP.tag.visible:false;if(OPP.tag)OPP.tag.visible=false;
-    XSC.add(m);XSC.overrideMaterial=XMARK;renderer.render(XSC,cam);XSC.overrideMaterial=XBLUE;renderer.render(XSC,cam);XSC.overrideMaterial=null;par.add(m);if(OPP.tag)OPP.tag.visible=tv}
+  if(xrayOn())for(const F of FOES){if(!F.alive||!F.model||!F.model.visible||!live(F))continue;const m=F.model,par=m.parent||scene,tv=F.tag?F.tag.visible:false;if(F.tag)F.tag.visible=false;
+    XSC.add(m);XSC.overrideMaterial=XMARK;renderer.render(XSC,cam);XSC.overrideMaterial=XBLUE;renderer.render(XSC,cam);XSC.overrideMaterial=null;par.add(m);if(F.tag)F.tag.visible=tv}
   if(G.mode&&ME.alive&&VIEW.g.visible){renderer.clearDepth();renderer.render(vscene,vcam)}}
 function boot(){bindUI();$('bootTx').textContent='ゴーストタウンをつくっています…';
   setTimeout(()=>{buildMap();$('bootTx').textContent='道を調べています…';
     setTimeout(()=>{buildNav();renderSniperIcons();applyLayout();hudReset();VIEW.g.visible=false;if(!SV.name)showName();else showMenu();last=performance.now();requestAnimationFrame(loop)},20)},20)}
 // テスト用
-window.__D={G,ME,get OPP(){return OPP},NET,SV,SET,BOT,TNTS,SPAWNS,NAV,LAD,SOL,WEAPONS,cam,scene,renderer,startMatch,endMatch,quitMatch,toMenu,again,showRooms,createRoom,enterRoom,leaveRoom,roomList,
+window.__D={G,ME,get OPP(){return OPP},get FOES(){return FOES},ranking,hostStart,NET,SV,SET,BOT,TNTS,SPAWNS,NAV,LAD,SOL,WEAPONS,cam,scene,renderer,startMatch,endMatch,quitMatch,toMenu,again,showRooms,createRoom,enterRoom,leaveRoom,roomList,
   meleeHit,startSwing,fireSniper,fireHeavy,gunInput,PROJ,PORTALS,switchWeapon,setScope,startReload,traceShot,rayWorld,showLayout,PEND,get LAY(){return LAY},SNIPER_ICON,applyHit,explode,tntLight,respawn,step,render,scoreOf,ptsOf,groundAt,hitsBox,nearestNode,flowTo,moveBody,inp:null};
 boot();
 

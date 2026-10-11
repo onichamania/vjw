@@ -54,15 +54,15 @@ function step(dt){chatUpdate(dt);if(tipT>0){tipT-=dt;if(tipT<=0)$('tip').style.d
 const XSC=new THREE.Scene(),
   XMARK=new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,stencilWrite:true,stencilRef:1,stencilFunc:THREE.AlwaysStencilFunc,stencilZPass:THREE.ReplaceStencilOp}),
   XBLUE=new THREE.MeshBasicMaterial({color:0x3a8cff,transparent:true,opacity:.75,depthWrite:false,depthFunc:THREE.GreaterDepth,stencilWrite:true,stencilRef:1,stencilFunc:THREE.NotEqualStencilFunc,stencilZPass:THREE.ReplaceStencilOp});
-const xrayOn=()=>G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray&&OPP.alive&&OPP.model&&OPP.model.visible&&(G.mode!=='online'||OPP.here);
+const xrayOn=()=>G.mode&&ME.alive&&ME.scoped&&WEAPONS[ME.w].xray;
 function render(){renderer.clear();renderer.render(scene,cam);
-  if(xrayOn()){const m=OPP.model,par=m.parent||scene,tv=OPP.tag?OPP.tag.visible:false;if(OPP.tag)OPP.tag.visible=false;
-    XSC.add(m);XSC.overrideMaterial=XMARK;renderer.render(XSC,cam);XSC.overrideMaterial=XBLUE;renderer.render(XSC,cam);XSC.overrideMaterial=null;par.add(m);if(OPP.tag)OPP.tag.visible=tv}
+  if(xrayOn())for(const F of FOES){if(!F.alive||!F.model||!F.model.visible||!live(F))continue;const m=F.model,par=m.parent||scene,tv=F.tag?F.tag.visible:false;if(F.tag)F.tag.visible=false;
+    XSC.add(m);XSC.overrideMaterial=XMARK;renderer.render(XSC,cam);XSC.overrideMaterial=XBLUE;renderer.render(XSC,cam);XSC.overrideMaterial=null;par.add(m);if(F.tag)F.tag.visible=tv}
   if(G.mode&&ME.alive&&VIEW.g.visible){renderer.clearDepth();renderer.render(vscene,vcam)}}
 function boot(){bindUI();$('bootTx').textContent='ゴーストタウンをつくっています…';
   setTimeout(()=>{buildMap();$('bootTx').textContent='道を調べています…';
     setTimeout(()=>{buildNav();renderSniperIcons();applyLayout();hudReset();VIEW.g.visible=false;if(!SV.name)showName();else showMenu();last=performance.now();requestAnimationFrame(loop)},20)},20)}
 // テスト用
-window.__D={G,ME,get OPP(){return OPP},NET,SV,SET,BOT,TNTS,SPAWNS,NAV,LAD,SOL,WEAPONS,cam,scene,renderer,startMatch,endMatch,quitMatch,toMenu,again,showRooms,createRoom,enterRoom,leaveRoom,roomList,
+window.__D={G,ME,get OPP(){return OPP},get FOES(){return FOES},ranking,hostStart,NET,SV,SET,BOT,TNTS,SPAWNS,NAV,LAD,SOL,WEAPONS,cam,scene,renderer,startMatch,endMatch,quitMatch,toMenu,again,showRooms,createRoom,enterRoom,leaveRoom,roomList,
   meleeHit,startSwing,fireSniper,fireHeavy,gunInput,PROJ,PORTALS,switchWeapon,setScope,startReload,traceShot,rayWorld,showLayout,PEND,get LAY(){return LAY},SNIPER_ICON,applyHit,explode,tntLight,respawn,step,render,scoreOf,ptsOf,groundAt,hitsBox,nearestNode,flowTo,moveBody,inp:null};
 boot();

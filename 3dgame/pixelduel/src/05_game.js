@@ -4,9 +4,13 @@ const AR_MAX=100,AR_START=50,START_INV=5,ONE_HIT=90,PH=1.85,PR=.3,EYE=1.62,GRAV=
 // mode: null（メニュー） / 'bot'（CPUと練習） / 'online'。phase: 'count' 'play' 'end'
 const G={mode:null,phase:'idle',tl:MATCH_T,ct:0,paused:false,endT:0,res:null,shake:0,time:0};
 function fighter(o){return Object.assign({x:0,y:0,z:0,vx:0,vz:0,vy:0,yaw:0,pitch:0,onG:true,jumps:0,hp:HP_MAX,ar:0,alive:true,respT:0,inv:0,slowT:0,burn:null,
-  atkT:9,atkCD:0,hitT:-1,swingN:0,seq:0,arB:0,lastHead:false,w:'fists',wm:'fists',ws:'acr',wh:'rjumper',stash:{},chg:0,rj:false,kbT:0,tpCD:0,cw:0,mag:0,res:0,relT:0,swT:0,scoped:false,shotT:9,sk:0,name:'',walk:0,spd:0,dd:0,sd:0,tk:0,model:null,tag:null,camY:0,stepD:0,deadT:0,killer:null,bot:false},o||{})}
-let ME=fighter(),OPP=fighter();
-const scoreOf=F=>(F===ME?OPP:ME).dd-F.sd,ptsOf=F=>Math.round((F===ME?OPP:ME).tk);
+  atkT:9,atkCD:0,hitT:-1,swingN:0,seq:0,arB:0,kills:0,dealt:0,kb:{},lastHead:false,w:'fists',wm:'fists',ws:'acr',wh:'rjumper',stash:{},chg:0,rj:false,kbT:0,tpCD:0,cw:0,mag:0,res:0,relT:0,swT:0,scoped:false,shotT:9,sk:0,name:'',walk:0,spd:0,dd:0,sd:0,tk:0,model:null,tag:null,camY:0,stepD:0,deadT:0,killer:null,bot:false},o||{})}
+// 自分（ME）と相手たち（FOES）。1対1では FOES=[OPP]、デスマッチでは何人も。OPP はいつも FOES[0]（いなければ空の人）
+let ME=fighter(),OPP=fighter(),FOES=[OPP];const NOBODY=fighter({alive:false,here:false,name:'???'});
+const ALL=()=>[ME].concat(FOES),live=V=>V===ME||G.mode!=='online'||!!V.here,enemiesOf=F=>ALL().filter(V=>V!==F&&V.alive&&live(V));
+// 得点：キル数−自爆。ポイント：あたえたダメージ（同じキル数のときに使う）
+const scoreOf=F=>(F.kills|0)-(F.sd|0),ptsOf=F=>Math.round(F.dealt||0);
+const DM_BOTS=5,DM_KILLS=15,DM_T=180;   // デスマッチ：CPU5人・15キルか3分で終わり
 // ---------------- 体の動き（プレイヤーとCPUで同じ） ----------------
 function speedOf(F){return BASE_SP/WEAPONS[F.w].weight*(F.slowT>0?WEAPONS.fists.slow.k:1)}
 // 地面では入力どおりにすぐ動き・すぐ止まる（すべらない）。空中も素早く向きを変えられる
@@ -45,11 +49,11 @@ function meleeHit(A,B,range,yaw,pitch){if(!B.alive)return null;const ex=A.x,ey=A
   return segFree(ex,ey,ez,B.x,cy,B.z)?{head:false,d:dist}:null}
 function startSwing(F){if(!F.alive||F.atkCD>0||F.swT>0||G.phase!=='play'||isGun(F.w))return false;const W=WEAPONS[F.w];F.atkCD=W.rate;F.atkT=0;F.hitT=.1;F.swingN++;F.seq++;
   if(F===ME){VIEW.swingN=F.swingN;SFX.swing(F.w)}else{const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(dd<16)SFX.swing(F.w,clamp(1-dd/16,.2,.8))}return true}
-function resolveSwing(F){const W=WEAPONS[F.w],V=F===ME?OPP:ME;let yaw=F.yaw,pitch=F.pitch;if(F.bot){yaw+=rr(-.1,.1);pitch+=rr(-.08,.08)}
-  const h=(V.alive&&(G.mode!=='online'||OPP.here))?meleeHit(F,V,W.range,yaw,pitch):null;
+function resolveSwing(F){const W=WEAPONS[F.w];let yaw=F.yaw,pitch=F.pitch;if(F.bot){yaw+=rr(-.1,.1);pitch+=rr(-.08,.08)}
+  let V=null,h=null;for(const E of enemiesOf(F)){const q=meleeHit(F,E,W.range,yaw,pitch);if(q&&(!h||q.d<h.d)){h=q;V=E}}
   if(h){const dmg=W.dmg*(h.head?W.head:1);
     if(F===ME){crossHit(h.head);SFX.hit(F.w,h.head)}
-    if(G.mode==='online'&&F===ME){NET.pushHit(dmg,h.head,F.w);hitFx(V,F.w,h.head)}else applyHit(V,dmg,h.head,F.w,F);return}
+    if(G.mode==='online'&&F===ME){NET.pushHit(V,dmg,h.head,F.w);hitFx(V,F.w,h.head)}else applyHit(V,dmg,h.head,F.w,F);return}
   // TNT をたたいた
   const ex=F.x,ey=F.y+EYE,ez=F.z,d=aimDir(yaw,pitch);
   for(const t of TNTS){if(!t.alive||t.fuse>0)continue;const tb=rayBox(ex,ey,ez,d,[t.s[0]-.15,t.s[1]-.15,t.s[2]-.15,t.s[3]+.15,t.s[4]+.15,t.s[5]+.15]);
@@ -70,7 +74,7 @@ function fireSniper(F,err){const W=WEAPONS[F.w];if(!F.alive||G.phase!=='play'||F
   if(F.mag<=0){if(F===ME&&F.atkCD<=0){SFX.empty();F.atkCD=.3}startReload(F);return false}
   F.mag--;F.atkCD=W.rate;F.shotT=0;F.atkT=0;F.seq++;let yaw=F.yaw,pitch=F.pitch;
   const sp=F.scoped?0:W.hip;yaw+=rr(-sp,sp);pitch+=rr(-sp,sp)*.6;if(err){yaw+=gauss()*err;pitch+=gauss()*err*.7}
-  const d=aimDir(yaw,pitch),segs=[];traceShot(F,F.x,F.y+EYE,F.z,d,W,W.range,W.ricochet?1:0,segs,{});
+  const d=aimDir(yaw,pitch),segs=[];traceShot(F,F.x,F.y+EYE,F.z,d,W,W.range,W.ricochet?1:0,segs,new Set());
   const mz=muzzleOf(F);if(segs.length){segs[0][0]=mz.x;segs[0][1]=mz.y;segs[0][2]=mz.z}
   drawShot(F.w,segs,F===ME&&F.scoped);if(F===ME){SFX.shot(F.w);G.shake=Math.max(G.shake,.08);if(G.mode==='online')NET.pushShot(F.w,segs)}
   else SFX.shot(F.w,Math.hypot(F.x-ME.x,F.z-ME.z));
@@ -86,18 +90,19 @@ function rayWorld(ox,oy,oz,d,max){let best=max,n=null,hs=null;const ex=ox+d[0]*m
     if(t0<best&&ax>=0){best=t0;n=[0,0,0];n[ax]=sg;hs=s}});
   if(d[1]<-1e-6){const tg=-oy/d[1];if(tg<best){best=tg;n=[0,1,0];hs=null}}return{t:best,n,s:hs}}
 // 弾の道すじ：相手に当たったか・TNT・はね返り
-function traceShot(F,ox,oy,oz,d,W,max,bounce,segs,done){const V=F===ME?OPP:ME;
-  const wall=W.wallbreak?{t:max,n:null,s:null}:rayWorld(ox,oy,oz,d,max);let hit=null;
-  if(!done.v&&V.alive&&(G.mode!=='online'||F!==ME||OPP.here)){const th=raySphere(ox,oy,oz,d,V.x,V.y+1.62,V.z,.27),tb=rayBox(ox,oy,oz,d,[V.x-.34,V.y,V.z-.34,V.x+.34,V.y+1.42,V.z+.34]);
-    let t=null,head=false;if(th!=null&&(tb==null||th<=tb+.2)){t=th;head=true}else if(tb!=null)t=tb;if(t!=null&&t<wall.t)hit={t,head}}
-  if(hit){done.v=1;const thru=W.wallbreak&&rayWorld(ox,oy,oz,d,hit.t).t<hit.t-.05;deliverShot(F,V,W.dmg*(hit.head?W.head:1)*(thru?.5:1),hit.head,F.w)}
+function traceShot(F,ox,oy,oz,d,W,max,bounce,segs,done){
+  const wall=W.wallbreak?{t:max,n:null,s:null}:rayWorld(ox,oy,oz,d,max);const hs=[];
+  for(const V of enemiesOf(F)){if(done.has(V))continue;const th=raySphere(ox,oy,oz,d,V.x,V.y+1.62,V.z,.27),tb=rayBox(ox,oy,oz,d,[V.x-.34,V.y,V.z-.34,V.x+.34,V.y+1.42,V.z+.34]);
+    let t=null,head=false;if(th!=null&&(tb==null||th<=tb+.2)){t=th;head=true}else if(tb!=null)t=tb;if(t!=null&&t<wall.t)hs.push({V,t,head})}
+  hs.sort((a,b)=>a.t-b.t);const use=W.pierce?hs:hs.slice(0,1),hit=use[0]||null;   // 貫通する弾は線上の敵みんなに当たる
+  for(const q of use){done.add(q.V);const thru=W.wallbreak&&rayWorld(ox,oy,oz,d,q.t).t<q.t-.05;deliverShot(F,q.V,W.dmg*(q.head?W.head:1)*(thru?.5:1),q.head,F.w)}
   const end=hit&&!W.pierce?hit.t:wall.t;segs.push([ox,oy,oz,ox+d[0]*end,oy+d[1]*end,oz+d[2]*end]);
   if(hit&&!W.pierce)return;
   const px=ox+d[0]*wall.t,py=oy+d[1]*wall.t,pz=oz+d[2]*wall.t;
   if(wall.s){const t=TNTS.find(q=>q.s===wall.s);if(t&&t.alive){tntLight(t,F);t.fuse=Math.min(t.fuse,.12);if(F===ME&&G.mode==='online')NET.pushEx(t.id)}}
   if(wall.n&&wall.t<max){fx(px+wall.n[0]*.05,py+wall.n[1]*.05,pz+wall.n[2]*.05,W.beam||'#d8c8a0',W.beam?6:5,1.6,.35,.07,6);
     if(bounce>0){const k=2*(d[0]*wall.n[0]+d[1]*wall.n[1]+d[2]*wall.n[2]),nd=[d[0]-k*wall.n[0],d[1]-k*wall.n[1],d[2]-k*wall.n[2]];traceShot(F,px+wall.n[0]*.02,py+wall.n[1]*.02,pz+wall.n[2]*.02,nd,W,max-wall.t,bounce-1,segs,done)}}}
-function deliverShot(F,V,dmg,head,w){if(F===ME){crossHit(head);SFX.hitmark(head);if(head)headshotMsg();if(G.mode==='online'){NET.pushHit(dmg,head,w);hitFx(V,w,head)}else applyHit(V,dmg,head,w,F)}else applyHit(V,dmg,head,w,F)}
+function deliverShot(F,V,dmg,head,w){if(F===ME){crossHit(head);SFX.hitmark(head);if(head)headshotMsg();if(G.mode==='online'){NET.pushHit(V,dmg,head,w);hitFx(V,w,head)}else applyHit(V,dmg,head,w,F)}else applyHit(V,dmg,head,w,F)}
 // 弾の光・線
 const SHOTS=[],SGEO=new THREE.BoxGeometry(1,1,1);
 function drawShot(w,segs,scoped){const W=WEAPONS[w];for(const g of segs){const a=new THREE.Vector3(g[0],g[1],g[2]),b=new THREE.Vector3(g[3],g[4],g[5]),len=a.distanceTo(b);if(len<.05)continue;
@@ -110,21 +115,21 @@ function shotsUpdate(dt){for(let i=SHOTS.length-1;i>=0;i--){const s=SHOTS[i];s.t
 // ダメージ（アーマーが先にへる）。たおしたら true
 function applyDamage(V,dmg,by,key){if(!V.alive||V.inv>0||dmg<=0)return false;let d=dmg;if(V.arB>0){const a=Math.min(V.arB,d);V.arB-=a;d-=a}if(V.ar>0){const a=Math.min(V.ar,d);V.ar-=a;d-=a}
   const ab=dmg-d;let cap=ONE_HIT;if(key!=null){if(V.hk!==key){V.hk=key;V.hkA=0}cap=Math.max(0,ONE_HIT-V.hkA)}d=Math.min(d,cap);if(key!=null)V.hkA+=d;   // 1回の攻撃でへる体力は最大90（4発同時なども合わせて）：シールドがなくても1発ではたおれない
-  const real=Math.min(V.hp,d)+ab;V.hp-=d;if(by&&by!==V)V.tk+=real;
+  const real=Math.min(V.hp,d)+ab;V.hp-=d;if(by&&by!==V)by.dealt=(by.dealt||0)+real;
   if(V===ME){$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,120);G.shake=Math.max(G.shake,.18);SFX.hurt()}
   if(V.hp<=.001){V.hp=0;killFighter(V,by);return true}return false}
 function applyHit(V,dmg,head,w,by,key){if(!V.alive||V.inv>0)return;const W=WEAPONS[w];hitFx(V,w,head);V.lastHead=head;
   if(!applyDamage(V,dmg,by,key)){if(W.slow)V.slowT=W.slow.t;if(W.burn)V.burn={n:W.burn.n,t:W.burn.iv,by,dmg:W.burn.dmg}}}
 function killFighter(V,by){if(V===ME){stopReloadSnd();SFX.charge(false)}clearPortals(V);V.chg=0;V.rj=false;V.alive=false;V.scoped=false;V.relT=0;V.respT=RESP_T;V.deadT=0;V.burn=null;V.slowT=0;V.hitT=-1;V.killer=by&&by!==V?by:null;
-  if(V.killer)V.dd++;else V.sd++;if(V.killer===ME&&V!==ME)killPop(V.lastHead);
+  if(V.killer){V.dd++;V.killer.kills=(V.killer.kills|0)+1;if(V===ME&&V.killer.peer)ME.kb[V.killer.peer]=(ME.kb[V.killer.peer]|0)+1}else V.sd++;if(V.killer===ME&&V!==ME)killPop(V.lastHead);
   addFeed(V.killer||V,V,V.killer?V.killer.w:'tnt',false);
-  if(V===ME){SFX.die();VIEW.g.visible=false}else{SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
+  if(V===ME){SFX.die();VIEW.g.visible=false}else{if(V.killer===ME)SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
   if(V.model)V.model.visible=false}
-function respawn(F){const sp=pickSpawn(F===ME?OPP:ME,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
+function respawn(F){const sp=pickSpawn(F,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
   fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.chg=0;F.rj=false;F.kbT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
   if(F===ME)VIEW.g.visible=true;if(F.model)F.model.visible=true}
 // 相手からいちばん遠い出現地点（上位3つからランダム）
-function pickSpawn(other,needNav){const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:other&&other.alive!==undefined?Math.hypot(s[0]-other.x,s[2]-other.z)+(Math.abs(s[1]-other.y)>2?6:0):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
+function pickSpawn(F,needNav){const os=ALL().filter(o=>o!==F&&o.alive&&live(o));const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:os.length?Math.min(...os.map(o=>Math.hypot(s[0]-o.x,s[2]-o.z)+(Math.abs(s[1]-o.y)>2?6:0))):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
 // ---------------- 状態（遅い・燃える・無敵） ----------------
 function statusUpdate(F,dt){if(F.swT>0)F.swT-=dt;F.shotT+=dt;
   if(F.relT>0){F.relT-=dt;if(F.relT<=0){F.relT=0;if(isGun(F.w)){const W=WEAPONS[F.w],n=Math.min(W.cap-F.mag,F.res);F.mag+=n;F.res-=n;if(F===ME)SFX.reloadEnd(F.w);else{const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(dd<20)SFX.reloadEnd(F.w,clamp(1-dd/20,.2,.6))}}}}
@@ -135,13 +140,13 @@ function statusUpdate(F,dt){if(F.swT>0)F.swT-=dt;F.shotT+=dt;
 // ---------------- TNT ----------------
 function tntLight(t,by){if(!t.alive||t.fuse>0)return;t.fuse=.6;t.by=by;SFX.beep(true)}
 function tntUpdate(dt){for(const t of TNTS){if(t.alive&&t.fuse>0){t.fuse-=dt;t.m.scale.setScalar(1.04+Math.sin(t.fuse*45)*.06);t.m.material=(Math.floor(t.fuse*12)%2)?TNTMAT:whiteMat();if(t.fuse<=0)explode(t)}
-  else if(!t.alive){t.back-=dt;if(t.back<=0){const near=[ME,OPP].some(F=>F.alive&&Math.abs(F.x-t.x)<1&&Math.abs(F.z-t.z)<1&&F.y<t.y+1&&F.y+PH>t.y);if(!near){t.alive=true;t.m.visible=true;t.s.off=false;t.m.scale.setScalar(1);t.m.material=TNTMAT}}}}}
+  else if(!t.alive){t.back-=dt;if(t.back<=0){const near=ALL().some(F=>F.alive&&Math.abs(F.x-t.x)<1&&Math.abs(F.z-t.z)<1&&F.y<t.y+1&&F.y+PH>t.y);if(!near){t.alive=true;t.m.visible=true;t.s.off=false;t.m.scale.setScalar(1);t.m.material=TNTMAT}}}}}
 let WMAT=null;const whiteMat=()=>WMAT||(WMAT=new THREE.MeshBasicMaterial({color:0xffffff}));
 function explode(t){t.alive=false;t.fuse=0;t.m.visible=false;t.s.off=true;t.back=25;t.m.material=TNTMAT;SFX.boom();boomFx(t.x,t.y+.45,t.z);
   const cx=t.x,cy=t.y+.45,cz=t.z;G.shake=Math.max(G.shake,Math.max(0,.6-Math.hypot(ME.x-cx,ME.z-cz)*.03));
   const hurt=F=>{if(!F.alive)return;const dx=F.x-cx,dy=F.y+.9-cy,dz=F.z-cz,d=Math.hypot(dx,dy,dz);if(d>5)return;const dmg=d<2?60:60*(5-d)/3;
     const l=Math.max(.3,Math.hypot(dx,dz));F.vx+=dx/l*7;F.vz+=dz/l*7;F.vy=Math.max(F.vy,6);F.onG=false;F.kbT=.5;applyDamage(F,dmg,t.by)};
-  hurt(ME);if(G.mode==='bot')hurt(OPP);
+  for(const F of ALL())if(F===ME||F.bot)hurt(F);
   for(const o of TNTS)if(o!==t&&o.alive&&o.fuse<=0&&Math.hypot(o.x-t.x,o.y-t.y,o.z-t.z)<3.2){o.fuse=.25;o.by=t.by}}
 function resetTNT(){for(const t of TNTS){t.alive=true;t.fuse=0;t.back=0;t.m.visible=true;t.s.off=false;t.m.scale.setScalar(1);t.m.material=TNTMAT}}
 // ---------------- つぶ（血・火花・爆発） ----------------
@@ -165,76 +170,90 @@ function updModel(F,dt){const m=F.model;if(!m)return;m.visible=F.alive&&!(F.inv>
 // ---------------- CPU（練習相手） ----------------
 const BOT={itT:0,ig:-1,distT:0,dist:null,goal:-1,wander:-1,react:.3,strafeT:0,strafeS:1,stuckT:0,lx:0,lz:0,aimHead:false};
 const BOT_NAMES=['ならず者ボット','保安官ボット','カウボーイボット','さすらいボット','ガンマンボット'];
-function botUpdate(dt){const F=OPP,T=ME;if(!F.alive)return;let wx=0,wz=0,jump=false;
+const newAI=()=>({itT:0,ig:-1,distT:0,dist:null,goal:-1,wander:-1,react:.4,strafeT:0,strafeS:1,stuckT:0,stuckN:0,lx:0,lz:0,aimHead:false,aimT:0,aimNeed:1,wT:0,lostT:0,tgt:null,tgtT:0,escT:0});
+// ねらう相手：近くて見えている敵（デスマッチではCPUどうしも戦う）
+function botTarget(F,dt){const A=F.ai;A.tgtT-=dt;if(A.tgtT<=0||!A.tgt||!A.tgt.alive){A.tgtT=.6;let best=null,bs=1e9;
+  for(const V of ALL()){if(V===F||!V.alive||!live(V))continue;const d=Math.hypot(V.x-F.x,V.z-F.z)+Math.abs(V.y-F.y)*2,sc=d*(segFree(F.x,F.y+EYE,F.z,V.x,V.y+1.2,V.z)?1:2.2)*(V===A.tgt?.8:1);if(sc<bs){bs=sc;best=V}}A.tgt=best}
+  return A.tgt||NOBODY}
+function botUpdate(F,dt){const A=F.ai,T=botTarget(F,dt);if(!F.alive)return;let wx=0,wz=0,jump=false;
   const dx=T.x-F.x,dz=T.z-F.z,hd=Math.hypot(dx,dz)||1e-3,dy=T.y-F.y;
   const see=T.alive&&hd<60&&segFree(F.x,F.y+EYE,F.z,T.x,T.y+1.2,T.z);
   // 遠くに見えたらスナイパー、近いと接近武器（行ったり来たりしないように幅をもたせる）
   // 近い＝接近武器、中くらい（6.5〜24m）＝ヘビー、遠い（30m〜）＝スナイパー
-  BOT.wT=(BOT.wT||0)-dt;if(F.swT<=0&&F.relT<=0&&F.chg<=0&&BOT.wT<=0){let want=F.cw;if(see)want=hd<6.5?0:hd<24?2:hd>30?1:F.cw===0?2:F.cw;else if(BOT.lostT>2.5)want=0;
-    if(want===2){const a=ammoOf(F,F.wh);if(a[0]<=0&&a[1]<=0)want=1}if(want!==F.cw){switchWeapon(F,want);BOT.wT=1.2}}
-  BOT.lostT=see?0:(BOT.lostT||0)+dt;const W=WEAPONS[F.w],snip=isSniper(F.w),hv=isHeavy(F.w),gun=snip||hv;
+  A.wT=(A.wT||0)-dt;if(F.swT<=0&&F.relT<=0&&F.chg<=0&&A.wT<=0){let want=F.cw;if(see)want=hd<6.5?0:hd<24?2:hd>30?1:F.cw===0?2:F.cw;else if(A.lostT>2.5)want=0;
+    if(want===2){const a=ammoOf(F,F.wh);if(a[0]<=0&&a[1]<=0)want=1}if(want!==F.cw){switchWeapon(F,want);A.wT=1.2}}
+  A.lostT=see?0:(A.lostT||0)+dt;const W=WEAPONS[F.w],snip=isSniper(F.w),hv=isHeavy(F.w),gun=snip||hv;
   // 体力が少ない・相手が見えないときはアイテムを取りに行く（近くの相手は無視しない）
-  BOT.itT-=dt;if(BOT.itT<=0){BOT.itT=.5;BOT.ig=(hd>6&&(F.hp<45||!see))?botItemGoal(F):-1}const seek=BOT.ig>=0;
+  A.itT-=dt;if(A.itT<=0){A.itT=.5;A.ig=(hd>6&&(F.hp<45||!see))?botItemGoal(F):-1}const seek=A.ig>=0;
   if(seek){if(F.cw!==0&&F.swT<=0&&F.relT<=0&&F.chg<=0&&!see)switchWeapon(F,0)}
   else if(gun&&see){   // 狙う：少し横に動きながら止まって撃つ
-    BOT.strafeT-=dt;if(BOT.strafeT<=0){BOT.strafeT=rr(.6,1.6);BOT.strafeS=pick([-1,1,0,0,0])}wx=-dz/hd*BOT.strafeS*.45;wz=dx/hd*BOT.strafeS*.45}
+    A.strafeT-=dt;if(A.strafeT<=0){A.strafeT=rr(.6,1.6);A.strafeS=pick([-1,1,0,0,0])}wx=-dz/hd*A.strafeS*.45;wz=dx/hd*A.strafeS*.45}
   else if(!gun&&see&&hd<14&&Math.abs(dy)<1.2){if(hd>W.range*.65){wx=dx/hd;wz=dz/hd}
-    BOT.strafeT-=dt;if(BOT.strafeT<=0){BOT.strafeT=rr(.4,1.1);BOT.strafeS=pick([-1,1,0,0])}
-    if(hd<5){wx+=-dz/hd*BOT.strafeS*.7;wz+=dx/hd*BOT.strafeS*.7}}
-  if(seek||!(gun&&see)&&!(!gun&&see&&hd<14&&Math.abs(dy)<1.2)){BOT.distT-=dt;if(BOT.distT<=0||!BOT.dist){BOT.distT=.45;let goal=seek?BOT.ig:T.alive?nearestNode(T.x,T.y,T.z):-1;
-      if(goal<0){if(BOT.wander<0||Math.random()<.08)BOT.wander=(Math.random()*NAV.nodes.length)|0;goal=BOT.wander}
-      if(goal!==BOT.goal||!BOT.dist){BOT.goal=goal;BOT.dist=flowTo(goal)}}
+    A.strafeT-=dt;if(A.strafeT<=0){A.strafeT=rr(.4,1.1);A.strafeS=pick([-1,1,0,0])}
+    if(hd<5){wx+=-dz/hd*A.strafeS*.7;wz+=dx/hd*A.strafeS*.7}}
+  if(seek||!(gun&&see)&&!(!gun&&see&&hd<14&&Math.abs(dy)<1.2)){A.distT-=dt;if(A.distT<=0||!A.dist){A.distT=.45;let goal=seek?A.ig:T.alive?nearestNode(T.x,T.y,T.z):-1;
+      if(goal<0){if(A.wander<0||Math.random()<.08)A.wander=(Math.random()*NAV.nodes.length)|0;goal=A.wander}
+      if(goal!==A.goal||!A.dist){A.goal=goal;A.dist=flowTo(goal)}}
     const cur=nearestNode(F.x,F.y,F.z);
-    if(cur>=0&&BOT.dist&&BOT.dist[cur]>0){let n=cur;for(let s=0;s<3;s++){let bn=-1,bd=BOT.dist[n];for(const o of NAV.out[n]){const d=BOT.dist[o];if(d>=0&&d<bd){bd=d;bn=o}}if(bn<0)break;
+    if(cur>=0&&A.dist&&A.dist[cur]>0){let n=cur;for(let s=0;s<3;s++){let bn=-1,bd=A.dist[n];for(const o of NAV.out[n]){const d=A.dist[o];if(d>=0&&d<bd){bd=d;bn=o}}if(bn<0)break;
         if(s>0){const N=NAV.nodes[bn];if(Math.abs(N.y-F.y)>.3||!segFree(F.x,F.y+.7,F.z,N.x,N.y+.7,N.z))break}n=bn}
       const N=NAV.nodes[n],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.05){wx=ddx/l;wz=ddz/l}}
     else{   // 道の外にいる：いちばん近い道の点へ向かう
-      BOT.farT=(BOT.farT||0)-dt;if(BOT.farT<=0||BOT.far==null){BOT.farT=.6;let b=-1,bd=1e9;for(let i=0;i<NAV.nodes.length;i++){const q=NAV.nodes[i],d=Math.hypot(q.x-F.x,q.z-F.z)+Math.abs(q.y-F.y)*3;if(d<bd){bd=d;b=i}}BOT.far=b}
-      if(BOT.far>=0){const N=NAV.nodes[BOT.far],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.5){wx=ddx/l;wz=ddz/l}else if(!(BOT.escT>0)){BOT.far=null;BOT.farT=1;BOT.escT=1;BOT.escA=Math.random()*TAU}}else if(T.alive){wx=dx/hd;wz=dz/hd}}}
+      A.farT=(A.farT||0)-dt;if(A.farT<=0||A.far==null){A.farT=.6;let b=-1,bd=1e9;for(let i=0;i<NAV.nodes.length;i++){const q=NAV.nodes[i],d=Math.hypot(q.x-F.x,q.z-F.z)+Math.abs(q.y-F.y)*3;if(d<bd){bd=d;b=i}}A.far=b}
+      if(A.far>=0){const N=NAV.nodes[A.far],ddx=N.x-F.x,ddz=N.z-F.z,l=Math.hypot(ddx,ddz);if(l>.5){wx=ddx/l;wz=ddz/l}else if(!(A.escT>0)){A.far=null;A.farT=1;A.escT=1;A.escA=Math.random()*TAU}}else if(T.alive){wx=dx/hd;wz=dz/hd}}}
   // ヘビーは足もとを、動いている相手は少し先をねらう
   let wantYaw=F.yaw,wantPitch=0;if(see&&(gun||hd<14)){if(hv){const tof=hd/W.speed,tx=T.x+(T.vx||0)*tof*.8,tz=T.z+(T.vz||0)*tof*.8,ty=T.y+(T.onG?.3:.9),ax=tx-F.x,az=tz-F.z;wantYaw=Math.atan2(-ax,-az);wantPitch=Math.atan2(ty-(F.y+EYE),Math.hypot(ax,az))}
-    else{wantYaw=Math.atan2(-dx,-dz);wantPitch=Math.atan2(T.y+(BOT.aimHead?1.62:1.0)-(F.y+EYE),hd)}}else if(wx||wz)wantYaw=Math.atan2(-wx,-wz);
+    else{wantYaw=Math.atan2(-dx,-dz);wantPitch=Math.atan2(T.y+(A.aimHead?1.62:1.0)-(F.y+EYE),hd)}}else if(wx||wz)wantYaw=Math.atan2(-wx,-wz);
   F.yaw+=clamp(angDiff(F.yaw,wantYaw),-(gun?4:7)*dt,(gun?4:7)*dt);F.pitch=lerp(F.pitch,wantPitch,Math.min(1,dt*6));
-  BOT.stuckT+=dt;if(BOT.stuckT>.45){const stk=Math.hypot(F.x-BOT.lx,F.z-BOT.lz)<.2&&(wx||wz)&&!(gun&&see);if(stk){jump=true;BOT.stuckN=(BOT.stuckN||0)+1}else BOT.stuckN=0;BOT.lx=F.x;BOT.lz=F.z;BOT.stuckT=0;
-    if(BOT.stuckN>=4){BOT.stuckN=0;BOT.wander=(Math.random()*NAV.nodes.length)|0;BOT.goal=-2;BOT.dist=null;BOT.ig=-1;BOT.itT=3;BOT.escT=.9;BOT.escA=Math.random()*TAU}}
-  if(BOT.escT>0){BOT.escT-=dt;wx=Math.cos(BOT.escA);wz=Math.sin(BOT.escA)}
+  A.stuckT+=dt;if(A.stuckT>.45){const stk=Math.hypot(F.x-A.lx,F.z-A.lz)<.2&&(wx||wz)&&!(gun&&see);if(stk){jump=true;A.stuckN=(A.stuckN||0)+1}else A.stuckN=0;A.lx=F.x;A.lz=F.z;A.stuckT=0;
+    if(A.stuckN>=4){A.stuckN=0;A.wander=(Math.random()*NAV.nodes.length)|0;A.goal=-2;A.dist=null;A.ig=-1;A.itT=3;A.escT=.9;A.escA=Math.random()*TAU}}
+  if(A.escT>0){A.escT-=dt;wx=Math.cos(A.escA);wz=Math.sin(A.escA)}
   if(!gun&&see&&hd<7&&Math.random()<dt*.35)jump=true;
   const wl=Math.hypot(wx,wz);if(wl>1){wx/=wl;wz/=wl}
   if(G.phase!=='play'){wx=wz=0;jump=false}
   moveBody(F,dt,wx,wz,jump);
   if(snip){F.scoped=see&&F.relT<=0;
-    if(see&&Math.abs(angDiff(F.yaw,wantYaw))<.08){BOT.aimT+=dt;if(BOT.aimT>BOT.aimNeed&&F.atkCD<=0&&F.relT<=0&&F.swT<=0){if(F.mag>0){fireSniper(F,.012+hd*.0007);BOT.aimT=0;BOT.aimNeed=rr(.6,1.3);BOT.aimHead=Math.random()<.3}else startReload(F)}}
-    else BOT.aimT=Math.max(0,BOT.aimT-dt*2);
+    if(see&&Math.abs(angDiff(F.yaw,wantYaw))<.08){A.aimT+=dt;if(A.aimT>A.aimNeed&&F.atkCD<=0&&F.relT<=0&&F.swT<=0){if(F.mag>0){fireSniper(F,.012+hd*.0007);A.aimT=0;A.aimNeed=rr(.6,1.3);A.aimHead=Math.random()<.3}else startReload(F)}}
+    else A.aimT=Math.max(0,A.aimT-dt*2);
     if(!see&&F.mag<WEAPONS[F.w].cap&&F.relT<=0)startReload(F)}
   else if(hv){F.scoped=false;   // ヘビー：近すぎると自分もまきこむので撃たない。ポータルキャノンはためてから
-    if(see&&hd>4.5&&Math.abs(angDiff(F.yaw,wantYaw))<.07){BOT.aimT+=dt;const ok=F.atkCD<=0&&F.relT<=0&&F.swT<=0;
-      if(W.charge){if(F.chg>0||(BOT.aimT>BOT.aimNeed&&ok)){if(F.mag<6){if(F.chg<=0)startReload(F)}else{if(F.chg<=0)BOT.chgWant=rr(.45,1);F.chg=Math.min(1,F.chg+dt/W.charge);if(F.chg>=BOT.chgWant){const c=F.chg;F.chg=0;fireHeavy(F,.02+hd*.0008,c);BOT.aimT=0;BOT.aimNeed=rr(.5,1.1)}}}}
-      else if(BOT.aimT>BOT.aimNeed&&ok){if(F.mag>0){fireHeavy(F,.02+hd*.0008);BOT.aimT=0;BOT.aimNeed=rr(.35,.9)}else startReload(F)}}
-    else{BOT.aimT=Math.max(0,BOT.aimT-dt*2);if(F.chg>0){const c=F.chg;F.chg=0;if(see&&hd>4.5)fireHeavy(F,.03,c)}}
+    if(see&&hd>4.5&&Math.abs(angDiff(F.yaw,wantYaw))<.07){A.aimT+=dt;const ok=F.atkCD<=0&&F.relT<=0&&F.swT<=0;
+      if(W.charge){if(F.chg>0||(A.aimT>A.aimNeed&&ok)){if(F.mag<6){if(F.chg<=0)startReload(F)}else{if(F.chg<=0)A.chgWant=rr(.45,1);F.chg=Math.min(1,F.chg+dt/W.charge);if(F.chg>=A.chgWant){const c=F.chg;F.chg=0;fireHeavy(F,.02+hd*.0008,c);A.aimT=0;A.aimNeed=rr(.5,1.1)}}}}
+      else if(A.aimT>A.aimNeed&&ok){if(F.mag>0){fireHeavy(F,.02+hd*.0008);A.aimT=0;A.aimNeed=rr(.35,.9)}else startReload(F)}}
+    else{A.aimT=Math.max(0,A.aimT-dt*2);if(F.chg>0){const c=F.chg;F.chg=0;if(see&&hd>4.5)fireHeavy(F,.03,c)}}
     if(!see&&F.mag<W.cap&&F.relT<=0&&F.chg<=0)startReload(F)}
-  else if(see&&Math.hypot(dx,dy*.6,dz)<W.range+.25&&Math.abs(angDiff(F.yaw,wantYaw))<.35){BOT.react-=dt;if(BOT.react<=0&&F.atkCD<=0&&startSwing(F)){BOT.aimHead=Math.random()<.22;BOT.react=rr(0,.12)}}else BOT.react=rr(.18,.4)}
+  else if(see&&Math.hypot(dx,dy*.6,dz)<W.range+.25&&Math.abs(angDiff(F.yaw,wantYaw))<.35){A.react-=dt;if(A.react<=0&&F.atkCD<=0&&startSwing(F)){A.aimHead=Math.random()<.22;A.react=rr(0,.12)}}else A.react=rr(.18,.4)}
 // ---------------- 試合の流れ ----------------
 function setupFighter(F,o){Object.assign(F,fighter(),o)}
 function startMatch(mode,o){o=o||{};G.mode=mode;G.phase='count';G.ct=3;G.tl=MATCH_T;G.paused=false;G.res=null;G.endT=0;G.lastCt=4;
   for(const p of FX)scene.remove(p.m);FX.length=0;resetTNT();clearFeed();
   setupFighter(ME,{name:SV.name,w:SV.weapon,wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',sk:SV.skin});
-  if(OPP.model)scene.remove(OPP.model);
-  const om=o.oppW||pick(MELEE);setupFighter(OPP,{name:o.oppName||pick(BOT_NAMES),w:om,wm:om,ws:o.oppWs||pick(SNIPERS),wh:o.oppWh||pick(HEAVIES),sk:o.oppSk!=null?o.oppSk:(SV.skin+1+Math.floor(Math.random()*5))%6,bot:mode==='bot',here:mode==='bot'});
-  makeOppModel(OPP);
-  const sA=SPAWNS[o.side===1?1:0],sB=SPAWNS[o.side===1?0:1];
-  for(const [F,s] of[[ME,sA],[OPP,sB]]){F.x=s[0];F.z=s[2];F.y=groundAt(s[0],s[2],s[1]+.2,PR-.03);F.yaw=s[3];F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.camY=F.y;fillAmmo(F)}
-  Object.assign(BOT,{distT:0,dist:null,goal:-1,react:.4,aimT:0,aimNeed:1});for(const q of SHOTS)scene.remove(q.m);SHOTS.length=0;itemsReset();projReset();SFX.charge(false);
+  G.dm=!!o.dm;if(G.dm)G.tl=DM_T;clearFoes();
+  // 相手：CPU戦の1対1はひとり、デスマッチはCPU5人（CPUどうしも戦う）。オンラインは部屋の人が来たら足す（06_net）
+  if(mode==='bot'){const names=G.dm?BOT_NAMES.slice().sort(()=>Math.random()-.5):[pick(BOT_NAMES)],n=G.dm?DM_BOTS:1;
+    for(let i=0;i<n;i++){const om=!G.dm&&o.oppW||pick(MELEE),F=fighter();setupFighter(F,{name:names[i%names.length],w:om,wm:om,ws:!G.dm&&o.oppWs||pick(SNIPERS),wh:!G.dm&&o.oppWh||pick(HEAVIES),sk:i===0&&o.oppSk!=null?o.oppSk:(SV.skin+1+i+Math.floor(Math.random()*5))%6,bot:true,here:true});
+      F.ai=i===0?Object.assign(BOT,newAI()):newAI();makeOppModel(F);FOES.push(F)}}
+  OPP=FOES[0]||NOBODY;
+  // 出現地点：1対1は向かい合わせ、デスマッチはばらばら
+  const sp=i=>SPAWNS[((o.side|0)+i)%SPAWNS.length];
+  ALL().forEach((F,i)=>{const s=G.dm||i>1?sp(i):SPAWNS[(o.side===1)===(i===0)?1:0];F.x=s[0];F.z=s[2];F.y=groundAt(s[0],s[2],s[1]+.2,PR-.03);F.yaw=s[3];F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.camY=F.y;fillAmmo(F)});for(const q of SHOTS)scene.remove(q.m);SHOTS.length=0;itemsReset();projReset();SFX.charge(false);
   setViewWeapon(ME.w);VIEW.g.visible=true;buildWBar();
   document.body.classList.add('play');showScr(null);hudReset();if(mode==='bot')botSay(pick(['よろしく！','よろしくお願いします！','勝負だ！']),2200)}
-function endMatch(why){if(G.phase==='end')return;G.phase='end';G.endT=0;const a=scoreOf(ME),b=scoreOf(OPP),pa=ptsOf(ME),pb=ptsOf(OPP);
-  let r=a>b?'win':a<b?'lose':pa>pb?'win':pa<pb?'lose':'draw';if(why==='left')r='win';if(why==='quit')r='lose';
-  G.res={r,a,b,pa,pb,why};const coins=r==='win'?15:r==='draw'?6:3;SV.coins+=coins;if(r==='win'){SV.wins++;SV.gems+=1}else if(r==='lose')SV.loses++;else SV.draws++;SV.kills+=Math.max(0,OPP.dd);saveSV();G.res.coins=coins;
-  msg(why==='left'?'相手が退出しました':why==='quit'?'':'TIME UP!');if(why==='quit')G.endT=9}
-function quitToMenu(){G.mode=null;G.phase='idle';document.body.classList.remove('play');if(OPP.model){scene.remove(OPP.model);OPP.model=null}VIEW.g.visible=false;msg('');if(document.pointerLockElement)document.exitPointerLock();showMenu()}
+function clearFoes(){for(const F of FOES){if(F.model)scene.remove(F.model);F.model=null;clearPortals(F)}FOES=[];OPP=NOBODY}
+// 順位（得点→ポイント）
+const ranking=()=>ALL().slice().sort((a,b)=>scoreOf(b)-scoreOf(a)||ptsOf(b)-ptsOf(a));
+function endMatch(why){if(G.phase==='end')return;G.phase='end';G.endT=0;const a=scoreOf(ME),b=scoreOf(OPP),pa=ptsOf(ME),pb=ptsOf(OPP),rk=ranking(),place=rk.indexOf(ME)+1;
+  let r;if(G.dm){const top=rk[0]===ME?rk[1]:rk[0],tie=top&&scoreOf(top)===a&&ptsOf(top)===pa;r=why==='quit'?'lose':place===1?(tie?'draw':'win'):'lose'}
+  else{r=a>b?'win':a<b?'lose':pa>pb?'win':pa<pb?'lose':'draw';if(why==='left')r='win';if(why==='quit')r='lose'}
+  G.res={r,a,b,pa,pb,why,dm:G.dm,place,on:OPP.name||'???',osk:OPP.sk|0,ow:OPP.w||'fists',n:rk.length,rank:rk.map(F=>({name:F.name||'???',me:F===ME,k:scoreOf(F),p:ptsOf(F)}))};
+  const coins=G.dm?(why==='quit'?2:[20,12,8][place-1]||4):r==='win'?15:r==='draw'?6:3;SV.coins+=coins;if(r==='win'){SV.wins++;SV.gems+=1}else if(r==='lose')SV.loses++;else SV.draws++;SV.kills+=Math.max(0,ME.kills|0);saveSV();G.res.coins=coins;
+  msg(why==='kills'?(rk[0]===ME?'あなたが':(rk[0].name||'???')+' が')+DM_KILLS+'キル！':why==='left'?(G.dm?'ホストが退出しました':'相手が退出しました'):why==='quit'?'':'TIME UP!');if(why==='quit')G.endT=9}
+function quitToMenu(){G.mode=null;G.phase='idle';document.body.classList.remove('play');clearFoes();VIEW.g.visible=false;msg('');if(document.pointerLockElement)document.exitPointerLock();showMenu()}
 // 試合の1コマ
 function gameUpdate(dt){G.time+=dt;
-  if(G.phase==='count'){if(G.mode!=='online'||NET.host){G.ct-=dt}const c=Math.ceil(G.ct);if(c!==G.lastCt){G.lastCt=c;if(c>0){msg(String(c));SFX.beep(false)}}if(G.ct<=0){G.phase='play';msg('FIGHT!',null,1);SFX.beep(true);ME.inv=START_INV;if(G.mode==='bot')OPP.inv=START_INV}}
-  else if(G.phase==='play'){if(G.mode!=='online'||NET.host)G.tl-=dt;else G.tl=Math.max(0,G.tl-dt);if(G.tl<=0&&(G.mode!=='online'||NET.host)){G.tl=0;endMatch()}}
+  if(G.phase==='count'){if(G.mode!=='online'||NET.host){G.ct-=dt}const c=Math.ceil(G.ct);if(c!==G.lastCt){G.lastCt=c;if(c>0){msg(String(c));SFX.beep(false)}}if(G.ct<=0){G.phase='play';msg('FIGHT!',null,1);SFX.beep(true);ME.inv=START_INV;if(G.mode==='bot')for(const F of FOES)F.inv=START_INV}}
+  else if(G.phase==='play'){if(G.mode!=='online'||NET.host)G.tl-=dt;else G.tl=Math.max(0,G.tl-dt);if(G.tl<=0&&(G.mode!=='online'||NET.host)){G.tl=0;endMatch()}
+    else if(G.dm&&(G.mode!=='online'||NET.host)&&ALL().some(F=>scoreOf(F)>=DM_KILLS))endMatch('kills')}   // デスマッチは15キルで終わり
   else if(G.phase==='end'){G.endT+=dt;if(G.endT>2.2&&!$('sResult').classList.contains('on'))showResult()}
   // 自分
   const canAct=G.phase==='play'||G.phase==='count';
@@ -245,9 +264,9 @@ function gameUpdate(dt){G.time+=dt;
   else if(G.phase!=='end'){ME.deadT+=dt;ME.respT-=dt;const k=ME.killer&&ME.killer.alive?ME.killer.name:'';msg('やられた！',(k?k+' にたおされた　':'')+Math.max(1,Math.ceil(ME.respT))+'秒後に復活');if(ME.respT<=0){respawn(ME);msg('')}}
   statusUpdate(ME,dt);
   // 相手
-  if(G.mode==='bot'){if(OPP.alive){if(!BOT.frozen)botUpdate(dt)}else if(G.phase!=='end'){OPP.respT-=dt;if(OPP.respT<=0)respawn(OPP)}statusUpdate(OPP,dt)}
+  if(G.mode==='bot')for(const F of FOES){if(F.alive){if(!BOT.frozen)botUpdate(F,dt)}else if(G.phase!=='end'){F.respT-=dt;if(F.respT<=0)respawn(F)}statusUpdate(F,dt)}
   else if(G.mode==='online')NET.oppUpdate(dt);
-  updModel(OPP,dt);tntUpdate(dt);projUpdate(dt);portalUpdate(dt);fxUpdate(dt);boomUpdate(dt);shotsUpdate(dt);itemsUpdate(dt);
+  for(const F of FOES)updModel(F,dt);tntUpdate(dt);projUpdate(dt);portalUpdate(dt);fxUpdate(dt);boomUpdate(dt);shotsUpdate(dt);itemsUpdate(dt);
   VIEW.shotT=ME.shotT;VIEW.relK=ME.relT>0?1-ME.relT/ME.relMax:0;VIEW.drawK=Math.max(0,ME.swT/.4);
   updView(dt,ME.onG&&ME.spd>1,ME.atkT);updCam(dt);updHUD(dt)}
 function updCam(dt){const fov=ME.alive&&ME.scoped?ZOOM_FOV(WEAPONS[ME.w].zoom):70;if(cam.fov!==fov){cam.fov=fov;cam.updateProjectionMatrix()}

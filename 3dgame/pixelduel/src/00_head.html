@@ -36,6 +36,10 @@ body.play #hud{display:block}
 #money>div+div{border-left:2px solid #000}
 .coin{width:14px;height:14px;border-radius:50%;background:#ffcf2a;border:2px solid #9a6a00}
 .gem{width:14px;height:12px;background:#4ab8ff;clip-path:polygon(20% 0,80% 0,100% 35%,50% 100%,0 35%)}
+#rank{position:absolute;right:calc(8px + var(--sa-r));top:calc(132px + var(--sa-t));min-width:130px;background:rgba(0,0,0,.45);border:2px solid #000;border-radius:4px;padding:3px 7px;font-size:12px;font-weight:800;display:none}
+#rank div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}#rank .me{color:#7ab8ff}#rank b{display:block;font-size:11px;color:#ffd23f}
+.wlist{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}.wl{background:rgba(255,255,255,.1);border:2px solid #000;border-radius:5px;padding:5px 10px;font-weight:800}.wl.me{color:#7ab8ff}
+.rtab{margin:8px auto;border-collapse:collapse;min-width:min(420px,90vw)}.rtab td{padding:3px 10px;border-bottom:1px solid rgba(255,255,255,.15);font-weight:800}.rtab tr.me td{color:#7ab8ff}.rtab td:first-child{color:#ffd23f}
 #feed{position:absolute;right:calc(8px + var(--sa-r));top:calc(40px + var(--sa-t));display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:13px;font-weight:800}
 #feed div{background:rgba(0,0,0,.45);padding:2px 8px;border-radius:3px}
 #cross,#hitm{position:absolute;left:50%;top:50%;width:128px;height:128px;transform:translate(-50%,-50%);image-rendering:pixelated}#hitm{width:96px;height:96px;opacity:0;z-index:2}
@@ -128,6 +132,7 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <div id="feed"></div>
  <canvas id="cross" width="128" height="128"></canvas><canvas id="hitm" width="96" height="96"></canvas><div id="pop"></div><div id="hs">HEADSHOT</div>
  <div id="msg"></div>
+ <div id="rank"></div>
  <div id="wbar"></div>
 </div>
 <div id="touch"><div id="stick"><i></i></div>
@@ -141,20 +146,22 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
 <div class="scr" id="sName"><div class="logo">PIXEL DUEL<small>ゴーストタウン 1v1</small></div><div class="box" style="margin-top:16px"><h2>プレイヤーの名前</h2>
  <input class="inp" id="nameIn" maxlength="14" placeholder="なまえ（14文字まで）"><p class="note">対戦相手に表示される名前です。あとでメニューから変えられます。</p><div class="row"><button class="pb" id="nameOk">けってい</button></div></div></div>
 <div class="scr" id="sMenu"><div class="logo">PIXEL DUEL<small id="hello"></small></div><div style="height:12px"></div>
- <button class="pb b" id="mOnline">オンライン対戦（1v1）</button><button class="pb" id="mBot">練習（CPUと対戦）</button><button class="pb y" id="mArmory">武器を選ぶ</button>
+ <button class="pb b" id="mOnline">オンライン対戦（1対1・デスマッチ）</button><button class="pb" id="mBot">1対1の練習（CPU）</button><button class="pb r" id="mDm">デスマッチ（CPU5人）</button><button class="pb y" id="mArmory">武器を選ぶ</button>
  <div class="row"><button class="pb g" id="mName" style="min-width:116px">名前</button><button class="pb g" id="mSet" style="min-width:116px">設定</button></div><p class="note" id="recTx" style="text-align:center"></p></div>
 <div class="scr" id="sArmory"><div class="box" style="width:min(900px,96vw)"><h2>接近武器</h2><div class="wpk" id="wpick"></div>
  <h2 style="margin-top:12px">スナイパー</h2><div class="note" style="margin:0 0 6px">1回の攻撃でへる体力は最大90。シールドがなくても1発ではたおれません。</div><div class="wpk" id="spick"></div>
  <h2 style="margin-top:12px">ヘビー</h2><div class="note" style="margin:0 0 6px">弾が飛んでいき、爆発のまわりにもダメージ（壁の向こうには届かない）。足もとを撃つとロケットジャンプ（ポータルキャノン以外）。</div><div class="wpk" id="hpick"></div>
  <p class="note">持っている武器の重さで走る速さが変わります（力の拳を1として、軽いほど速い）。スナイパーは重め（1.2〜1.45）なので、走るときは接近武器に持ちかえよう。ダメージはバージョン15ごろ（体力100）が基準。1・2・3 か Q・ホイールで持ちかえ。</p><div class="row"><button class="pb" id="aOk">OK</button></div></div></div>
 <div class="scr" id="sRooms"><div class="box"><h2>オンライン対戦</h2><div id="netState" class="note"></div>
- <div class="row"><input class="inp" id="roomIn" maxlength="16" placeholder="部屋の名前（なくてもOK）" style="flex:1;min-width:180px"><button class="pb b" id="rMake" style="min-width:120px">部屋を作る</button></div>
+ <div class="row"><input class="inp" id="roomIn" maxlength="16" placeholder="部屋の名前（なくてもOK）" style="flex:1;min-width:180px"></div><div class="row"><button class="pb b" id="rMake" style="min-width:150px">1対1の部屋を作る</button><button class="pb r" id="rMakeDm" style="min-width:150px">デスマッチの部屋を作る</button></div>
  <h2 style="margin-top:12px;font-size:16px">参加できる部屋</h2><div class="rlist" id="rlist"></div><div class="row"><button class="pb g" id="rBack">もどる</button></div></div></div>
 <div class="scr" id="sWait"><div class="box" style="text-align:center"><h2 id="wTitle">対戦相手を待っています…</h2>
- <div class="pod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
- <p class="note" id="wNote"></p><div class="row"><button class="pb b" id="wChat" style="min-width:140px">チャット</button><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
+ <div class="wlist" id="wList" style="display:none"></div>
+ <div class="pod" id="wPod"><div class="pd blue"><canvas id="podA" width="60" height="85"></canvas><div class="nm" id="podAn"></div><div class="base"></div></div><div class="vs">VS</div><div class="pd red"><canvas id="podB" width="60" height="85"></canvas><div class="nm" id="podBn">？？？</div><div class="base"></div></div></div>
+ <p class="note" id="wNote"></p><div class="row"><button class="pb y" id="wStart" style="min-width:140px;display:none">スタート</button><button class="pb b" id="wChat" style="min-width:140px">チャット</button><button class="pb r" id="wLeave">部屋を出る</button></div></div></div>
 <div class="scr" id="sResult"><div class="box" style="text-align:center"><div class="big" id="resT"></div>
- <div class="pod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
+ <table class="rtab" id="resList" style="display:none"></table>
+ <div class="pod" id="resPod"><div class="pd blue"><canvas id="resA" width="60" height="85"></canvas><div class="nm" id="resAn"></div><div class="base"></div></div><div class="vs" id="resK">0 - 0</div><div class="pd red"><canvas id="resB" width="60" height="85"></canvas><div class="nm" id="resBn"></div><div class="base"></div></div></div>
  <p class="note" id="resNote"></p><div class="row"><button class="pb" id="resAgain">もう一度</button><button class="pb g" id="resMenu">メニューへ</button></div></div></div>
 <div class="scr" id="sPause"><div class="box" style="text-align:center"><h2>ポーズ</h2><p class="note" id="pNote"></p>
  <div class="row"><button class="pb" id="pBack">つづける</button><button class="pb g" id="pSet">設定</button><button class="pb r" id="pQuit">試合をやめる</button></div></div></div>

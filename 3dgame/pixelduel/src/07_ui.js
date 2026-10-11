@@ -34,7 +34,11 @@ function updHUD(dt){const hp=ME.alive?ME.hp:0;
   setC('hp',Math.ceil(hp/HP_MAX*18),v=>{[...$('hearts').children].forEach((e,i)=>e.className='ht'+(v>=i*2+2?'':v===i*2+1?' h':' e'))});
   // シールド（アーマー）：9こ。拾ったアーマー（100まで）は水色、力の拳の+25はオレンジで重ねる
   setC('ar',ME.alive?Math.round(clamp(ME.ar+ME.arB,0,AR_MAX)):0,v=>{const cl=shieldClasses(v);[...$('armors').children].forEach((e,i)=>e.className='ar '+cl[i])});
-  setC('sB',scoreOf(ME),v=>$('sB').textContent=v);setC('sR',scoreOf(OPP),v=>$('sR').textContent=v);
+  // 上のスコア：1対1は自分と相手、デスマッチは自分と（自分以外の）1位。右に順位
+  const rk=G.dm?ranking():null,top=G.dm?rk.find(F=>F!==ME):OPP;setC('sB',scoreOf(ME),v=>$('sB').textContent=v);setC('sR',top?scoreOf(top):0,v=>$('sR').textContent=v);
+  setC('dm',!!G.dm,v=>$('rank').style.display=v?'block':'none');
+  if(G.dm)setC('rk',rk.map(F=>(F===ME?'*':'')+F.name+':'+scoreOf(F)).join('|'),()=>{const R=$('rank');R.textContent='';const h=document.createElement('b');h.textContent='デスマッチ（'+DM_KILLS+'キルで勝ち）';R.appendChild(h);
+    const row=(F,i)=>{const d=document.createElement('div');if(F===ME)d.className='me';d.textContent=(i+1)+'. '+(F.name||'???')+'　'+scoreOf(F);R.appendChild(d)};rk.slice(0,6).forEach(row);const mi=rk.indexOf(ME);if(mi>=6)row(ME,mi)});
   const t=Math.max(0,Math.ceil(G.tl));setC('tl',t,v=>$('sT').textContent=Math.floor(v/60)+':'+String(v%60).padStart(2,'0'));
   setC('coins',SV.coins,v=>$('coins').textContent=v);setC('gems',SV.gems,v=>$('gems').textContent=v);
   const st=(ME.burn?'🔥 燃えている　':'')+(ME.slowT>0?'🐢 遅くなっている':'');setC('st',st,v=>$('burn').textContent=v);
@@ -132,20 +136,23 @@ function buildWBar(){const B=$('wbar');B.textContent='';
 // ---------------- ポーズ・結果 ----------------
 function pauseGame(){if(!G.mode||G.phase==='end')return;if(G.mode==='bot')G.paused=true;$('pNote').textContent=G.mode==='online'?'オンライン対戦中は試合が止まりません。':'';showScr('sPause');if(document.pointerLockElement)document.exitPointerLock()}
 function resumeGame(){G.paused=false;showScr(null);lockPointer()}
-function showResult(){const R=G.res;if(!R)return;if(document.pointerLockElement)document.exitPointerLock();showScr('sResult');msg('');
-  $('resT').textContent=R.r==='win'?'勝利！':R.r==='lose'?'敗北…':'引き分け';$('resT').style.color=R.r==='win'?'#ffd23f':R.r==='lose'?'#ff8a8a':'#fff';
-  $('resAn').textContent=ME.name;$('resBn').textContent=OPP.name;drawPodium($('resA'),ME.sk,ME.w);drawPodium($('resB'),OPP.sk,OPP.w);$('resK').textContent=R.a+' - '+R.b;
-  $('resNote').textContent=(R.why==='left'?'相手が退出したので勝ちになりました。　':R.why==='quit'?'試合をやめました。　':'')+'ポイント '+R.pa+' - '+R.pb+'　・　コイン +'+R.coins+(R.r==='win'?'　ジェム +1':'');
-  $('resAgain').style.display=(G.mode==='online'&&(!NET.game||!NET.oppP))?'none':''}
-function cleanupMatch(){$('scope').classList.remove('on');ME.scoped=false;G.mode=null;G.phase='idle';G.paused=false;document.body.classList.remove('play');if(OPP.model){scene.remove(OPP.model);OPP.model=null}OPP.here=false;VIEW.g.visible=false;msg('')}
-function again(){SFX.click();if(G.mode==='online'){cleanupMatch();NET.rdy=NET.rd+1;sendNow();showWait()}else{cleanupMatch();startMatch('bot');lockPointer()}}
+function showResult(){const R=G.res;if(!R)return;if(document.pointerLockElement)document.exitPointerLock();showScr('sResult');msg('');$('resPod').style.display=R.dm?'none':'';$('resList').style.display=R.dm?'':'none';
+  $('resT').textContent=R.dm?(R.r==='win'?'1位！':R.place+'位'+(R.r==='draw'?'（同点）':'')):R.r==='win'?'勝利！':R.r==='lose'?'敗北…':'引き分け';$('resT').style.color=R.r==='win'?'#ffd23f':R.r==='lose'?'#ff8a8a':'#fff';
+  if(R.dm){const T=$('resList');T.textContent='';const hd=T.insertRow();for(const t of['順位','名前','キル','ポイント'])hd.insertCell().textContent=t;
+    R.rank.forEach((q,i)=>{const tr=T.insertRow();if(q.me)tr.className='me';for(const t of[(i+1)+'位',q.name+(q.me?'（あなた）':''),q.k,q.p])tr.insertCell().textContent=t});
+    $('resNote').textContent=(R.why==='left'?'ホストが退出したので試合が終わりました。　':R.why==='quit'?'試合をやめました。　':'')+R.n+'人中 '+R.place+'位　・　キル '+R.a+'　・　コイン +'+R.coins+(R.r==='win'?'　ジェム +1':'')}
+  else{$('resAn').textContent=ME.name;$('resBn').textContent=R.on;drawPodium($('resA'),ME.sk,ME.w);drawPodium($('resB'),R.osk,R.ow);$('resK').textContent=R.a+' - '+R.b;
+    $('resNote').textContent=(R.why==='left'?'相手が退出したので勝ちになりました。　':R.why==='quit'?'試合をやめました。　':'')+'ポイント '+R.pa+' - '+R.pb+'　・　コイン +'+R.coins+(R.r==='win'?'　ジェム +1':'')}
+  $('resAgain').style.display=(G.mode==='online'&&(!NET.game||(!NET.host&&!NET.hostP)))?'none':''}
+function cleanupMatch(){$('scope').classList.remove('on');ME.scoped=false;G.mode=null;G.phase='idle';G.paused=false;document.body.classList.remove('play');clearFoes();VIEW.g.visible=false;msg('')}
+function again(){SFX.click();if(G.mode==='online'){cleanupMatch();NET.rdy=NET.rd+1;sendNow();showWait()}else{const dm=G.dm;cleanupMatch();startMatch('bot',{dm});lockPointer()}}
 function toMenu(){SFX.click();const on=G.mode==='online';cleanupMatch();if(on||NET.game){leaveRoom(true)}showMenu()}
 function quitMatch(){SFX.click();if(G.phase!=='end'&&G.mode){endMatch('quit');showResult()}else toMenu()}
 // ---------------- ボタン ----------------
 function bindUI(){const on=(id,f)=>$(id).addEventListener('click',e=>{e.stopPropagation();ac();f(e)});
-  on('nameOk',nameOk);$('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')nameOk();e.stopPropagation()});$('roomIn').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom();e.stopPropagation()});
-  on('mOnline',()=>{SFX.click();showRooms()});on('mBot',()=>{SFX.click();startMatch('bot');lockPointer()});on('mArmory',()=>{SFX.click();showArmory()});on('mName',()=>{SFX.click();showName()});on('mSet',()=>{SFX.click();showSet('sMenu')});
-  on('aOk',()=>{SFX.click();showMenu()});on('rMake',()=>{SFX.click();createRoom()});on('rBack',()=>{SFX.click();showMenu()});on('wLeave',()=>{SFX.click();leaveRoom()});
+  on('nameOk',nameOk);$('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')nameOk();e.stopPropagation()});$('roomIn').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom('duel');e.stopPropagation()});
+  on('mOnline',()=>{SFX.click();showRooms()});on('mBot',()=>{SFX.click();startMatch('bot');lockPointer()});on('mDm',()=>{SFX.click();startMatch('bot',{dm:true});lockPointer()});on('mArmory',()=>{SFX.click();showArmory()});on('mName',()=>{SFX.click();showName()});on('mSet',()=>{SFX.click();showSet('sMenu')});
+  on('aOk',()=>{SFX.click();showMenu()});on('rMake',()=>{SFX.click();createRoom('duel')});on('rMakeDm',()=>{SFX.click();createRoom('dm')});on('wStart',()=>{SFX.click();hostStart()});on('rBack',()=>{SFX.click();showMenu()});on('wLeave',()=>{SFX.click();leaveRoom()});
   on('resAgain',again);on('resMenu',toMenu);on('pBack',()=>{SFX.click();resumeGame()});on('pSet',()=>{SFX.click();showSet('sPause')});on('pQuit',quitMatch);
   on('sOk',()=>{SFX.click();if(setBack==='sPause')showScr('sPause');else showMenu()});
   $('sSens').addEventListener('input',e=>{SET.sens=+e.target.value;LSset('pgduel-sens',SET.sens);$('sSensV').textContent=SET.sens+'%'});

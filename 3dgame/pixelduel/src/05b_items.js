@@ -26,7 +26,7 @@ function takeItem(F,it){const K=ITEM_KIND[it.kind];if(K.hp)F.hp=Math.min(HP_MAX,
 function itemsUpdate(dt){
   if(G.phase==='play'&&itemBoss()){IT.t+=dt;if(IT.t>=30){IT.t-=30;const free=[0,1,2,3,4].filter(i=>!ITEMS.some(it=>it.spot===i));if(free.length){spawnItem(pick(free),pickKind(),IT.nid++);if(G.mode==='online')sendNow()}}}
   for(const it of ITEMS){const s=it.mesh.userData.spin;s.rotation.y+=dt*2.2;s.position.y=.75+Math.sin(G.time*3+it.id)*.12}
-  for(const F of G.mode==='bot'?[ME,OPP]:[ME]){if(!F.alive)continue;for(const it of ITEMS.slice())if(Math.hypot(F.x-it.x,F.z-it.z)<1&&Math.abs(F.y-it.y)<1.4&&canTake(F,it.kind))takeItem(F,it)}}
+  for(const F of G.mode==='bot'?ALL():[ME]){if(!F.alive)continue;for(const it of ITEMS.slice())if(Math.hypot(F.x-it.x,F.z-it.z)<1&&Math.abs(F.y-it.y)<1.4&&canTake(F,it.kind))takeItem(F,it)}}
 // オンライン：ホストの一覧（[id, 場所, 種類]）に合わせる。自分が取ったものは出さない
 function itemsFromHost(list){if(!Array.isArray(list))return;const ids=new Set();for(const e of list){if(!Array.isArray(e)||e.length<3)continue;const [id,sp,ki]=e;if(!Number.isInteger(id)||!(sp>=0&&sp<5)||!ITEM_KEYS[ki])continue;ids.add(id);if(!IT.got.includes(id))spawnItem(sp,ITEM_KEYS[ki],id)}
   for(const it of ITEMS.slice())if(!ids.has(it.id))removeItem(it)}
