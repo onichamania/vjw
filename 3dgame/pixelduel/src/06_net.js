@@ -20,10 +20,10 @@ const CODE_RE=/^pd-[a-z0-9]{6}$/;
 const cleanName=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g,'').trim().slice(0,14);
 function claudeObj(){try{if(window.claude&&window.claude.use)return window.claude}catch(e){}try{if(window.parent&&window.parent!==window&&window.parent.claude&&window.parent.claude.use)return window.parent.claude}catch(e){}return null}
 function netErr(e,game){const c=e&&e.code;if(game&&NET.game&&c!=='invalid_argument'){leaveRoom(true);tip('部屋との接続が切れました',3)}
-  if(['revoked','not_granted','capability_disabled','capability_removed','transform_error'].includes(c)){NET.st='err';NET.errMsg=c==='not_granted'?'この開き方ではオンラインに接続できません。':'オンラインが使えなくなりました。';renderNet()}}
+  if(['revoked','not_granted','capability_disabled','capability_removed','transform_error'].includes(c)){NET.st='err';NET.errMsg=c==='not_granted'?'この開き方ではオンラインに接続できません。\n'+NET_HOWTO:'オンラインが使えなくなりました。';renderNet()}}
 async function netInit(){if(NET.st!=='off'&&NET.st!=='none')return;NET.st='wait';renderNet();
   const C=claudeObj();let room=null;if(C){try{room=await C.use('room')}catch(e){room=null}}
-  if(!room){NET.st='none';renderNet();return}
+  if(!room){NET.st='none';NET.why=await netWhy(C);renderNet();return}
   NET.room=room;NET.st='ok';NET.conn=room.connected();
   NET.unsub.push(room.onPeers(ch=>{NET.lobby=ch.peers;renderRooms()},e=>netErr(e)));
   NET.unsub.push(room.onConnection(c=>{NET.conn=c;renderNet()},e=>netErr(e)));
@@ -125,9 +125,12 @@ function foesUpdate(dt){for(const F of FOES){const B=F.net&&F.net.buf;if(!B||!B.
   if(F.netBurn&&F.alive&&Math.random()<dt*14)fx(F.x+rr(-.3,.3),F.y+rr(.3,1.6),F.z+rr(-.3,.3),pick(['#ff7a1a','#ffd23f','#ff3a1a']),1,1,.5,.1,-2);
   if(F.alive){if(F.netPsn)dotFx(F,'psn',dt);if(F.netBld)dotFx(F,'bld',dt)}}}
 // ---------------- 画面 ----------------
-function renderNet(){const e=$('netState');if(!e)return;let t='';
+// つながらなかったわけ（room がもらえないとき）：claude.ai の外・許可がオフ・それ以外（ログインしていない／公開リンクで開いた／招待されていない）
+async function netWhy(C){if(!C)return'nohost';try{const P=await C.use('permissions');if(P){NET.perm=P;return await P.state('room')}}catch(e){}return'unavailable'}
+const NET_HOWTO='オンライン対戦できるのは、claude.ai にログインして、このアーティファクトを作った人の組織のメンバーか、作った人に共有メニューで招待されたアカウントで開いたときです。だれでも見られる公開リンクから開いた人や、ログインしていない人はオンラインに入れません（CPU とは遊べます）。';
+function renderNet(){const e=$('netState');if(!e)return;let t='';const fix=$('netFix'),bad=NET.st==='none'||NET.st==='err';if(fix){fix.style.display=bad?'':'none';$('netPerm').style.display=bad&&NET.perm?'':'none'}for(const b of['rMake','rMakeDm'])if($(b))$(b).disabled=NET.st!=='ok';
   if(NET.st==='wait')t='オンラインに接続しています…';
-  else if(NET.st==='none')t='オンライン対戦は、Claude のアーティファクトとして開いたときに使えます（このページだけでは CPU と練習できます）。';
+  else if(NET.st==='none')t=NET.why==='nohost'?'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くとオンライン対戦できます（CPU とは遊べます）。':NET.why==='denied'?'このアーティファクトのオンライン（ほかの人とつながる機能）の許可がオフになっています。「許可の設定を開く」からオンにしてください。':'この画面ではオンラインに入れませんでした。\n'+NET_HOWTO;
   else if(NET.st==='err')t=NET.errMsg;
   else if(NET.st==='ok')t=(NET.conn?'🟢 接続中・このページを開いている人：'+NET.lobby.filter(p=>p.kind==='viewer').length+'人':'🟡 接続を待っています…')+'\n参加できるのは、このアーティファクトを開ける人（同じ組織のメンバーか招待された人）です。';
   e.textContent=t;e.style.whiteSpace='pre-line';for(const b of['rMake','rMakeDm'])$(b).disabled=NET.st!=='ok';$('roomIn').disabled=NET.st!=='ok'}

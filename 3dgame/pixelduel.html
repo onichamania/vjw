@@ -154,6 +154,7 @@ kbd{background:#333;border:1px solid #000;border-radius:3px;padding:0 4px;font-s
  <h2 style="margin-top:12px">ヘビー</h2><div class="note" style="margin:0 0 6px">弾が飛んでいき、爆発のまわりにもダメージ（壁の向こうには届かない）。足もとを撃つとロケットジャンプ（ポータルキャノン以外）。</div><div class="wpk" id="hpick"></div>
  <p class="note">持っている武器の重さで走る速さが変わります（力の拳を1として、軽いほど速い）。スナイパーは重め（1.2〜1.45）なので、走るときは接近武器に持ちかえよう。ダメージはバージョン15ごろ（体力100）が基準。1・2・3・4 か Q・ホイールで持ちかえ（1 プライマリ・2 接近武器・3 スナイパー・4 ヘビー）。</p><div class="row"><button class="pb" id="aOk">OK</button></div></div></div>
 <div class="scr" id="sRooms"><div class="box"><h2>オンライン対戦</h2><div id="netState" class="note"></div>
+ <div class="row" id="netFix" style="display:none"><button class="pb g" id="netRetry" style="min-width:150px">もう一度つなぐ</button><button class="pb g" id="netPerm" style="min-width:150px">許可の設定を開く</button></div>
  <div class="row"><input class="inp" id="roomIn" maxlength="16" placeholder="部屋の名前（なくてもOK）" style="flex:1;min-width:180px"></div><div class="row"><button class="pb b" id="rMake" style="min-width:150px">1対1の部屋を作る</button><button class="pb r" id="rMakeDm" style="min-width:150px">デスマッチの部屋を作る</button></div>
  <h2 style="margin-top:12px;font-size:16px">参加できる部屋</h2><div class="rlist" id="rlist"></div><div class="row"><button class="pb g" id="rBack">もどる</button></div></div></div>
 <div class="scr" id="sWait"><div class="box" style="text-align:center"><h2 id="wTitle">対戦相手を待っています…</h2>
@@ -1432,10 +1433,10 @@ const CODE_RE=/^pd-[a-z0-9]{6}$/;
 const cleanName=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g,'').trim().slice(0,14);
 function claudeObj(){try{if(window.claude&&window.claude.use)return window.claude}catch(e){}try{if(window.parent&&window.parent!==window&&window.parent.claude&&window.parent.claude.use)return window.parent.claude}catch(e){}return null}
 function netErr(e,game){const c=e&&e.code;if(game&&NET.game&&c!=='invalid_argument'){leaveRoom(true);tip('部屋との接続が切れました',3)}
-  if(['revoked','not_granted','capability_disabled','capability_removed','transform_error'].includes(c)){NET.st='err';NET.errMsg=c==='not_granted'?'この開き方ではオンラインに接続できません。':'オンラインが使えなくなりました。';renderNet()}}
+  if(['revoked','not_granted','capability_disabled','capability_removed','transform_error'].includes(c)){NET.st='err';NET.errMsg=c==='not_granted'?'この開き方ではオンラインに接続できません。\n'+NET_HOWTO:'オンラインが使えなくなりました。';renderNet()}}
 async function netInit(){if(NET.st!=='off'&&NET.st!=='none')return;NET.st='wait';renderNet();
   const C=claudeObj();let room=null;if(C){try{room=await C.use('room')}catch(e){room=null}}
-  if(!room){NET.st='none';renderNet();return}
+  if(!room){NET.st='none';NET.why=await netWhy(C);renderNet();return}
   NET.room=room;NET.st='ok';NET.conn=room.connected();
   NET.unsub.push(room.onPeers(ch=>{NET.lobby=ch.peers;renderRooms()},e=>netErr(e)));
   NET.unsub.push(room.onConnection(c=>{NET.conn=c;renderNet()},e=>netErr(e)));
@@ -1537,9 +1538,12 @@ function foesUpdate(dt){for(const F of FOES){const B=F.net&&F.net.buf;if(!B||!B.
   if(F.netBurn&&F.alive&&Math.random()<dt*14)fx(F.x+rr(-.3,.3),F.y+rr(.3,1.6),F.z+rr(-.3,.3),pick(['#ff7a1a','#ffd23f','#ff3a1a']),1,1,.5,.1,-2);
   if(F.alive){if(F.netPsn)dotFx(F,'psn',dt);if(F.netBld)dotFx(F,'bld',dt)}}}
 // ---------------- 画面 ----------------
-function renderNet(){const e=$('netState');if(!e)return;let t='';
+// つながらなかったわけ（room がもらえないとき）：claude.ai の外・許可がオフ・それ以外（ログインしていない／公開リンクで開いた／招待されていない）
+async function netWhy(C){if(!C)return'nohost';try{const P=await C.use('permissions');if(P){NET.perm=P;return await P.state('room')}}catch(e){}return'unavailable'}
+const NET_HOWTO='オンライン対戦できるのは、claude.ai にログインして、このアーティファクトを作った人の組織のメンバーか、作った人に共有メニューで招待されたアカウントで開いたときです。だれでも見られる公開リンクから開いた人や、ログインしていない人はオンラインに入れません（CPU とは遊べます）。';
+function renderNet(){const e=$('netState');if(!e)return;let t='';const fix=$('netFix'),bad=NET.st==='none'||NET.st==='err';if(fix){fix.style.display=bad?'':'none';$('netPerm').style.display=bad&&NET.perm?'':'none'}for(const b of['rMake','rMakeDm'])if($(b))$(b).disabled=NET.st!=='ok';
   if(NET.st==='wait')t='オンラインに接続しています…';
-  else if(NET.st==='none')t='オンライン対戦は、Claude のアーティファクトとして開いたときに使えます（このページだけでは CPU と練習できます）。';
+  else if(NET.st==='none')t=NET.why==='nohost'?'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くとオンライン対戦できます（CPU とは遊べます）。':NET.why==='denied'?'このアーティファクトのオンライン（ほかの人とつながる機能）の許可がオフになっています。「許可の設定を開く」からオンにしてください。':'この画面ではオンラインに入れませんでした。\n'+NET_HOWTO;
   else if(NET.st==='err')t=NET.errMsg;
   else if(NET.st==='ok')t=(NET.conn?'🟢 接続中・このページを開いている人：'+NET.lobby.filter(p=>p.kind==='viewer').length+'人':'🟡 接続を待っています…')+'\n参加できるのは、このアーティファクトを開ける人（同じ組織のメンバーか招待された人）です。';
   e.textContent=t;e.style.whiteSpace='pre-line';for(const b of['rMake','rMakeDm'])$(b).disabled=NET.st!=='ok';$('roomIn').disabled=NET.st!=='ok'}
@@ -1733,7 +1737,7 @@ function quitMatch(){SFX.click();if(G.phase!=='end'&&G.mode){endMatch('quit');sh
 // ---------------- ボタン ----------------
 function bindUI(){const on=(id,f)=>$(id).addEventListener('click',e=>{e.stopPropagation();ac();f(e)});
   on('nameOk',nameOk);$('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')nameOk();e.stopPropagation()});$('roomIn').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom('duel');e.stopPropagation()});
-  on('mOnline',()=>{SFX.click();showRooms()});on('mBot',()=>{SFX.click();startMatch('bot');lockPointer()});on('mDm',()=>{SFX.click();startMatch('bot',{dm:true});lockPointer()});on('mArmory',()=>{SFX.click();showArmory()});on('mName',()=>{SFX.click();showName()});on('mSet',()=>{SFX.click();showSet('sMenu')});
+  on('mOnline',()=>{SFX.click();showRooms()});on('netRetry',()=>{SFX.click();if(NET.st==='err'){NET.st='off';NET.room=null}netInit()});on('netPerm',()=>{SFX.click();if(NET.perm)NET.perm.manage().then(()=>{if(NET.st==='err'){NET.st='off';NET.room=null}netInit()}).catch(()=>tip('アーティファクトのメニューの「権限（Permissions）」から変えてください',4))});on('mBot',()=>{SFX.click();startMatch('bot');lockPointer()});on('mDm',()=>{SFX.click();startMatch('bot',{dm:true});lockPointer()});on('mArmory',()=>{SFX.click();showArmory()});on('mName',()=>{SFX.click();showName()});on('mSet',()=>{SFX.click();showSet('sMenu')});
   on('aOk',()=>{SFX.click();showMenu()});on('rMake',()=>{SFX.click();createRoom('duel')});on('rMakeDm',()=>{SFX.click();createRoom('dm')});on('wStart',()=>{SFX.click();hostStart()});on('rBack',()=>{SFX.click();showMenu()});on('wLeave',()=>{SFX.click();leaveRoom()});
   on('resAgain',again);on('resMenu',toMenu);on('pBack',()=>{SFX.click();resumeGame()});on('pSet',()=>{SFX.click();showSet('sPause')});on('pQuit',quitMatch);
   on('sOk',()=>{SFX.click();if(setBack==='sPause')showScr('sPause');else showMenu()});

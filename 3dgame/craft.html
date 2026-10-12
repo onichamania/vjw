@@ -191,7 +191,7 @@ body.surv #itemName{margin-bottom:calc(var(--hs) * .9)}
  <div class="row2"><button class="mcb" id="codeCopy">コピー</button><button class="mcb" id="codeFile">ファイルに保存</button></div>
  <div class="row2"><button class="mcb" id="codeLoad">このコードで読みこむ</button><button class="mcb" id="codePick">ファイルから読む</button></div>
  <button class="mcb" id="codeBack">もどる</button><input type="file" id="codeIn" accept=".txt,text/plain" style="display:none"></div>
-<div class="scr dirt" id="mp"><div class="ttl">マルチプレイ</div><div class="note" id="mpState"></div><div class="list" id="mpRooms"></div>
+<div class="scr dirt" id="mp"><div class="ttl">マルチプレイ</div><div class="note" id="mpState"></div><div class="row2" id="mpFix" style="display:none"><button class="mcb" id="mpRetry">もう一度つなぐ</button><button class="mcb" id="mpPerm">許可の設定を開く</button></div><div class="list" id="mpRooms"></div>
  <div class="row2"><button class="mcb" id="mpHostW">ワールドを選んで部屋を作る</button><button class="mcb" id="mpHostC">セーブコードを貼って部屋を作る</button></div>
  <div class="note">ゲームメニューの「オンラインで部屋を開く」からも作れます。入った人は先にいる人の近くに出ます。生き物と落ちている物は、それぞれの画面だけです。</div><button class="mcb" id="mpBack">もどる</button></div>
 <div class="scr dirt" id="nameScr"><div class="ttl">名前</div><div class="fld"><label>ほかの人やチャットに出る名前（14文字まで）</label><input id="nameIn" maxlength="14"></div><div class="row2"><button class="mcb" id="nameOk">けってい</button><button class="mcb" id="nameBack">キャンセル</button></div></div>
@@ -3741,8 +3741,11 @@ const MP_CAP=8,MP_PART=900,MP_ED=880;
 const mpClean=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿§]/g,'').trim();
 const myName=()=>mpClean(MP.nameOverride||localStorage.getItem('bc-name')||'').slice(0,14)||'プレイヤー';
 function mpClaude(){try{if(window.claude&&window.claude.use)return window.claude}catch(e){}try{if(window.parent&&window.parent!==window&&window.parent.claude&&window.parent.claude.use)return window.parent.claude}catch(e){}return null}
+// つながらなかったわけ：claude.ai の外・許可がオフ・それ以外（ログインしていない／公開リンクで開いた／招待されていない）
+async function mpWhy(C){if(!C)return'nohost';try{const P=await C.use('permissions');if(P){MP.perm=P;return await P.state('room')}}catch(e){}return'unavailable'}
+const MP_HOWTO='マルチプレイできるのは、claude.ai にログインして、このアーティファクトを作った人の組織のメンバーか、作った人に共有メニューで招待されたアカウントで開いたときです。だれでも見られる公開リンクから開いた人や、ログインしていない人はオンラインに入れません（ひとりでは遊べます）。';
 async function mpInit(){if(MP.room)return true;if(MP.st==='wait')return false;MP.st='wait';mpRender();const C=mpClaude();let room=null;if(C){try{room=await C.use('room')}catch(e){room=null}}
-  if(!room){MP.st='none';mpRender();return false}MP.room=room;MP.st='ok';
+  if(!room){MP.st='none';MP.why=await mpWhy(C);mpRender();return false}MP.room=room;MP.st='ok';
   MP.unsub.push(room.onPeers(ch=>{MP.lobby=ch.peers;mpRender()},e=>{MP.st='err';mpRender()}));mpLobby();mpRender();return true}
 // ロビーに部屋を出す（ホストだけ）
 function mpLobby(){if(!MP.room)return;const bc=MP.on&&MP.host?{n:myName(),c:MP.code,t:WORLD?String(WORLD.name||'').slice(0,32):'',np:mpOthers().length+1,md:PL.mode==='survival'?'s':'c'}:null;MP.npSent=bc?bc.np:-1;MP.room.presence({bc}).catch(()=>{})}
@@ -3750,7 +3753,7 @@ function mpRooms(){const out=[];for(const p of MP.lobby){if(p.sameTab||p.kind!==
   out.push({c:b.c,n:mpClean(b.n).slice(0,14)||'???',t:mpClean(b.t).slice(0,32)||'ワールド',np:Math.max(1,Math.min(MP_CAP,b.np|0)),md:b.md==='s'?'サバイバル':'クリエイティブ',mine:p.isMe})}return out}
 const mpOthers=()=>MP.peers.filter(p=>!p.sameTab&&p.kind==='viewer'&&p.presence&&typeof p.presence.n==='string');
 // ---------------- 部屋を作る・入る・出る ----------------
-async function mpHost(){if(MP.on||!WORLD||WORLD.demo||WORLD.mp)return;if(!await mpInit()){toast('オンラインに接続できません');return}
+async function mpHost(){if(MP.on||!WORLD||WORLD.demo||WORLD.mp)return;if(!await mpInit()){toast(MP.why==='denied'?'オンラインの許可がオフです（タイトルの「マルチプレイ」から設定できます）':'この画面ではオンラインに入れません（ログインして、招待されたアカウントで開いてください）');return}
   const code='bc-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.random()*36|0]).join('');let g=null;
   try{g=await MP.room.join(code)}catch(e){toast('部屋を作れませんでした');return}
   Object.assign(MP,{on:true,host:true,game:g,code,ready:STATE==='play'||playing(),XF:null,joinT:performance.now()});mpStart();chat('§eオンラインの部屋を開きました。ほかの人は「マルチプレイ」から入れます（'+MP_CAP+'人まで）')}
@@ -3869,7 +3872,8 @@ function mpAvatars(dt){const W=VW(),H=VH(),rt=performance.now()-120;
     if(mpV.z>1||dist>64||STATE==='title'){a.el.style.display='none'}else{a.el.style.display='block';a.el.style.left=((mpV.x+1)/2*W)+'px';a.el.style.top=((1-mpV.y)/2*H)+'px';a.el.style.opacity=a.sn?.45:1}}}
 // ---------------- 画面 ----------------
 function mpBox(){const e=$('mpBox');if(!e)return;if(!MP.on){e.style.display='none';return}const os=mpOthers();e.style.display='block';e.textContent='🌐 オンライン（'+(os.length+1)+'人）'+(MP.host?'・ホスト':'')+'\n'+[myName()+'（あなた）'].concat(os.map(q=>mpClean(q.presence.n).slice(0,14)||'???')).join('、')}
-function mpRender(){const st=$('mpState');if(!st)return;st.textContent=MP.st==='wait'?'オンラインに接続しています…':MP.st==='none'?'マルチプレイは、Claude のアーティファクト（3dame）の中で開いたときに使えます。':MP.st==='err'?'オンラインが使えなくなりました。':'このページを開ける人と遊べます。あなたの名前：'+myName();
+function mpRender(){const st=$('mpState');if(!st)return;const bad=MP.st==='none'||MP.st==='err';$('mpFix').style.display=bad?'':'none';$('mpPerm').style.display=bad&&MP.perm?'':'none';for(const b of['mpHostW','mpHostC'])$(b).disabled=MP.st!=='ok';st.style.whiteSpace='pre-line';
+  st.textContent=MP.st==='wait'?'オンラインに接続しています…':MP.st==='none'?(MP.why==='nohost'?'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くとマルチプレイできます。':MP.why==='denied'?'このアーティファクトのオンライン（ほかの人とつながる機能）の許可がオフになっています。「許可の設定を開く」からオンにしてください。':'この画面ではオンラインに入れませんでした。\n'+MP_HOWTO):MP.st==='err'?'オンラインが使えなくなりました。\n'+MP_HOWTO:'このページを開ける人と遊べます。あなたの名前：'+myName();
   const L=$('mpRooms');if(!L)return;L.innerHTML='';const rs=MP.st==='ok'?mpRooms():[];if(!rs.length){L.innerHTML='<div style="padding:10px;color:#a0a0a0">'+(MP.st==='ok'?'まだ部屋がありません。下のボタンから部屋を作ろう！':'—')+'</div>';return}
   for(const r of rs){const d=document.createElement('div');d.className='wi';d.innerHTML=`<img class="ic" src="${ICON[r.md==='サバイバル'?IID.iron_sword:ID.grass]}"><div><b>${esc(r.t)}</b><small>ホスト：${esc(r.n)}${r.mine?'（あなたの別のタブ）':''}・${r.md}・${r.np}/${MP_CAP}人</small></div>`;
     d.onclick=()=>{SFX.click();if(MP.on){toast('いまは別の部屋にいます');return}mpJoin(r)};L.appendChild(d)}}
@@ -3878,6 +3882,8 @@ function mpPauseUI(){const b=$('pOnline');if(!b)return;b.style.display=WORLD&&!W
 $('bMulti').onclick=()=>{SFX.click();showScr('mp');mpInit().then(mpRender);mpRender()};
 $('mpBack').onclick=()=>{SFX.click();showScr('title')};
 $('mpHostW').onclick=()=>{SFX.click();MP.pick=true;openWorlds()};
+$('mpRetry').onclick=()=>{SFX.click();if(MP.st==='err'){MP.st='off';MP.room=null}mpInit().then(mpRender);mpRender()};
+$('mpPerm').onclick=()=>{SFX.click();if(MP.perm)MP.perm.manage().then(()=>{if(MP.st==='err'){MP.st='off';MP.room=null}return mpInit()}).then(mpRender).catch(()=>toast('アーティファクトのメニューの「権限（Permissions）」から変えてください'))};
 $('mpHostC').onclick=()=>{SFX.click();showCode('','mp','セーブコードを貼って部屋を作る')};
 $('pOnline').onclick=async()=>{SFX.click();if(MP.on){if(MP.host){await mpLeave();chat('§eオンラインの部屋を閉じました')}}else{await mpHost()}mpPauseUI()};
 $('bName').onclick=()=>{SFX.click();$('nameIn').value=myName();showScr('nameScr');setTimeout(()=>{try{$('nameIn').focus()}catch(e){}},30)};
