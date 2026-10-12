@@ -1,7 +1,7 @@
 // ===================== 画面（メニュー・HUD・結果） =====================
 function showScr(id){document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id))}
 function showMenu(){showScr('sMenu');$('hello').textContent='ようこそ、'+cleanName(SV.name)+' さん';
-  $('recTx').textContent='勝ち '+SV.wins+'　負け '+SV.loses+'　引き分け '+SV.draws+'　・　キル '+SV.kills+'\n使う武器：'+WEAPONS[SV.weapon].jp+' ＋ '+WEAPONS[SV.sniper].jp+' ＋ '+WEAPONS[HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper'].jp;$('recTx').style.whiteSpace='pre-line';
+  $('recTx').textContent='勝ち '+SV.wins+'　負け '+SV.loses+'　引き分け '+SV.draws+'　・　キル '+SV.kills+'\n使う武器：'+WEAPONS[primOf(SV.primary)].jp+' ＋ '+WEAPONS[SV.weapon].jp+' ＋ '+WEAPONS[SV.sniper].jp+' ＋ '+WEAPONS[HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper'].jp;$('recTx').style.whiteSpace='pre-line';
   if(NET.game)leaveRoom(true);lobbyPresence(false)}
 function showName(){showScr('sName');$('nameIn').value=SV.name||'';setTimeout(()=>{try{$('nameIn').focus()}catch(e){}},50)}
 function nameOk(){const n=cleanName($('nameIn').value);if(!n){tip('名前を入れてね');return}SV.name=n;saveSV();SFX.click();showMenu()}
@@ -11,12 +11,13 @@ function statRow(c,lb,v,mx,txt){const r=document.createElement('div');r.classNam
 function weaponCard(w,on,click){const W=WEAPONS[w],c=document.createElement('div');c.className='wc'+(on?' on':'');const im=document.createElement('img');im.src=icon(w);c.appendChild(im);
   const b=document.createElement('b');b.textContent=W.jp;c.appendChild(b);const en=document.createElement('div');en.className='note';en.style.margin='0';en.textContent=W.en+'　重さ '+W.weight.toFixed(2).replace(/0$/,'');c.appendChild(en);
   if(isGun(w)){const dm=document.createElement('div');dm.className='note';dm.style.cssText='margin:2px 0;color:#ffd23f;font-weight:800';
-    dm.textContent=W.cat==='sniper'?'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head):W.multi?'範囲ダメージ '+W.dmg+'（'+W.multi+'発×'+(W.dmg/W.multi)+'）':W.cluster?'範囲ダメージ '+W.dmg+'（大'+Math.round(W.dmg*.6)+'＋小'+Math.round(W.dmg*.08)+'×'+W.cluster+'）':W.charge?'範囲ダメージ 最大'+W.dmg+'（ためうち）':'範囲ダメージ '+W.dmg;
-    c.appendChild(dm);statRow(c,'攻撃力',W.dmg,170);statRow(c,'連射',W.rof,100);statRow(c,'装弾数',W.cap,12,W.cap+'/'+W.res);statRow(c,'機動力',W.mob,100)}
+    dm.textContent=W.cat==='primary'?(W.pellets?'ダメージ 合計'+W.dmg+'（'+W.pellets+'粒）'+(W.poison?'＋毒'+W.poison.n*W.poison.dmg:W.bleed?'＋出血'+W.bleed.n*W.bleed.dmg:''):'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head)+'（1発）'):W.cat==='sniper'?'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head):W.multi?'範囲ダメージ '+W.dmg+'（'+W.multi+'発×'+(W.dmg/W.multi)+'）':W.cluster?'範囲ダメージ '+W.dmg+'（大'+Math.round(W.dmg*.6)+'＋小'+Math.round(W.dmg*.08)+'×'+W.cluster+'）':W.charge?'範囲ダメージ 最大'+W.dmg+'（ためうち）':'範囲ダメージ '+W.dmg;
+    c.appendChild(dm);statRow(c,'攻撃力',W.cat==='primary'&&!W.pellets?W.dmg*7:W.dmg,170,W.dmg);statRow(c,'連射',W.rof,100);statRow(c,'装弾数',W.cap,W.cat==='primary'?50:12,W.cap+'/'+W.res);statRow(c,'機動力',W.mob,100)}
   else{statRow(c,'攻撃力',W.leth,35);statRow(c,'攻撃速度',89,100);statRow(c,'機動力',W.mob,100)}
   const ex=document.createElement('div');ex.className='note';ex.style.margin='4px 0 0';ex.textContent=isGun(w)?W.tag:w==='fists'?'当たると相手が遅くなる・アーマー+25':w==='saber'?'当たると相手が燃える':'軽くて手数で勝負';c.appendChild(ex);
   c.onclick=()=>{click();saveSV();SFX.click();showArmory()};return c}
-function showArmory(){showScr('sArmory');const P=$('wpick'),Q=$('spick'),H=$('hpick');P.textContent='';Q.textContent='';H.textContent='';
+function showArmory(){showScr('sArmory');const P=$('wpick'),Q=$('spick'),H=$('hpick'),R=$('ppick');P.textContent='';Q.textContent='';H.textContent='';R.textContent='';
+  for(const w of PRIMARIES)R.appendChild(weaponCard(w,primOf(SV.primary)===w,()=>{SV.primary=w}));
   for(const w of HEAVIES)H.appendChild(weaponCard(w,(HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper')===w,()=>{SV.heavy=w}));
   for(const w of MELEE)P.appendChild(weaponCard(w,SV.weapon===w,()=>{SV.weapon=w}));
   for(const w of SNIPERS)Q.appendChild(weaponCard(w,SV.sniper===w,()=>{SV.sniper=w}))}
@@ -41,12 +42,12 @@ function updHUD(dt){const hp=ME.alive?ME.hp:0;
     const row=(F,i)=>{const d=document.createElement('div');if(F===ME)d.className='me';d.textContent=(i+1)+'. '+(F.name||'???')+'　'+scoreOf(F);R.appendChild(d)};rk.slice(0,6).forEach(row);const mi=rk.indexOf(ME);if(mi>=6)row(ME,mi)});
   const t=Math.max(0,Math.ceil(G.tl));setC('tl',t,v=>$('sT').textContent=Math.floor(v/60)+':'+String(v%60).padStart(2,'0'));
   setC('coins',SV.coins,v=>$('coins').textContent=v);setC('gems',SV.gems,v=>$('gems').textContent=v);
-  const st=(ME.burn?'🔥 燃えている　':'')+(ME.slowT>0?'🐢 遅くなっている':'');setC('st',st,v=>$('burn').textContent=v);
+  const st=(ME.burn?'🔥 燃えている　':'')+(ME.psn?'☠ 毒　':'')+(ME.bld?'🩸 出血　':'')+(ME.slowT>0?'🐢 遅くなっている':'');setC('st',st,v=>$('burn').textContent=v);
   if(crossT>0){crossT-=dt;if(crossT<=0)drawCross()}
   if(hmT>0){hmT-=dt;$('hitm').style.opacity=clamp(hmT/.12,0,1)}if(popT>0){popT-=dt;if(popT<=0)$('pop').classList.remove('on')}
   setC('cw',ME.cw+'|'+ME.w,()=>{[...$('wbar').children].forEach((e,i)=>e.classList.toggle('on',i===ME.cw));drawCross();drawScope();touchIcons()});
   // 弾数（スナイパーとヘビーの両方）
-  const amT=w=>ME.w===w&&ME.relT>0?'リロード':ammoOf(ME,w).join('/');setC('am',amT(ME.ws)+'|'+amT(ME.wh),()=>{const ch=$('wbar').children;for(const [i,w] of[[1,ME.ws],[2,ME.wh]]){const e=ch[i];if(e&&e._am)e._am.textContent=amT(w)}});
+  const amT=w=>ME.w===w&&ME.relT>0?'リロード':ammoOf(ME,w).join('/');setC('am',amT(ME.wp)+'|'+amT(ME.ws)+'|'+amT(ME.wh),()=>{const ch=$('wbar').children;for(const [i,w] of[[0,ME.wp],[2,ME.ws],[3,ME.wh]]){const e=ch[i];if(e&&e._am)e._am.textContent=amT(w)}});
   setC('chg',Math.round(ME.chg*24),()=>drawCross());
   const sc=ME.scoped&&ME.alive;setC('sc',sc,v=>{$('scope').classList.toggle('on',v);$('cross').style.display=v?'none':'';$('scopeTx').style.display=v&&WEAPONS[ME.w].scope==='tracking'?'block':'none';VIEW.g.visible=!v&&ME.alive})
   if(sc&&WEAPONS[ME.w].scope==='tracking'){const d=aimDir(ME.yaw,ME.pitch),r=rayWorld(ME.x,ME.y+EYE,ME.z,d,140);$('scopeTx').textContent=(r.t>=140?'RNG ----':'RNG '+r.t.toFixed(1)+'m')+'\nAZ  '+(((-ME.yaw*180/Math.PI)%360+360)%360).toFixed(0).padStart(3,'0')+'\nEL '+(ME.pitch*180/Math.PI).toFixed(1)}
@@ -67,6 +68,8 @@ function drawCross(hit){const cv=$('cross'),g=cv.getContext('2d'),S=128,c=64;if(
   else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8)}
   else if(st==='laser'){for(const s of[-1,1]){R(s<0?-24:17,-1,7,2);R(s<0?-13:10,-1,3,2);R(-1,s<0?-24:17,2,7);R(-1,s<0?-13:10,2,3)}R(-1,-1,2,2)}
   else if(st==='rocket'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-19:12,sy<0?-19:17,7,2);R(sx<0?-19:17,sy<0?-17:10,2,7)}R(-1,-1,2,2)}   // ヘビー：四すみのかぎ
+  else if(st==='shotgun'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-26:17,sy<0?-26:24,10,2);R(sx<0?-26:24,sy<0?-24:15,2,10)}R(-1,-1,2,2)}
+  else if(st==='rifle'){R(-15,-1,7,2);R(9,-1,7,2);R(-1,-15,2,7);R(-1,9,2,7);R(-1,-1,2,2)}
   else if(st==='portal'){for(let i=0;i<8;i++){const a=i*TAU/8;R(Math.round(Math.cos(a)*16)-1,Math.round(Math.sin(a)*16)-1,3,3)}R(-1,-1,2,2)}
   else if(st==='acr'){const q=.78,Q=(x,y,w,h,t)=>B(Math.round(x*q),Math.round(y*q),Math.round(w*q),Math.round(h*q),t);Q(-15,-47,30,12,3);Q(-8,-35,15,12,3);Q(-43,-7,25,14,3);Q(18,-7,25,14,3);Q(-4,-3,8,6,2);Q(-8,23,15,12,3);Q(-15,35,30,12,3)}
   // ためうちの量（照準のまわりの緑の輪）
@@ -111,6 +114,20 @@ function drawScope(){const cv=$('scope'),dpr=Math.min(devicePixelRatio||1,2),W=M
     ln(cx-S*.38,cy-t/2,S*.33,t,w,.5);ln(cx+S*.05,cy-t/2,S*.33,t,w,.5);ln(cx-t/2,cy-S*.38,t,S*.33,w,.5);ln(cx-t/2,cy+S*.05,t,S*.33,w,.5);ln(cx-t,cy-t,2*t,2*t,'#ff3030',.5);
     for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){const X=cx+sx*S*.4,Y0=cy+sy*S*.4;ln(sx<0?X:X-30*u,Y0-2*u,30*u,4*u,Y,.5);ln(X-2*u,sy<0?Y0:Y0-30*u,4*u,30*u,Y,.5)}
     g.fillStyle=Y;g.font='bold '+Math.round(12*u)+'px "Courier New",monospace';g.fillText('4X',ix+14*u,iy+22*u)}
+  else if(st==='gold4x'){   // ゴールデンフレンド：ドットの丸い窓（外は黒）、細い黒の十字と目盛り、金のふちと緑のレンズ
+    const R0=H*.46,px=Math.max(2,Math.round(H/90));g.fillStyle='#050505';g.fillRect(0,0,W,H);
+    for(let y=-R0;y<R0;y+=px){const hw=Math.floor(Math.sqrt(Math.max(0,R0*R0-(y+px/2)*(y+px/2)))/px)*px;g.clearRect(cx-hw,cy+y,hw*2,px);g.fillStyle='rgba(200,150,30,.85)';g.fillRect(cx-hw,cy+y,px,px);g.fillRect(cx+hw-px,cy+y,px,px)}
+    g.fillStyle='rgba(60,220,90,.1)';g.beginPath();g.arc(cx,cy,R0,0,TAU);g.fill();
+    const t=Math.max(1,Math.round(H/400)),k='rgba(10,10,10,.9)';g.fillStyle=k;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);
+    for(let i=1;i<=4;i++){const s=i*R0*.17;g.fillRect(cx-s-t/2,cy-px*1.5,t,px*3);g.fillRect(cx+s-t/2,cy-px*1.5,t,px*3);g.fillRect(cx-px*1.5,cy+s-t/2,px*3,t)}
+    g.fillStyle='#d02020';g.fillRect(cx-t*1.5,cy-t*1.5,t*3,t*3);g.fillStyle='#e8c040';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText('4X',cx+R0*.55,cy-R0*.62)}
+  else if(st==='tri'){   // 中性子パルセーター：まわりは暗くしない。水色と白の太いしまの大きな三角（上がとがる）と、下の横のしま、まん中に小さな十字
+    const u=H/506,top=cy-232*u,bl=[cx-176*u,cy+96*u],br=[cx+176*u,cy+96*u],th=30*u,cols=['#9af0ff','#2ac8f0','#1aa0d8','#2ac8f0'];
+    const bar=(a,b,n)=>{for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,x0=lerp(a[0],b[0],t0),y0=lerp(a[1],b[1],t0),x1=lerp(a[0],b[0],t1),y1=lerp(a[1],b[1],t1),dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),nx=-dy/L*th/2,ny=dx/L*th/2;
+      g.fillStyle=i===0||i===n-1?'#e8fcff':cols[i%cols.length];g.globalAlpha=.92;g.beginPath();g.moveTo(x0+nx,y0+ny);g.lineTo(x1+nx,y1+ny);g.lineTo(x1-nx,y1-ny);g.lineTo(x0-nx,y0-ny);g.closePath();g.fill()}g.globalAlpha=1};
+    bar([cx,top],bl,5);bar([cx,top],br,5);const by=cy+138*u;for(let i=0;i<6;i++){g.fillStyle=i===0||i===5?'#e8fcff':cols[i%cols.length];g.globalAlpha=.9;g.fillRect(cx-150*u+i*50*u,by,50*u,26*u)}g.globalAlpha=1;
+    const c='#7ff0ff',t=Math.max(2,2*u);ln(cx-26*u,cy-t/2,16*u,t,c,.45);ln(cx+10*u,cy-t/2,16*u,t,c,.45);ln(cx-t/2,cy-26*u,t,16*u,c,.45);ln(cx-t/2,cy+10*u,t,16*u,c,.45);ln(cx-t,cy-t,2*t,2*t,'#ffffff',.45);
+    for(const s of[-1,1]){ln(cx+s*34*u-(s<0?0:t),cy-12*u,t,24*u,c,.45)}}
   else if(st==='exo'){   // デモリションスケルトン：わくなし、水色のかぎと目盛り
     const u=H/506,c='#40d8ff',t=Math.max(2,2*u);for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){const X=cx+sx*120*u,Y0=cy+sy*80*u;ln(sx<0?X:X-36*u,Y0-t/2,36*u,t,c,.4);ln(X-t/2,sy<0?Y0:Y0-26*u,t,26*u,c,.4)}
     for(let i=-3;i<=3;i++)if(i)ln(cx+i*22*u-t/2,cy+44*u,t,(i%2?6:10)*u,c,.4);ln(cx-18*u,cy-t/2,12*u,t,c,.4);ln(cx+6*u,cy-t/2,12*u,t,c,.4);ln(cx-t/2,cy-18*u,t,12*u,c,.4);ln(cx-t/2,cy+6*u,t,12*u,c,.4)}}
@@ -128,9 +145,9 @@ function addFeed(K,V,w,head){const F=$('feed'),d=document.createElement('div');c
 function clearFeed(){$('feed').textContent=''}
 // 武器のバー（下の真ん中）：接近武器・スナイパー・ヘビー（銃は弾数も）
 function buildWBar(){const B=$('wbar');B.textContent='';
-  [[ME.wm,WEAPONS[ME.wm].short,false],[ME.ws,WEAPONS[ME.ws].short,false],[ME.wh,WEAPONS[ME.wh].short,false]].forEach(([k,lb,lock],i)=>{const s=document.createElement('div');s.className='ws'+(lock?' lk':'')+(i===ME.cw?' on':'');
+  [[ME.wp,WEAPONS[ME.wp].short,false],[ME.wm,WEAPONS[ME.wm].short,false],[ME.ws,WEAPONS[ME.ws].short,false],[ME.wh,WEAPONS[ME.wh].short,false]].forEach(([k,lb,lock],i)=>{const s=document.createElement('div');s.className='ws'+(lock?' lk':'')+(i===ME.cw?' on':'');
     if(!lock){const im=document.createElement('img');im.src=icon(k);s.appendChild(im)}else{const l=document.createElement('div');l.className='lock';l.textContent='🔒';s.appendChild(l)}
-    const sm=document.createElement('small');sm.textContent=lb;s.appendChild(sm);if(i>0){sm.style.bottom='9px';const am=document.createElement('div');am.className='am';s.appendChild(am);s._am=am}
+    const sm=document.createElement('small');sm.textContent=lb;s.appendChild(sm);if(i!==1){sm.style.bottom='9px';const am=document.createElement('div');am.className='am';s.appendChild(am);s._am=am}
     s.onclick=e=>{e.stopPropagation();if(LAYM())return;if(lock)tip(lb+'は準備中です');else PEND.slot=i};s.ontouchstart=e=>{e.stopPropagation();if(LAYM())return;if(!lock){e.preventDefault();PEND.slot=i}};B.appendChild(s)});
   for(const k of['cw','am','sc'])delete HC[k]}
 // ---------------- ポーズ・結果 ----------------
@@ -180,7 +197,7 @@ function laySel(k){LSEL=k;for(const id in LAY)$(id).classList.toggle('sel',id===
   if(k==='wbar'){sl.min=WBAR_MIN;sl.max=WBAR_MAX;sl.step=5}else{sl.min=40;sl.max=170;sl.step=2}if(k)sl.value=LAY[k].s;
   $('layHide').disabled=!(k&&LAY_HIDE.includes(k));$('layHide').textContent=k&&LAY[k].hide?'表示する':'かくす'}
 function showLayout(){LAYBACK=document.querySelector('.scr.on')?document.querySelector('.scr.on').id:'sMenu';document.body.classList.add('lay');
-  if(!G.mode){Object.assign(ME,{wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',w:SV.weapon,cw:0});buildWBar()}/* メニューから開いたときも武器欄を見せる */showScr('sLay');applyLayout();laySel(null)}
+  if(!G.mode){Object.assign(ME,{wp:primOf(SV.primary),wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',w:primOf(SV.primary),cw:0});buildWBar()}/* メニューから開いたときも武器欄を見せる */showScr('sLay');applyLayout();laySel(null)}
 let LAYBACK='sMenu';function endLayout(){document.body.classList.remove('lay');laySel(null);applyLayout();if(LAYBACK==='sSet')showSet(setBack);else showScr(LAYBACK)}
 for(const id in LAY_DEF){const e=$(id);e.addEventListener('pointerdown',ev=>{if(!document.body.classList.contains('lay'))return;ev.preventDefault();ev.stopPropagation();laySel(id);const r=e.getBoundingClientRect();LDRAG={id,dx:ev.clientX-(r.left+r.width/2),dy:ev.clientY-(r.top+r.height/2),pid:ev.pointerId};try{e.setPointerCapture(ev.pointerId)}catch(x){}});
   e.addEventListener('pointermove',ev=>{if(!LDRAG||LDRAG.id!==id)return;LAY[id].x=clamp((ev.clientX-LDRAG.dx)/innerWidth,0,1);LAY[id].y=clamp((ev.clientY-LDRAG.dy)/innerHeight,0,1);applyLayout()});

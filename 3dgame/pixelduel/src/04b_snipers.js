@@ -86,7 +86,7 @@ function updViewSniper(dt,P,shotT,relK,drawK){const k=Math.exp(-shotT*9)*(shotT<
 const SNIPER_ICON={};
 function renderSniperIcons(){const W=208,H=160,rt=new THREE.WebGLRenderTarget(W,H);rt.texture.encoding=THREE.sRGBEncoding;const buf=new Uint8Array(W*H*4);
   const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xffffff,0x6a6a7a,.62));const dl=new THREE.DirectionalLight(0xffffff,.5);dl.position.set(1,2,3);sc.add(dl);
-  for(const w of SNIPERS.concat(HEAVIES)){const outer=new THREE.Group(),m=gunModel(w);outer.add(m);m.rotation.set(.05,-Math.PI/2+.42,0);outer.rotation.z=.5;sc.add(outer);
+  for(const w of SNIPERS.concat(HEAVIES,PRIMARIES)){const outer=new THREE.Group(),m=gunModel(w);outer.add(m);m.rotation.set(.05,-Math.PI/2+.42,0);outer.rotation.z=.5;sc.add(outer);
     outer.updateMatrixWorld(true);const bb=new THREE.Box3().setFromObject(outer),c=bb.getCenter(new THREE.Vector3()),sz=bb.getSize(new THREE.Vector3());
     const s=Math.max(sz.x/W*H,sz.y)*.56,cam=new THREE.OrthographicCamera(-s*W/H,s*W/H,s,-s,-10,10);cam.position.set(c.x,c.y,c.z+5);cam.lookAt(c);
     renderer.setRenderTarget(rt);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(sc,cam);renderer.readRenderTargetPixels(rt,0,0,W,H,buf);renderer.setRenderTarget(null);

@@ -47,8 +47,8 @@ async function enterRoom(code,host,title,md){if(NET.game)await leaveRoom(true);f
 async function leaveRoom(silent){const g=NET.game;NET.gunsub.forEach(u=>{try{u()}catch(e){}});NET.gunsub=[];NET.game=null;NET.code='';NET.pl=[];NET.hostP=null;
   if(g){try{await g.leave()}catch(e){}}lobbyPresence(true);if(!silent)showRooms()}
 // 自分の presence（毎秒20回まで）
-function myState(){const p={n:cleanName(SV.name),sk:SV.skin,w:G.mode==='online'?ME.w:SV.weapon,wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',sc:ME.scoped?1:0,sh:NET.shot||null,pj:NET.pj||[],pt:G.mode==='online'?myPortals():[],rdy:NET.rdy,r:NET.rd,
-  s:[+ME.x.toFixed(2),+ME.y.toFixed(2),+ME.z.toFixed(2),+ME.yaw.toFixed(3),+ME.pitch.toFixed(3)],a:ME.seq,al:ME.alive?1:0,hp:Math.round(ME.hp),ar:Math.round(ME.ar),
+function myState(){const p={n:cleanName(SV.name),sk:SV.skin,w:G.mode==='online'?ME.w:primOf(SV.primary),wp:primOf(SV.primary),wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',sc:ME.scoped?1:0,sh:NET.shot||null,pj:NET.pj||[],pt:G.mode==='online'?myPortals():[],rdy:NET.rdy,r:NET.rd,
+  s:[+ME.x.toFixed(2),+ME.y.toFixed(2),+ME.z.toFixed(2),+ME.yaw.toFixed(3),+ME.pitch.toFixed(3)],a:ME.seq,al:ME.alive?1:0,hp:Math.round(ME.hp),ar:Math.round(ME.ar),po:ME.psn?1:0,bl:ME.bld?1:0,
   dd:ME.dd,sd:ME.sd,kb:ME.kb,dl:Math.round(ME.dealt||0),cm:CHAT.out,gt:G.mode==='online'?IT.got:[],h:NET.hits,ex:NET.ex,iv:ME.inv>0?1:0,bn:ME.burn?1:0,ig:G.mode==='online'?1:0};
   if(NET.host)Object.assign(p,{it:G.mode==='online'?itemsList():[],ph:NET.ph,rd:NET.rd,tl:+Math.max(0,G.tl).toFixed(1),ct:+Math.max(0,G.ct).toFixed(1),pl:NET.pl,md:NET.md,t:NET.title});return p}
 function sendNow(){if(!NET.game)return;NET.sendT=0;NET.game.presence(myState()).catch(e=>{if(e&&e.code==='invalid_argument')console.warn(e)})}
@@ -88,8 +88,8 @@ const cleanKB=kb=>{const o={};if(kb&&typeof kb==='object')for(const k in kb){con
 function syncFoes(os){if(G.mode!=='online')return;
   for(const p of os){const o=p.presence;if(o.r===NET.rd&&o.ig===1&&!FOES.some(F=>F.peer===p.peer)&&FOES.length<CAP[NET.md]-1)addFoe(p.peer,o)}
   for(const F of FOES.slice())if(!os.some(p=>p.peer===F.peer))removeFoe(F)}
-function addFoe(peer,o){const wm=MELEE.includes(o.wm)?o.wm:'fists',ws=SNIPERS.includes(o.ws)?o.ws:'acr',wh=HEAVIES.includes(o.wh)?o.wh:'rjumper';
-  const F=fighter({peer,name:cleanName(o.n)||'???',w:wm,wm,ws,wh,sk:(o.sk|0)%6,here:true,rpk:'',kb:cleanKB(o.kb),
+function addFoe(peer,o){const wp=primOf(o.wp),wm=MELEE.includes(o.wm)?o.wm:'fists',ws=SNIPERS.includes(o.ws)?o.ws:'acr',wh=HEAVIES.includes(o.wh)?o.wh:'rjumper';
+  const F=fighter({peer,name:cleanName(o.n)||'???',w:wp,wp,wm,ws,wh,sk:(o.sk|0)%6,here:true,rpk:'',kb:cleanKB(o.kb),
     net:{buf:[],seenHit:maxSeq(o.h),seenEx:maxSeq(o.ex),seenPj:maxSeq(o.pj),lastShot:Array.isArray(o.sh)?o.sh[0]:-1,lastA:typeof o.a==='number'?o.a:-1,lastSD:o.sd|0}});
   if(Array.isArray(o.s)&&o.s.length===5&&o.s.every(Number.isFinite)){F.x=o.s[0];F.y=o.s[1];F.z=o.s[2];F.yaw=o.s[3]}
   makeOppModel(F);FOES.push(F);OPP=FOES[0];return F}
@@ -97,11 +97,11 @@ function removeFoe(F){const i=FOES.indexOf(F);if(i<0)return;if(G.mode==='online'
   if(G.mode==='online'&&G.phase!=='end'&&G.dm){{tip((F.name||'???')+' が部屋を出ました',2);if(!FOES.length&&!NET.host)endMatch('left')}}}
 // ひとりの presence を読む
 function readFoe(F,o){const N=F.net,same=o.r===NET.rd&&o.ig===1;F.here=same;if(!same)return;
-  if(MELEE.includes(o.wm))F.wm=o.wm;if(SNIPERS.includes(o.ws))F.ws=o.ws;if(HEAVIES.includes(o.wh))F.wh=o.wh;if(o.w===F.wm||o.w===F.ws||o.w===F.wh)F.w=o.w;F.scoped=!!o.sc;
-  if(Array.isArray(o.sh)&&o.sh[0]!==N.lastShot&&o.sh.length>=5&&o.sh.every(Number.isFinite)){N.lastShot=o.sh[0];const w=WIDS[o.sh[1]];if(isSniper(w)){const m=muzzleOf(F),segs=[[m.x,m.y,m.z,o.sh[2],o.sh[3],o.sh[4]]];if(o.sh.length>=8)segs.push([o.sh[2],o.sh[3],o.sh[4],o.sh[5],o.sh[6],o.sh[7]]);drawShot(w,segs,false);SFX.shot(w,Math.hypot(F.x-ME.x,F.z-ME.z))}}
+  if(PRIMARIES.includes(o.wp))F.wp=o.wp;if(MELEE.includes(o.wm))F.wm=o.wm;if(SNIPERS.includes(o.ws))F.ws=o.ws;if(HEAVIES.includes(o.wh))F.wh=o.wh;if(o.w===F.wp||o.w===F.wm||o.w===F.ws||o.w===F.wh)F.w=o.w;F.scoped=!!o.sc;
+  if(Array.isArray(o.sh)&&o.sh[0]!==N.lastShot&&o.sh.length>=5&&o.sh.every(Number.isFinite)){const nShot=clamp(o.sh[0]-N.lastShot,1,4);N.lastShot=o.sh[0];const w=WIDS[o.sh[1]];if(isPrimary(w))remotePrimShot(F,w,[o.sh[2],o.sh[3],o.sh[4]],nShot);else if(isSniper(w)){const m=muzzleOf(F),segs=[[m.x,m.y,m.z,o.sh[2],o.sh[3],o.sh[4]]];if(o.sh.length>=8)segs.push([o.sh[2],o.sh[3],o.sh[4],o.sh[5],o.sh[6],o.sh[7]]);drawShot(w,segs,false);SFX.shot(w,Math.hypot(F.x-ME.x,F.z-ME.z))}}
   if(Array.isArray(o.pj))for(const e of o.pj){if(!Array.isArray(e)||e.length<9||!e.every(Number.isFinite)||!(e[0]>N.seenPj))continue;N.seenPj=e[0];spawnRemoteProj(F,e)}
   syncRemotePortals(F,o.pt);
-  F.alive=!!o.al;F.hp=+o.hp||0;F.ar=+o.ar||0;F.inv=o.iv?1:0;F.netBurn=!!o.bn;F.dealt=+o.dl||0;F.dd=o.dd|0;F.sd=o.sd|0;
+  F.alive=!!o.al;F.hp=+o.hp||0;F.ar=+o.ar||0;F.inv=o.iv?1:0;F.netBurn=!!o.bn;F.netPsn=!!o.po;F.netBld=!!o.bl;F.dealt=+o.dl||0;F.dd=o.dd|0;F.sd=o.sd|0;
   const s=o.s;if(Array.isArray(s)&&s.length===5&&s.every(Number.isFinite)){const L=N.buf[N.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i]))N.buf.push({t:performance.now(),s:s.slice()});if(N.buf.length>30)N.buf.shift()}
   if(typeof o.a==='number'&&o.a!==N.lastA){if(o.a>N.lastA){F.atkT=0;const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(!isGun(F.w)&&dd<16)SFX.swing(F.w,clamp(1-dd/16,.2,.8))}N.lastA=o.a}
   // アイテム：ホストは取られたものを消す
@@ -122,7 +122,8 @@ function foesUpdate(dt){for(const F of FOES){const B=F.net&&F.net.buf;if(!B||!B.
   const k=b.t>a.t?clamp((rt-a.t)/(b.t-a.t),0,1):1;const px=F.x,pz=F.z;
   F.x=lerp(a.s[0],b.s[0],k);F.y=lerp(a.s[1],b.s[1],k);F.z=lerp(a.s[2],b.s[2],k);F.yaw=a.s[3]+angDiff(a.s[3],b.s[3])*k;F.pitch=lerp(a.s[4],b.s[4],k);
   F.spd=lerp(F.spd,Math.hypot(F.x-px,F.z-pz)/Math.max(dt,1e-3),Math.min(1,dt*10));F.atkT+=dt;
-  if(F.netBurn&&F.alive&&Math.random()<dt*14)fx(F.x+rr(-.3,.3),F.y+rr(.3,1.6),F.z+rr(-.3,.3),pick(['#ff7a1a','#ffd23f','#ff3a1a']),1,1,.5,.1,-2)}}
+  if(F.netBurn&&F.alive&&Math.random()<dt*14)fx(F.x+rr(-.3,.3),F.y+rr(.3,1.6),F.z+rr(-.3,.3),pick(['#ff7a1a','#ffd23f','#ff3a1a']),1,1,.5,.1,-2);
+  if(F.alive){if(F.netPsn)dotFx(F,'psn',dt);if(F.netBld)dotFx(F,'bld',dt)}}}
 // ---------------- 画面 ----------------
 function renderNet(){const e=$('netState');if(!e)return;let t='';
   if(NET.st==='wait')t='オンラインに接続しています…';

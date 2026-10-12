@@ -32,6 +32,7 @@ vscene.add(VIEW.g);vscene.add(new THREE.HemisphereLight(0xfff4dc,0x8a7a5a,.9));{
 function setViewWeapon(w){VIEW.g.clear();VIEW.w=w;VIEW.parts={};
   if(WEAPONS[w].cat==='sniper')setViewSniper(w);
   else if(WEAPONS[w].cat==='heavy')setViewHeavy(w);
+  else if(WEAPONS[w].cat==='primary')setViewPrimary(w);
   else if(w==='fists'){for(const s of[-1,1]){const gg=gauntlet(s);gg.scale.setScalar(.62);gg.position.set(s*.36,-.3,-.66);gg.rotation.set(.18,s*.22,0);VIEW.g.add(gg);VIEW.parts[s<0?'l':'r']=gg}}
   else{const m=weaponModel(w),hand=new THREE.Group(),piv=new THREE.Group();piv.rotation.order='ZXY';piv.add(m);bx(piv,.1,.1,.13,0,-.01,w==='knife'?.1:.06,'#e8b88a');hand.add(piv);VIEW.g.add(hand);VIEW.parts.r=hand;VIEW.parts.p=piv;
     if(w==='knife'){hand.position.set(.3,-.3,-.55);piv.rotation.set(1.1,0,.35)}else{hand.position.set(.32,-.42,-.62);piv.rotation.set(1.0,0,.45)}}}
@@ -40,6 +41,7 @@ function updView(dt,moving,attackT){VIEW.bob+=dt*(moving?9:2);const b=Math.sin(V
   VIEW.g.position.set(b,bc,0);const w=VIEW.w,P=VIEW.parts,a=clamp(attackT/.3,0,1),s=Math.sin(a*Math.PI);
   if(WEAPONS[w].cat==='sniper'){if(P.r)updViewSniper(dt,P,VIEW.shotT,VIEW.relK,VIEW.drawK);return}
   if(WEAPONS[w].cat==='heavy'){if(P.r)updViewHeavy(dt,P,VIEW.shotT,VIEW.relK,VIEW.drawK);return}
+  if(WEAPONS[w].cat==='primary'){if(P.r)updViewPrimary(dt,P,VIEW.shotT,VIEW.relK,VIEW.drawK);return}
   if(w==='fists'){for(const k of['l','r']){const p=P[k];if(!p)continue;const act=(VIEW.swingN%2===0)===(k==='r');const base=k==='r'?.36:-.36;p.position.set(base*(act?1-s*.6:1),-.3+(act?s*.12:0),-.66-(act?s*.5:0))}}
   else if(w==='knife'&&P.r){P.r.position.set(.3-s*.18,-.3+s*.06,-.55-s*.3);P.p.rotation.set(1.1-s*.95,0,.35-s*.25)}
   else if(w==='saber'&&P.r){P.r.position.set(.32-s*.36,-.42+s*.14,-.62-s*.1);P.p.rotation.set(1.0-s*.45,0,.45-s*1.5)}
