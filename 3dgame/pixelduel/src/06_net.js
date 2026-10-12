@@ -24,7 +24,7 @@ function netErr(e,game){const c=e&&e.code;if(game&&NET.game&&c!=='invalid_argume
 async function netInit(){if(NET.st!=='off'&&NET.st!=='none')return;NET.st='wait';renderNet();
   const C=claudeObj();let room=null,t0=performance.now(),ue='';if(C){try{room=await C.use('room')}catch(e){room=null;ue=String(e&&(e.code||e.message)||e).slice(0,40)}}
   if(!room){NET.st='none';NET.why=await netWhy(C);NET.diag='しらべた結果：claude '+(C?'あり':'なし')+'・room なし（'+Math.round(performance.now()-t0)+'ms'+(ue?'・'+ue:'')+'）・許可 '+NET.why+'・'+(window.top===window?'単独のページ':'枠の中');renderNet();return}
-  NET.room=room;NET.st='ok';NET.conn=room.connected();
+  NET.room=room;NET.st='ok';NET.conn=room.connected();NET.okT=performance.now();setTimeout(renderNet,8200);   // 8秒たってもつながらなければ、わけを出す
   NET.unsub.push(room.onPeers(ch=>{NET.lobby=ch.peers;renderRooms()},e=>netErr(e)));
   NET.unsub.push(room.onConnection(c=>{NET.conn=c;renderNet()},e=>netErr(e)));
   lobbyPresence(true);renderNet();renderRooms()}
@@ -37,10 +37,10 @@ function lobbyPresence(on){if(!NET.room)return;const np=NET.game?others().length
 function roomList(){const out=[];for(const p of NET.lobby){if(p.sameTab||p.kind!=='viewer')continue;const pd=p.presence&&p.presence.pd;if(!pd||typeof pd!=='object')continue;
   if(pd.st!=='wait'||typeof pd.c!=='string'||!CODE_RE.test(pd.c))continue;out.push({c:pd.c,n:cleanName(pd.n)||'???',t:cleanName(pd.t)||'部屋',md:pd.md==='dm'?'dm':'duel',np:clamp(pd.np|0,1,8),guest:p.guest,mine:p.isMe})}return out}
 // ---------------- 部屋 ----------------
-async function createRoom(md){if(!NET.room)return;const code='pd-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');md=md==='dm'?'dm':'duel';
+async function createRoom(md){if(!NET.room)return;if(!NET.conn){tip('まだオンラインにつながっていません（上の説明を見てね）',3);renderNet();return}const code='pd-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');md=md==='dm'?'dm':'duel';
   await enterRoom(code,true,cleanName($('roomIn').value)||(cleanName(SV.name)+(md==='dm'?'のデスマッチ':'の部屋')),md)}
 async function enterRoom(code,host,title,md){if(NET.game)await leaveRoom(true);for(const b of['rMake','rMakeDm'])$(b).disabled=true;let g=null;
-  try{g=await NET.room.join(code)}catch(e){for(const b of['rMake','rMakeDm'])$(b).disabled=false;tip(e&&e.code==='limit_reached'?'今は部屋に入れません。少し待ってからもう一度':'部屋に入れませんでした',3);return}
+  try{g=await NET.room.join(code)}catch(e){for(const b of['rMake','rMakeDm'])$(b).disabled=false;tip(e&&e.code==='limit_reached'?'今は部屋に入れません。少し待ってからもう一度':'部屋に入れませんでした（'+(e&&e.code||'?')+'）',3);return}
   for(const b of['rMake','rMakeDm'])$(b).disabled=false;Object.assign(NET,{game:g,code,host,title,md:md==='dm'?'dm':'duel',rd:0,rdy:1,ph:'wait',pl:[],hostP:null,joinT:performance.now(),goT:0});
   NET.gunsub=[g.onPeers(ch=>{NET.gpeers=ch.peers;gamePeers()},e=>netErr(e,true))];
   sendNow();lobbyPresence(true);showWait()}
@@ -133,7 +133,7 @@ function renderNet(){const e=$('netState');if(!e)return;let t='';const fix=$('ne
   else if(NET.st==='none')t=NET.why==='nohost'?'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くとオンライン対戦できます（CPU とは遊べます）。':NET.why==='denied'?'このアーティファクトのオンライン（ほかの人とつながる機能）の許可がオフになっています。「許可の設定を開く」からオンにしてください。':'この画面ではオンラインに入れませんでした。\n'+NET_HOWTO;
   if(NET.st==='none'&&NET.diag)t+='\n（'+NET.diag+'）';
   else if(NET.st==='err')t=NET.errMsg;
-  else if(NET.st==='ok')t=(NET.conn?'🟢 接続中・このページを開いている人：'+NET.lobby.filter(p=>p.kind==='viewer').length+'人':'🟡 接続を待っています…')+'\n参加できるのは、このアーティファクトを開ける人（同じ組織のメンバーか招待された人）です。';
+  else if(NET.st==='ok')t=NET.conn?'🟢 接続中・このページを開いている人：'+NET.lobby.filter(p=>p.kind==='viewer').length+'人\n参加できるのは、claude.ai にログインしてこのアーティファクトを開ける人（作った人の組織のメンバーか招待された人）です。':performance.now()-(NET.okT||0)>8000?'🟡 オンラインのサーバーにつながりません。\n学校や会社のネットワークや、アプリの中のブラウザ（フィルターつきのブラウザなど）では、オンラインの通信がふさがれて、つながらないことがあります。Safari や Chrome、Claude アプリで開くか、別のネットワーク（家の Wi-Fi など）で試してください。':'🟡 接続を待っています…';
   e.textContent=t;e.style.whiteSpace='pre-line';for(const b of['rMake','rMakeDm'])$(b).disabled=NET.st!=='ok';$('roomIn').disabled=NET.st!=='ok'}
 function renderRooms(){renderNet();const L=$('rlist');if(!L)return;L.textContent='';const rs=NET.st==='ok'?roomList():[];
   if(!rs.length){const d=document.createElement('div');d.className='note';d.style.textAlign='center';d.textContent=NET.st==='ok'?'まだ部屋がありません。部屋を作って相手を待とう！':'—';L.appendChild(d);return}
