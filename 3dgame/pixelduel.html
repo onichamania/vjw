@@ -1433,7 +1433,7 @@ const CODE_RE=/^pd-[a-z0-9]{6}$/;
 const cleanName=s=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g,'').trim().slice(0,14);
 function claudeObj(){try{if(window.claude&&window.claude.use)return window.claude}catch(e){}try{if(window.parent&&window.parent!==window&&window.parent.claude&&window.parent.claude.use)return window.parent.claude}catch(e){}return null}
 function netErr(e,game){const c=e&&e.code;if(game&&NET.game&&c!=='invalid_argument'){leaveRoom(true);tip('部屋との接続が切れました',3)}
-  if(['revoked','not_granted','capability_disabled','capability_removed','transform_error'].includes(c)){NET.st='err';NET.errMsg=(c==='not_granted'?'この開き方ではオンラインに接続できません。\n'+NET_HOWTO:'オンラインが使えなくなりました。')+'\n（しらべた結果：エラー '+c+'）';renderNet()}}
+  if(['revoked','not_granted','capability_disabled','capability_removed','transform_error'].includes(c)){NET.st='err';NET.errMsg=(c==='not_granted'?'この開き方ではオンラインに接続できません。\n'+NET_HOWTO:'共有の設定などが変わったので、このページのオンラインが切れました。アーティファクトを一度閉じて、開き直してください（ページを開き直すまで、もどりません）。')+'\n（しらべた結果：エラー '+c+'）';renderNet()}}
 async function netInit(){if(NET.st!=='off'&&NET.st!=='none')return;NET.st='wait';renderNet();
   const C=claudeObj();let room=null,t0=performance.now(),ue='';if(C){try{room=await C.use('room')}catch(e){room=null;ue=String(e&&(e.code||e.message)||e).slice(0,40)}}
   if(!room){NET.st='none';NET.why=await netWhy(C);NET.diag='しらべた結果：claude '+(C?'あり':'なし')+'・room なし（'+Math.round(performance.now()-t0)+'ms'+(ue?'・'+ue:'')+'）・許可 '+NET.why+'・'+(window.top===window?'単独のページ':'枠の中');renderNet();return}
