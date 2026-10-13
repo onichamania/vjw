@@ -7,10 +7,11 @@
 //  連射　　　　中性子パルセーター ＞ ゴールデンフレンド ＞ バイキング ＞ 酸の散弾銃 ＞ 究極点
 //  重さ　　　　究極点 ＞ 酸の散弾銃 ＝ バイキング ＞ ゴールデンフレンド ＞ 中性子パルセーター
 //  リロード　　ダメージの順に遅い（究極点がいちばん遅い）
-// 散弾は1粒ずつ当たりを調べて、同じ相手に当たった分を合わせて1回の攻撃にする（1回でへる体力は最大90のまま）。遠いと弱くなる（fall：[ここまで全部, ここで最小, 最小の割合]）
+// 散弾は1粒ずつ当たりを調べて、同じ相手に当たった分を合わせて1回の攻撃にする（1回でへる体力は最大90のまま）。
+// 究極点はいちばんダメージが高い（合計220）。90の上限がないので、近くで全部の粒が当たれば、シールド満タン（100＋体力100）でも1発でたおせる。遠いと弱くなる（fall：[ここまで全部, ここで最小, 最小の割合]）
 const PRIMARY_DATA={
- ultimatum:{jp:'究極点',en:'Ultimatum',short:'究極点',dmg:160,head:1.3,pellets:10,spread:.05,rof:42,cap:1,res:12,mob:50,reload:2.4,rate:.5,range:70,fall:[18,60,.45],
-   wallbreak:true,pierce:true,beam:'#60e8ff',cross:'shotgun',col:'#7a6aa8',tag:'壁も相手もつきぬける散弾。1発ずつ（毎回リロード）・いちばん強い'},
+ ultimatum:{jp:'究極点',en:'Ultimatum',short:'究極点',dmg:220,nocap:true,head:1.3,pellets:10,spread:.05,rof:42,cap:1,res:12,mob:50,reload:2.4,rate:.5,range:70,fall:[18,60,.45],
+   wallbreak:true,pierce:true,beam:'#60e8ff',cross:'shotgun',col:'#7a6aa8',tag:'壁も相手もつきぬける散弾。1発ずつ（毎回リロード）・いちばん強い（近くで全部当たればシールド満タンでも1発）'},
  viking:{jp:'バイキング',en:'Viking',short:'バイキング',dmg:100,head:1.3,pellets:8,spread:.075,rof:76,cap:9,res:27,mob:65,reload:1.9,rate:.8,range:45,fall:[10,38,.3],
    bleed:{n:3,dmg:4,iv:1},beam:'#c070ff',pump:true,cross:'shotgun',col:'#e07a20',tag:'ポンプ式のプラズマ散弾・当たると出血（3秒）'},
  pulsator:{jp:'中性子パルセーター',en:'Neutron Pulsator',short:'パルセーター',dmg:9,head:1.4,rof:100,cap:50,res:150,mob:100,reload:1.3,rate:.075,range:120,auto:true,hip:.03,ads:.006,zoom:4,

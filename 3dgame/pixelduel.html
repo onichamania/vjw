@@ -694,7 +694,8 @@ const SNIPER_DATA={
    pierce:true,ricochet:true,beam:'#d060ff',scope:'comet',cross:'laser',col:'#a050f0',tag:'貫通・はね返る（1回）・8倍'},
  overseer:{jp:'監督',en:'Overseer',dmg:113,head:1.4,rof:74,cap:10,mob:65,zoom:8,reload:2.4,
    xray:true,scope:'thermal',cross:'bullet',col:'#3a6ad8',tag:'スコープ中だけ、壁の向こうの敵が青いシルエットで見える・8倍'}};
-SNIPER_DATA.oneshot.dmg=170;   // ワンショットはいちばん強い（シールド50%の体にも1発）
+SNIPER_DATA.oneshot.dmg=170;   // ワンショットはスナイパーでいちばん強い
+for(const k in SNIPER_DATA)SNIPER_DATA[k].dmg=Math.round(SNIPER_DATA[k].dmg*.8);   // 調整：強すぎたので全部0.8倍（ワンショット136・ACR106・監督90・HSR78・彗星75）
 for(const k in SNIPER_DATA){const d=SNIPER_DATA[k];d.cat='sniper';d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;d.hip=0;WEAPONS[k]=d;WIDS.push(k)}
 SNIPER_DATA.oneshot.weight=1.45;   // いちばん重い
 const MELEE=['fists','knife','saber'],SNIPERS=Object.keys(SNIPER_DATA);
@@ -792,6 +793,7 @@ const HEAVY_DATA={
    tag:'ツリーの弾が当たると、まわりに小さな爆発が広がる・ロケットジャンプ（少しダメージ）'},
  portal:{jp:'ポータルキャノン',en:'Portal Cannon',short:'ポータル',dmg:168,rof:67,cap:100,mob:50,reload:2.6,speed:32,rad:2.6,rj:0,self:.06,proj:'orb',charge:1.2,col:'#40e040',cross:'portal',
    tag:'おしっぱなしでためうち。ためきると当たった所にポータルができ、2つ出すと行き来できる'}};
+for(const k in HEAVY_DATA)HEAVY_DATA[k].dmg=Math.round(HEAVY_DATA[k].dmg*.8);   // 調整：強すぎたので全部0.8倍（ロケジャン44・デモリション120・破壊システム134・ラスクリ110・ポータル134）
 for(const k in HEAVY_DATA){const d=HEAVY_DATA[k];d.cat='heavy';d.head=1;d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;WEAPONS[k]=d;WIDS.push(k)}
 const HEAVIES=Object.keys(HEAVY_DATA);
 const isHeavy=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='heavy',isGun=w=>isSniper(w)||isHeavy(w)||isPrimary(w)||isBackup(w)||isSpecial(w);   // isPrimary は 04d_primary
@@ -873,10 +875,11 @@ function placeCharHeavy(m,w){m.scale.setScalar(.62);m.position.set(.13,-.06,-.32
 //  連射　　　　中性子パルセーター ＞ ゴールデンフレンド ＞ バイキング ＞ 酸の散弾銃 ＞ 究極点
 //  重さ　　　　究極点 ＞ 酸の散弾銃 ＝ バイキング ＞ ゴールデンフレンド ＞ 中性子パルセーター
 //  リロード　　ダメージの順に遅い（究極点がいちばん遅い）
-// 散弾は1粒ずつ当たりを調べて、同じ相手に当たった分を合わせて1回の攻撃にする（1回でへる体力は最大90のまま）。遠いと弱くなる（fall：[ここまで全部, ここで最小, 最小の割合]）
+// 散弾は1粒ずつ当たりを調べて、同じ相手に当たった分を合わせて1回の攻撃にする（1回でへる体力は最大90のまま）。
+// 究極点はいちばんダメージが高い（合計220）。90の上限がないので、近くで全部の粒が当たれば、シールド満タン（100＋体力100）でも1発でたおせる。遠いと弱くなる（fall：[ここまで全部, ここで最小, 最小の割合]）
 const PRIMARY_DATA={
- ultimatum:{jp:'究極点',en:'Ultimatum',short:'究極点',dmg:160,head:1.3,pellets:10,spread:.05,rof:42,cap:1,res:12,mob:50,reload:2.4,rate:.5,range:70,fall:[18,60,.45],
-   wallbreak:true,pierce:true,beam:'#60e8ff',cross:'shotgun',col:'#7a6aa8',tag:'壁も相手もつきぬける散弾。1発ずつ（毎回リロード）・いちばん強い'},
+ ultimatum:{jp:'究極点',en:'Ultimatum',short:'究極点',dmg:220,nocap:true,head:1.3,pellets:10,spread:.05,rof:42,cap:1,res:12,mob:50,reload:2.4,rate:.5,range:70,fall:[18,60,.45],
+   wallbreak:true,pierce:true,beam:'#60e8ff',cross:'shotgun',col:'#7a6aa8',tag:'壁も相手もつきぬける散弾。1発ずつ（毎回リロード）・いちばん強い（近くで全部当たればシールド満タンでも1発）'},
  viking:{jp:'バイキング',en:'Viking',short:'バイキング',dmg:100,head:1.3,pellets:8,spread:.075,rof:76,cap:9,res:27,mob:65,reload:1.9,rate:.8,range:45,fall:[10,38,.3],
    bleed:{n:3,dmg:4,iv:1},beam:'#c070ff',pump:true,cross:'shotgun',col:'#e07a20',tag:'ポンプ式のプラズマ散弾・当たると出血（3秒）'},
  pulsator:{jp:'中性子パルセーター',en:'Neutron Pulsator',short:'パルセーター',dmg:9,head:1.4,rof:100,cap:50,res:150,mob:100,reload:1.3,rate:.075,range:120,auto:true,hip:.03,ads:.006,zoom:4,
@@ -973,6 +976,7 @@ const BACKUP_DATA={
    pierce:true,ricochet:true,bounce:5,slow:{k:.75,t:2},beam:'#40e0ff',scope:'holo',cross:'laser',col:'#2ab8e8',tag:'貫通して壁で5回はね返るレーザー・当たると25%遅くなる・2倍スコープ'},
  nuke:{jp:'ニュークリアレボルバー',en:'Nuclear Revolver',short:'ニュークリア',dmg:46,head:1,rof:87,rate:.65,cap:6,res:24,mob:65,reload:2.0,range:140,zoom:4,
    proj:'nuke',speed:300,rad:2.4,rj:.8,self:0,scope:'nuke4x',cross:'rocket',col:'#5a7a3a',tag:'青いガスの爆発（範囲ダメージ）・足もとを撃つと自分はダメージなしでロケットジャンプ・4倍スコープ'}};
+for(const k in BACKUP_DATA)BACKUP_DATA[k].dmg=Math.round(BACKUP_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（旧式62・エクスタミネーター101・傭兵10×5・サイクラー34・ニュークリア60）
 for(const k in BACKUP_DATA){const d=BACKUP_DATA[k];d.cat='backup';d.weight=+(1+(85-d.mob)/100).toFixed(2);WEAPONS[k]=d;WIDS.push(k)}
 const BACKUPS=Object.keys(BACKUP_DATA);
 const isBackup=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='backup';
@@ -1030,7 +1034,7 @@ function updViewBackup(dt,P,shotT,relK,drawK){const W=WEAPONS[VIEW.w],k=Math.exp
 //  アニメの大鎌 Anime Scythe：ふると赤い波が飛ぶ（飛んでいく・つきぬける・吸血）。連射67・機動75
 //  レーザーバウンサー Laser Bouncer：オレンジのレーザー（つきぬける・壁で4回はね返る）。1.53秒ごと・装弾6・機動65
 //  毒矢 Poison Darts：吹き矢。少し間をおいて矢が出る（すぐ届く）・毒（4回）・相手を遅くする・とても身軽
-//  アイスキングのネックレス Necklace of the Ice King：氷の弾・小さい範囲ダメージ・1.53秒ごと・機動55
+//  アイスキングのネックレス Necklace of the Ice King：即着弾（ねらった所にすぐ当たる）・氷の小さい範囲ダメージ・1.53秒ごと・機動55
 //  テラモーフストーン Terramorphing Stone：ねらった所がすぐ大きく爆発（小さい範囲）・3.1秒ごと・持っている間少しずつ回復・近くの壁だと自分もダメージ
 // 特殊は「弾の数だけ撃てる（リロードなし）」もの（single）と、マガジンがあるもの（バウンサー）。たおれて復活すると弾はもどる。
 const SPECIAL_DATA={
@@ -1041,9 +1045,10 @@ const SPECIAL_DATA={
  darts:{jp:'毒矢',en:'Poison Darts',short:'毒矢',dmg:45,head:1.6,rof:70,rate:.85,cap:12,res:0,single:true,mob:95,reload:0,range:90,hip:.002,pre:.2,
    poison:{n:4,dmg:6,iv:1},slow:{k:.7,t:2},cross:'bullet',col:'#7a5a2a',tag:'吹き矢（少し間をおいて出る）・毒（4秒）と遅くする・とても身軽'},
  icenk:{jp:'アイスキングのネックレス',en:'Necklace of the Ice King',short:'アイスキング',dmg:62,head:1,rof:67,rate:1.5,cap:10,res:0,single:true,mob:55,reload:0,range:140,
-   proj:'ice',speed:45,rad:1.7,rj:0,self:0,cross:'rocket',col:'#60e0f0',tag:'氷の弾・当たった所の小さい範囲にダメージ'},
+   proj:'ice',instant:true,speed:45,rad:1.7,rj:0,self:0,cross:'rocket',col:'#60e0f0',tag:'即着弾の氷・当たった所の小さい範囲にダメージ'},
  terra:{jp:'テラモーフストーン',en:'Terramorphing Stone',short:'テラモーフ',dmg:95,head:1,rof:31,rate:3.1,cap:8,res:0,single:true,mob:75,reload:0,range:60,
    proj:'terra',speed:400,life:.15,rad:1.8,rj:0,self:.3,heal:4,cross:'portal',col:'#40e070',tag:'ねらった所がすぐ大きく爆発・持っている間は1秒に4回復・近くの壁に撃つと自分もダメージ'}};
+for(const k in SPECIAL_DATA)SPECIAL_DATA[k].dmg=Math.round(SPECIAL_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（大鎌72・バウンサー78・毒矢59・アイスキング81・テラモーフ124）
 for(const k in SPECIAL_DATA){const d=SPECIAL_DATA[k];d.cat='special';d.weight=+(1+(85-d.mob)/100).toFixed(2);WEAPONS[k]=d;WIDS.push(k)}
 const SPECIALS=Object.keys(SPECIAL_DATA);
 const isSpecial=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='special';
@@ -1168,9 +1173,9 @@ const ZOOM_FOV=z=>2*Math.atan(Math.tan(35*Math.PI/180)/(z*.45))*180/Math.PI;
 const SLOTS=6,slotW=(F,s)=>s===0?F.wp:s===1?F.wb:s===2?F.wm:s===3?F.wx:s===4?F.ws:F.wh;
 function fillAmmo(F){F.stash={};for(const w of[F.wp,F.wb,F.wx,F.ws,F.wh]){const W=WEAPONS[w];if(W)F.stash[w]=[W.cap,W.res]}if(isGun(F.w)){F.mag=F.stash[F.w][0];F.res=F.stash[F.w][1]}}
 const ammoOf=(F,w)=>F.w===w?[F.mag,F.res]:(F.stash[w]||[0,0]);
-// 持ちかえたらすぐ撃てる（持ちかえの待ち時間なし）。ただし同じ武器の「次に撃てるまで」は武器ごとにおぼえておく（持ちかえて連射の待ちを飛ばせないように）
-function switchWeapon(F,slot){if(slot===F.cw||!F.alive||slot<0||slot>=SLOTS)return;if(isGun(F.w))F.stash[F.w]=[F.mag,F.res];F.cdW=F.cdW||{};F.cdW[F.w]=G.time+Math.max(0,F.atkCD);
-  F.cw=slot;F.w=slotW(F,slot);if(isGun(F.w)){const a=F.stash[F.w]||[WEAPONS[F.w].cap,WEAPONS[F.w].res];F.mag=a[0];F.res=a[1]}F.atkCD=Math.max(0,(F.cdW[F.w]||0)-G.time);F.swT=0;F.drawT=.22;F.relT=0;F.scoped=false;F.hitT=-1;F.chg=0;F.burstN=0;F.preT=0;
+// 持ちかえたらすぐ撃てる（どの武器も、持ちかえたら待ち時間なし。前に撃った武器の「次に撃てるまで」も持ちこさない）
+function switchWeapon(F,slot){if(slot===F.cw||!F.alive||slot<0||slot>=SLOTS)return;if(isGun(F.w))F.stash[F.w]=[F.mag,F.res];
+  F.cw=slot;F.w=slotW(F,slot);if(isGun(F.w)){const a=F.stash[F.w]||[WEAPONS[F.w].cap,WEAPONS[F.w].res];F.mag=a[0];F.res=a[1]}F.atkCD=0;F.swT=0;F.drawT=.22;F.relT=0;F.scoped=false;F.hitT=-1;F.chg=0;F.burstN=0;F.preT=0;
   if(F===ME){SFX.charge(false);stopReloadSnd();setViewWeapon(F.w);VIEW.drawK=1;buildWBar();SFX.draw(F.w);if((isHeavy(F.w)||isBackup(F.w))&&WEAPONS[F.w].rj&&!F.rjTip){F.rjTip=1;tip('足もとを撃つとロケットジャンプ！',2.5)}}}
 function setScope(F,on){if(on&&(!isGun(F.w)||!WEAPONS[F.w].zoom||F.relT>0||F.swT>0||!F.alive))return;if(F.scoped===on)return;F.scoped=on;if(F===ME)SFX.zoom(on)}
 function startReload(F){const W=WEAPONS[F.w];if(!isGun(F.w)||F.relT>0||F.mag>=W.cap||F.res<=0||!F.alive)return;F.relT=W.reload;F.relMax=W.reload;F.scoped=false;F.chg=0;if(F===ME){SFX.charge(false);SFX.reload(F.w,W.reload,1,true)}else{const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(dd<20)SFX.reload(F.w,W.reload,clamp(1-dd/20,.2,.6))}}
@@ -1218,15 +1223,15 @@ function drawShot(w,segs,scoped){const W=WEAPONS[w];for(const g of segs){const a
   if(segs.length&&!scoped){const s=segs[0];fx(s[0],s[1],s[2],W.beam||'#ffd040',4,1.2,.12,.08,0)}}
 function shotsUpdate(dt){for(let i=SHOTS.length-1;i>=0;i--){const s=SHOTS[i];s.t+=dt;s.m.material.opacity=s.o*Math.max(0,1-s.t/s.life);if(s.t>=s.life){scene.remove(s.m);s.m.material.dispose();SHOTS.splice(i,1)}}}
 // ダメージ（アーマーが先にへる）。たおしたら true
-function applyDamage(V,dmg,by,key){if(!V.alive||V.inv>0||dmg<=0)return false;let d=dmg;if(V.arB>0){const a=Math.min(V.arB,d);V.arB-=a;d-=a}if(V.ar>0){const a=Math.min(V.ar,d);V.ar-=a;d-=a}
-  const ab=dmg-d;let cap=ONE_HIT;if(key!=null){if(V.hk!==key){V.hk=key;V.hkA=0}cap=Math.max(0,ONE_HIT-V.hkA)}d=Math.min(d,cap);if(key!=null)V.hkA+=d;   // 1回の攻撃でへる体力は最大90（4発同時なども合わせて）：シールドがなくても1発ではたおれない
+function applyDamage(V,dmg,by,key,nocap){if(!V.alive||V.inv>0||dmg<=0)return false;let d=dmg;if(V.arB>0){const a=Math.min(V.arB,d);V.arB-=a;d-=a}if(V.ar>0){const a=Math.min(V.ar,d);V.ar-=a;d-=a}
+  const ab=dmg-d;let cap=ONE_HIT;if(nocap)cap=Infinity;else if(key!=null){if(V.hk!==key){V.hk=key;V.hkA=0}cap=Math.max(0,ONE_HIT-V.hkA)}d=Math.min(d,cap);if(key!=null&&!nocap)V.hkA+=d;   // 1回の攻撃でへる体力は最大90（4発同時なども合わせて）：シールドがなくても1発ではたおれない。究極点（nocap）だけは上限なし
   const real=Math.min(V.hp,d)+ab;V.hp-=d;if(by&&by!==V)by.dealt=(by.dealt||0)+real;
   if(V===ME){$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,120);G.shake=Math.max(G.shake,.18);SFX.hurt()}
   if(V.hp<=.001){V.hp=0;killFighter(V,by);return true}return false}
 // 毒と出血は、もとの攻撃と同じ番号でへらす（攻撃とあとのダメージを合わせても最大90：シールドがなければ1発でたおれない、のまま）
 let HITK=0;
 function applyHit(V,dmg,head,w,by,key){if(!V.alive||V.inv>0)return;const W=WEAPONS[w];hitFx(V,w,head);V.lastHead=head;if(key==null&&(W.poison||W.bleed))key='h'+(++HITK);
-  if(!applyDamage(V,dmg,by,key)){if(W.slow){V.slowT=W.slow.t;V.slowK=W.slow.k}if(W.burn)V.burn={n:W.burn.n,t:W.burn.iv,by,dmg:W.burn.dmg};
+  if(!applyDamage(V,dmg,by,key,W.nocap)){if(W.slow){V.slowT=W.slow.t;V.slowK=W.slow.k}if(W.burn)V.burn={n:W.burn.n,t:W.burn.iv,by,dmg:W.burn.dmg};
     if(W.poison)V.psn={n:W.poison.n,t:W.poison.iv,by,dmg:W.poison.dmg,key};if(W.bleed)V.bld={n:W.bleed.n,t:W.bleed.iv,by,dmg:W.bleed.dmg,key}}}
 function killFighter(V,by){if(V===ME){stopReloadSnd();SFX.charge(false)}clearPortals(V);V.chg=0;V.rj=false;V.alive=false;V.scoped=false;V.relT=0;V.respT=RESP_T;V.deadT=0;V.burstN=0;V.preT=0;V.burn=V.psn=V.bld=null;V.slowT=0;V.hitT=-1;V.killer=by&&by!==V?by:null;
   if(V.killer){V.dd++;V.killer.kills=(V.killer.kills|0)+1;if(V===ME&&V.killer.peer)ME.kb[V.killer.peer]=(ME.kb[V.killer.peer]|0)+1}else V.sd++;if(V.killer===ME&&V!==ME)killPop(V.lastHead);
@@ -1234,7 +1239,7 @@ function killFighter(V,by){if(V===ME){stopReloadSnd();SFX.charge(false)}clearPor
   if(V===ME){SFX.die();VIEW.g.visible=false}else{if(V.killer===ME)SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
   if(V.model)V.model.visible=false}
 function respawn(F){const sp=pickSpawn(F,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
-  fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.drawT=0;F.cdW={};F.chg=0;F.rj=false;F.kbT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=F.psn=F.bld=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
+  fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.drawT=0;F.chg=0;F.rj=false;F.kbT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=F.psn=F.bld=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
   if(F===ME)VIEW.g.visible=true;if(F.model)F.model.visible=true}
 // 相手からいちばん遠い出現地点（上位3つからランダム）
 function pickSpawn(F,needNav){const os=ALL().filter(o=>o!==F&&o.alive&&live(o));const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:os.length?Math.min(...os.map(o=>Math.hypot(s[0]-o.x,s[2]-o.z)+(Math.abs(s[1]-o.y)>2?6:0))):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}
@@ -1491,6 +1496,10 @@ function blast(p,x,y,z,direct,d){const W=WEAPONS[p.w],R=p.rad,dist=Math.hypot(ME
     const dmg=p.dmg*(V===direct?1:.35+.65*k),kb=[ux/ul*(2.5+4*k),1.5+4.5*k,uz/ul*(2.5+4*k)];
     if(p.owner===ME){crossHit(false);SFX.hitmark(false)}
     if(G.mode==='online'&&p.owner===ME&&V!==ME){NET.pushHit(V,dmg,false,p.w,kb,p.key);hitFx(V,p.w,false)}else{applyHit(V,dmg,false,p.w,p.owner,p.key);knock(V,kb)}}}
+// 即着弾（アイスキングのネックレス）：目の高さからまっすぐ調べて、当たった所ですぐ爆発。銃口からそこまで氷の光の線
+function instantHit(p,x,y,z,d,mz){const W=WEAPONS[p.w],wr=rayWorld(x,y,z,d,W.range);let hitT=wr.t,direct=null;
+  for(const V of ALL()){if(V===p.owner||!V.alive||!live(V))continue;const r=.12,t=rayBox(x,y,z,d,[V.x-PR-r,V.y,V.z-PR-r,V.x+PR+r,V.y+PH+.1,V.z+PR+r]);if(t!=null&&t<hitT){hitT=t;direct=V}}
+  const h=Math.max(0,hitT-.05),bx=x+d[0]*h,by=y+d[1]*h,bz=z+d[2]*h;drawPrimShot(p.w,[[mz.x,mz.y,mz.z,bx,by,bz]],false);if(direct||hitT<W.range-.01)blast(p,bx,by,bz,direct,d)}
 function knock(V,kb){if(!V.alive)return;V.vx=kb[0];V.vz=kb[2];V.vy=Math.max(V.vy,kb[1]);V.onG=false;V.kbT=Math.max(V.kbT||0,.45)}
 // ロケットジャンプ：爆発から遠ざかる向きに飛ばす（下で爆発すれば上へ）。同じ弾の爆発（4発同時など）は重ねない
 function rocketPush(F,ux,uy,uz,k,rj,key){const m=RJ_V*rj*(.55+.45*k);
@@ -1537,6 +1546,7 @@ function portalUpdate(dt){for(const q of PORTALS.slice()){q.m.userData.sw.rotati
 // ---- オンライン：自分の弾とポータルを presence にのせる・相手のものを見た目だけ出す ----
 const myPortals=()=>PORTALS.filter(q=>q.owner===ME&&!q.remote).map(q=>[+q.x.toFixed(2),+q.y.toFixed(2),+q.z.toFixed(2),+q.fx.toFixed(2),+q.fz.toFixed(2)]);
 function spawnRemoteProj(F,e){const w=WIDS[e[1]];if(!WEAPONS[w]||!WEAPONS[w].proj||!F.alive)return;const W=WEAPONS[w],l=Math.hypot(e[5],e[6],e[7])||1,d=[e[5]/l,e[6]/l,e[7]/l],c=clamp(e[8]/100,0,1);
+  if(W.instant){instantHit({w,owner:F,key:0,dmg:0,rad:W.rad,kind:W.proj,c:0,remote:true},e[2],e[3],e[4],d,muzzleOf(F));SFX.pshot(w,Math.hypot(F.x-ME.x,F.z-ME.z));return}
   const mz=W.multi?podPos(F,(e[0]%4+4)%4):muzzleOf(F);spawnProj({w,owner:F,x:e[2],y:e[3],z:e[4],d,off:[mz.x-e[2],mz.y-e[3],mz.z-e[4]],key:0,dmg:0,rad:W.rad*(W.charge?.5+.5*c:1),c,remote:true});
   if(isBackup(w)||isSpecial(w))SFX.pshot(w,Math.hypot(F.x-ME.x,F.z-ME.z));else if(!W.multi||e[0]%4===0)SFX.launch(w,Math.hypot(F.x-ME.x,F.z-ME.z))}
 // 相手ひとりずつのポータル（F.rpk に前の形をおぼえて、変わったときだけ作りなおす）
@@ -1571,7 +1581,7 @@ function pellet(F,ox,oy,oz,d,W,acc,segs){const max=W.range,wall=rayWorld(ox,oy,o
   if(wall.s){const t=TNTS.find(q=>q.s===wall.s);if(t&&t.alive&&t.fuse<=0){tntLight(t,F);t.fuse=Math.min(t.fuse,.12);if(F===ME&&G.mode==='online')NET.pushEx(t.id)}}
   if(wall.n&&Math.random()<.45)fx(px+wall.n[0]*.05,py+wall.n[1]*.05,pz+wall.n[2]*.05,W.beam||'#d8c8a0',3,1.3,.3,.06,6)}
 // 弾の光：連射は細く短く、レーザー（パルセーター）・プラズマ（バイキング）・水色の散弾（究極点）は光る。銃口の光も
-const PSHOT={bouncer:[.05,'#ff8a20',.32,.17],darts:[.012,'#e8d8a0',.1,0],oldrev:[.024,'#fff2a0',.08,0],exterm:[.06,'#40c8ff',.32,.2],merc:[.018,'#ffb070',.06,0],cycler:[.04,'#40e0ff',.24,.13],gfriend:[.022,'#fff2a0',.07,0],pulsator:[.045,'#60ffd0',.12,.13],ultimatum:[.05,'#60e8ff',.2,.15],viking:[.04,'#c070ff',.18,.12],acid:[.022,'#d8ffa0',.09,0]};
+const PSHOT={icenk:[.035,'#a8f4ff',.25,.1],bouncer:[.05,'#ff8a20',.32,.17],darts:[.012,'#e8d8a0',.1,0],oldrev:[.024,'#fff2a0',.08,0],exterm:[.06,'#40c8ff',.32,.2],merc:[.018,'#ffb070',.06,0],cycler:[.04,'#40e0ff',.24,.13],gfriend:[.022,'#fff2a0',.07,0],pulsator:[.045,'#60ffd0',.12,.13],ultimatum:[.05,'#60e8ff',.2,.15],viking:[.04,'#c070ff',.18,.12],acid:[.022,'#d8ffa0',.09,0]};
 function drawPrimShot(w,segs,scoped){const P=PSHOT[w]||PSHOT.gfriend;
   for(const g of segs){const a=new THREE.Vector3(g[0],g[1],g[2]),b=new THREE.Vector3(g[3],g[4],g[5]),len=a.distanceTo(b);if(len<.05)continue;
     for(const [th,o] of P[3]?[[P[0],.95],[P[3],.3]]:[[P[0],.85]]){const m=new THREE.Mesh(SGEO,new THREE.MeshBasicMaterial({color:P[1],transparent:true,opacity:o,depthWrite:false,blending:THREE.AdditiveBlending}));
@@ -1610,13 +1620,14 @@ function fireGun2(F,err){return isBackup(F.w)?fireBackup(F,err):isSpecial(F.w)?f
 // ---- 05f_special.js ----
 // ===================== 特殊：撃つ（赤い波・はね返るレーザー・吹き矢・氷の弾・石の爆発）・回復 =====================
 // 弾の数だけ撃てるもの（single）はリロードしない。毒矢は押してから0.2秒後に矢が出る。
-// 赤い波（大鎌）とテラモーフ・ネックレスの弾はヘビーと同じ「飛んでいく弾」のしくみ（オンラインでも見た目が出る）。
+// 赤い波（大鎌）とテラモーフの弾はヘビーと同じ「飛んでいく弾」のしくみ（オンラインでも見た目が出る）。ネックレスは即着弾（撃った瞬間に当たった所で氷の爆発）。
 function fireSpecial(F,err){const W=WEAPONS[F.w];if(!F.alive||G.phase!=='play'||F.atkCD>0||F.relT>0||F.swT>0||!isSpecial(F.w)||F.preT>0)return false;
   if(F.mag<=0){if(F===ME&&F.atkCD<=0){SFX.empty();F.atkCD=.4;if(W.single)tip(W.jp+'の弾がもうありません（たおれて復活するともどります）',2)}if(!W.single)startReload(F);return false}
   F.atkCD=W.rate;if(W.pre){F.preT=W.pre;F.preErr=err||0;F.preW=F.w;if(F===ME)SFX.blow();return true}return shotSpecial(F,err)}
 function shotSpecial(F,err){const W=WEAPONS[F.w];F.mag--;F.shotT=0;F.atkT=0;F.seq++;let yaw=F.yaw,pitch=F.pitch;if(err){yaw+=gauss()*err;pitch+=gauss()*err*.7}
   const sp=W.hip||0;yaw+=rr(-sp,sp);pitch+=rr(-sp,sp)*.6;const ex=F.x,ey=F.y+EYE,ez=F.z,d=aimDir(yaw,pitch),mz=muzzleOf(F);
-  if(W.proj){spawnProj({w:F.w,owner:F,x:ex,y:ey,z:ez,d,off:[mz.x-ex,mz.y-ey,mz.z-ez],key:++SHOTKEY,dmg:W.dmg,rad:W.rad||0,c:0,life:W.life||4,hit:W.wave?new Set():null});if(F===ME&&G.mode==='online')NET.pushProj(F.w,ex,ey,ez,d,0)}
+  if(W.instant){instantHit({w:F.w,owner:F,key:++SHOTKEY,dmg:W.dmg,rad:W.rad||0,kind:W.proj,c:0},ex,ey,ez,d,mz);if(F===ME&&G.mode==='online')NET.pushProj(F.w,ex,ey,ez,d,0)}   // 即着弾（アイスキング）
+  else if(W.proj){spawnProj({w:F.w,owner:F,x:ex,y:ey,z:ez,d,off:[mz.x-ex,mz.y-ey,mz.z-ez],key:++SHOTKEY,dmg:W.dmg,rad:W.rad||0,c:0,life:W.life||4,hit:W.wave?new Set():null});if(F===ME&&G.mode==='online')NET.pushProj(F.w,ex,ey,ez,d,0)}
   else{const segs=[];traceShot(F,ex,ey,ez,d,W,W.range,W.bounce||0,segs,new Set());if(segs.length){segs[0][0]=mz.x;segs[0][1]=mz.y;segs[0][2]=mz.z}
     drawPrimShot(F.w,segs,false);if(F===ME&&G.mode==='online'&&segs.length)NET.pushShot(F.w,[segs[0]])}
   if(F===ME){SFX.pshot(F.w);G.shake=Math.max(G.shake,W.dmg>80?.15:.07)}else SFX.pshot(F.w,Math.hypot(F.x-ME.x,F.z-ME.z));
@@ -1859,7 +1870,7 @@ function drawCross(hit){const cv=$('cross'),g=cv.getContext('2d'),S=128,c=64;if(
   const brk=(x,dir,h)=>{R(x,-h,2,2*h);R(x+dir*2,-h-2,2,2);R(x+dir*2,h,2,2)};   // （ と ）
   if(st==='melee'){R(-22,-1,7,2);R(16,-1,7,2);R(-1,-23,2,8);R(-1,15,2,8);R(-1,-1,2,2)}
   else if(st==='bullet'){brk(-34,1,7);brk(32,-1,7);R(-1,-1,2,2)}
-  else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8)}
+  else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8);R(-1,-1,2,2)}
   else if(st==='laser'){for(const s of[-1,1]){R(s<0?-24:17,-1,7,2);R(s<0?-13:10,-1,3,2);R(-1,s<0?-24:17,2,7);R(-1,s<0?-13:10,2,3)}R(-1,-1,2,2)}
   else if(st==='rocket'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-19:12,sy<0?-19:17,7,2);R(sx<0?-19:17,sy<0?-17:10,2,7)}R(-1,-1,2,2)}   // ヘビー：四すみのかぎ
   else if(st==='bouncer'){const q=5,z=5;for(const [x,y] of[[-1,-3],[1,-3],[0,-2],[-1,3],[1,3],[0,2],[-3,-1],[-3,1],[-2,0],[3,-1],[3,1],[2,0]])R(Math.round(x*q-z/2),Math.round(y*q-z/2),z,z)}   // 3つの四角の山形が4つ（上V・下Λ・左＞・右＜）
@@ -1916,13 +1927,20 @@ function drawScope(){const cv=$('scope'),dpr=Math.min(devicePixelRatio||1,2),W=M
     const t=Math.max(1,Math.round(H/400)),k='rgba(10,10,10,.9)';g.fillStyle=k;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);
     for(let i=1;i<=4;i++){const s=i*R0*.17;g.fillRect(cx-s-t/2,cy-px*1.5,t,px*3);g.fillRect(cx+s-t/2,cy-px*1.5,t,px*3);g.fillRect(cx-px*1.5,cy+s-t/2,px*3,t)}
     g.fillStyle='#d02020';g.fillRect(cx-t*1.5,cy-t*1.5,t*3,t*3);g.fillStyle='#e8c040';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText('4X',cx+R0*.55,cy-R0*.62)}
-  else if(st==='ext'||st==='nuke4x'){   // エクスタミネーター（金のふち・青い十字・2倍）・ニュークリア（緑のふち・黄色の印・4倍）：ドットの丸い窓
-    const ex=st==='ext',R0=H*(ex?.44:.46),px=Math.max(2,Math.round(H/90)),rim=ex?'rgba(220,170,30,.9)':'rgba(90,120,60,.95)';g.fillStyle='#050505';g.fillRect(0,0,W,H);
+  else if(st==='ext'){   // エクスタミネーター：本家の標準のスコープ（Wikiのピューピューライフル・スナイパーエクソスケルトンと同じ形）
+    // 大きな丸い窓。ふちは大きなブロックでまだらに少しずつ暗くなる。細い白の十字（まん中はすきまと小さな点）、下の線には目盛り
+    const R0=H*.5,bk=Math.max(4,Math.round(H/24)),n0=Math.ceil(R0/bk)+1;g.fillStyle='#000';g.fillRect(0,0,W,H);
+    for(let j=-n0;j<n0;j++)for(let i=-n0;i<n0;i++){const x=i*bk,y=j*bk,d=Math.hypot(x+bk/2,y+bk/2)/R0;if(d>1.04)continue;
+      const nz=Math.abs(Math.sin(i*12.9898+j*78.233)*43758.5453)%1,a=clamp((d-.74)/.3+(nz-.5)*.4,0,1);g.clearRect(cx+x,cy+y,bk,bk);if(a>0){g.fillStyle='rgba(0,0,0,'+a.toFixed(2)+')';g.fillRect(cx+x,cy+y,bk,bk)}}
+    const t=Math.max(2,Math.round(H/270)),c='#f4f4f4';g.fillStyle=c;
+    g.fillRect(cx-R0,cy-t/2,R0*.89,t);g.fillRect(cx+R0*.1,cy-t/2,R0*.9,t);g.fillRect(cx-t/2,cy-R0,t,R0*.91);g.fillRect(cx-t*.75,cy-t*.75,t*1.5,t*1.5);
+    g.fillRect(cx-t/2,cy+R0*.115,t,R0*.885);for(let i=0;i<8;i++){const w=R0*(i?.05:.065);g.fillRect(cx-w/2,cy+R0*(.115+i*.084)-t/2,w,t)}}
+  else if(st==='nuke4x'){   // ニュークリア（緑のふち・黄色の印・4倍）：ドットの丸い窓
+    const R0=H*.46,px=Math.max(2,Math.round(H/90)),rim='rgba(90,120,60,.95)';g.fillStyle='#050505';g.fillRect(0,0,W,H);
     for(let y=-R0;y<R0;y+=px){const hw=Math.floor(Math.sqrt(Math.max(0,R0*R0-(y+px/2)*(y+px/2)))/px)*px;g.clearRect(cx-hw,cy+y,hw*2,px);g.fillStyle=rim;g.fillRect(cx-hw,cy+y,px*2,px);g.fillRect(cx+hw-px*2,cy+y,px*2,px)}
-    g.fillStyle=ex?'rgba(60,140,255,.08)':'rgba(80,200,90,.12)';g.beginPath();g.arc(cx,cy,R0,0,TAU);g.fill();const t=Math.max(2,Math.round(H/300)),c=ex?'#2a6aff':'#141414';
-    if(ex){g.fillStyle=c;g.fillRect(cx-R0*.8,cy-t/2,R0*.68,t);g.fillRect(cx+R0*.12,cy-t/2,R0*.68,t);g.fillRect(cx-t/2,cy-R0*.8,t,R0*.68);g.fillRect(cx-t/2,cy+R0*.12,t,R0*.68);g.strokeStyle=c;g.lineWidth=t;g.beginPath();g.arc(cx,cy,R0*.12,0,TAU);g.stroke()}
-    else{g.fillStyle=c;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);g.fillStyle='#f0c820';for(const [sx,sy] of[[-1,0],[1,0],[0,-1],[0,1]])g.fillRect(cx+sx*R0*.3-px,cy+sy*R0*.3-px,px*2,px*2);g.fillStyle='#ff3030';g.fillRect(cx-t,cy-t,t*2,t*2)}
-    g.fillStyle=ex?'#e8c040':'#f0c820';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText(ex?'2X':'4X',cx+R0*.55,cy-R0*.62)}
+    g.fillStyle='rgba(80,200,90,.12)';g.beginPath();g.arc(cx,cy,R0,0,TAU);g.fill();const t=Math.max(2,Math.round(H/300)),c='#141414';
+    g.fillStyle=c;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);g.fillStyle='#f0c820';for(const [sx,sy] of[[-1,0],[1,0],[0,-1],[0,1]])g.fillRect(cx+sx*R0*.3-px,cy+sy*R0*.3-px,px*2,px*2);g.fillStyle='#ff3030';g.fillRect(cx-t,cy-t,t*2,t*2);
+    g.fillStyle='#f0c820';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText('4X',cx+R0*.55,cy-R0*.62)}
   else if(st==='holo'){   // レーザーサイクラー：わくなし。水色に光る輪と点（ホログラムのサイト）
     const u=H/506,c='#5ae8ff';g.save();g.shadowColor=c;g.shadowBlur=12*u;g.strokeStyle=c;g.lineWidth=3*u;g.beginPath();g.arc(cx,cy,34*u,0,TAU);g.stroke();
     for(let i=0;i<4;i++){const a=i*TAU/4+Math.PI/4;g.beginPath();g.arc(cx,cy,48*u,a-.25,a+.25);g.stroke()}g.fillStyle=c;g.fillRect(cx-2*u,cy-2*u,4*u,4*u);g.restore()}

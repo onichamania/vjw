@@ -17,6 +17,7 @@ const BACKUP_DATA={
    pierce:true,ricochet:true,bounce:5,slow:{k:.75,t:2},beam:'#40e0ff',scope:'holo',cross:'laser',col:'#2ab8e8',tag:'貫通して壁で5回はね返るレーザー・当たると25%遅くなる・2倍スコープ'},
  nuke:{jp:'ニュークリアレボルバー',en:'Nuclear Revolver',short:'ニュークリア',dmg:46,head:1,rof:87,rate:.65,cap:6,res:24,mob:65,reload:2.0,range:140,zoom:4,
    proj:'nuke',speed:300,rad:2.4,rj:.8,self:0,scope:'nuke4x',cross:'rocket',col:'#5a7a3a',tag:'青いガスの爆発（範囲ダメージ）・足もとを撃つと自分はダメージなしでロケットジャンプ・4倍スコープ'}};
+for(const k in BACKUP_DATA)BACKUP_DATA[k].dmg=Math.round(BACKUP_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（旧式62・エクスタミネーター101・傭兵10×5・サイクラー34・ニュークリア60）
 for(const k in BACKUP_DATA){const d=BACKUP_DATA[k];d.cat='backup';d.weight=+(1+(85-d.mob)/100).toFixed(2);WEAPONS[k]=d;WIDS.push(k)}
 const BACKUPS=Object.keys(BACKUP_DATA);
 const isBackup=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='backup';

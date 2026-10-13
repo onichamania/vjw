@@ -17,6 +17,7 @@ const HEAVY_DATA={
    tag:'ツリーの弾が当たると、まわりに小さな爆発が広がる・ロケットジャンプ（少しダメージ）'},
  portal:{jp:'ポータルキャノン',en:'Portal Cannon',short:'ポータル',dmg:168,rof:67,cap:100,mob:50,reload:2.6,speed:32,rad:2.6,rj:0,self:.06,proj:'orb',charge:1.2,col:'#40e040',cross:'portal',
    tag:'おしっぱなしでためうち。ためきると当たった所にポータルができ、2つ出すと行き来できる'}};
+for(const k in HEAVY_DATA)HEAVY_DATA[k].dmg=Math.round(HEAVY_DATA[k].dmg*.8);   // 調整：強すぎたので全部0.8倍（ロケジャン44・デモリション120・破壊システム134・ラスクリ110・ポータル134）
 for(const k in HEAVY_DATA){const d=HEAVY_DATA[k];d.cat='heavy';d.head=1;d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;WEAPONS[k]=d;WIDS.push(k)}
 const HEAVIES=Object.keys(HEAVY_DATA);
 const isHeavy=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='heavy',isGun=w=>isSniper(w)||isHeavy(w)||isPrimary(w)||isBackup(w)||isSpecial(w);   // isPrimary は 04d_primary

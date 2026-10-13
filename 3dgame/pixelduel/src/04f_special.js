@@ -3,7 +3,7 @@
 //  アニメの大鎌 Anime Scythe：ふると赤い波が飛ぶ（飛んでいく・つきぬける・吸血）。連射67・機動75
 //  レーザーバウンサー Laser Bouncer：オレンジのレーザー（つきぬける・壁で4回はね返る）。1.53秒ごと・装弾6・機動65
 //  毒矢 Poison Darts：吹き矢。少し間をおいて矢が出る（すぐ届く）・毒（4回）・相手を遅くする・とても身軽
-//  アイスキングのネックレス Necklace of the Ice King：氷の弾・小さい範囲ダメージ・1.53秒ごと・機動55
+//  アイスキングのネックレス Necklace of the Ice King：即着弾（ねらった所にすぐ当たる）・氷の小さい範囲ダメージ・1.53秒ごと・機動55
 //  テラモーフストーン Terramorphing Stone：ねらった所がすぐ大きく爆発（小さい範囲）・3.1秒ごと・持っている間少しずつ回復・近くの壁だと自分もダメージ
 // 特殊は「弾の数だけ撃てる（リロードなし）」もの（single）と、マガジンがあるもの（バウンサー）。たおれて復活すると弾はもどる。
 const SPECIAL_DATA={
@@ -14,9 +14,10 @@ const SPECIAL_DATA={
  darts:{jp:'毒矢',en:'Poison Darts',short:'毒矢',dmg:45,head:1.6,rof:70,rate:.85,cap:12,res:0,single:true,mob:95,reload:0,range:90,hip:.002,pre:.2,
    poison:{n:4,dmg:6,iv:1},slow:{k:.7,t:2},cross:'bullet',col:'#7a5a2a',tag:'吹き矢（少し間をおいて出る）・毒（4秒）と遅くする・とても身軽'},
  icenk:{jp:'アイスキングのネックレス',en:'Necklace of the Ice King',short:'アイスキング',dmg:62,head:1,rof:67,rate:1.5,cap:10,res:0,single:true,mob:55,reload:0,range:140,
-   proj:'ice',speed:45,rad:1.7,rj:0,self:0,cross:'rocket',col:'#60e0f0',tag:'氷の弾・当たった所の小さい範囲にダメージ'},
+   proj:'ice',instant:true,speed:45,rad:1.7,rj:0,self:0,cross:'rocket',col:'#60e0f0',tag:'即着弾の氷・当たった所の小さい範囲にダメージ'},
  terra:{jp:'テラモーフストーン',en:'Terramorphing Stone',short:'テラモーフ',dmg:95,head:1,rof:31,rate:3.1,cap:8,res:0,single:true,mob:75,reload:0,range:60,
    proj:'terra',speed:400,life:.15,rad:1.8,rj:0,self:.3,heal:4,cross:'portal',col:'#40e070',tag:'ねらった所がすぐ大きく爆発・持っている間は1秒に4回復・近くの壁に撃つと自分もダメージ'}};
+for(const k in SPECIAL_DATA)SPECIAL_DATA[k].dmg=Math.round(SPECIAL_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（大鎌72・バウンサー78・毒矢59・アイスキング81・テラモーフ124）
 for(const k in SPECIAL_DATA){const d=SPECIAL_DATA[k];d.cat='special';d.weight=+(1+(85-d.mob)/100).toFixed(2);WEAPONS[k]=d;WIDS.push(k)}
 const SPECIALS=Object.keys(SPECIAL_DATA);
 const isSpecial=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='special';

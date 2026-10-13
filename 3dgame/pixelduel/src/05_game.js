@@ -65,9 +65,9 @@ const ZOOM_FOV=z=>2*Math.atan(Math.tan(35*Math.PI/180)/(z*.45))*180/Math.PI;
 const SLOTS=6,slotW=(F,s)=>s===0?F.wp:s===1?F.wb:s===2?F.wm:s===3?F.wx:s===4?F.ws:F.wh;
 function fillAmmo(F){F.stash={};for(const w of[F.wp,F.wb,F.wx,F.ws,F.wh]){const W=WEAPONS[w];if(W)F.stash[w]=[W.cap,W.res]}if(isGun(F.w)){F.mag=F.stash[F.w][0];F.res=F.stash[F.w][1]}}
 const ammoOf=(F,w)=>F.w===w?[F.mag,F.res]:(F.stash[w]||[0,0]);
-// 持ちかえたらすぐ撃てる（持ちかえの待ち時間なし）。ただし同じ武器の「次に撃てるまで」は武器ごとにおぼえておく（持ちかえて連射の待ちを飛ばせないように）
-function switchWeapon(F,slot){if(slot===F.cw||!F.alive||slot<0||slot>=SLOTS)return;if(isGun(F.w))F.stash[F.w]=[F.mag,F.res];F.cdW=F.cdW||{};F.cdW[F.w]=G.time+Math.max(0,F.atkCD);
-  F.cw=slot;F.w=slotW(F,slot);if(isGun(F.w)){const a=F.stash[F.w]||[WEAPONS[F.w].cap,WEAPONS[F.w].res];F.mag=a[0];F.res=a[1]}F.atkCD=Math.max(0,(F.cdW[F.w]||0)-G.time);F.swT=0;F.drawT=.22;F.relT=0;F.scoped=false;F.hitT=-1;F.chg=0;F.burstN=0;F.preT=0;
+// 持ちかえたらすぐ撃てる（どの武器も、持ちかえたら待ち時間なし。前に撃った武器の「次に撃てるまで」も持ちこさない）
+function switchWeapon(F,slot){if(slot===F.cw||!F.alive||slot<0||slot>=SLOTS)return;if(isGun(F.w))F.stash[F.w]=[F.mag,F.res];
+  F.cw=slot;F.w=slotW(F,slot);if(isGun(F.w)){const a=F.stash[F.w]||[WEAPONS[F.w].cap,WEAPONS[F.w].res];F.mag=a[0];F.res=a[1]}F.atkCD=0;F.swT=0;F.drawT=.22;F.relT=0;F.scoped=false;F.hitT=-1;F.chg=0;F.burstN=0;F.preT=0;
   if(F===ME){SFX.charge(false);stopReloadSnd();setViewWeapon(F.w);VIEW.drawK=1;buildWBar();SFX.draw(F.w);if((isHeavy(F.w)||isBackup(F.w))&&WEAPONS[F.w].rj&&!F.rjTip){F.rjTip=1;tip('足もとを撃つとロケットジャンプ！',2.5)}}}
 function setScope(F,on){if(on&&(!isGun(F.w)||!WEAPONS[F.w].zoom||F.relT>0||F.swT>0||!F.alive))return;if(F.scoped===on)return;F.scoped=on;if(F===ME)SFX.zoom(on)}
 function startReload(F){const W=WEAPONS[F.w];if(!isGun(F.w)||F.relT>0||F.mag>=W.cap||F.res<=0||!F.alive)return;F.relT=W.reload;F.relMax=W.reload;F.scoped=false;F.chg=0;if(F===ME){SFX.charge(false);SFX.reload(F.w,W.reload,1,true)}else{const dd=Math.hypot(F.x-ME.x,F.z-ME.z);if(dd<20)SFX.reload(F.w,W.reload,clamp(1-dd/20,.2,.6))}}
@@ -115,15 +115,15 @@ function drawShot(w,segs,scoped){const W=WEAPONS[w];for(const g of segs){const a
   if(segs.length&&!scoped){const s=segs[0];fx(s[0],s[1],s[2],W.beam||'#ffd040',4,1.2,.12,.08,0)}}
 function shotsUpdate(dt){for(let i=SHOTS.length-1;i>=0;i--){const s=SHOTS[i];s.t+=dt;s.m.material.opacity=s.o*Math.max(0,1-s.t/s.life);if(s.t>=s.life){scene.remove(s.m);s.m.material.dispose();SHOTS.splice(i,1)}}}
 // ダメージ（アーマーが先にへる）。たおしたら true
-function applyDamage(V,dmg,by,key){if(!V.alive||V.inv>0||dmg<=0)return false;let d=dmg;if(V.arB>0){const a=Math.min(V.arB,d);V.arB-=a;d-=a}if(V.ar>0){const a=Math.min(V.ar,d);V.ar-=a;d-=a}
-  const ab=dmg-d;let cap=ONE_HIT;if(key!=null){if(V.hk!==key){V.hk=key;V.hkA=0}cap=Math.max(0,ONE_HIT-V.hkA)}d=Math.min(d,cap);if(key!=null)V.hkA+=d;   // 1回の攻撃でへる体力は最大90（4発同時なども合わせて）：シールドがなくても1発ではたおれない
+function applyDamage(V,dmg,by,key,nocap){if(!V.alive||V.inv>0||dmg<=0)return false;let d=dmg;if(V.arB>0){const a=Math.min(V.arB,d);V.arB-=a;d-=a}if(V.ar>0){const a=Math.min(V.ar,d);V.ar-=a;d-=a}
+  const ab=dmg-d;let cap=ONE_HIT;if(nocap)cap=Infinity;else if(key!=null){if(V.hk!==key){V.hk=key;V.hkA=0}cap=Math.max(0,ONE_HIT-V.hkA)}d=Math.min(d,cap);if(key!=null&&!nocap)V.hkA+=d;   // 1回の攻撃でへる体力は最大90（4発同時なども合わせて）：シールドがなくても1発ではたおれない。究極点（nocap）だけは上限なし
   const real=Math.min(V.hp,d)+ab;V.hp-=d;if(by&&by!==V)by.dealt=(by.dealt||0)+real;
   if(V===ME){$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,120);G.shake=Math.max(G.shake,.18);SFX.hurt()}
   if(V.hp<=.001){V.hp=0;killFighter(V,by);return true}return false}
 // 毒と出血は、もとの攻撃と同じ番号でへらす（攻撃とあとのダメージを合わせても最大90：シールドがなければ1発でたおれない、のまま）
 let HITK=0;
 function applyHit(V,dmg,head,w,by,key){if(!V.alive||V.inv>0)return;const W=WEAPONS[w];hitFx(V,w,head);V.lastHead=head;if(key==null&&(W.poison||W.bleed))key='h'+(++HITK);
-  if(!applyDamage(V,dmg,by,key)){if(W.slow){V.slowT=W.slow.t;V.slowK=W.slow.k}if(W.burn)V.burn={n:W.burn.n,t:W.burn.iv,by,dmg:W.burn.dmg};
+  if(!applyDamage(V,dmg,by,key,W.nocap)){if(W.slow){V.slowT=W.slow.t;V.slowK=W.slow.k}if(W.burn)V.burn={n:W.burn.n,t:W.burn.iv,by,dmg:W.burn.dmg};
     if(W.poison)V.psn={n:W.poison.n,t:W.poison.iv,by,dmg:W.poison.dmg,key};if(W.bleed)V.bld={n:W.bleed.n,t:W.bleed.iv,by,dmg:W.bleed.dmg,key}}}
 function killFighter(V,by){if(V===ME){stopReloadSnd();SFX.charge(false)}clearPortals(V);V.chg=0;V.rj=false;V.alive=false;V.scoped=false;V.relT=0;V.respT=RESP_T;V.deadT=0;V.burstN=0;V.preT=0;V.burn=V.psn=V.bld=null;V.slowT=0;V.hitT=-1;V.killer=by&&by!==V?by:null;
   if(V.killer){V.dd++;V.killer.kills=(V.killer.kills|0)+1;if(V===ME&&V.killer.peer)ME.kb[V.killer.peer]=(ME.kb[V.killer.peer]|0)+1}else V.sd++;if(V.killer===ME&&V!==ME)killPop(V.lastHead);
@@ -131,7 +131,7 @@ function killFighter(V,by){if(V===ME){stopReloadSnd();SFX.charge(false)}clearPor
   if(V===ME){SFX.die();VIEW.g.visible=false}else{if(V.killer===ME)SFX.kill();fx(V.x,V.y+1,V.z,'#c81e1e',22,5,.9,.12)}
   if(V.model)V.model.visible=false}
 function respawn(F){const sp=pickSpawn(F,F.bot);F.x=sp[0];F.z=sp[2];F.y=groundAt(sp[0],sp[2],sp[1]+.2,PR-.03);F.yaw=sp[3];F.pitch=0;F.vx=F.vz=F.vy=0;
-  fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.drawT=0;F.cdW={};F.chg=0;F.rj=false;F.kbT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=F.psn=F.bld=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
+  fillAmmo(F);F.relT=0;F.scoped=false;F.swT=0;F.drawT=0;F.chg=0;F.rj=false;F.kbT=0;F.hp=HP_MAX;F.ar=Math.min(AR_MAX,AR_START+(WEAPONS[F.wm].armor||0));F.arB=0;F.alive=true;F.inv=INV_T;F.slowT=0;F.burn=F.psn=F.bld=null;F.atkCD=0;F.atkT=9;F.hitT=-1;F.onG=true;F.jumps=0;F.camY=F.y;
   if(F===ME)VIEW.g.visible=true;if(F.model)F.model.visible=true}
 // 相手からいちばん遠い出現地点（上位3つからランダム）
 function pickSpawn(F,needNav){const os=ALL().filter(o=>o!==F&&o.alive&&live(o));const c=(needNav?SPAWNS.filter(s=>nearestNode(s[0],s[1]+.1,s[2])>=0):SPAWNS).map(s=>({s,d:os.length?Math.min(...os.map(o=>Math.hypot(s[0]-o.x,s[2]-o.z)+(Math.abs(s[1]-o.y)>2?6:0))):rr(0,9)}));c.sort((a,b)=>b.d-a.d);return c[Math.floor(Math.random()*Math.min(3,c.length))].s}

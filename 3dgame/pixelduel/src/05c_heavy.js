@@ -49,6 +49,10 @@ function blast(p,x,y,z,direct,d){const W=WEAPONS[p.w],R=p.rad,dist=Math.hypot(ME
     const dmg=p.dmg*(V===direct?1:.35+.65*k),kb=[ux/ul*(2.5+4*k),1.5+4.5*k,uz/ul*(2.5+4*k)];
     if(p.owner===ME){crossHit(false);SFX.hitmark(false)}
     if(G.mode==='online'&&p.owner===ME&&V!==ME){NET.pushHit(V,dmg,false,p.w,kb,p.key);hitFx(V,p.w,false)}else{applyHit(V,dmg,false,p.w,p.owner,p.key);knock(V,kb)}}}
+// 即着弾（アイスキングのネックレス）：目の高さからまっすぐ調べて、当たった所ですぐ爆発。銃口からそこまで氷の光の線
+function instantHit(p,x,y,z,d,mz){const W=WEAPONS[p.w],wr=rayWorld(x,y,z,d,W.range);let hitT=wr.t,direct=null;
+  for(const V of ALL()){if(V===p.owner||!V.alive||!live(V))continue;const r=.12,t=rayBox(x,y,z,d,[V.x-PR-r,V.y,V.z-PR-r,V.x+PR+r,V.y+PH+.1,V.z+PR+r]);if(t!=null&&t<hitT){hitT=t;direct=V}}
+  const h=Math.max(0,hitT-.05),bx=x+d[0]*h,by=y+d[1]*h,bz=z+d[2]*h;drawPrimShot(p.w,[[mz.x,mz.y,mz.z,bx,by,bz]],false);if(direct||hitT<W.range-.01)blast(p,bx,by,bz,direct,d)}
 function knock(V,kb){if(!V.alive)return;V.vx=kb[0];V.vz=kb[2];V.vy=Math.max(V.vy,kb[1]);V.onG=false;V.kbT=Math.max(V.kbT||0,.45)}
 // ロケットジャンプ：爆発から遠ざかる向きに飛ばす（下で爆発すれば上へ）。同じ弾の爆発（4発同時など）は重ねない
 function rocketPush(F,ux,uy,uz,k,rj,key){const m=RJ_V*rj*(.55+.45*k);
@@ -95,6 +99,7 @@ function portalUpdate(dt){for(const q of PORTALS.slice()){q.m.userData.sw.rotati
 // ---- オンライン：自分の弾とポータルを presence にのせる・相手のものを見た目だけ出す ----
 const myPortals=()=>PORTALS.filter(q=>q.owner===ME&&!q.remote).map(q=>[+q.x.toFixed(2),+q.y.toFixed(2),+q.z.toFixed(2),+q.fx.toFixed(2),+q.fz.toFixed(2)]);
 function spawnRemoteProj(F,e){const w=WIDS[e[1]];if(!WEAPONS[w]||!WEAPONS[w].proj||!F.alive)return;const W=WEAPONS[w],l=Math.hypot(e[5],e[6],e[7])||1,d=[e[5]/l,e[6]/l,e[7]/l],c=clamp(e[8]/100,0,1);
+  if(W.instant){instantHit({w,owner:F,key:0,dmg:0,rad:W.rad,kind:W.proj,c:0,remote:true},e[2],e[3],e[4],d,muzzleOf(F));SFX.pshot(w,Math.hypot(F.x-ME.x,F.z-ME.z));return}
   const mz=W.multi?podPos(F,(e[0]%4+4)%4):muzzleOf(F);spawnProj({w,owner:F,x:e[2],y:e[3],z:e[4],d,off:[mz.x-e[2],mz.y-e[3],mz.z-e[4]],key:0,dmg:0,rad:W.rad*(W.charge?.5+.5*c:1),c,remote:true});
   if(isBackup(w)||isSpecial(w))SFX.pshot(w,Math.hypot(F.x-ME.x,F.z-ME.z));else if(!W.multi||e[0]%4===0)SFX.launch(w,Math.hypot(F.x-ME.x,F.z-ME.z))}
 // 相手ひとりずつのポータル（F.rpk に前の形をおぼえて、変わったときだけ作りなおす）

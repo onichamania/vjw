@@ -67,7 +67,7 @@ function drawCross(hit){const cv=$('cross'),g=cv.getContext('2d'),S=128,c=64;if(
   const brk=(x,dir,h)=>{R(x,-h,2,2*h);R(x+dir*2,-h-2,2,2);R(x+dir*2,h,2,2)};   // （ と ）
   if(st==='melee'){R(-22,-1,7,2);R(16,-1,7,2);R(-1,-23,2,8);R(-1,15,2,8);R(-1,-1,2,2)}
   else if(st==='bullet'){brk(-34,1,7);brk(32,-1,7);R(-1,-1,2,2)}
-  else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8)}
+  else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8);R(-1,-1,2,2)}
   else if(st==='laser'){for(const s of[-1,1]){R(s<0?-24:17,-1,7,2);R(s<0?-13:10,-1,3,2);R(-1,s<0?-24:17,2,7);R(-1,s<0?-13:10,2,3)}R(-1,-1,2,2)}
   else if(st==='rocket'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-19:12,sy<0?-19:17,7,2);R(sx<0?-19:17,sy<0?-17:10,2,7)}R(-1,-1,2,2)}   // ヘビー：四すみのかぎ
   else if(st==='bouncer'){const q=5,z=5;for(const [x,y] of[[-1,-3],[1,-3],[0,-2],[-1,3],[1,3],[0,2],[-3,-1],[-3,1],[-2,0],[3,-1],[3,1],[2,0]])R(Math.round(x*q-z/2),Math.round(y*q-z/2),z,z)}   // 3つの四角の山形が4つ（上V・下Λ・左＞・右＜）
@@ -124,13 +124,20 @@ function drawScope(){const cv=$('scope'),dpr=Math.min(devicePixelRatio||1,2),W=M
     const t=Math.max(1,Math.round(H/400)),k='rgba(10,10,10,.9)';g.fillStyle=k;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);
     for(let i=1;i<=4;i++){const s=i*R0*.17;g.fillRect(cx-s-t/2,cy-px*1.5,t,px*3);g.fillRect(cx+s-t/2,cy-px*1.5,t,px*3);g.fillRect(cx-px*1.5,cy+s-t/2,px*3,t)}
     g.fillStyle='#d02020';g.fillRect(cx-t*1.5,cy-t*1.5,t*3,t*3);g.fillStyle='#e8c040';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText('4X',cx+R0*.55,cy-R0*.62)}
-  else if(st==='ext'||st==='nuke4x'){   // エクスタミネーター（金のふち・青い十字・2倍）・ニュークリア（緑のふち・黄色の印・4倍）：ドットの丸い窓
-    const ex=st==='ext',R0=H*(ex?.44:.46),px=Math.max(2,Math.round(H/90)),rim=ex?'rgba(220,170,30,.9)':'rgba(90,120,60,.95)';g.fillStyle='#050505';g.fillRect(0,0,W,H);
+  else if(st==='ext'){   // エクスタミネーター：本家の標準のスコープ（Wikiのピューピューライフル・スナイパーエクソスケルトンと同じ形）
+    // 大きな丸い窓。ふちは大きなブロックでまだらに少しずつ暗くなる。細い白の十字（まん中はすきまと小さな点）、下の線には目盛り
+    const R0=H*.5,bk=Math.max(4,Math.round(H/24)),n0=Math.ceil(R0/bk)+1;g.fillStyle='#000';g.fillRect(0,0,W,H);
+    for(let j=-n0;j<n0;j++)for(let i=-n0;i<n0;i++){const x=i*bk,y=j*bk,d=Math.hypot(x+bk/2,y+bk/2)/R0;if(d>1.04)continue;
+      const nz=Math.abs(Math.sin(i*12.9898+j*78.233)*43758.5453)%1,a=clamp((d-.74)/.3+(nz-.5)*.4,0,1);g.clearRect(cx+x,cy+y,bk,bk);if(a>0){g.fillStyle='rgba(0,0,0,'+a.toFixed(2)+')';g.fillRect(cx+x,cy+y,bk,bk)}}
+    const t=Math.max(2,Math.round(H/270)),c='#f4f4f4';g.fillStyle=c;
+    g.fillRect(cx-R0,cy-t/2,R0*.89,t);g.fillRect(cx+R0*.1,cy-t/2,R0*.9,t);g.fillRect(cx-t/2,cy-R0,t,R0*.91);g.fillRect(cx-t*.75,cy-t*.75,t*1.5,t*1.5);
+    g.fillRect(cx-t/2,cy+R0*.115,t,R0*.885);for(let i=0;i<8;i++){const w=R0*(i?.05:.065);g.fillRect(cx-w/2,cy+R0*(.115+i*.084)-t/2,w,t)}}
+  else if(st==='nuke4x'){   // ニュークリア（緑のふち・黄色の印・4倍）：ドットの丸い窓
+    const R0=H*.46,px=Math.max(2,Math.round(H/90)),rim='rgba(90,120,60,.95)';g.fillStyle='#050505';g.fillRect(0,0,W,H);
     for(let y=-R0;y<R0;y+=px){const hw=Math.floor(Math.sqrt(Math.max(0,R0*R0-(y+px/2)*(y+px/2)))/px)*px;g.clearRect(cx-hw,cy+y,hw*2,px);g.fillStyle=rim;g.fillRect(cx-hw,cy+y,px*2,px);g.fillRect(cx+hw-px*2,cy+y,px*2,px)}
-    g.fillStyle=ex?'rgba(60,140,255,.08)':'rgba(80,200,90,.12)';g.beginPath();g.arc(cx,cy,R0,0,TAU);g.fill();const t=Math.max(2,Math.round(H/300)),c=ex?'#2a6aff':'#141414';
-    if(ex){g.fillStyle=c;g.fillRect(cx-R0*.8,cy-t/2,R0*.68,t);g.fillRect(cx+R0*.12,cy-t/2,R0*.68,t);g.fillRect(cx-t/2,cy-R0*.8,t,R0*.68);g.fillRect(cx-t/2,cy+R0*.12,t,R0*.68);g.strokeStyle=c;g.lineWidth=t;g.beginPath();g.arc(cx,cy,R0*.12,0,TAU);g.stroke()}
-    else{g.fillStyle=c;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);g.fillStyle='#f0c820';for(const [sx,sy] of[[-1,0],[1,0],[0,-1],[0,1]])g.fillRect(cx+sx*R0*.3-px,cy+sy*R0*.3-px,px*2,px*2);g.fillStyle='#ff3030';g.fillRect(cx-t,cy-t,t*2,t*2)}
-    g.fillStyle=ex?'#e8c040':'#f0c820';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText(ex?'2X':'4X',cx+R0*.55,cy-R0*.62)}
+    g.fillStyle='rgba(80,200,90,.12)';g.beginPath();g.arc(cx,cy,R0,0,TAU);g.fill();const t=Math.max(2,Math.round(H/300)),c='#141414';
+    g.fillStyle=c;g.fillRect(cx-R0,cy-t/2,R0*2,t);g.fillRect(cx-t/2,cy-R0,t,R0*2);g.fillStyle='#f0c820';for(const [sx,sy] of[[-1,0],[1,0],[0,-1],[0,1]])g.fillRect(cx+sx*R0*.3-px,cy+sy*R0*.3-px,px*2,px*2);g.fillStyle='#ff3030';g.fillRect(cx-t,cy-t,t*2,t*2);
+    g.fillStyle='#f0c820';g.font='bold '+Math.round(H/40)+'px "Courier New",monospace';g.fillText('4X',cx+R0*.55,cy-R0*.62)}
   else if(st==='holo'){   // レーザーサイクラー：わくなし。水色に光る輪と点（ホログラムのサイト）
     const u=H/506,c='#5ae8ff';g.save();g.shadowColor=c;g.shadowBlur=12*u;g.strokeStyle=c;g.lineWidth=3*u;g.beginPath();g.arc(cx,cy,34*u,0,TAU);g.stroke();
     for(let i=0;i<4;i++){const a=i*TAU/4+Math.PI/4;g.beginPath();g.arc(cx,cy,48*u,a-.25,a+.25);g.stroke()}g.fillStyle=c;g.fillRect(cx-2*u,cy-2*u,4*u,4*u);g.restore()}

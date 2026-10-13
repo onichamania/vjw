@@ -19,7 +19,8 @@ const SNIPER_DATA={
    pierce:true,ricochet:true,beam:'#d060ff',scope:'comet',cross:'laser',col:'#a050f0',tag:'貫通・はね返る（1回）・8倍'},
  overseer:{jp:'監督',en:'Overseer',dmg:113,head:1.4,rof:74,cap:10,mob:65,zoom:8,reload:2.4,
    xray:true,scope:'thermal',cross:'bullet',col:'#3a6ad8',tag:'スコープ中だけ、壁の向こうの敵が青いシルエットで見える・8倍'}};
-SNIPER_DATA.oneshot.dmg=170;   // ワンショットはいちばん強い（シールド50%の体にも1発）
+SNIPER_DATA.oneshot.dmg=170;   // ワンショットはスナイパーでいちばん強い
+for(const k in SNIPER_DATA)SNIPER_DATA[k].dmg=Math.round(SNIPER_DATA[k].dmg*.8);   // 調整：強すぎたので全部0.8倍（ワンショット136・ACR106・監督90・HSR78・彗星75）
 for(const k in SNIPER_DATA){const d=SNIPER_DATA[k];d.cat='sniper';d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;d.hip=0;WEAPONS[k]=d;WIDS.push(k)}
 SNIPER_DATA.oneshot.weight=1.45;   // いちばん重い
 const MELEE=['fists','knife','saber'],SNIPERS=Object.keys(SNIPER_DATA);

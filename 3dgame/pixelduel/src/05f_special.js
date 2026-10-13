@@ -1,12 +1,13 @@
 // ===================== 特殊：撃つ（赤い波・はね返るレーザー・吹き矢・氷の弾・石の爆発）・回復 =====================
 // 弾の数だけ撃てるもの（single）はリロードしない。毒矢は押してから0.2秒後に矢が出る。
-// 赤い波（大鎌）とテラモーフ・ネックレスの弾はヘビーと同じ「飛んでいく弾」のしくみ（オンラインでも見た目が出る）。
+// 赤い波（大鎌）とテラモーフの弾はヘビーと同じ「飛んでいく弾」のしくみ（オンラインでも見た目が出る）。ネックレスは即着弾（撃った瞬間に当たった所で氷の爆発）。
 function fireSpecial(F,err){const W=WEAPONS[F.w];if(!F.alive||G.phase!=='play'||F.atkCD>0||F.relT>0||F.swT>0||!isSpecial(F.w)||F.preT>0)return false;
   if(F.mag<=0){if(F===ME&&F.atkCD<=0){SFX.empty();F.atkCD=.4;if(W.single)tip(W.jp+'の弾がもうありません（たおれて復活するともどります）',2)}if(!W.single)startReload(F);return false}
   F.atkCD=W.rate;if(W.pre){F.preT=W.pre;F.preErr=err||0;F.preW=F.w;if(F===ME)SFX.blow();return true}return shotSpecial(F,err)}
 function shotSpecial(F,err){const W=WEAPONS[F.w];F.mag--;F.shotT=0;F.atkT=0;F.seq++;let yaw=F.yaw,pitch=F.pitch;if(err){yaw+=gauss()*err;pitch+=gauss()*err*.7}
   const sp=W.hip||0;yaw+=rr(-sp,sp);pitch+=rr(-sp,sp)*.6;const ex=F.x,ey=F.y+EYE,ez=F.z,d=aimDir(yaw,pitch),mz=muzzleOf(F);
-  if(W.proj){spawnProj({w:F.w,owner:F,x:ex,y:ey,z:ez,d,off:[mz.x-ex,mz.y-ey,mz.z-ez],key:++SHOTKEY,dmg:W.dmg,rad:W.rad||0,c:0,life:W.life||4,hit:W.wave?new Set():null});if(F===ME&&G.mode==='online')NET.pushProj(F.w,ex,ey,ez,d,0)}
+  if(W.instant){instantHit({w:F.w,owner:F,key:++SHOTKEY,dmg:W.dmg,rad:W.rad||0,kind:W.proj,c:0},ex,ey,ez,d,mz);if(F===ME&&G.mode==='online')NET.pushProj(F.w,ex,ey,ez,d,0)}   // 即着弾（アイスキング）
+  else if(W.proj){spawnProj({w:F.w,owner:F,x:ex,y:ey,z:ez,d,off:[mz.x-ex,mz.y-ey,mz.z-ez],key:++SHOTKEY,dmg:W.dmg,rad:W.rad||0,c:0,life:W.life||4,hit:W.wave?new Set():null});if(F===ME&&G.mode==='online')NET.pushProj(F.w,ex,ey,ez,d,0)}
   else{const segs=[];traceShot(F,ex,ey,ez,d,W,W.range,W.bounce||0,segs,new Set());if(segs.length){segs[0][0]=mz.x;segs[0][1]=mz.y;segs[0][2]=mz.z}
     drawPrimShot(F.w,segs,false);if(F===ME&&G.mode==='online'&&segs.length)NET.pushShot(F.w,[segs[0]])}
   if(F===ME){SFX.pshot(F.w);G.shake=Math.max(G.shake,W.dmg>80?.15:.07)}else SFX.pshot(F.w,Math.hypot(F.x-ME.x,F.z-ME.z));
