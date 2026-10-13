@@ -1,13 +1,13 @@
 // ===================== バックアップ（5丁）：旧式レボルバー・エクスタミネーター・チャンピオン傭兵・レーザーサイクラー・ニュークリアレボルバー =====================
 // 本家（Pixel Gun 3D Wiki）：
-//  旧式レボルバー Old Revolver（単発・装弾6・連射93）…いちばん最初のピストル。たのまれたとおり「ふつうより少し強め」にした
+//  旧式レボルバー Old Revolver（単発・装弾6・連射93）…いちばん最初のピストル。たのまれたとおり強め（34 → 1.4倍の48）
 //  エクスタミネーター Exterminator（単発・壁抜け・レーザー・2倍スコープ・連射74・装弾6・機動55）…スナイパーのような強い1発
 //  チャンピオン傭兵 Champion Mercenary（1回で5発の連射・燃やす・装弾35・機動75）
 //  レーザーサイクラー Laser Cycler（貫通・はね返る（5回）・相手を25%遅く・2倍スコープ・連射87・装弾12・機動85）
 //  ニュークリアレボルバー Nuclear Revolver（単発・範囲ダメージ・4倍スコープ・装弾6・機動65・青いガスの爆発）…自分はダメージなしでロケットジャンプできる
 // ダメージは、ほかの武器と同じ「体力100・1回でへるのは最大90」に合わせた数字。
 const BACKUP_DATA={
- oldrev:{jp:'旧式レボルバー',en:'Old Revolver',short:'旧式レボルバー',dmg:34,head:1.5,rof:93,rate:.42,cap:6,res:30,mob:80,reload:1.7,range:110,hip:.012,
+ oldrev:{jp:'旧式レボルバー',en:'Old Revolver',short:'旧式レボルバー',dmg:48,head:1.5,rof:93,rate:.42,cap:6,res:30,mob:80,reload:1.7,range:110,hip:.012,
    cross:'bullet',col:'#c8ccd2',tag:'ふつうより少し強いレボルバー・頭は1.5倍'},
  exterm:{jp:'エクスタミネーター',en:'Exterminator',short:'エクスタミネーター',dmg:78,head:1.4,rof:74,rate:1.2,cap:6,res:18,mob:55,reload:2.2,range:140,hip:.004,zoom:2,
    wallbreak:true,pierce:true,beam:'#40c8ff',scope:'ext',cross:'pierce',col:'#e0b020',tag:'壁も相手もつきぬけるレーザーの強い1発・2倍スコープ'},

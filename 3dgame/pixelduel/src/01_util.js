@@ -7,7 +7,7 @@ const LSget=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch
 let _sd=7;const sseed=s=>{_sd=s>>>0||1},srnd=()=>{_sd=(Math.imul(_sd,1664525)+1013904223)>>>0;return _sd/4294967296},srr=(a,b)=>a+srnd()*(b-a);
 // ---- セーブ（名前・武器・成績・コイン） ----
 const SAVE_KEY='pgduel-save-1';
-const SV=Object.assign({name:'',primary:'gfriend',backup:'oldrev',weapon:'fists',sniper:'acr',heavy:'rjumper',wins:0,loses:0,draws:0,kills:0,coins:0,gems:0,skin:Math.floor(Math.random()*6)},(()=>{try{return JSON.parse(LSget(SAVE_KEY,'{}'))||{}}catch(e){return{}}})());
+const SV=Object.assign({name:'',primary:'gfriend',backup:'oldrev',special:'darts',weapon:'fists',sniper:'acr',heavy:'rjumper',wins:0,loses:0,draws:0,kills:0,coins:0,gems:0,skin:Math.floor(Math.random()*6)},(()=>{try{return JSON.parse(LSget(SAVE_KEY,'{}'))||{}}catch(e){return{}}})());
 function saveSV(){LSset(SAVE_KEY,JSON.stringify(SV))}
 // ---- 設定 ----
 const SET={botLv:+LSget('pgduel-botlv',1),sens:+LSget('pgduel-sens',100),sound:LSget('pgduel-sound','1')==='1',shadow:LSget('pgduel-shadow','1')==='1'};
@@ -58,18 +58,24 @@ const SFX={
    else if(w==='pulsator'){tone(1500,.08,'square',.045*v,.45);tone(760,.1,'sawtooth',.05*v,.55);noise(.06,5200,2600,.14*v,0,3)}
    else if(w==='viking'){noise(.4,1900,180,.85*v,0,.8);tone(95,.32,'sine',.42*v,.5);tone(440,.26,'sawtooth',.06*v,.3);slide(.6*v,.3,false);clunk(.55*v,.42);slide(.5*v,.5,true)}
    else if(w==='acid'){noise(.42,2100,170,.85*v,0,.8);tone(72,.32,'sine',.42*v,.5);noise(.55,900,3200,.12*v,.12,4);for(let i=0;i<3;i++)tone(rr(300,520),.05,'sine',.05*v,1.8,.2+i*.07)}
+   else if(w==='scythe'){noise(.32,2600,500,.55*v,0,1.5);tone(240,.32,'sawtooth',.07*v,.35);hum(70,.35,.05*v,0,1.6)}
+   else if(w==='bouncer'){tone(720,.36,'sawtooth',.09*v,.3);noise(.28,4600,700,.32*v,0,1.4);tone(88,.3,'sine',.28*v,.5)}
+   else if(w==='darts'){noise(.06,6000,3000,.25*v,0,4);tone(2600,.12,'sine',.035*v,.6)}
+   else if(w==='icenk'){tone(1568,.3,'triangle',.08*v,1);tone(2093,.35,'triangle',.06*v,1,.05);noise(.3,6000,2000,.15*v,0,3)}
+   else if(w==='terra'){tone(58,.6,'sine',.5*v,.5);noise(.6,1300,80,.8*v,0,.6);tone(1200,.4,'triangle',.06*v,2);for(let i=0;i<3;i++)noise(.05,7000,4000,.2*v,.05+i*.06,5)}
    else if(w==='oldrev'){noise(.32,3000,260,.75*v,0,1);tone(105,.22,'sine',.38*v,.5);noise(.06,6000,3000,.2*v,0,3)}
    else if(w==='exterm'){tone(880,.32,'sawtooth',.1*v,.2);noise(.32,5200,500,.35*v,0,1.4);tone(66,.32,'sine',.35*v,.5);tone(1760,.12,'square',.03*v,.5)}
    else if(w==='merc'){noise(.08,3300,900,.45*v,0,1.3);tone(175,.05,'square',.08*v,.6)}
    else if(w==='cycler'){tone(1900,.15,'square',.045*v,.3);tone(950,.2,'sine',.08*v,.5);noise(.08,7000,3000,.12*v,0,3)}
    else if(w==='nuke'){noise(.3,1600,260,.6*v,0,1);tone(92,.26,'sine',.36*v,.5);tone(620,.2,'triangle',.05*v,2)}
    else if(w==='ultimatum'){noise(.65,2600,110,.95*v,0,.6);tone(52,.65,'sine',.55*v,.4);tone(950,.42,'sawtooth',.08*v,.15);noise(.3,7000,2500,.25*v,0,2)}},
+ blow(){noise(.2,1800,600,.35,0,.8)},
  hitmark(head){tone(head?1500:1900,.05,'square',.08);if(head)tone(2300,.12,'triangle',.12,1,.06)},
  empty(){clk(2,0);tone(900,.03,'square',.06,1,.05)},
  // リロード（T 秒）：マガジンを外す→（エネルギー武器はためる）→はめる→ボルトを引く。終わりは reloadEnd
  reload(w,T,v,mine){v=(v==null?1:v)*2.5;T=T||2;if(mine){stopReloadSnd();GRP=RELOAD_SND}
    clk(v,0);slide(v,.06,false);noise(.12,700,300,.3*v,.2,2);
-   if(w==='acr'||w==='comet'||w==='portal'||w==='ultimatum'||w==='pulsator'||w==='exterm'||w==='cycler'){for(let i=0;i<3;i++)tone(w==='acr'?180:300,T*.15,w==='acr'?'sawtooth':'sine',.06*v,2.2,T*(.22+i*.12))}
+   if(w==='acr'||w==='comet'||w==='portal'||w==='ultimatum'||w==='pulsator'||w==='exterm'||w==='cycler'||w==='bouncer'){for(let i=0;i<3;i++)tone(w==='acr'?180:300,T*.15,w==='acr'?'sawtooth':'sine',.06*v,2.2,T*(.22+i*.12))}
    slide(v,T*.45,true);clunk(v,T*.5);slide(v*.9,T*.72,true);clk(v,T*.72+.15);GRP=null},
  reloadEnd(w,v){v=(v==null?1:v)*2.5;noise(.08,3000,1400,.6*v,0,4);clk(v,.03);tone(620,.05,'square',.06*v,1,.12)},
  // ヘビー：発射・爆発（大きさ s、距離で小さく）・ためる音・ポータル・ワープ

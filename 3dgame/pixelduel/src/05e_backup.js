@@ -17,4 +17,4 @@ function shotBackup(F,err){const W=WEAPONS[F.w];F.mag--;F.shotT=0;F.atkT=0;F.seq
   if(F===ME){SFX.pshot(F.w);G.shake=Math.max(G.shake,W.burst?.03:W.dmg>60?.12:.07)}else SFX.pshot(F.w,Math.hypot(F.x-ME.x,F.z-ME.z));
   if(F.mag<=0&&!W.burst)setTimeout(()=>{if(F.mag<=0&&F.alive&&isBackup(F.w))startReload(F)},380);return true}
 // 撃つ（プライマリかバックアップか）：CPU も使う
-function fireGun2(F,err){return isBackup(F.w)?fireBackup(F,err):firePrimary(F,err)}
+function fireGun2(F,err){return isBackup(F.w)?fireBackup(F,err):isSpecial(F.w)?fireSpecial(F,err):firePrimary(F,err)}

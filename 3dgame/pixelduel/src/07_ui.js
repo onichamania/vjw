@@ -1,7 +1,7 @@
 // ===================== 画面（メニュー・HUD・結果） =====================
 function showScr(id){document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id))}
 function showMenu(){showScr('sMenu');$('hello').textContent='ようこそ、'+cleanName(SV.name)+' さん';
-  $('recTx').textContent='勝ち '+SV.wins+'　負け '+SV.loses+'　引き分け '+SV.draws+'　・　キル '+SV.kills+'\n使う武器：'+WEAPONS[primOf(SV.primary)].jp+' ＋ '+WEAPONS[bkOf(SV.backup)].jp+' ＋ '+WEAPONS[SV.weapon].jp+' ＋ '+WEAPONS[SV.sniper].jp+' ＋ '+WEAPONS[HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper'].jp;$('recTx').style.whiteSpace='pre-line';
+  $('recTx').textContent='勝ち '+SV.wins+'　負け '+SV.loses+'　引き分け '+SV.draws+'　・　キル '+SV.kills+'\n使う武器：'+WEAPONS[primOf(SV.primary)].jp+' ＋ '+WEAPONS[bkOf(SV.backup)].jp+' ＋ '+WEAPONS[spOf(SV.special)].jp+' ＋ '+WEAPONS[SV.weapon].jp+' ＋ '+WEAPONS[SV.sniper].jp+' ＋ '+WEAPONS[HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper'].jp;$('recTx').style.whiteSpace='pre-line';
   if(NET.game)leaveRoom(true);lobbyPresence(false)}
 function showName(){showScr('sName');$('nameIn').value=SV.name||'';setTimeout(()=>{try{$('nameIn').focus()}catch(e){}},50)}
 function nameOk(){const n=cleanName($('nameIn').value);if(!n){tip('名前を入れてね');return}SV.name=n;saveSV();SFX.click();showMenu()}
@@ -11,14 +11,15 @@ function statRow(c,lb,v,mx,txt){const r=document.createElement('div');r.classNam
 function weaponCard(w,on,click){const W=WEAPONS[w],c=document.createElement('div');c.className='wc'+(on?' on':'');const im=document.createElement('img');im.src=icon(w);c.appendChild(im);
   const b=document.createElement('b');b.textContent=W.jp;c.appendChild(b);const en=document.createElement('div');en.className='note';en.style.margin='0';en.textContent=W.en+'　重さ '+W.weight.toFixed(2).replace(/0$/,'');c.appendChild(en);
   if(isGun(w)){const dm=document.createElement('div');dm.className='note';dm.style.cssText='margin:2px 0;color:#ffd23f;font-weight:800';
-    dm.textContent=W.cat==='backup'?(W.proj?'範囲ダメージ '+W.dmg+'（自分はダメージなし）':W.burst?'ダメージ 1発'+W.dmg+'×'+W.burst+'発＋やけど':'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head)):W.cat==='primary'?(W.pellets?'ダメージ 合計'+W.dmg+'（'+W.pellets+'粒）'+(W.poison?'＋毒'+W.poison.n*W.poison.dmg:W.bleed?'＋出血'+W.bleed.n*W.bleed.dmg:''):'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head)+'（1発）'):W.cat==='sniper'?'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head):W.multi?'範囲ダメージ '+W.dmg+'（'+W.multi+'発×'+(W.dmg/W.multi)+'）':W.cluster?'範囲ダメージ '+W.dmg+'（大'+Math.round(W.dmg*.6)+'＋小'+Math.round(W.dmg*.08)+'×'+W.cluster+'）':W.charge?'範囲ダメージ 最大'+W.dmg+'（ためうち）':'範囲ダメージ '+W.dmg;
-    c.appendChild(dm);statRow(c,'攻撃力',W.cat==='primary'&&!W.pellets?W.dmg*7:W.burst?W.dmg*W.burst*2:W.cat==='backup'?W.dmg*1.6:W.dmg,170,W.dmg);statRow(c,'連射',W.rof,100);statRow(c,'装弾数',W.cap,W.cat==='primary'?50:12,W.cap+'/'+W.res);statRow(c,'機動力',W.mob,100)}
+    dm.textContent=W.cat==='special'?(W.proj&&!W.wave?'範囲ダメージ '+W.dmg:'ダメージ '+W.dmg+(W.head>1?'・頭'+Math.round(W.dmg*W.head):'')+(W.poison?'＋毒'+W.poison.n*W.poison.dmg:''))+(W.single?'・弾'+W.cap+'発（リロードなし）':''):W.cat==='backup'?(W.proj?'範囲ダメージ '+W.dmg+'（自分はダメージなし）':W.burst?'ダメージ 1発'+W.dmg+'×'+W.burst+'発＋やけど':'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head)):W.cat==='primary'?(W.pellets?'ダメージ 合計'+W.dmg+'（'+W.pellets+'粒）'+(W.poison?'＋毒'+W.poison.n*W.poison.dmg:W.bleed?'＋出血'+W.bleed.n*W.bleed.dmg:''):'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head)+'（1発）'):W.cat==='sniper'?'ダメージ 体'+W.dmg+'・頭'+Math.round(W.dmg*W.head):W.multi?'範囲ダメージ '+W.dmg+'（'+W.multi+'発×'+(W.dmg/W.multi)+'）':W.cluster?'範囲ダメージ '+W.dmg+'（大'+Math.round(W.dmg*.6)+'＋小'+Math.round(W.dmg*.08)+'×'+W.cluster+'）':W.charge?'範囲ダメージ 最大'+W.dmg+'（ためうち）':'範囲ダメージ '+W.dmg;
+    c.appendChild(dm);statRow(c,'攻撃力',W.cat==='primary'&&!W.pellets?W.dmg*7:W.burst?W.dmg*W.burst*2:W.cat==='backup'?W.dmg*1.6:W.dmg,170,W.dmg);statRow(c,'連射',W.rof,100);statRow(c,'装弾数',W.cap,W.cat==='primary'?50:W.single?20:12,W.single?W.cap+'発':W.cap+'/'+W.res);statRow(c,'機動力',W.mob,100)}
   else{statRow(c,'攻撃力',W.leth,35);statRow(c,'攻撃速度',89,100);statRow(c,'機動力',W.mob,100)}
   const ex=document.createElement('div');ex.className='note';ex.style.margin='4px 0 0';ex.textContent=isGun(w)?W.tag:w==='fists'?'当たると相手が遅くなる・アーマー+25':w==='saber'?'当たると相手が燃える':'軽くて手数で勝負';c.appendChild(ex);
   c.onclick=()=>{click();saveSV();SFX.click();showArmory()};return c}
 function showArmory(){showScr('sArmory');const P=$('wpick'),Q=$('spick'),H=$('hpick'),R=$('ppick');P.textContent='';Q.textContent='';H.textContent='';R.textContent='';
   for(const w of PRIMARIES)R.appendChild(weaponCard(w,primOf(SV.primary)===w,()=>{SV.primary=w}));
   const K=$('bpick');K.textContent='';for(const w of BACKUPS)K.appendChild(weaponCard(w,bkOf(SV.backup)===w,()=>{SV.backup=w}));
+  const X=$('xpick');X.textContent='';for(const w of SPECIALS)X.appendChild(weaponCard(w,spOf(SV.special)===w,()=>{SV.special=w}));
   for(const w of HEAVIES)H.appendChild(weaponCard(w,(HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper')===w,()=>{SV.heavy=w}));
   for(const w of MELEE)P.appendChild(weaponCard(w,SV.weapon===w,()=>{SV.weapon=w}));
   for(const w of SNIPERS)Q.appendChild(weaponCard(w,SV.sniper===w,()=>{SV.sniper=w}))}
@@ -48,7 +49,7 @@ function updHUD(dt){const hp=ME.alive?ME.hp:0;
   if(hmT>0){hmT-=dt;$('hitm').style.opacity=clamp(hmT/.12,0,1)}if(popT>0){popT-=dt;if(popT<=0)$('pop').classList.remove('on')}
   setC('cw',ME.cw+'|'+ME.w,()=>{[...$('wbar').children].forEach((e,i)=>e.classList.toggle('on',i===ME.cw));drawCross();drawScope();touchIcons()});
   // 弾数（スナイパーとヘビーの両方）
-  const amT=w=>ME.w===w&&ME.relT>0?'リロード':ammoOf(ME,w).join('/');setC('am',amT(ME.wp)+'|'+amT(ME.wb)+'|'+amT(ME.ws)+'|'+amT(ME.wh),()=>{const ch=$('wbar').children;for(const [i,w] of[[0,ME.wp],[1,ME.wb],[3,ME.ws],[4,ME.wh]]){const e=ch[i];if(e&&e._am)e._am.textContent=amT(w)}});
+  const amT=w=>ME.w===w&&ME.relT>0?'リロード':WEAPONS[w].single?String(ammoOf(ME,w)[0]):ammoOf(ME,w).join('/');setC('am',amT(ME.wp)+'|'+amT(ME.wb)+'|'+amT(ME.wx)+'|'+amT(ME.ws)+'|'+amT(ME.wh),()=>{const ch=$('wbar').children;for(const [i,w] of[[0,ME.wp],[1,ME.wb],[3,ME.wx],[4,ME.ws],[5,ME.wh]]){const e=ch[i];if(e&&e._am)e._am.textContent=amT(w)}});
   setC('chg',Math.round(ME.chg*24),()=>drawCross());
   const sc=ME.scoped&&ME.alive;setC('sc',sc,v=>{$('scope').classList.toggle('on',v);$('cross').style.display=v?'none':'';$('scopeTx').style.display=v&&WEAPONS[ME.w].scope==='tracking'?'block':'none';VIEW.g.visible=!v&&ME.alive})
   if(sc&&WEAPONS[ME.w].scope==='tracking'){const d=aimDir(ME.yaw,ME.pitch),r=rayWorld(ME.x,ME.y+EYE,ME.z,d,140);$('scopeTx').textContent=(r.t>=140?'RNG ----':'RNG '+r.t.toFixed(1)+'m')+'\nAZ  '+(((-ME.yaw*180/Math.PI)%360+360)%360).toFixed(0).padStart(3,'0')+'\nEL '+(ME.pitch*180/Math.PI).toFixed(1)}
@@ -156,7 +157,7 @@ function addFeed(K,V,w,head){const F=$('feed'),d=document.createElement('div');c
 function clearFeed(){$('feed').textContent=''}
 // 武器のバー（下の真ん中）：接近武器・スナイパー・ヘビー（銃は弾数も）
 function buildWBar(){const B=$('wbar');B.textContent='';
-  [[ME.wp,WEAPONS[ME.wp].short,false],[ME.wb,WEAPONS[ME.wb].short,false],[ME.wm,WEAPONS[ME.wm].short,false],[ME.ws,WEAPONS[ME.ws].short,false],[ME.wh,WEAPONS[ME.wh].short,false]].forEach(([k,lb,lock],i)=>{const s=document.createElement('div');s.className='ws'+(lock?' lk':'')+(i===ME.cw?' on':'');
+  [[ME.wp,WEAPONS[ME.wp].short,false],[ME.wb,WEAPONS[ME.wb].short,false],[ME.wm,WEAPONS[ME.wm].short,false],[ME.wx,WEAPONS[ME.wx].short,false],[ME.ws,WEAPONS[ME.ws].short,false],[ME.wh,WEAPONS[ME.wh].short,false]].forEach(([k,lb,lock],i)=>{const s=document.createElement('div');s.className='ws'+(lock?' lk':'')+(i===ME.cw?' on':'');
     if(!lock){const im=document.createElement('img');im.src=icon(k);s.appendChild(im)}else{const l=document.createElement('div');l.className='lock';l.textContent='🔒';s.appendChild(l)}
     const sm=document.createElement('small');sm.textContent=lb;s.appendChild(sm);if(i!==2){sm.style.bottom='9px';const am=document.createElement('div');am.className='am';s.appendChild(am);s._am=am}
     s.onclick=e=>{e.stopPropagation();if(LAYM())return;if(lock)tip(lb+'は準備中です');else PEND.slot=i};s.ontouchstart=e=>{e.stopPropagation();if(LAYM())return;if(!lock){e.preventDefault();PEND.slot=i}};B.appendChild(s)});
@@ -208,7 +209,7 @@ function laySel(k){LSEL=k;for(const id in LAY)$(id).classList.toggle('sel',id===
   if(k==='wbar'){sl.min=WBAR_MIN;sl.max=WBAR_MAX;sl.step=5}else{sl.min=40;sl.max=170;sl.step=2}if(k)sl.value=LAY[k].s;
   $('layHide').disabled=!(k&&LAY_HIDE.includes(k));$('layHide').textContent=k&&LAY[k].hide?'表示する':'かくす'}
 function showLayout(){LAYBACK=document.querySelector('.scr.on')?document.querySelector('.scr.on').id:'sMenu';document.body.classList.add('lay');
-  if(!G.mode){Object.assign(ME,{wp:primOf(SV.primary),wb:bkOf(SV.backup),wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',w:primOf(SV.primary),cw:0});buildWBar()}/* メニューから開いたときも武器欄を見せる */showScr('sLay');applyLayout();laySel(null)}
+  if(!G.mode){Object.assign(ME,{wp:primOf(SV.primary),wb:bkOf(SV.backup),wx:spOf(SV.special),wm:SV.weapon,ws:SV.sniper,wh:HEAVIES.includes(SV.heavy)?SV.heavy:'rjumper',w:primOf(SV.primary),cw:0});buildWBar()}/* メニューから開いたときも武器欄を見せる */showScr('sLay');applyLayout();laySel(null)}
 let LAYBACK='sMenu';function endLayout(){document.body.classList.remove('lay');laySel(null);applyLayout();if(LAYBACK==='sSet')showSet(setBack);else showScr(LAYBACK)}
 for(const id in LAY_DEF){const e=$(id);e.addEventListener('pointerdown',ev=>{if(!document.body.classList.contains('lay'))return;ev.preventDefault();ev.stopPropagation();laySel(id);const r=e.getBoundingClientRect();LDRAG={id,dx:ev.clientX-(r.left+r.width/2),dy:ev.clientY-(r.top+r.height/2),pid:ev.pointerId};try{e.setPointerCapture(ev.pointerId)}catch(x){}});
   e.addEventListener('pointermove',ev=>{if(!LDRAG||LDRAG.id!==id)return;LAY[id].x=clamp((ev.clientX-LDRAG.dx)/innerWidth,0,1);LAY[id].y=clamp((ev.clientY-LDRAG.dy)/innerHeight,0,1);applyLayout()});

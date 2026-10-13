@@ -9,11 +9,14 @@ function projMesh(kind,c){const g=new THREE.Group();
   else if(kind==='missile'){bx(g,.09,.09,.52,0,0,0,'#eeeeee');for(const z of[-.12,.12])bx(g,.095,.095,.04,0,0,z,'#d02020');bx(g,.06,.06,.08,0,0,.3,'#d02020');bx(g,.07,.07,.2,0,0,-.34,emat('#ffd040'));bx(g,.15,.15,.32,0,0,-.4,tmat('#ff6a10',.45))}
   else if(kind==='tree'){const cn=new THREE.Mesh(new THREE.ConeGeometry(.17,.46,6),mat('#2a9a3a'));cn.rotation.x=Math.PI/2;g.add(cn);bx(g,.08,.08,.08,0,0,.26,emat('#ffe040'));bx(g,.07,.07,.08,0,0,-.27,'#6a4020');
     const L=['#ff3030','#ffd040','#40a0ff','#e040ff','#ffffff','#ff9a20'];for(let i=0;i<6;i++){const a=i*TAU/6,r=.1+(i%2)*.04;bx(g,.05,.05,.05,Math.cos(a)*r,Math.sin(a)*r,-.08+(i%3)*.08,emat(L[i]))}}
+  else if(kind==='wave'){const t=new THREE.Mesh(new THREE.TorusGeometry(.55,.07,4,16,Math.PI),emat('#ff2020'));t.rotation.z=.5;g.add(t);const t2=new THREE.Mesh(new THREE.TorusGeometry(.55,.16,4,16,Math.PI),tmat('#ff3030',.35));t2.rotation.z=.5;g.add(t2)}
+  else if(kind==='ice'){bx(g,.16,.16,.16,0,0,0,emat('#d0f8ff'));bx(g,.26,.26,.26,0,0,0,tmat('#60e0ff',.4));bx(g,.06,.06,.3,0,0,-.2,tmat('#a0f0ff',.5))}
+  else if(kind==='terra'){bx(g,.12,.12,.12,0,0,0,emat('#a0ffc0'))}
   else if(kind==='nuke'){bx(g,.12,.12,.12,0,0,0,emat('#a0e0ff'));bx(g,.22,.22,.22,0,0,0,tmat('#3aa0ff',.4));bx(g,.08,.08,.3,0,0,-.2,tmat('#60c0ff',.35))}
   else if(kind==='orb'){const s=.6+.6*(c||0);g.add(new THREE.Mesh(new THREE.SphereGeometry(.15*s,10,8),emat('#b0ff80')));g.add(new THREE.Mesh(new THREE.SphereGeometry(.28*s,10,8),tmat('#40ff40',.35)))}
   else bx(g,.13,.13,.13,0,0,0,emat(pick(['#ff3030','#ffd040','#40a0ff','#ffffff','#30e060'])));
   return g}
-const TRAIL={nuke:'#80c8ff',rocket:'#b4b4b4',missile:'#c8c8c8',mini:'#c8f0ff',tree:'#ffe080',orb:'#80ff80',bomb:'#ffd040'};
+const TRAIL={wave:'#ff4040',ice:'#c0f0ff',terra:'#ff90f0',nuke:'#80c8ff',rocket:'#b4b4b4',missile:'#c8c8c8',mini:'#c8f0ff',tree:'#ffe080',orb:'#80ff80',bomb:'#ffd040'};
 function projReset(){for(const p of PROJ)dropMesh(p.m);PROJ.length=0;for(const q of PORTALS.slice())removePortal(q)}
 function dropMesh(m){scene.remove(m);m.traverse(o=>{if(o.isMesh)o.geometry.dispose()})}
 // o: {w, owner, x,y,z, d:[向き], off:[見た目のずれ], key, dmg, rad, c, remote, kind, sp, grav, life}
@@ -24,13 +27,14 @@ function placeProj(p){const e=Math.exp(-p.t*9),x=p.x+p.off[0]*e,y=p.y+p.off[1]*e
 function projUpdate(dt){for(let i=PROJ.length-1;i>=0;i--){const p=PROJ[i];p.t+=dt;if(p.grav)p.vy-=p.grav*dt;
   const sp=Math.hypot(p.vx,p.vy,p.vz)||1e-3,d=[p.vx/sp,p.vy/sp,p.vz/sp],len=sp*dt;let hitT=len,direct=null;
   const wr=rayWorld(p.x,p.y,p.z,d,len);if(wr.t<hitT)hitT=wr.t;
-  if(p.kind!=='bomb')for(const V of ALL()){if(V===p.owner||!V.alive||!live(V))continue;const r=.12,t=rayBox(p.x,p.y,p.z,d,[V.x-PR-r,V.y,V.z-PR-r,V.x+PR+r,V.y+PH+.1,V.z+PR+r]);if(t!=null&&t<hitT){hitT=t;direct=V}}
-  if(hitT<len||p.t>=p.life){const h=Math.max(0,Math.min(hitT,len)-.05);PROJ.splice(i,1);dropMesh(p.m);blast(p,p.x+d[0]*h,p.y+d[1]*h,p.z+d[2]*h,direct,d);continue}
+  if(p.kind==='wave'){if(waveStep(p,d,len,wr.t)){PROJ.splice(i,1);dropMesh(p.m);continue}}   // 赤い波（つきぬける）
+  else{if(p.kind!=='bomb')for(const V of ALL()){if(V===p.owner||!V.alive||!live(V))continue;const r=.12,t=rayBox(p.x,p.y,p.z,d,[V.x-PR-r,V.y,V.z-PR-r,V.x+PR+r,V.y+PH+.1,V.z+PR+r]);if(t!=null&&t<hitT){hitT=t;direct=V}}
+  if(hitT<len||p.t>=p.life){const h=Math.max(0,Math.min(hitT,len)-.05);PROJ.splice(i,1);dropMesh(p.m);blast(p,p.x+d[0]*h,p.y+d[1]*h,p.z+d[2]*h,direct,d);continue}}
   p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;placeProj(p);
   p.trT-=dt;if(p.trT<=0){p.trT=.03;const q=p.m.position;fx(q.x-d[0]*.3,q.y-d[1]*.3,q.z-d[2]*.3,TRAIL[p.kind]||'#c0c0c0',1,.25,p.kind==='bomb'?.25:.55,p.kind==='mini'?.08:.13,-.6)}}}
 // 爆発：見た目と音・TNT・ダメージ（自分の弾だけ）・ロケットジャンプ・ポータル
 function blast(p,x,y,z,direct,d){const W=WEAPONS[p.w],R=p.rad,dist=Math.hypot(ME.x-x,ME.y-y,ME.z-z);
-  boomFx(x,y,z,R/4.8,p.kind==='orb'?'green':p.kind==='bomb'?'party':p.kind==='nuke'?'blue':'fire');SFX.blast(R/3,dist);G.shake=Math.max(G.shake,Math.max(0,.4*R/3-dist*.03));
+  boomFx(x,y,z,R/4.8,p.kind==='orb'?'green':p.kind==='bomb'?'party':p.kind==='nuke'?'blue':p.kind==='ice'?'ice':p.kind==='terra'?'terra':'fire');SFX.blast(R/3,dist);G.shake=Math.max(G.shake,Math.max(0,.4*R/3-dist*.03));
   if(p.kind==='tree')for(let i=0;i<(W.cluster||5);i++){const a=i*TAU/(W.cluster||5)+rr(-.3,.3),s=rr(4,6.5);
     spawnProj({w:p.w,owner:p.owner,x,y:y+.3,z,d:[Math.cos(a)*.75,.65,Math.sin(a)*.75],sp:s,kind:'bomb',grav:14,life:rr(.35,.6),key:p.key,dmg:W.dmg*.08,rad:1.8,remote:p.remote})}
   if(p.remote)return;
@@ -69,7 +73,7 @@ function gunInput(F,atk,dt){const W=WEAPONS[F.w];
   if(W.charge){const ready=F.alive&&G.phase==='play'&&F.atkCD<=0&&F.relT<=0&&F.swT<=0;
     if(atk&&ready){if(F.mag<6){if(F.chg<=0){startReload(F);if(F===ME&&F.atkCD<=0){SFX.empty();F.atkCD=.3}}return}if(F.chg<=0&&F===ME)SFX.charge(true,W.charge);F.chg=Math.min(1,F.chg+dt/W.charge)}
     else if(F.chg>0){const c=F.chg;F.chg=0;if(F===ME)SFX.charge(false);fireHeavy(F,0,c)}return}
-  if(!atk)return;if(isSniper(F.w))fireSniper(F);else if(isHeavy(F.w))fireHeavy(F,0);else if(isPrimary(F.w))firePrimary(F);else if(isBackup(F.w))fireBackup(F);else startSwing(F)}
+  if(!atk)return;if(isSniper(F.w))fireSniper(F);else if(isHeavy(F.w))fireHeavy(F,0);else if(isPrimary(F.w))firePrimary(F);else if(isBackup(F.w))fireBackup(F);else if(isSpecial(F.w))fireSpecial(F);else startSwing(F)}
 // ---- ポータル（ポータルキャノンをためきって撃つと、当たった所にできる。2つで行き来、25秒で消える） ----
 function portalMesh(opp){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.TorusGeometry(.62,.09,8,28),emat(opp?'#ff8a30':'#40ff70')));
   const ad=c=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.42,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
@@ -92,7 +96,7 @@ function portalUpdate(dt){for(const q of PORTALS.slice()){q.m.userData.sw.rotati
 const myPortals=()=>PORTALS.filter(q=>q.owner===ME&&!q.remote).map(q=>[+q.x.toFixed(2),+q.y.toFixed(2),+q.z.toFixed(2),+q.fx.toFixed(2),+q.fz.toFixed(2)]);
 function spawnRemoteProj(F,e){const w=WIDS[e[1]];if(!WEAPONS[w]||!WEAPONS[w].proj||!F.alive)return;const W=WEAPONS[w],l=Math.hypot(e[5],e[6],e[7])||1,d=[e[5]/l,e[6]/l,e[7]/l],c=clamp(e[8]/100,0,1);
   const mz=W.multi?podPos(F,(e[0]%4+4)%4):muzzleOf(F);spawnProj({w,owner:F,x:e[2],y:e[3],z:e[4],d,off:[mz.x-e[2],mz.y-e[3],mz.z-e[4]],key:0,dmg:0,rad:W.rad*(W.charge?.5+.5*c:1),c,remote:true});
-  if(isBackup(w))SFX.pshot(w,Math.hypot(F.x-ME.x,F.z-ME.z));else if(!W.multi||e[0]%4===0)SFX.launch(w,Math.hypot(F.x-ME.x,F.z-ME.z))}
+  if(isBackup(w)||isSpecial(w))SFX.pshot(w,Math.hypot(F.x-ME.x,F.z-ME.z));else if(!W.multi||e[0]%4===0)SFX.launch(w,Math.hypot(F.x-ME.x,F.z-ME.z))}
 // 相手ひとりずつのポータル（F.rpk に前の形をおぼえて、変わったときだけ作りなおす）
 function syncRemotePortals(F,list){const ok=Array.isArray(list)?list.filter(a=>Array.isArray(a)&&a.length===5&&a.every(Number.isFinite)).slice(0,2):[];const k=JSON.stringify(ok);if(k===F.rpk)return;F.rpk=k;
   for(const q of PORTALS.slice())if(q.remote&&q.owner===F)removePortal(q);for(const a of ok)addPortal(F,a[0],a[1],a[2],a[3],a[4],true)}
