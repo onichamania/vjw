@@ -19,7 +19,7 @@ const HEAVY_DATA={
    tag:'おしっぱなしでためうち。ためきると当たった所にポータルができ、2つ出すと行き来できる'}};
 for(const k in HEAVY_DATA){const d=HEAVY_DATA[k];d.cat='heavy';d.head=1;d.rate=1/(.545+(d.rof-60)*.01429);d.weight=+(1+(85-d.mob)/100).toFixed(2);d.res=d.cap*3;d.range=140;WEAPONS[k]=d;WIDS.push(k)}
 const HEAVIES=Object.keys(HEAVY_DATA);
-const isHeavy=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='heavy',isGun=w=>isSniper(w)||isHeavy(w)||isPrimary(w);   // isPrimary は 04d_primary
+const isHeavy=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='heavy',isGun=w=>isSniper(w)||isHeavy(w)||isPrimary(w)||isBackup(w);   // isPrimary は 04d_primary
 // ---- 形（-z が銃口の向き。グリップのあたりが原点） ----
 // ロケットジャンパー：うしろが赤、前に灰色の大きな四角い筒（角に黄色と黒のしま、口の奥に赤い光）
 function rjumperModel(){const g=new THREE.Group(),R='#c81e1e',RD='#8a1414',GR='#8e9298',GD='#55595f',BK='#151517',Y='#f0c820';
@@ -73,7 +73,7 @@ function portalModel(){const g=new THREE.Group(),W='#e8eaee',S='#b4b8c0';
   const cl=new THREE.Group();cl.position.set(0,0,-.36);g.add(cl);for(let i=0;i<3;i++){const a=new THREE.Group();a.rotation.z=i*TAU/3;cl.add(a);bx(a,.05,.2,.05,0,.12,-.06,'#1a1a1a');bx(a,.05,.05,.16,0,.21,-.15,'#1a1a1a');bx(a,.05,.09,.05,0,.17,-.24,'#1a1a1a')}
   g.userData.spin=cl;g.userData.muzzle=new THREE.Vector3(0,0,-.5);return g}
 function heavyModel(w){const m=w==='rjumper'?rjumperModel():w==='demo'?demoModel():w==='destr'?destrModel():w==='xmas'?xmasModel():portalModel();m.traverse(o=>{if(o.isMesh&&!o.material.transparent)o.castShadow=true});return m}
-function gunModel(w){return isHeavy(w)?heavyModel(w):isPrimary(w)?primaryModel(w):sniperModel(w)}
+function gunModel(w){return isHeavy(w)?heavyModel(w):isPrimary(w)?primaryModel(w):isBackup(w)?backupModel(w):sniperModel(w)}
 // ---- 手に持ったヘビー（画面の右下。デモリションは手にコントローラー、発射台は画面の上の左右） ----
 function setViewHeavy(w){const m=heavyModel(w),hand=new THREE.Group();hand.add(m);VIEW.g.add(hand);VIEW.parts.r=hand;VIEW.parts.m=m;m.scale.setScalar(.5);
   if(w==='demo'){const P=m.userData.parts;P.pack.visible=false;P.arms.visible=false;bx(P.ctrl,.1,.1,.1,-.19,-.1,.06,'#e8b88a');bx(P.ctrl,.1,.1,.1,.19,-.1,.06,'#e8b88a');

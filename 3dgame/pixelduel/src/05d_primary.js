@@ -25,7 +25,7 @@ function pellet(F,ox,oy,oz,d,W,acc,segs){const max=W.range,wall=rayWorld(ox,oy,o
   if(wall.s){const t=TNTS.find(q=>q.s===wall.s);if(t&&t.alive&&t.fuse<=0){tntLight(t,F);t.fuse=Math.min(t.fuse,.12);if(F===ME&&G.mode==='online')NET.pushEx(t.id)}}
   if(wall.n&&Math.random()<.45)fx(px+wall.n[0]*.05,py+wall.n[1]*.05,pz+wall.n[2]*.05,W.beam||'#d8c8a0',3,1.3,.3,.06,6)}
 // 弾の光：連射は細く短く、レーザー（パルセーター）・プラズマ（バイキング）・水色の散弾（究極点）は光る。銃口の光も
-const PSHOT={gfriend:[.022,'#fff2a0',.07,0],pulsator:[.045,'#60ffd0',.12,.13],ultimatum:[.05,'#60e8ff',.2,.15],viking:[.04,'#c070ff',.18,.12],acid:[.022,'#d8ffa0',.09,0]};
+const PSHOT={oldrev:[.024,'#fff2a0',.08,0],exterm:[.06,'#40c8ff',.32,.2],merc:[.018,'#ffb070',.06,0],cycler:[.04,'#40e0ff',.24,.13],gfriend:[.022,'#fff2a0',.07,0],pulsator:[.045,'#60ffd0',.12,.13],ultimatum:[.05,'#60e8ff',.2,.15],viking:[.04,'#c070ff',.18,.12],acid:[.022,'#d8ffa0',.09,0]};
 function drawPrimShot(w,segs,scoped){const P=PSHOT[w]||PSHOT.gfriend;
   for(const g of segs){const a=new THREE.Vector3(g[0],g[1],g[2]),b=new THREE.Vector3(g[3],g[4],g[5]),len=a.distanceTo(b);if(len<.05)continue;
     for(const [th,o] of P[3]?[[P[0],.95],[P[3],.3]]:[[P[0],.85]]){const m=new THREE.Mesh(SGEO,new THREE.MeshBasicMaterial({color:P[1],transparent:true,opacity:o,depthWrite:false,blending:THREE.AdditiveBlending}));
