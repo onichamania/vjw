@@ -10,7 +10,7 @@ const SPECIAL_DATA={
  scythe:{jp:'アニメの大鎌',en:'Anime Scythe',short:'アニメの大鎌',dmg:55,head:1,rof:67,rate:1.0,cap:20,res:0,single:true,mob:75,reload:0,range:42,
    proj:'wave',wave:true,speed:28,life:1.5,steal:.3,cross:'melee',col:'#d01818',tag:'ふると赤い波が飛ぶ・相手をつきぬける・当てたダメージの30%だけ自分が回復'},
  bouncer:{jp:'レーザーバウンサー',en:'Laser Bouncer',short:'バウンサー',dmg:60,head:1.4,rof:67,rate:1.5,cap:6,res:18,mob:65,reload:2.2,range:140,hip:.004,
-   pierce:true,ricochet:true,bounce:4,beam:'#ff8a20',cross:'laser',col:'#3ab040',tag:'オレンジのレーザー・相手をつきぬけ、壁で4回はね返る'},
+   pierce:true,ricochet:true,bounce:4,beam:'#ff8a20',cross:'bouncer',col:'#3ab040',tag:'オレンジのレーザー・相手をつきぬけ、壁で4回はね返る'},
  darts:{jp:'毒矢',en:'Poison Darts',short:'毒矢',dmg:45,head:1.6,rof:70,rate:.85,cap:12,res:0,single:true,mob:95,reload:0,range:90,hip:.002,pre:.2,
    poison:{n:4,dmg:6,iv:1},slow:{k:.7,t:2},cross:'bullet',col:'#7a5a2a',tag:'吹き矢（少し間をおいて出る）・毒（4秒）と遅くする・とても身軽'},
  icenk:{jp:'アイスキングのネックレス',en:'Necklace of the Ice King',short:'アイスキング',dmg:62,head:1,rof:67,rate:1.5,cap:10,res:0,single:true,mob:55,reload:0,range:140,

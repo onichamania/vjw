@@ -70,6 +70,7 @@ function drawCross(hit){const cv=$('cross'),g=cv.getContext('2d'),S=128,c=64;if(
   else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8)}
   else if(st==='laser'){for(const s of[-1,1]){R(s<0?-24:17,-1,7,2);R(s<0?-13:10,-1,3,2);R(-1,s<0?-24:17,2,7);R(-1,s<0?-13:10,2,3)}R(-1,-1,2,2)}
   else if(st==='rocket'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-19:12,sy<0?-19:17,7,2);R(sx<0?-19:17,sy<0?-17:10,2,7)}R(-1,-1,2,2)}   // ヘビー：四すみのかぎ
+  else if(st==='bouncer'){const q=5,z=5;for(const [x,y] of[[-1,-3],[1,-3],[0,-2],[-1,3],[1,3],[0,2],[-3,-1],[-3,1],[-2,0],[3,-1],[3,1],[2,0]])R(Math.round(x*q-z/2),Math.round(y*q-z/2),z,z)}   // 3つの四角の山形が4つ（上V・下Λ・左＞・右＜）
   else if(st==='shotgun'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-26:17,sy<0?-26:24,10,2);R(sx<0?-26:24,sy<0?-24:15,2,10)}R(-1,-1,2,2)}
   else if(st==='rifle'){R(-15,-1,7,2);R(9,-1,7,2);R(-1,-15,2,7);R(-1,9,2,7);R(-1,-1,2,2)}
   else if(st==='portal'){for(let i=0;i<8;i++){const a=i*TAU/8;R(Math.round(Math.cos(a)*16)-1,Math.round(Math.sin(a)*16)-1,3,3)}R(-1,-1,2,2)}
