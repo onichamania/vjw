@@ -3642,7 +3642,11 @@ addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(!lockOn||STATE!=='play')return;const k=.0022*CFG.sens;PL.yaw-=e.movementX*k;PL.pitch=clamp(PL.pitch-e.movementY*k,-1.55,1.55)});
 addEventListener('wheel',e=>{if(STATE!=='play')return;const now=performance.now();if(now-lastWheel<40)return;lastWheel=now;PL.sel=(PL.sel+(e.deltaY>0?1:8))%9;drawHotbar(true)},{passive:true});
 // ---- スマホ ----
-const T={joy:null,look:null,holdT:0,moved:0};
+const T={joy:null,look:null,holdT:0,moved:0,last:null,nt:0};
+// スティックと見回しを離したことにする（指を離した知らせが来なかったときの予備。動きっぱなし・こわしっぱなしにならないように）
+function joyOff(){T.joy=null;TOUCH.mx=TOUCH.mz=0;$('joy').classList.remove('on');PL.sprint=false}
+function lookOff(){T.look=null;$('breakRing').style.display='none';TOUCH.useHold=false;TOUCH.breakHold=false}
+function tReset(){if(T.joy)joyOff();if(T.look)lookOff()}
 function tb(id,down,up){const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();b.classList.add('on');down&&down()});const u=e=>{b.classList.remove('on');up&&up()};b.addEventListener('pointerup',u);b.addEventListener('pointercancel',u);b.addEventListener('pointerleave',u)}
 tb('tJump',()=>{const now=performance.now();if(now-PL.lastSpace<320&&isCreative()){PL.fly=!PL.fly;PL.vy=0}PL.lastSpace=now;TOUCH.jump=true},()=>{TOUCH.jump=false});
 tb('tSneak',()=>{TOUCH.sneakT=!TOUCH.sneakT;if(!PL.fly)TOUCH.sneak=TOUCH.sneakT;$('tSneak').style.background=TOUCH.sneakT&&!PL.fly?'#ffffff70':''});
@@ -3654,16 +3658,26 @@ $('tInv').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagatio
 const R0=$('rot');
 R0.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;body.classList.add('touch');TOUCH.active=true;initAudio();if(STATE==='sleep'){wakeUp();return}if(STATE!=='play')return;if(e.target.closest('button,.hs,#hotbar'))return;e.preventDefault();
   const p=P(e),W=ROT?innerHeight:innerWidth;
-  if(p.x<W*.4&&!T.joy){T.joy={id:e.pointerId,ox:p.x,oy:p.y};const j=$('joy');j.classList.add('on');j.style.left=p.x+'px';j.style.top=p.y+'px';j.firstChild.style.transform=''}
+  T.last={id:e.pointerId,x:p.x,y:p.y,left:p.x<W*.4,t:performance.now()};
+  if(p.x<W*.4){T.joy={id:e.pointerId,ox:p.x,oy:p.y};TOUCH.mx=TOUCH.mz=0;const j=$('joy');j.classList.add('on');j.style.left=p.x+'px';j.style.top=p.y+'px';j.firstChild.style.transform=''}
   else if(!T.look){T.look={id:e.pointerId,x:p.x,y:p.y,sx:p.x,sy:p.y,t:performance.now(),moved:0,broke:false,used:false}}
   try{R0.setPointerCapture(e.pointerId)}catch(_){}});
 R0.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;const p=P(e);
   if(T.joy&&T.joy.id===e.pointerId){let dx=p.x-T.joy.ox,dy=p.y-T.joy.oy;const d=Math.hypot(dx,dy),m=48;if(d>m){dx*=m/d;dy*=m/d}$('joy').firstChild.style.transform=`translate(${dx}px,${dy}px)`;TOUCH.mx=dx/m;TOUCH.mz=dy/m;
     if(Math.hypot(TOUCH.mx,TOUCH.mz)>.95&&-TOUCH.mz>.8)PL.sprint=true}
   if(T.look&&T.look.id===e.pointerId){const dx=p.x-T.look.x,dy=p.y-T.look.y;T.look.x=p.x;T.look.y=p.y;T.look.moved+=Math.abs(dx)+Math.abs(dy);const k=.0055*CFG.sens;PL.yaw-=dx*k;PL.pitch=clamp(PL.pitch-dy*k,-1.55,1.55)}});
-const tEnd=e=>{if(T.joy&&T.joy.id===e.pointerId){T.joy=null;TOUCH.mx=TOUCH.mz=0;$('joy').classList.remove('on');PL.sprint=false}
-  if(T.look&&T.look.id===e.pointerId){const l=T.look;T.look=null;$('breakRing').style.display='none';TOUCH.useHold=false;TOUCH.breakHold=false;if(STATE==='play'&&l.moved<14&&performance.now()-l.t<320&&!l.broke&&!l.used){if(!attackMob())doUse()}}};
-R0.addEventListener('pointerup',tEnd);R0.addEventListener('pointercancel',tEnd);
+const tEnd=e=>{if(T.joy&&T.joy.id===e.pointerId)joyOff();
+  if(T.look&&T.look.id===e.pointerId){const l=T.look;lookOff();if(STATE==='play'&&l.moved<14&&performance.now()-l.t<320&&!l.broke&&!l.used){if(!attackMob())doUse()}}};
+R0.addEventListener('pointerup',tEnd);R0.addEventListener('pointercancel',tEnd);R0.addEventListener('lostpointercapture',tEnd);
+// 画面の指の数（タッチの知らせ）でも確かめる：画面のはしから指がはみ出すと、指を離した知らせが来ないことがある
+//  ・さわった指が1本だけ＝前からの指はもういない → 残っているスティック・見回しを消す（いま置いた指はそのまま）
+//  ・指が0本 → 少し待って、まだ0本なら全部消す（ふつうの「離した」の処理を先にすませるため）
+addEventListener('touchstart',e=>{T.nt=e.touches.length;if(e.touches.length!==1)return;const L=T.last,now=L&&performance.now()-L.t<300?L.id:null;
+  if(T.joy&&T.joy.id!==now)joyOff();if(T.look&&T.look.id!==now)lookOff();
+  if(L&&now!=null&&!L.left&&!T.look&&STATE==='play')T.look={id:L.id,x:L.x,y:L.y,sx:L.x,sy:L.y,t:L.t,moved:0,broke:false,used:false}},{capture:true,passive:true});
+const tCount=e=>{T.nt=e.touches.length;if(!T.nt)setTimeout(()=>{if(!T.nt)tReset()},120)};
+addEventListener('touchend',tCount,{capture:true,passive:true});addEventListener('touchcancel',tCount,{capture:true,passive:true});
+addEventListener('blur',tReset);document.addEventListener('visibilitychange',()=>{if(document.hidden)tReset()});
 function updTouch(dt){if(!T.look||STATE!=='play')return;const l=T.look,held2=performance.now()-l.t;const ring=$('breakRing');
   if(l.moved<22&&held2>320){ring.style.display='block';ring.style.left=l.sx+'px';ring.style.top=l.sy+'px';const s=held(),I=s&&isItem(s.id)?ITEMS[s.id]:null;
     if(I&&(I.food||I.key==='bow'||I.key==='milk_bucket')&&!l.used&&!TMOB){l.used=true;doUse();TOUCH.useHold=true}
@@ -3953,7 +3967,7 @@ function mpNearPlayer(){for(const [,a] of MP.avs){if(!a.in||!a.buf.length)contin
   $('splash').textContent=SPL[Math.random()*SPL.length|0];$('splash').style.left='calc(50% + min(200px,30vw))';$('splash').style.top='calc(50% - 150px)';
   if(matchMedia('(hover:none)').matches){body.classList.add('touch');TOUCH.active=true}
   buildPlayerModel();startPanorama();showScr('title');requestAnimationFrame(frame);
-  window.__C={CL,clGet,clPut,clMake,clKey,clSync,showCode,MP,mpHost,mpJoin,mpRooms,mpSay,myName,chat,openChat,closeChat,worldCode,importCode,readCode,openBag,dropHeld,TABS,PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
+  window.__C={TOUCH,TJ:T,CL,clGet,clPut,clMake,clKey,clSync,showCode,MP,mpHost,mpJoin,mpRooms,mpSay,myName,chat,openChat,closeChat,worldCode,importCode,readCode,openBag,dropHeld,TABS,PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
     doBreak,doUse,TARGET:()=>TARGET,TMOB:()=>TMOB,updTarget,PART,saveWorld,toTitle,WORLD:()=>WORLD,SH,flushSets,giveItem,IID,ITEMS,DROPS,dropItem,hurtPlayer,switchDim,DIM:()=>DIM,GENF:()=>GENF,CRAFT,clickSlot,CONT:()=>CONT,CUR:()=>CUR,
     matchRecipe,RECIPES,beMap,chestOf,furnaceOf,updMining,attackMob,held,setMode,killPlayer,respawn,CRYSTALS,explode,tryLightPortal,checkEndPortal,addXp,MODELS,buildModel,PROJ,XPO,rayMob,updUse,hurtMob,checkWitherSummon,placeBlock,useBed,updSculk,setWarn:v=>{WARN=v},getWarn:()=>WARN,addEffect,eatDone,interact,showCredits,countItem}})();
 

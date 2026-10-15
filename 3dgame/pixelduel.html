@@ -2103,8 +2103,15 @@ addEventListener('touchstart',e=>{if(!G.mode||inMenu())return;for(const t of e.c
 addEventListener('touchmove',e=>{if(G.mode)e.preventDefault();for(const t of e.changedTouches){if(t.identifier===TCH.stick)stickSet(t.clientX,t.clientY);
   else if(t.identifier===TCH.look){look(t.clientX-TCH.lx,t.clientY-TCH.ly,.0055);TCH.lx=t.clientX;TCH.ly=t.clientY}
   else if(t.identifier===TCH.atk){look(t.clientX-TCH.alx,t.clientY-TCH.aly,.0055);TCH.alx=t.clientX;TCH.aly=t.clientY}}},{passive:false});
-function touchEnd(e){for(const t of e.changedTouches){if(t.identifier===TCH.stick){TCH.stick=null;TCH.mx=TCH.my=0;$('stick').firstElementChild.style.transform=''}if(t.identifier===TCH.look)TCH.look=null;if(t.identifier===TCH.atk)TCH.atk=null}}
+function stickOff(){TCH.stick=null;TCH.mx=TCH.my=0;$('stick').firstElementChild.style.transform=''}
+function touchEnd(e){for(const t of e.changedTouches){if(t.identifier===TCH.stick)stickOff();if(t.identifier===TCH.look)TCH.look=null;if(t.identifier===TCH.atk)TCH.atk=null}touchSync(e)}
 addEventListener('touchend',touchEnd);addEventListener('touchcancel',touchEnd);
+// 画面にいま置いている指（e.touches）にもういない指は、離したことにする。画面のはしから指がはみ出すと touchend が来ないことがあり、
+// そのままだとスティックが動きっぱなしになる（左下にくっついて、ずっと左下へ進む）
+function touchSync(e){const ids=new Set([...e.touches].map(t=>t.identifier));if(TCH.stick!=null&&!ids.has(TCH.stick))stickOff();if(TCH.look!=null&&!ids.has(TCH.look))TCH.look=null;if(TCH.atk!=null&&!ids.has(TCH.atk))TCH.atk=null}
+addEventListener('touchstart',touchSync,{capture:true,passive:true});addEventListener('touchmove',touchSync,{capture:true,passive:true});
+function touchReset(){if(TCH.stick!=null)stickOff();TCH.look=TCH.atk=null}
+addEventListener('blur',touchReset);document.addEventListener('visibilitychange',()=>{if(document.hidden)touchReset()});
 // その瞬間の入力（テストでは __D.inp で上書きできる）
 function readInput(){const P={slot:PEND.slot,scope:PEND.scope,reload:PEND.reload};PEND.slot=null;PEND.scope=PEND.reload=false;
   if(window.__D&&__D.inp){const i=__D.inp;const j=!!i.jump;i.jump=false;const o={f:i.f||0,s:i.s||0,jump:j,atk:!!i.atk,slot:i.slot!=null?i.slot:P.slot,scope:!!i.scope||P.scope,reload:!!i.reload||P.reload};i.slot=null;i.scope=i.reload=false;return o}
