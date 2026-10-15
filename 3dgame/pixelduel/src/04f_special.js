@@ -8,7 +8,7 @@
 // 特殊は「弾の数だけ撃てる（リロードなし）」もの（single）と、マガジンがあるもの（バウンサー）。たおれて復活すると弾はもどる。
 const SPECIAL_DATA={
  scythe:{jp:'アニメの大鎌',en:'Anime Scythe',short:'アニメの大鎌',dmg:55,head:1,rof:67,rate:1.0,cap:20,res:0,single:true,mob:75,reload:0,range:42,
-   proj:'wave',wave:true,speed:28,life:1.5,steal:.3,cross:'melee',col:'#d01818',tag:'ふると赤い波が飛ぶ・相手をつきぬける・当てたダメージの30%だけ自分が回復'},
+   proj:'wave',wave:true,speed:28,life:1.5,steal:.3,cross:'spear',col:'#d01818',tag:'ふると赤い波が飛ぶ・相手をつきぬける・当てたダメージの30%だけ自分が回復'},
  bouncer:{jp:'レーザーバウンサー',en:'Laser Bouncer',short:'バウンサー',dmg:60,head:1.4,rof:67,rate:1.5,cap:6,res:18,mob:65,reload:2.2,range:140,hip:.004,
    pierce:true,ricochet:true,bounce:4,beam:'#ff8a20',cross:'bouncer',col:'#3ab040',tag:'オレンジのレーザー・相手をつきぬけ、壁で4回はね返る'},
  darts:{jp:'毒矢',en:'Poison Darts',short:'毒矢',dmg:45,head:1.6,rof:70,rate:.85,cap:12,res:0,single:true,mob:95,reload:0,range:90,hip:.002,pre:.2,
@@ -17,7 +17,8 @@ const SPECIAL_DATA={
    proj:'ice',instant:true,speed:45,rad:1.7,rj:0,self:0,cross:'rocket',col:'#60e0f0',tag:'即着弾の氷・当たった所の小さい範囲にダメージ'},
  terra:{jp:'テラモーフストーン',en:'Terramorphing Stone',short:'テラモーフ',dmg:95,head:1,rof:31,rate:3.1,cap:8,res:0,single:true,mob:75,reload:0,range:60,
    proj:'terra',speed:400,life:.15,rad:1.8,rj:0,self:.3,heal:4,cross:'portal',col:'#40e070',tag:'ねらった所がすぐ大きく爆発・持っている間は1秒に4回復・近くの壁に撃つと自分もダメージ'}};
-for(const k in SPECIAL_DATA)SPECIAL_DATA[k].dmg=Math.round(SPECIAL_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（大鎌72・バウンサー78・毒矢59・アイスキング81・テラモーフ124）
+for(const k in SPECIAL_DATA)SPECIAL_DATA[k].dmg=Math.round(SPECIAL_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（バウンサー78・毒矢59・アイスキング81・テラモーフ124）
+SPECIAL_DATA.scythe.dmg=140;   // 大鎌はたのまれた値
 for(const k in SPECIAL_DATA){const d=SPECIAL_DATA[k];d.cat='special';d.weight=+(1+(85-d.mob)/100).toFixed(2);WEAPONS[k]=d;WIDS.push(k)}
 const SPECIALS=Object.keys(SPECIAL_DATA);
 const isSpecial=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='special';

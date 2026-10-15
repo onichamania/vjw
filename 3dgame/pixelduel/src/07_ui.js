@@ -68,6 +68,9 @@ function drawCross(hit){const cv=$('cross'),g=cv.getContext('2d'),S=128,c=64;if(
   if(st==='melee'){R(-22,-1,7,2);R(16,-1,7,2);R(-1,-23,2,8);R(-1,15,2,8);R(-1,-1,2,2)}
   else if(st==='bullet'){brk(-34,1,7);brk(32,-1,7);R(-1,-1,2,2)}
   else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8);R(-1,-1,2,2)}
+  else if(st==='spear'){   // 大鎌：Wikiのスピアの照準（本家で大鎌の代わりにレーザースピアが使われる）。上下左右に、まん中へふくらむ弓の形が4つ
+    const q=[[-9,-25,3,2],[6,-25,3,2],[-9,-23,18,1],[-5,-22,10,2]],P=[];for(const [x,y,w,h] of q){P.push([x,y,w,h],[x,-y-h,w,h],[y,x,h,w],[-y-h,x,h,w])}
+    g.fillStyle='rgba(0,0,0,.75)';for(const [x,y,w,h] of P)g.fillRect(c+x-1,c+y-1,w+2,h+2);g.fillStyle=col;for(const [x,y,w,h] of P)g.fillRect(c+x,c+y,w,h)}   // ふちを先に全部かいてから白（つなぎ目に黒が出ないように）
   else if(st==='laser'){for(const s of[-1,1]){R(s<0?-24:17,-1,7,2);R(s<0?-13:10,-1,3,2);R(-1,s<0?-24:17,2,7);R(-1,s<0?-13:10,2,3)}R(-1,-1,2,2)}
   else if(st==='rocket'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-19:12,sy<0?-19:17,7,2);R(sx<0?-19:17,sy<0?-17:10,2,7)}R(-1,-1,2,2)}   // ヘビー：四すみのかぎ
   else if(st==='bouncer'){const q=5,z=5;for(const [x,y] of[[-1,-3],[1,-3],[0,-2],[-1,3],[1,3],[0,2],[-3,-1],[-3,1],[-2,0],[3,-1],[3,1],[2,0]])R(Math.round(x*q-z/2),Math.round(y*q-z/2),z,z)}   // 3つの四角の山形が4つ（上V・下Λ・左＞・右＜）

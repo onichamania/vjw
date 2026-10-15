@@ -1039,7 +1039,7 @@ function updViewBackup(dt,P,shotT,relK,drawK){const W=WEAPONS[VIEW.w],k=Math.exp
 // 特殊は「弾の数だけ撃てる（リロードなし）」もの（single）と、マガジンがあるもの（バウンサー）。たおれて復活すると弾はもどる。
 const SPECIAL_DATA={
  scythe:{jp:'アニメの大鎌',en:'Anime Scythe',short:'アニメの大鎌',dmg:55,head:1,rof:67,rate:1.0,cap:20,res:0,single:true,mob:75,reload:0,range:42,
-   proj:'wave',wave:true,speed:28,life:1.5,steal:.3,cross:'melee',col:'#d01818',tag:'ふると赤い波が飛ぶ・相手をつきぬける・当てたダメージの30%だけ自分が回復'},
+   proj:'wave',wave:true,speed:28,life:1.5,steal:.3,cross:'spear',col:'#d01818',tag:'ふると赤い波が飛ぶ・相手をつきぬける・当てたダメージの30%だけ自分が回復'},
  bouncer:{jp:'レーザーバウンサー',en:'Laser Bouncer',short:'バウンサー',dmg:60,head:1.4,rof:67,rate:1.5,cap:6,res:18,mob:65,reload:2.2,range:140,hip:.004,
    pierce:true,ricochet:true,bounce:4,beam:'#ff8a20',cross:'bouncer',col:'#3ab040',tag:'オレンジのレーザー・相手をつきぬけ、壁で4回はね返る'},
  darts:{jp:'毒矢',en:'Poison Darts',short:'毒矢',dmg:45,head:1.6,rof:70,rate:.85,cap:12,res:0,single:true,mob:95,reload:0,range:90,hip:.002,pre:.2,
@@ -1048,7 +1048,8 @@ const SPECIAL_DATA={
    proj:'ice',instant:true,speed:45,rad:1.7,rj:0,self:0,cross:'rocket',col:'#60e0f0',tag:'即着弾の氷・当たった所の小さい範囲にダメージ'},
  terra:{jp:'テラモーフストーン',en:'Terramorphing Stone',short:'テラモーフ',dmg:95,head:1,rof:31,rate:3.1,cap:8,res:0,single:true,mob:75,reload:0,range:60,
    proj:'terra',speed:400,life:.15,rad:1.8,rj:0,self:.3,heal:4,cross:'portal',col:'#40e070',tag:'ねらった所がすぐ大きく爆発・持っている間は1秒に4回復・近くの壁に撃つと自分もダメージ'}};
-for(const k in SPECIAL_DATA)SPECIAL_DATA[k].dmg=Math.round(SPECIAL_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（大鎌72・バウンサー78・毒矢59・アイスキング81・テラモーフ124）
+for(const k in SPECIAL_DATA)SPECIAL_DATA[k].dmg=Math.round(SPECIAL_DATA[k].dmg*1.3);   // 調整：弱かったので全部1.3倍（バウンサー78・毒矢59・アイスキング81・テラモーフ124）
+SPECIAL_DATA.scythe.dmg=140;   // 大鎌はたのまれた値
 for(const k in SPECIAL_DATA){const d=SPECIAL_DATA[k];d.cat='special';d.weight=+(1+(85-d.mob)/100).toFixed(2);WEAPONS[k]=d;WIDS.push(k)}
 const SPECIALS=Object.keys(SPECIAL_DATA);
 const isSpecial=w=>!!WEAPONS[w]&&WEAPONS[w].cat==='special';
@@ -1880,6 +1881,9 @@ function drawCross(hit){const cv=$('cross'),g=cv.getContext('2d'),S=128,c=64;if(
   if(st==='melee'){R(-22,-1,7,2);R(16,-1,7,2);R(-1,-23,2,8);R(-1,15,2,8);R(-1,-1,2,2)}
   else if(st==='bullet'){brk(-34,1,7);brk(32,-1,7);R(-1,-1,2,2)}
   else if(st==='pierce'){brk(-36,1,8);brk(34,-1,8);R(-1,-1,2,2)}
+  else if(st==='spear'){   // 大鎌：Wikiのスピアの照準（本家で大鎌の代わりにレーザースピアが使われる）。上下左右に、まん中へふくらむ弓の形が4つ
+    const q=[[-9,-25,3,2],[6,-25,3,2],[-9,-23,18,1],[-5,-22,10,2]],P=[];for(const [x,y,w,h] of q){P.push([x,y,w,h],[x,-y-h,w,h],[y,x,h,w],[-y-h,x,h,w])}
+    g.fillStyle='rgba(0,0,0,.75)';for(const [x,y,w,h] of P)g.fillRect(c+x-1,c+y-1,w+2,h+2);g.fillStyle=col;for(const [x,y,w,h] of P)g.fillRect(c+x,c+y,w,h)}   // ふちを先に全部かいてから白（つなぎ目に黒が出ないように）
   else if(st==='laser'){for(const s of[-1,1]){R(s<0?-24:17,-1,7,2);R(s<0?-13:10,-1,3,2);R(-1,s<0?-24:17,2,7);R(-1,s<0?-13:10,2,3)}R(-1,-1,2,2)}
   else if(st==='rocket'){for(const [sx,sy] of[[-1,-1],[1,-1],[-1,1],[1,1]]){R(sx<0?-19:12,sy<0?-19:17,7,2);R(sx<0?-19:17,sy<0?-17:10,2,7)}R(-1,-1,2,2)}   // ヘビー：四すみのかぎ
   else if(st==='bouncer'){const q=5,z=5;for(const [x,y] of[[-1,-3],[1,-3],[0,-2],[-1,3],[1,3],[0,2],[-3,-1],[-3,1],[-2,0],[3,-1],[3,1],[2,0]])R(Math.round(x*q-z/2),Math.round(y*q-z/2),z,z)}   // 3つの四角の山形が4つ（上V・下Λ・左＞・右＜）
