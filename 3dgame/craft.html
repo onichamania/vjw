@@ -189,6 +189,7 @@ body.surv #itemName{margin-bottom:calc(var(--hs) * .9)}
 <div class="scr dirt" id="code"><div class="ttl" id="codeTtl">セーブコード</div><div class="note" id="codeNote" style="max-width:520px;text-align:center;line-height:1.6;margin-bottom:6px"></div>
  <textarea id="codeTxt" spellcheck="false" style="width:520px;max-width:90vw;height:150px;font:12px monospace;background:#000c;color:#e0e0e0;border:2px solid #a0a0a0;padding:6px;word-break:break-all;-webkit-user-select:text;user-select:text"></textarea>
  <div class="row2"><button class="mcb" id="codeCopy">コピー</button><button class="mcb" id="codeFile">ファイルに保存</button></div>
+ <button class="mcb" id="codeCloud" style="display:none">ずっと使えるコードにする</button>
  <div class="row2"><button class="mcb" id="codeLoad">このコードで読みこむ</button><button class="mcb" id="codePick">ファイルから読む</button></div>
  <button class="mcb" id="codeBack">もどる</button><input type="file" id="codeIn" accept=".txt,text/plain" style="display:none"></div>
 <div class="scr dirt" id="mp"><div class="ttl">マルチプレイ</div><div class="note" id="mpState"></div><div class="row2" id="mpFix" style="display:none"><button class="mcb" id="mpRetry">もう一度つなぐ</button><button class="mcb" id="mpPerm">許可の設定を開く</button></div><div class="list" id="mpRooms"></div>
@@ -1950,7 +1951,8 @@ async function saveWorld(){if(!WORLD||WORLD.demo)return;if(MP.on)await mpFlushOf
   WORLD.player={x:PL.x,y:PL.y,z:PL.z,yaw:PL.yaw,pitch:PL.pitch,fly:PL.fly,dim:DIM};WORLD.time=ENV.time;WORLD.weather=ENV.weather;WORLD.rules=RULES;WORLD.sel=PL.sel;
   WORLD.inv=PL.inv;WORLD.armor=PL.armor;WORLD.stats={hp:PL.hp,food:PL.food,sat:PL.sat,exh:PL.exh,air:PL.air,xp:PL.xp,lvl:PL.lvl,fire:PL.fireT,eff:PL.effects,absorb:PL.absorb};WORLD.mode=PL.mode;
   saveMobs();
-  try{await DB.put('worlds',JSON.parse(JSON.stringify(WORLD)));if(dirtyEdits){dirtyEdits=false;await DB.put('edits',{id:editKey(WORLD,DIM),data:editsObj()})}}catch(e){console.error('save',e);chat('§cセーブできませんでした')}}
+  try{await DB.put('worlds',JSON.parse(JSON.stringify(WORLD)));if(dirtyEdits){dirtyEdits=false;await DB.put('edits',{id:editKey(WORLD,DIM),data:editsObj()})}}catch(e){console.error('save',e);chat('§cセーブできませんでした')}
+  if(WORLD.cloud&&!WORLD.mp)clAfterSave(WORLD.id)}
 
 // ================= プレイヤー（動き・当たり判定・体力・こわす／置く／使う・手）=================
 const PL={x:0,y:80,z:0,vx:0,vy:0,vz:0,yaw:0,pitch:0,w:.6,h:1.8,onGround:false,fly:false,sprint:false,sneak:false,inWater:false,eyeWater:false,inLava:false,
@@ -3493,25 +3495,75 @@ const b64d=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';c
 async function zipBytes(u8,inflate){const cs=inflate?new DecompressionStream('deflate-raw'):new CompressionStream('deflate-raw');return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(cs)).arrayBuffer())}
 async function worldCode(w){const pack={v:1,w,e:{}};for(const d of['o','n','e']){try{const r=await DB.get('edits',editKey(w,d));if(r&&r.data)pack.e[d]=r.data}catch(e){}}
   const raw=new TextEncoder().encode(JSON.stringify(pack));if(typeof CompressionStream!=='undefined'){try{return'BC1.'+b64e(await zipBytes(raw))}catch(e){}}return'BC0.'+b64e(raw)}
-async function readCode(code){code=String(code||'').replace(/\s+/g,'');const m=code.match(/^BC([01])\.([A-Za-z0-9_-]+)$/);if(!m)throw new Error('セーブコードの形ではありません（BC1. で始まる文字です）');
+async function readCode(code){code=String(code||'').replace(/\s+/g,'');const m=code.match(/^BC([01])\.([A-Za-z0-9_-]+)$/);if(!m)throw new Error('セーブコードの形ではありません（BC1. で始まる長いコードか、BCC- で始まるずっと使えるコードです）');
   let u=b64d(m[2]);if(m[1]==='1')u=await zipBytes(u,true);const p=JSON.parse(new TextDecoder().decode(u));if(!p||!p.w||!p.w.id)throw new Error('コードの中身がこわれています');return p}
-async function importCode(code){const p=await readCode(code),w=p.w;let ex=null;try{ex=await DB.get('worlds',w.id)}catch(e){}
-  if(ex&&!confirm(`「${ex.name}」はすでにあります。コードの内容で上書きしますか？\n（キャンセルを押すと、別のワールドとして追加します）`)){w.id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);w.name=(w.name||'ワールド')+'（コピー）'}
+async function importCode(code,cl){if(!cl&&clKey(code)){const r=await clGet(clKey(code));return importCode(r.code,{key:clKey(code),t:r.h.t,s:r.h.s})}
+  const p=await readCode(code),w=p.w;let ex=null;try{ex=await DB.get('worlds',w.id)}catch(e){}
+  if(cl&&CL.canW!==false){w.cloud=cl.key;w.cloudS=cl.s;delete CL.conf[w.id]}else{delete w.cloud;delete w.cloudS}   // ずっと使えるコードから読んだら、このワールドはそのコードにつながる（上書きできる人だけ）。長いコードからはつながない（古い中身で上書きしないように）
+  const older=cl&&ex&&ex.cloud===cl.key&&(ex.played||0)<=(cl.t||0)+2000;   // このブラウザのほうが古い（いつもの続き）なら、聞かずに最新にする
+  if(ex&&!older&&!confirm(cl?`「${ex.name}」はこのブラウザにもあります。ずっと使えるコードの最新の内容で上書きしますか？\n（キャンセルを押すと、別のワールドとして追加します）`:`「${ex.name}」はすでにあります。コードの内容で上書きしますか？\n（キャンセルを押すと、別のワールドとして追加します）`)){w.id='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);w.name=(w.name||'ワールド')+'（コピー）';delete w.cloud;delete w.cloudS}
   for(const d of['o','n','e'])try{await DB.del('edits',editKey(w,d))}catch(e){}
   await DB.put('worlds',w);for(const d in p.e)await DB.put('edits',{id:editKey(w,d),data:p.e[d]});return w}
 let codeFrom='worlds',codeName='world';
-function showCode(txt,from,title,name){codeFrom=from;codeName=name||'world';$('codeTtl').textContent=title;$('codeTxt').value=txt||'';const imp=from==='worlds'||from==='mp';$('codeLoad').style.display=$('codePick').style.display=imp?'':'none';let emb=true;try{emb=window.top!==window}catch(e){}$('codeFile').style.display=emb||!txt?'none':'';
-  $('codeNote').textContent=txt?`この文字（${txt.length.toLocaleString()}文字）を「コピー」して、メモ帳などに貼りつけてとっておいてください。ブラウザの履歴やデータが消えても、ワールド選択の「コードから読みこむ」に貼りつければ続きから遊べます。`:'とっておいたセーブコードを下に貼りつけて（またはファイルから読んで）「このコードで読みこむ」を押してください。';showScr('code')}
-$('bExp').onclick=async()=>{if(!selWorld)return;SFX.click();$('codeNote').textContent='';try{showCode(await worldCode(selWorld),'worlds','セーブコード：'+selWorld.name,selWorld.name)}catch(e){alert('コードを作れませんでした：'+e.message)}};
+let codeW=null;
+function showCode(txt,from,title,name,w){codeFrom=from;codeName=name||'world';codeW=w||null;$('codeTtl').textContent=title;$('codeTxt').value=txt||'';$('codeCloud').style.display=codeW&&txt?'':'none';$('codeCloud').textContent='ずっと使えるコードにする';$('codeTxt').style.height='';const imp=from==='worlds'||from==='mp';$('codeLoad').style.display=$('codePick').style.display=imp?'':'none';let emb=true;try{emb=window.top!==window}catch(e){}$('codeFile').style.display=emb||!txt?'none':'';
+  $('codeNote').textContent=txt?`この文字（${txt.length.toLocaleString()}文字）を「コピー」して、メモ帳などに貼りつけてとっておいてください。ブラウザの履歴やデータが消えても、ワールド選択の「コードから読みこむ」に貼りつければ続きから遊べます。`:'とっておいたセーブコード（BC1. で始まる長いコード、または BCC- で始まるずっと使えるコード）を下に貼りつけて（またはファイルから読んで）「このコードで読みこむ」を押してください。';showScr('code');if(codeW&&codeW.cloud&&txt)clShowCode(codeW)}
+$('bExp').onclick=async()=>{if(!selWorld)return;SFX.click();$('codeNote').textContent='';try{showCode(await worldCode(selWorld),'worlds','セーブコード：'+selWorld.name,selWorld.name,selWorld)}catch(e){alert('コードを作れませんでした：'+e.message)}};
 $('bImp').onclick=()=>{SFX.click();showCode('','worlds','コードから読みこむ')};
-$('pCode').onclick=async()=>{SFX.click();if(!WORLD||WORLD.demo){alert('このワールドはセーブされません');return}await saveWorld();let w=null;try{w=await DB.get('worlds',WORLD.id)}catch(e){}if(!w)return;showCode(await worldCode(w),'pause','セーブコード：'+w.name,w.name)};
+$('pCode').onclick=async()=>{SFX.click();if(!WORLD||WORLD.demo){alert('このワールドはセーブされません');return}await saveWorld();let w=null;try{w=await DB.get('worlds',WORLD.id)}catch(e){}if(!w)return;showCode(await worldCode(w),'pause','セーブコード：'+w.name,w.name,w)};
 $('codeBack').onclick=()=>{SFX.click();if(codeFrom==='pause')showScr('pause');else if(codeFrom==='mp')showScr('mp');else openWorlds()};
 $('codeCopy').onclick=async()=>{const t=$('codeTxt');t.focus();t.select();let ok=false;try{await navigator.clipboard.writeText(t.value);ok=true}catch(e){try{ok=document.execCommand('copy')}catch(e2){}}
   $('codeNote').textContent=ok?'コピーしました。メモ帳などに貼りつけてとっておいてください。':'自動でコピーできませんでした。上の文字は全部えらばれているので、そのままコピーしてください。'};
 $('codeFile').onclick=()=>{const t=$('codeTxt').value;if(!t)return;try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download='blockcraft-'+codeName.replace(/[\\/:*?"<>|]/g,'_')+'.txt';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}catch(e){$('codeNote').textContent='ファイルに保存できませんでした。「コピー」を使ってください。'}};
 $('codePick').onclick=()=>$('codeIn').click();
 $('codeIn').onchange=async()=>{const f=$('codeIn').files[0];if(!f)return;$('codeTxt').value=(await f.text()).trim();$('codeIn').value=''};
-$('codeLoad').onclick=async()=>{SFX.click();try{const w=await importCode($('codeTxt').value);if(codeFrom==='mp'){MP.hostNext=true;enterWorld(w);return}await openWorlds();for(const e of $('wlist').children)if(e.querySelector('b')&&e.querySelector('b').textContent===w.name){e.click();break}}catch(e){$('codeNote').textContent='読みこめませんでした：'+e.message}};
+$('codeLoad').onclick=async()=>{SFX.click();if(clKey($('codeTxt').value))$('codeNote').textContent='ずっと使えるコードの中身を受け取っています…';try{const w=await importCode($('codeTxt').value);if(codeFrom==='mp'){MP.hostNext=true;enterWorld(w);return}await openWorlds();for(const e of $('wlist').children)if(e.querySelector('b')&&e.querySelector('b').textContent===w.name){e.click();break}}catch(e){$('codeNote').textContent='読みこめませんでした：'+e.message}};
+// ---- ずっと使えるコード（BCC-XXXX-XXXX）：ワールドをセーブするたびに、同じコードの中身を最新に上書きする ----
+// 中身はランチャー（Claude のアーティファクト）のデータ（db）に置く：bcsave/<コード> に見出し、bcsave/<コード>/<a|b>/<番号> にセーブコードを20万文字ずつ。
+// 書くときは、いま見出しが指していない方（a/b）に書いてから見出しを切りかえる（読んでいる人に書きかけを見せない）。書けるのはランチャーの持ち主（と編集できる人）だけ
+const CL={p:null,db:null,canW:null,chain:Promise.resolve(),queued:null,qp:null,last:-1e9,tm:0,said:false,bad:false,conf:{}};
+const clRun=fn=>{const q=CL.chain.then(fn);CL.chain=q.catch(()=>{});return q};   // 書くのはいつも1つずつ（同じ文書に同時に書かない）
+const CL_ABC='23456789ABCDEFGHJKMNPQRSTUVWXYZ',CL_PART=200000;
+const clKey=s=>{const m=String(s||'').toUpperCase().replace(/[\s-]/g,'').match(/^BCC([2-9A-Z]{8})$/);return m?m[1]:null};
+const clShow=k=>'BCC-'+k.slice(0,4)+'-'+k.slice(4);
+function clInit(){return CL.p||(CL.p=(async()=>{const C=mpClaude();if(!C)return null;let db=null;try{db=await C.use('db')}catch(e){db=null}CL.db=db;
+  if(db){try{const u=await C.use('user');CL.canW=u?await u.can('data.write'):null}catch(e){CL.canW=null}}return db})())}
+const clNoDb='この画面ではずっと使えるコードを使えません。Claude にサインインしてランチャーを開いてください（ふつうの長いセーブコードは使えます）';
+// 読む：見出しと同じ印（s）の部分だけをつなぐ。ちょうど書きかえ中なら少し待って読みなおす
+async function clGet(key){const db=await clInit();if(!db)throw new Error(clNoDb);const H=db.doc('bcsave/'+key);
+  for(let tr=0;tr<5;tr++){const hs=await H.get();if(!hs.exists)throw new Error('このコード（'+clShow(key)+'）は見つかりません');const h=hs.data();
+    const ps=await Promise.all(Array.from({length:h.n|0},(_,i)=>H.collection(h.g).doc(String(i)).get()));
+    if(ps.length&&ps.every(q=>q.exists&&q.data().s===h.s))return{code:ps.map(q=>q.data().d).join(''),h};await new Promise(r=>setTimeout(r,1200))}
+  throw new Error('いま上書きしているところのようです。少し待ってからもう一度読みこんでください')}
+// 書く：w はこのブラウザにセーブしてあるワールド。base（このブラウザが最後に読んだ／書いた版）とちがう版になっていたら、別の場所で新しくなっているので上書きしない
+async function clPut(key,w,base){const db=await clInit();if(!db)throw new Error(clNoDb);const code=await worldCode(w),H=db.doc('bcsave/'+key);let h=null;try{const hs=await H.get();h=hs.exists?hs.data():null}catch(e){}
+  if(base&&h&&h.s!==base)throw{code:'conflict',message:'conflict'};
+  const g=h&&h.g==='a'?'b':'a',ng=Object.assign({a:0,b:0},h&&h.ng),s=Date.now().toString(36)+Math.random().toString(36).slice(2,6),n=Math.max(1,Math.ceil(code.length/CL_PART));
+  for(let i=0;i<n;i++)await H.collection(g).doc(String(i)).set({s,d:code.slice(i*CL_PART,(i+1)*CL_PART)});
+  for(let i=n;i<(ng[g]|0);i++)try{await H.collection(g).doc(String(i)).delete()}catch(e){}   // 前より短くなった分
+  ng[g]=n;await H.set({v:1,g,n,s,ng,len:code.length,t:w.played||Date.now(),name:String(w.name||'').slice(0,40)});return{n,s,len:code.length}}
+// 書いた版をおぼえる（遊んでいるワールドならメモリの WORLD にも。次のセーブで消えないように）
+async function clMark(id,s){if(WORLD&&WORLD.id===id)WORLD.cloudS=s;try{const cur=await DB.get('worlds',id);if(cur&&cur.cloudS!==s){cur.cloudS=s;await DB.put('worlds',cur)}}catch(e){}}
+// 新しいコードを作って、このワールドをつなぐ
+async function clMake(w){const db=await clInit();if(!db)throw new Error(clNoDb);if(CL.canW===false)throw new Error('ずっと使えるコードを作れるのは、このランチャーの持ち主だけです');
+  let key='';for(let tr=0;tr<5;tr++){key=Array.from({length:8},()=>CL_ABC[Math.random()*CL_ABC.length|0]).join('');const hs=await db.doc('bcsave/'+key).get();if(!hs.exists)break}
+  const r=await clRun(()=>clPut(key,w));w.cloud=key;w.cloudS=r.s;await DB.put('worlds',w);if(WORLD&&WORLD.id===w.id){WORLD.cloud=key;WORLD.cloudS=r.s}delete CL.conf[w.id];return key}
+const clErr=e=>e&&e.code==='conflict'?'別の場所でこのコードが新しくなっています':e&&e.code==='invalid_argument'?'このコードに上書きできるのは、ランチャーの持ち主だけです':e&&e.code==='quota_exceeded'?'保存できる量がいっぱいです':(e&&e.message)||'うまくいきませんでした';
+// セーブのあと：遊んでいる間は40秒に1回まで、メニューを開いた・やめたときはすぐ
+function clAfterSave(id){if(CL.bad)return;const now=performance.now();clearTimeout(CL.tm);
+  if(STATE!=='play'||now-CL.last>=40000)clSync(id);else CL.tm=setTimeout(()=>clAfterSave(id),40000-(now-CL.last))}
+function clSync(id){if(CL.queued===id)return CL.qp;CL.queued=id;CL.last=performance.now();return CL.qp=clRun(()=>{CL.queued=null;return clDo(id)})}   // まだ始まっていない同じ上書きは1つにまとめる
+async function clDo(id){if(CL.bad||CL.conf[id])return;try{const w=await DB.get('worlds',id);if(w&&w.cloud&&!w.mp){const r=await clPut(w.cloud,w,w.cloudS);await clMark(id,r.s);if(!CL.said){CL.said=true;chat('§bずっと使えるコード '+clShow(w.cloud)+' を最新の内容に上書きしました（このあともセーブのたびに上書きします）')}}}
+  catch(e){if(e&&e.code==='conflict'){CL.conf[id]=true;chat('§eずっと使えるコードは、別の場所で新しくなっています。このブラウザのぶんでは上書きしません（続きは、ワールド選択の「コードから読みこむ」でコードを読みこむと遊べます）')}
+    else if(e&&(e.code==='invalid_argument'||e.code==='quota_exceeded'||e.message===clNoDb)){CL.bad=true;chat('§cずっと使えるコードに上書きできません：'+clErr(e)+'（セーブはこのブラウザに残ります）')}}}
+function clShowCode(w,fresh){$('codeTxt').value=clShow(w.cloud);$('codeTxt').style.height='44px';$('codeCloud').textContent='長いコード（いまの内容だけ）を出す';
+  $('codeNote').textContent='このコードは、セーブするたびに最新の内容に上書きされます。ずっとこのコードで続きから遊べます（「コードから読みこむ」に貼りつける）。最新にしています…';
+  const done=()=>{if(codeW===w&&$('codeTxt').value===clShow(w.cloud))$('codeNote').textContent=$('codeNote').textContent.replace('最新にしています…',CL.conf[w.id]?'（別の場所で新しくなっているので、このブラウザのぶんは上書きしていません。コードを読みこみなおすと最新で遊べます）':CL.bad?'（いまは上書きできません）':'いま最新になっています。')};
+  if(fresh)done();else clSync(w.id).then(done)}
+$('codeCloud').onclick=async()=>{SFX.click();const w=codeW;if(!w)return;
+  if(w.cloud&&$('codeTxt').value===clShow(w.cloud)){$('codeTxt').value=await worldCode(w);$('codeTxt').style.height='';$('codeCloud').textContent='ずっと使えるコードを出す';$('codeNote').textContent='これは「いまの内容だけ」の長いコードです。このあと遊んだ分は入りません（ずっと使えるコードのほうが便利です）。';return}
+  if(w.cloud){clShowCode(w);return}
+  $('codeNote').textContent='ずっと使えるコードを作っています…';try{await clMake(w);CL.bad=false;clShowCode(w,true)}catch(e){$('codeNote').textContent='作れませんでした：'+clErr(e)}};
 // ---- チャットとコマンド ----
 const CC={0:'#000',1:'#00a',2:'#0a0',3:'#0aa',4:'#a00',5:'#a0a',6:'#fa0',7:'#aaa',8:'#555',9:'#55f',a:'#5f5',b:'#5ff',c:'#f55',d:'#f5f',e:'#ff5',f:'#fff'};
 function chat(msg){const L=$('chatLog');const d=document.createElement('div');let html='';const parts=String(msg).split('§');html=esc(parts[0]);for(let i=1;i<parts.length;i++){const c=CC[parts[i][0]];html+=`<span style="color:${c||'#fff'}">${esc(parts[i].slice(1))}</span>`}
@@ -3835,7 +3887,7 @@ function mpRecv(o){const H=o.H,D=MP.dl;if(!H||!H.sid||!(H.n>0))return;if(D.sid!=
   $('loadTxt').textContent='ホスト（'+(MP.hostName||'')+'）からワールドを受け取っています… '+Math.floor(D.got/D.n*100)+'%';$('loadBar').firstChild.style.width=(D.got/D.n*100|0)+'%';
   if(D.got>=D.n&&!D.done){D.done=true;mpFinishDl(D.parts.join(''),o)}}
 async function mpFinishDl(code,hostPres){let p=null;try{p=await readCode(code)}catch(e){chat('§cワールドを受け取れませんでした');mpLeave();toTitle();return}
-  const w=p.w;w.id='mp-'+MP.code;w.mp=1;w.name=String(w.name||'ワールド').slice(0,32)+'（オンライン）';for(const k of['inv','armor','stats','spawn','hotbar','player','sel'])delete w[k];
+  const w=p.w;w.id='mp-'+MP.code;w.mp=1;w.name=String(w.name||'ワールド').slice(0,32)+'（オンライン）';for(const k of['inv','armor','stats','spawn','hotbar','player','sel','cloud'])delete w[k];
   // 先にいる人（ホスト）の近くに出る
   const s=Array.isArray(hostPres.s)&&hostPres.s.length===5&&hostPres.s.every(Number.isFinite)?hostPres.s:null,hd=['o','n','e'].includes(hostPres.d)?hostPres.d:'o';
   if(s){const a=Math.random()*Math.PI*2;w.player={x:s[0]+Math.cos(a)*1.5,y:s[1]+.1,z:s[2]+Math.sin(a)*1.5,yaw:s[3],pitch:0,fly:false,dim:hd};w.dim=hd}else w.dim='o';
@@ -3901,7 +3953,7 @@ function mpNearPlayer(){for(const [,a] of MP.avs){if(!a.in||!a.buf.length)contin
   $('splash').textContent=SPL[Math.random()*SPL.length|0];$('splash').style.left='calc(50% + min(200px,30vw))';$('splash').style.top='calc(50% - 150px)';
   if(matchMedia('(hover:none)').matches){body.classList.add('touch');TOUCH.active=true}
   buildPlayerModel();startPanorama();showScr('title');requestAnimationFrame(frame);
-  window.__C={MP,mpHost,mpJoin,mpRooms,mpSay,myName,chat,openChat,closeChat,worldCode,importCode,readCode,openBag,dropHeld,TABS,PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
+  window.__C={CL,clGet,clPut,clMake,clKey,clSync,showCode,MP,mpHost,mpJoin,mpRooms,mpSay,myName,chat,openChat,closeChat,worldCode,importCode,readCode,openBag,dropHeld,TABS,PL,CH,ENV,U,CFG,STATE:()=>STATE,enterWorld,setBlock,getB,getM,getL,runCmd,MOBS,MOBDEF,TNTS,spawnMob,primeTNT,step,renderer,scene,camera,DB,openInv,closeInv,openInvScreen,closeCont,openCraft,openFurnace,openChest,openTrade,openSmith,
     doBreak,doUse,TARGET:()=>TARGET,TMOB:()=>TMOB,updTarget,PART,saveWorld,toTitle,WORLD:()=>WORLD,SH,flushSets,giveItem,IID,ITEMS,DROPS,dropItem,hurtPlayer,switchDim,DIM:()=>DIM,GENF:()=>GENF,CRAFT,clickSlot,CONT:()=>CONT,CUR:()=>CUR,
     matchRecipe,RECIPES,beMap,chestOf,furnaceOf,updMining,attackMob,held,setMode,killPlayer,respawn,CRYSTALS,explode,tryLightPortal,checkEndPortal,addXp,MODELS,buildModel,PROJ,XPO,rayMob,updUse,hurtMob,checkWitherSummon,placeBlock,useBed,updSculk,setWarn:v=>{WARN=v},getWarn:()=>WARN,addEffect,eatDone,interact,showCredits,countItem}})();
 
