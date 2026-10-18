@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>都バス現在地</title>
+<meta name="theme-color" content="#0f5c3e">
+<style>
+:root{
+  --bg:#f4f1ea; --surface:#ffffff; --surface2:#ebe7dd; --ink:#1d2421; --muted:#6b726e;
+  --line:#d8d3c7; --accent:#0f5c3e; --accent-ink:#ffffff; --accent-soft:#dcebe3;
+  --warn:#9a4b00; --warn-soft:#fbead8;
+  --m-mitsu:#c8322f; --m-isuzu:#2a5fb0; --m-hino:#1d8a5a; --m-toyota:#454b52; --m-other:#c27a14;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121614; --surface:#1b201e; --surface2:#242a27; --ink:#e7ece9; --muted:#97a19c;
+    --line:#2f3733; --accent:#5fc29a; --accent-ink:#0b1712; --accent-soft:#1f3a2e;
+    --warn:#f0a35a; --warn-soft:#3a2614;
+    --m-mitsu:#ff7b72; --m-isuzu:#7aa7ff; --m-hino:#5fd39b; --m-toyota:#b5bcc3; --m-other:#f2b45a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1b201e; --surface2:#242a27; --ink:#e7ece9; --muted:#97a19c;
+  --line:#2f3733; --accent:#5fc29a; --accent-ink:#0b1712; --accent-soft:#1f3a2e;
+  --warn:#f0a35a; --warn-soft:#3a2614;
+  --m-mitsu:#ff7b72; --m-isuzu:#7aa7ff; --m-hino:#5fd39b; --m-toyota:#b5bcc3; --m-other:#f2b45a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px calc(32px + env(safe-area-inset-bottom))}
+header.top{position:sticky;top:0;z-index:5;background:var(--accent);color:var(--accent-ink);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.top-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.top h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.02em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{background:transparent;border:0;padding:6px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px}
+.iconbtn:active{background:rgba(255,255,255,.15)}
+.iconbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status{font-size:12px;opacity:.85;white-space:nowrap}
+.search{margin:14px 0 8px;position:relative}
+.search input{width:100%;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.hint{color:var(--muted);font-size:13px;margin:4px 2px 12px}
+.sec-title{font-size:13px;color:var(--muted);margin:18px 2px 6px;font-weight:600}
+.routes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.route{display:block;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+.route b{display:block;font-size:17px}
+.route span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.route:active{background:var(--surface2)}
+.msg{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:16px 0}
+.msg.warn{background:var(--warn-soft);border-color:transparent;color:var(--ink)}
+.msg .btn{margin-top:10px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--surface2);color:var(--ink)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 10px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;max-width:260px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip small{display:block;font-size:11px;opacity:.75}
+.chip .t{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.count{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:var(--surface2);color:var(--ink);font-size:12px;text-align:center;margin-left:6px;font-weight:700}
+.chip.on .count{background:rgba(255,255,255,.25);color:inherit}
+.line{position:relative;margin:6px 0 0;padding:0}
+.stop,.gap{position:relative;display:flex;align-items:flex-start;min-height:44px;padding-left:44px}
+.gap{min-height:0;padding-top:4px;padding-bottom:4px}
+.stop::before,.gap::before{content:"";position:absolute;left:19px;top:0;bottom:0;width:4px;background:var(--accent);opacity:.35}
+.stop.first::before{top:20px}
+.stop.last::before{bottom:auto;height:20px}
+.dot{position:absolute;left:12px;top:13px;width:18px;height:18px;border-radius:50%;background:var(--surface);border:4px solid var(--accent)}
+.stop.term .dot{background:var(--accent)}
+.stop .name{padding:10px 0;font-size:15px}
+.stop.term .name{font-weight:700}
+.gap .buses{display:flex;flex-direction:column;gap:6px;width:100%}
+.gap.at{margin-top:-8px}
+.gap.at .bus::before{border-radius:50%}
+.gap.at.end::before{display:none}
+.legend{font-size:12px;color:var(--muted);margin:2px 0 6px}
+.legend i{display:inline-block;width:10px;height:10px;background:var(--muted);margin:0 3px 0 0;vertical-align:-1px}
+.bus{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--mk,var(--m-other));border-radius:10px;padding:8px 10px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.bus:active{background:var(--surface2)}
+.bus .no{font-weight:700;font-variant-numeric:tabular-nums;font-size:15px;white-space:nowrap}
+.bus .md{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.bus .age{font-size:12px;color:var(--muted);white-space:nowrap}
+.bus.stale{opacity:.55}
+.bus svg{width:18px;height:18px;flex:0 0 auto;stroke:var(--mk,var(--m-other));fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.gap .bus{position:relative}
+.gap .bus::before{content:"";position:absolute;left:-31px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:4px;background:var(--mk,var(--m-other));box-shadow:0 0 0 3px var(--bg)}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+dialog{border:0;border-radius:18px 18px 0 0;padding:0;width:100%;max-width:640px;margin:auto auto 0;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.sheet{padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 2px;font-size:24px;font-variant-numeric:tabular-nums}
+.sheet .sub{color:var(--muted);font-size:14px;margin-bottom:12px}
+.kv{display:grid;grid-template-columns:7.5em 1fr;gap:6px 10px;font-size:15px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--ink);margin-left:6px}
+.sheet .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.field{display:block;margin:10px 0}
+.field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input{width:100%;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+footer.credit{color:var(--muted);font-size:11px;margin-top:28px;line-height:1.6}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+.fav{background:transparent;border:0;cursor:pointer;padding:6px}
+.fav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+.fav.on svg{fill:currentColor}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <button class="iconbtn hidden" id="backBtn" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h1 id="title">都バス現在地</h1>
+    <span class="status" id="status"></span>
+    <button class="fav hidden" id="favBtn" aria-label="お気に入り"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg></button>
+    <button class="iconbtn" id="reloadBtn" aria-label="更新"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></button>
+    <button class="iconbtn" id="setBtn" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="home">
+    <div class="search"><input id="q" type="search" placeholder="系統名や停留所名で検索（例：都01、新橋）" autocomplete="off"></div>
+    <div id="homeMsg"></div>
+    <div id="favSec" class="hidden">
+      <div class="sec-title">お気に入り</div>
+      <div class="routes" id="favList"></div>
+    </div>
+    <div class="sec-title" id="allTitle">系統一覧</div>
+    <div class="routes" id="routeList"></div>
+  </section>
+
+  <section id="routeView" class="hidden">
+    <div class="chips" id="patChips"></div>
+    <div id="routeMsg"></div>
+    <div id="lineArea"></div>
+  </section>
+
+  <footer class="credit">
+    出典：東京都交通局・公共交通オープンデータ協議会（公共交通オープンデータセンター／CC BY 4.0）。位置データは最新とは限りません。<br>
+    車種は局番（年度記号・番号）と有志による車両一覧（2026年5月時点）を照合して推定しています。
+  </footer>
+</main>
+
+<dialog id="busSheet"><div class="sheet" id="busBody"></div></dialog>
+
+<dialog id="setSheet"><div class="sheet">
+  <h2 style="font-size:20px">設定</h2>
+  <p class="sub">ブラウザから直接データが取れない場合だけ、中継サーバー（Cloudflare Worker）のURLを入れてください。</p>
+  <label class="field"><span>中継サーバーURL</span><input id="relayInput" type="url" placeholder="https://xxxx.workers.dev" autocomplete="off"></label>
+  <div class="row">
+    <button class="btn ghost" id="clearCache">データを再取得</button>
+    <button class="btn" id="saveSet">保存</button>
+  </div>
+</div></dialog>
+
+<script>
+"use strict";
+/* ===== 設定 ===== */
+const API = "https://api-public.odpt.org/api/v4/";
+const OP = "odpt.Operator:Toei";
+const REFRESH_SEC = 30;
+const STATIC_KEY = "static-v1";
+const STATIC_TTL = 24 * 3600 * 1000;
+
+/* ===== 局番の読み方 ===== */
+const YEAR = {P:2006,R:2007,S:2008,T:2009,V:2010,W:2011,X:2012,Y:2013,Z:2014,A:2015,B:2016,C:2017,D:2018,E:2019,F:2020,G:2021,H:2022,K:2023,L:2024,M:2025,N:2026};
+const DEPOT = {A:"品川",B:"渋谷",C:"新宿支所",D:"杉並支所",E:"小滝橋",F:"練馬支所",H:"千住",J:"有明",K:"南千住",L:"江東",N:"北",P:"巣鴨",R:"臨海支所",S:"深川",T:"早稲田",V:"江戸川",W:"青梅支所",Y:"港南支所",Z:"青戸支所"};
+/* [年度記号, 番号from, 番号to, メーカー, 車種, 型式, 特徴] */
+const FLEET = [
+  ["V",286,305,"日野","ブルーリボンシティ ハイブリッド","LJG-HU8JLGP","ハイブリッド"],
+  ["V",306,392,"三菱ふそう","エアロスター","LKG-MP37FKF",""],
+  ["V",777,777,"日野","ブルーリボンシティ ハイブリッド","ACG-HU8JMFP改","IPTハイブリッド"],
+  ["W",393,475,"三菱ふそう","エアロスター","LKG-MP37FKF",""],
+  ["W",777,777,"日野","ブルーリボンシティ ハイブリッド","ACG-HU8JMFP改","IPTハイブリッド"],
+  ["X",270,281,"いすゞ","エルガ","QPG-LV234L3",""],
+  ["X",290,297,"いすゞ","エルガ ハイブリッド","QQG-LV234L3","ハイブリッド"],
+  ["Y",476,495,"三菱ふそう","エアロスター","QKG-MP37FKF",""],
+  ["Z",500,501,"日野","ブルーリボン ハイブリッド","LNG-HU8JLGP改","ハイブリッド"],
+  ["Z",502,563,"いすゞ","エルガ","QPG-LV234L3",""],
+  ["A",605,607,"いすゞ","エルガ","QKG-LV234L3",""],
+  ["A",608,671,"いすゞ","エルガ","QPG-LV234L3",""],
+  ["B",101,102,"トヨタ","FCバス","TFCB","燃料電池"],
+  ["B",700,799,"いすゞ","エルガ","QDG-LV290N1",""],
+  ["C",103,105,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["C",200,290,"いすゞ","エルガ","2DG-LV290N2",""],
+  ["D",106,117,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["D",300,367,"いすゞ","エルガ","2DG-LV290N2",""],
+  ["D",513,513,"いすゞ","エルガミオ","2KG-LR290J3","中型"],
+  ["D",901,929,"スカニア/ボルグレン","フルフラットバス","2DG-NB4X2BVJ","フルフラット"],
+  ["E",7,9,"いすゞ","ガーラ","2TG-RU1ASDJ改","貸切"],
+  ["E",118,138,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["E",370,541,"いすゞ","エルガ","2PG-LV290N3",""],
+  ["F",141,174,"トヨタ","SORA","","燃料電池"],
+  ["F",550,682,"いすゞ","エルガ","2PG-LV290N3",""],
+  ["G",175,175,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["G",700,841,"三菱ふそう","エアロスター","2PG-MP38FK",""],
+  ["H",11,11,"三菱ふそう","エアロスター","2PG-MP38FK","貸切"],
+  ["H",176,177,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["H",850,999,"三菱ふそう","エアロスター","2PG-MP38FK",""],
+  ["K",178,182,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["K",210,291,"三菱ふそう","エアロスター","2PG-MP38FK",""],
+  ["L",183,187,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["L",300,369,"いすゞ","エルガ","2RG-LV290N4",""],
+  ["M",100,101,"いすゞ","エルガEV","ZAC-LV828L1","電気"],
+  ["M",188,194,"トヨタ","SORA","ZBC-MUM1NAE","燃料電池"],
+  ["M",370,474,"三菱ふそう","エアロスター","2PG-MP38FK",""]
+];
+const MAKER_VAR = {"三菱ふそう":"--m-mitsu","いすゞ":"--m-isuzu","日野":"--m-hino","トヨタ":"--m-toyota"};
+const OCC = {
+  "odpt.OccupancyStatus:Empty":"空いています",
+  "odpt.OccupancyStatus:ManySeatsAvailable":"座席に余裕あり",
+  "odpt.OccupancyStatus:FewSeatsAvailable":"座席わずか",
+  "odpt.OccupancyStatus:StandingRoomOnly":"立ち客あり",
+  "odpt.OccupancyStatus:CrushedStandingRoomOnly":"混雑",
+  "odpt.OccupancyStatus:Full":"満員",
+  "odpt.OccupancyStatus:NotAcceptingPassengers":"乗車不可"
+};
+
+function decodeNo(raw){
+  const s = String(raw == null ? "" : raw).toUpperCase().replace(/[\s－‐ー―]/g,"-");
+  let depot = null, year = null, num = null;
+  let m = s.match(/([A-Z])-?([A-Z])-?(\d{3})(?!\d)/);
+  if (m) { depot = m[1]; year = m[2]; num = +m[3]; }
+  else if ((m = s.match(/(?:^|[^A-Z])([A-Z])-?(\d{3})(?!\d)/))) { year = m[1]; num = +m[2]; }
+  const out = { raw: String(raw == null ? "" : raw), depot, year, num,
+    depotName: depot ? (DEPOT[depot] || null) : null,
+    yearAD: year ? (YEAR[year] || null) : null, fleet: null, cls: null,
+    label: depot && year && num != null ? `${depot}-${year}${String(num).padStart(3,"0")}`
+         : year && num != null ? `${year}${String(num).padStart(3,"0")}` : String(raw == null ? "" : raw) };
+  if (year && num != null) {
+    const f = FLEET.find(r => r[0] === year && num >= r[1] && num <= r[2]);
+    if (f) out.fleet = { maker:f[3], model:f[4], type:f[5], note:f[6] };
+    out.cls = num <= 48 ? "貸切車" : num <= 99 ? "小型車" : num <= 899 ? "路線車" : "特殊車";
+  }
+  return out;
+}
+
+/* ===== 小道具 ===== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = {
+  get(k, d){ try { const v = localStorage.getItem("tobus:"+k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem("tobus:"+k, JSON.stringify(v)); } catch(e){} }
+};
+function idbOpen(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("tobus", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(k){
+  try { const db = await idbOpen(); return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(undefined); }); }
+  catch(e){ return undefined; }
+}
+async function idbSet(k, v){
+  try { const db = await idbOpen(); await new Promise(res => { const t = db.transaction("kv","readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = res; t.onerror = res; }); }
+  catch(e){}
+}
+async function idbDel(k){
+  try { const db = await idbOpen(); await new Promise(res => { const t = db.transaction("kv","readwrite"); t.objectStore("kv").delete(k); t.oncomplete = res; t.onerror = res; }); }
+  catch(e){}
+}
+const titleOf = o => {
+  if (!o) return "";
+  if (typeof o["dc:title"] === "string") return o["dc:title"];
+  if (o.title && typeof o.title === "object") return o.title.ja || o.title.en || "";
+  return "";
+};
+const opMatch = x => { const o = x["odpt:operator"]; if (o == null) return true; return Array.isArray(o) ? o.includes(OP) : o === OP; };
+function fmtTime(d){ try { return d.toLocaleTimeString("ja-JP",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",second:"2-digit"}); } catch(e){ return d.toTimeString().slice(0,8); } }
+function ageText(sec){ if (sec < 0) sec = 0; if (sec < 60) return sec + "秒前"; if (sec < 3600) return Math.floor(sec/60) + "分前"; return Math.floor(sec/3600) + "時間前"; }
+
+/* ===== 通信 ===== */
+let relay = ls.get("relay", "");
+let useRelay = false;
+class CorsError extends Error {}
+async function fetchJSON(url){
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) { const e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+async function getJSON(path){
+  const direct = API + path;
+  const viaRelay = () => fetchJSON(relay.replace(/\/+$/,"") + "/?url=" + encodeURIComponent(direct));
+  if (useRelay && relay) return viaRelay();
+  try { return await fetchJSON(direct); }
+  catch(e){
+    if (e.status) throw e;           // サーバーが応答した（CORS問題ではない）
+    if (relay) { const j = await viaRelay(); useRelay = true; return j; }
+    throw new CorsError(e.message);
+  }
+}
+async function getAllByOperator(type){
+  let list = null;
+  try { list = await getJSON(`${type}?odpt:operator=${OP}`); } catch(e){ if (e instanceof CorsError) throw e; }
+  if (Array.isArray(list) && list.length > 0 && list.length < 1000) return list;
+  const all = await getJSON(`${type}.json`);
+  return (Array.isArray(all) ? all : []).filter(opMatch);
+}
+
+/* ===== 静的データ（系統・停留所） ===== */
+let S = null; // {patterns:{id:{...}}, poles:{id:[name,lat,lon]}, routes:[...]}
+async function loadStatic(force){
+  if (!force) {
+    const c = await idbGet(STATIC_KEY);
+    if (c && Date.now() - c.ts < STATIC_TTL && c.patterns) return build(c);
+  }
+  setStatus('<span class="spin"></span>初回データ取得中');
+  const [pats, poles] = await Promise.all([getAllByOperator("odpt:BusroutePattern"), getAllByOperator("odpt:BusstopPole")]);
+  const P = {};
+  for (const p of pats) {
+    const id = p["owl:sameAs"] || p["@id"]; if (!id) continue;
+    const ord = (p["odpt:busstopPoleOrder"] || []).slice().sort((a,b) => (a["odpt:index"]||0) - (b["odpt:index"]||0)).map(o => o["odpt:busstopPole"]).filter(Boolean);
+    P[id] = { id, title: titleOf(p), route: p["odpt:busroute"] || "", dir: p["odpt:direction"] || "", note: p["odpt:note"] || "", poles: ord };
+  }
+  const B = {};
+  for (const b of poles) {
+    const id = b["owl:sameAs"] || b["@id"]; if (!id) continue;
+    B[id] = [titleOf(b), b["geo:lat"], b["geo:long"]];
+  }
+  const c = { ts: Date.now(), patterns: P, poles: B };
+  if (Object.keys(P).length) await idbSet(STATIC_KEY, c);
+  return build(c);
+}
+function routeLabelFrom(pats, routeId){
+  const cnt = {};
+  for (const p of pats) {
+    const tok = (p.title || "").split(/[:：\s　(（\[［]/)[0];
+    if (tok) cnt[tok] = (cnt[tok] || 0) + 1;
+  }
+  const best = Object.entries(cnt).sort((a,b) => b[1]-a[1])[0];
+  if (best) return best[0];
+  return (routeId.split(".").pop() || routeId);
+}
+function build(c){
+  const byRoute = {};
+  for (const p of Object.values(c.patterns)) {
+    const r = p.route || ("pattern:" + p.id);
+    (byRoute[r] = byRoute[r] || []).push(p);
+  }
+  const poleName = id => (c.poles[id] && c.poles[id][0]) || shortId(id);
+  const routes = Object.entries(byRoute).map(([id, pats]) => {
+    const label = routeLabelFrom(pats, id);
+    const main = pats.slice().sort((a,b) => b.poles.length - a.poles.length)[0];
+    const ends = main && main.poles.length ? `${poleName(main.poles[0])}〜${poleName(main.poles[main.poles.length-1])}` : "";
+    const stopNames = new Set(); pats.forEach(p => p.poles.forEach(x => stopNames.add(poleName(x))));
+    return { id, label, ends, pats, search: (label + " " + ends + " " + [...stopNames].join(" ")).toLowerCase() };
+  }).sort((a,b) => a.label.localeCompare(b.label, "ja", { numeric:true }));
+  S = { patterns: c.patterns, poles: c.poles, routes, routeById: Object.fromEntries(routes.map(r => [r.id, r])), poleName };
+  return S;
+}
+const shortId = id => String(id || "").split(".").pop();
+
+/* ===== 画面：ホーム ===== */
+function setStatus(html){ $("status").innerHTML = html || ""; }
+function routeCard(r){ return `<button class="route" data-r="${esc(r.id)}"><b>${esc(r.label)}</b><span>${esc(r.ends)}</span></button>`; }
+function renderHome(){
+  const q = $("q").value.trim().toLowerCase();
+  const favs = ls.get("favs", []);
+  const favRoutes = favs.map(id => S.routeById[id]).filter(Boolean);
+  $("favSec").classList.toggle("hidden", !favRoutes.length || !!q);
+  $("favList").innerHTML = favRoutes.map(routeCard).join("");
+  const list = q ? S.routes.filter(r => r.search.includes(q)) : S.routes;
+  $("allTitle").textContent = q ? `検索結果（${list.length}）` : `系統一覧（${list.length}）`;
+  $("routeList").innerHTML = list.length ? list.map(routeCard).join("") : '<div class="empty">見つかりませんでした</div>';
+}
+function showCorsHelp(where){
+  where.innerHTML = `<div class="msg warn"><b>データを直接取得できませんでした</b><br>
+  ブラウザの制限で、公開データを直接読めない可能性があります。設定から中継サーバー（Cloudflare Worker）のURLを入れると読めるようになります。
+  <div><button class="btn" onclick="openSettings()">設定を開く</button></div></div>`;
+}
+function showError(where, e){
+  if (e instanceof CorsError) return showCorsHelp(where);
+  where.innerHTML = `<div class="msg warn"><b>読み込みに失敗しました</b><br>${esc(e.message || e)}<div><button class="btn" onclick="location.reload()">再読み込み</button></div></div>`;
+}
+
+/* ===== 画面：系統 ===== */
+let cur = { route:null, pattern:null, buses:[], fetchedAt:null, timer:null };
+function openRoute(routeId, patternId){
+  const r = S.routeById[routeId];
+  if (!r) { location.hash = ""; return; }
+  cur.route = r; cur.pattern = patternId || null; cur.buses = [];
+  $("home").classList.add("hidden"); $("routeView").classList.remove("hidden");
+  $("backBtn").classList.remove("hidden"); $("favBtn").classList.remove("hidden");
+  $("title").textContent = r.label;
+  updateFavBtn();
+  $("lineArea").innerHTML = '<div class="empty"><span class="spin"></span>車両位置を取得中</div>';
+  $("patChips").innerHTML = "";
+  window.scrollTo(0,0);
+  refresh();
+  startTimer();
+}
+function closeRoute(){
+  stopTimer();
+  cur.route = null;
+  $("routeView").classList.add("hidden"); $("home").classList.remove("hidden");
+  $("backBtn").classList.add("hidden"); $("favBtn").classList.add("hidden");
+  $("title").textContent = "都バス現在地"; setStatus("");
+  renderHome();
+}
+function startTimer(){ stopTimer(); cur.timer = setInterval(() => { if (!document.hidden) refresh(); }, REFRESH_SEC * 1000); }
+function stopTimer(){ if (cur.timer) clearInterval(cur.timer); cur.timer = null; }
+
+async function fetchBuses(r){
+  let list;
+  try { list = await getJSON(`odpt:Bus?odpt:busroute=${r.id}`); }
+  catch(e){ if (e instanceof CorsError) throw e; list = null; }
+  if (!Array.isArray(list)) list = await getAllByOperator("odpt:Bus");
+  const patIds = new Set(r.pats.map(p => p.id));
+  return list.filter(b => b["odpt:busroute"] === r.id || patIds.has(b["odpt:busroutePattern"]));
+}
+let busy = false;
+async function refresh(){
+  if (!cur.route || busy) return;
+  busy = true;
+  const r = cur.route;
+  setStatus('<span class="spin"></span>更新中');
+  try {
+    const buses = await fetchBuses(r);
+    if (cur.route !== r) return;
+    cur.buses = buses; cur.fetchedAt = new Date();
+    $("routeMsg").innerHTML = "";
+    renderRoute();
+    setStatus(fmtTime(cur.fetchedAt).slice(0,5) + " 更新");
+  } catch(e){
+    setStatus("取得失敗");
+    showError($("routeMsg"), e);
+    if (!cur.buses.length) $("lineArea").innerHTML = "";
+  } finally { busy = false; }
+}
+function patLabel(p){
+  const n = p.poles.length;
+  const a = n ? S.poleName(p.poles[0]) : "?", b = n ? S.poleName(p.poles[n-1]) : "?";
+  return { main: `${a} → ${b}`, sub: `${n}停留所` };
+}
+function busesOn(pid){ return cur.buses.filter(b => b["odpt:busroutePattern"] === pid); }
+function renderRoute(){
+  const r = cur.route;
+  const pats = r.pats.slice().sort((a,b) => busesOn(b.id).length - busesOn(a.id).length || b.poles.length - a.poles.length);
+  if (!cur.pattern || (cur.pattern !== "*" && !r.pats.some(p => p.id === cur.pattern))) cur.pattern = pats[0] ? pats[0].id : "*";
+  const chips = pats.map(p => { const l = patLabel(p); const n = busesOn(p.id).length;
+    return `<button class="chip${p.id === cur.pattern ? " on" : ""}" data-p="${esc(p.id)}"><span class="t">${esc(l.main)}<span class="count">${n}</span></span><small>${esc(l.sub)}${p.title && p.title !== r.label ? "・" + esc(p.title) : ""}</small></button>`; });
+  chips.push(`<button class="chip${cur.pattern === "*" ? " on" : ""}" data-p="*"><span class="t">全車両<span class="count">${cur.buses.length}</span></span><small>一覧で表示</small></button>`);
+  $("patChips").innerHTML = chips.join("");
+  if (cur.pattern === "*") return renderAllList();
+  renderLine(S.patterns[cur.pattern]);
+}
+function busChip(b){
+  const d = decodeNo(b["odpt:busNumber"]);
+  const mk = d.fleet ? (MAKER_VAR[d.fleet.maker] || "--m-other") : "--m-other";
+  const md = d.fleet ? `${d.fleet.maker} ${d.fleet.model}` : (d.yearAD ? `${d.yearAD}年度車` : "車種不明");
+  const t = Date.parse(b["dc:date"]); const sec = isNaN(t) ? null : Math.round((Date.now() - t) / 1000);
+  const stale = sec != null && sec > 180;
+  const id = esc(b["owl:sameAs"] || b["@id"] || "");
+  return `<button class="bus${stale ? " stale" : ""}" style="--mk:var(${mk})" data-b="${id}">
+    <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/></svg>
+    <span class="no">${esc(d.label || "番号なし")}</span><span class="md">${esc(md)}</span>${sec != null ? `<span class="age">${ageText(sec)}</span>` : ""}</button>`;
+}
+function renderLine(p){
+  if (!p) { $("lineArea").innerHTML = '<div class="empty">系統データがありません</div>'; return; }
+  const idx = new Map(p.poles.map((id, i) => [id, i]));
+  const at = {}, between = {}, unknown = [];
+  for (const b of busesOn(p.id)) {
+    const f = idx.get(b["odpt:fromBusstopPole"]), t = idx.get(b["odpt:toBusstopPole"]);
+    if (f != null && t != null && t > f) (between[f] = between[f] || []).push(b);
+    else if (f != null && (t == null || t === f)) (at[f] = at[f] || []).push(b);
+    else if (f == null && t != null && t > 0) (between[t-1] = between[t-1] || []).push(b);
+    else if (f == null && t === 0) (at[0] = at[0] || []).push(b);
+    else unknown.push(b);
+  }
+  const n = p.poles.length, rows = [];
+  p.poles.forEach((pid, i) => {
+    const cls = ["stop"]; if (i === 0) cls.push("first","term"); if (i === n-1) cls.push("last","term");
+    rows.push(`<div class="${cls.join(" ")}"><span class="dot"></span><span class="name">${esc(S.poleName(pid))}</span></div>`);
+    if (at[i]) rows.push(`<div class="gap at${i === n-1 ? " end" : ""}"><div class="buses">${at[i].map(busChip).join("")}</div></div>`);
+    if (between[i] && i < n-1) rows.push(`<div class="gap"><div class="buses">${between[i].map(busChip).join("")}</div></div>`);
+  });
+  let html = `<div class="legend"><i style="border-radius:50%"></i>停留所付近　<i style="border-radius:2px;margin-left:8px"></i>停留所の間を走行中　・車両をタップで詳細</div><div class="line">${rows.join("")}</div>`;
+  if (unknown.length) html += `<div class="sec-title">位置を特定できない車両</div><div class="list">${unknown.map(busChip).join("")}</div>`;
+  if (!busesOn(p.id).length) html = `<div class="hint">この方向を走っている車両は今ありません。</div>` + html;
+  $("lineArea").innerHTML = html;
+}
+function renderAllList(){
+  const bs = cur.buses.slice().sort((a,b) => decodeNo(a["odpt:busNumber"]).label.localeCompare(decodeNo(b["odpt:busNumber"]).label, "en", {numeric:true}));
+  $("lineArea").innerHTML = bs.length ? `<div class="list">${bs.map(busChip).join("")}</div>` : '<div class="empty">いま走っている車両はありません</div>';
+}
+
+/* ===== 車両の詳細 ===== */
+function openBus(id){
+  const b = cur.buses.find(x => (x["owl:sameAs"] || x["@id"]) === id); if (!b) return;
+  const d = decodeNo(b["odpt:busNumber"]);
+  const p = S.patterns[b["odpt:busroutePattern"]];
+  const dest = p && p.poles.length ? S.poleName(p.poles[p.poles.length-1]) : (b["odpt:terminalBusstopPole"] ? S.poleName(b["odpt:terminalBusstopPole"]) : "");
+  const from = b["odpt:fromBusstopPole"] ? S.poleName(b["odpt:fromBusstopPole"]) : "";
+  const to = b["odpt:toBusstopPole"] ? S.poleName(b["odpt:toBusstopPole"]) : "";
+  const t = Date.parse(b["dc:date"]);
+  const rows = [];
+  const add = (k, v) => { if (v != null && v !== "") rows.push(`<dt>${k}</dt><dd>${v}</dd>`); };
+  if (d.fleet) {
+    add("メーカー", esc(d.fleet.maker));
+    add("車種", esc(d.fleet.model) + (d.fleet.note ? `<span class="tag">${esc(d.fleet.note)}</span>` : ""));
+    add("型式", esc(d.fleet.type || "未確認"));
+  } else add("車種", '<span style="color:var(--muted)">一覧に未登録</span>');
+  add("年度", d.yearAD ? `${d.yearAD}年度（${esc(d.year)}代）` : "");
+  add("営業所", d.depotName ? `${esc(d.depotName)}（${esc(d.depot)}）` : "");
+  add("区分", d.cls ? esc(d.cls) : "");
+  add("行先", esc(dest));
+  add("前の停留所", esc(from));
+  add("次の停留所", esc(to));
+  add("混雑", esc(OCC[b["odpt:occupancyStatus"]] || ""));
+  add("データ時刻", isNaN(t) ? "" : `${fmtTime(new Date(t))}（${ageText(Math.round((Date.now()-t)/1000))}）`);
+  add("元の番号", esc(d.raw));
+  $("busBody").innerHTML = `<h2>${esc(d.label || "番号なし")}</h2><div class="sub">${esc(cur.route ? cur.route.label : "")}${dest ? "　" + esc(dest) + "行" : ""}</div>
+    <dl class="kv">${rows.join("")}</dl><div class="row"><button class="btn ghost" onclick="$('busSheet').close()">閉じる</button></div>`;
+  $("busSheet").showModal();
+}
+
+/* ===== お気に入り・設定 ===== */
+function updateFavBtn(){ const on = cur.route && ls.get("favs", []).includes(cur.route.id); $("favBtn").classList.toggle("on", !!on); }
+$("favBtn").onclick = () => {
+  if (!cur.route) return;
+  let f = ls.get("favs", []); const id = cur.route.id;
+  f = f.includes(id) ? f.filter(x => x !== id) : [id, ...f];
+  ls.set("favs", f); updateFavBtn();
+};
+function openSettings(){ $("relayInput").value = relay; $("setSheet").showModal(); }
+window.openSettings = openSettings;
+$("setBtn").onclick = openSettings;
+$("saveSet").onclick = () => { relay = $("relayInput").value.trim(); ls.set("relay", relay); useRelay = false; $("setSheet").close(); location.reload(); };
+$("clearCache").onclick = async () => { await idbDel(STATIC_KEY); location.reload(); };
+for (const id of ["busSheet","setSheet"]) $(id).addEventListener("click", e => { if (e.target === $(id)) $(id).close(); });
+
+/* ===== 画面遷移 ===== */
+function parseHash(){ const h = new URLSearchParams(location.hash.slice(1)); return { r: h.get("r"), p: h.get("p") }; }
+function go(r, p){ const h = new URLSearchParams(); if (r) h.set("r", r); if (p) h.set("p", p); location.hash = h.toString(); }
+function route(){
+  if (!S) return;
+  const { r, p } = parseHash();
+  if (r) { if (!cur.route || cur.route.id !== r) openRoute(r, p); else if (p && p !== cur.pattern) { cur.pattern = p; renderRoute(); } }
+  else if (cur.route) closeRoute();
+}
+window.addEventListener("hashchange", route);
+document.addEventListener("click", e => {
+  const rb = e.target.closest("[data-r]"); if (rb) { go(rb.dataset.r); return; }
+  const pb = e.target.closest("[data-p]"); if (pb && cur.route) { cur.pattern = pb.dataset.p; history.replaceState(null, "", "#" + new URLSearchParams({ r: cur.route.id, p: cur.pattern }).toString()); renderRoute(); return; }
+  const bb = e.target.closest("[data-b]"); if (bb) { openBus(bb.dataset.b); return; }
+});
+$("backBtn").onclick = () => { if (history.length > 1 && parseHash().r) history.back(); else go(null); };
+$("reloadBtn").onclick = () => { if (cur.route) refresh(); else location.reload(); };
+$("q").addEventListener("input", () => S && renderHome());
+document.addEventListener("visibilitychange", () => { if (!document.hidden && cur.route) refresh(); });
+
+/* ===== 起動 ===== */
+(async function init(){
+  $("routeList").innerHTML = '<div class="empty"><span class="spin"></span>系統データを読み込み中（初回は少し時間がかかります）</div>';
+  try {
+    await loadStatic(false);
+    setStatus("");
+    if (!S.routes.length) throw new Error("系統データが空でした");
+    renderHome();
+    route();
+  } catch(e){
+    setStatus("");
+    $("routeList").innerHTML = "";
+    showError($("homeMsg"), e);
+  }
+})();
+</script>
+</body>
+</html>
