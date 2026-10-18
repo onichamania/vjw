@@ -72,7 +72,11 @@ header.top{position:sticky;top:0;z-index:5;background:var(--accent);color:var(--
 .stop.term .name{font-weight:700}
 .gap .buses{display:flex;flex-direction:column;gap:6px;width:100%}
 .gap.at{margin-top:-8px}
-.gap.at .bus::before{border-radius:50%}
+.stop:not(.last)::after{content:"";position:absolute;left:16px;top:32px;width:7px;height:7px;border-right:3px solid var(--accent);border-bottom:3px solid var(--accent);transform:rotate(45deg);opacity:.7}
+.dirbar{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin:2px 0 8px;font-size:14px}
+.dirbar svg{width:26px;height:26px;flex:0 0 auto;stroke:var(--accent);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.dirbar b{font-size:16px}
+.dirbar small{display:block;color:var(--muted);font-size:12px}
 .gap.at.end::before{display:none}
 .legend{font-size:12px;color:var(--muted);margin:2px 0 6px}
 .legend i{display:inline-block;width:10px;height:10px;background:var(--muted);margin:0 3px 0 0;vertical-align:-1px}
@@ -84,7 +88,12 @@ header.top{position:sticky;top:0;z-index:5;background:var(--accent);color:var(--
 .bus.stale{opacity:.55}
 .bus svg{width:18px;height:18px;flex:0 0 auto;stroke:var(--mk,var(--m-other));fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .gap .bus{position:relative}
-.gap .bus::before{content:"";position:absolute;left:-31px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:4px;background:var(--mk,var(--m-other));box-shadow:0 0 0 3px var(--bg)}
+.gap .bus::before{content:"";position:absolute;left:-34px;top:50%;width:20px;height:22px;margin-top:-11px;background:var(--mk,var(--m-other));clip-path:polygon(28% 0,72% 0,72% 48%,100% 48%,50% 100%,0 48%,28% 48%)}
+.bus .arw{width:26px;height:26px;flex:0 0 auto;border-radius:50%;background:var(--mk,var(--m-other));display:inline-flex;align-items:center;justify-content:center}
+.bus .arw svg{width:16px;height:16px;stroke:var(--surface);stroke-width:3}
+.bus .pos{display:block;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bus .txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.bus .txt .md{flex:none}
 .list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .empty{color:var(--muted);text-align:center;padding:24px 0}
 dialog{border:0;border-radius:18px 18px 0 0;padding:0;width:100%;max-width:640px;margin:auto auto 0;background:var(--surface);color:var(--ink)}
@@ -451,16 +460,29 @@ function renderRoute(){
   if (cur.pattern === "*") return renderAllList();
   renderLine(S.patterns[cur.pattern]);
 }
-function busChip(b){
+const ARW_DOWN = '<svg viewBox="0 0 24 24"><path d="M12 4v15M5 12l7 7 7-7"/></svg>';
+const ARW_RIGHT = '<svg viewBox="0 0 24 24"><path d="M4 12h15M12 5l7 7-7 7"/></svg>';
+function destOf(b){
+  const p = S.patterns[b["odpt:busroutePattern"]];
+  return p && p.poles.length ? S.poleName(p.poles[p.poles.length-1]) : (b["odpt:terminalBusstopPole"] ? S.poleName(b["odpt:terminalBusstopPole"]) : "");
+}
+/* mode: "at"=停留所付近 / "run"=停留所間 / "list"=一覧 */
+function busChip(b, mode){
   const d = decodeNo(b["odpt:busNumber"]);
+  const from = b["odpt:fromBusstopPole"] ? S.poleName(b["odpt:fromBusstopPole"]) : "";
+  const to = b["odpt:toBusstopPole"] ? S.poleName(b["odpt:toBusstopPole"]) : "";
+  const dest = destOf(b);
+  const pos = mode === "at" ? (from || to ? `${from || to} 付近` : "")
+            : mode === "run" ? (to ? `次は ${to}` : "")
+            : [dest ? `${dest}行` : "", to ? `次 ${to}` : ""].filter(Boolean).join("・");
   const mk = d.fleet ? (MAKER_VAR[d.fleet.maker] || "--m-other") : "--m-other";
   const md = d.fleet ? `${d.fleet.maker} ${d.fleet.model}` : (d.yearAD ? `${d.yearAD}年度車` : "車種不明");
   const t = Date.parse(b["dc:date"]); const sec = isNaN(t) ? null : Math.round((Date.now() - t) / 1000);
   const stale = sec != null && sec > 180;
   const id = esc(b["owl:sameAs"] || b["@id"] || "");
   return `<button class="bus${stale ? " stale" : ""}" style="--mk:var(${mk})" data-b="${id}">
-    <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/></svg>
-    <span class="no">${esc(d.label || "番号なし")}</span><span class="md">${esc(md)}</span>${sec != null ? `<span class="age">${ageText(sec)}</span>` : ""}</button>`;
+    <span class="arw">${mode === "list" ? ARW_RIGHT : ARW_DOWN}</span>
+    <span class="no">${esc(d.label || "番号なし")}</span><span class="txt">${pos ? `<span class="pos">${esc(pos)}</span>` : ""}<span class="md">${esc(md)}</span></span>${sec != null ? `<span class="age">${ageText(sec)}</span>` : ""}</button>`;
 }
 function renderLine(p){
   if (!p) { $("lineArea").innerHTML = '<div class="empty">系統データがありません</div>'; return; }
@@ -478,25 +500,25 @@ function renderLine(p){
   p.poles.forEach((pid, i) => {
     const cls = ["stop"]; if (i === 0) cls.push("first","term"); if (i === n-1) cls.push("last","term");
     rows.push(`<div class="${cls.join(" ")}"><span class="dot"></span><span class="name">${esc(S.poleName(pid))}</span></div>`);
-    if (at[i]) rows.push(`<div class="gap at${i === n-1 ? " end" : ""}"><div class="buses">${at[i].map(busChip).join("")}</div></div>`);
-    if (between[i] && i < n-1) rows.push(`<div class="gap"><div class="buses">${between[i].map(busChip).join("")}</div></div>`);
+    if (at[i]) rows.push(`<div class="gap at${i === n-1 ? " end" : ""}"><div class="buses">${at[i].map(b => busChip(b, "at")).join("")}</div></div>`);
+    if (between[i] && i < n-1) rows.push(`<div class="gap"><div class="buses">${between[i].map(b => busChip(b, "run")).join("")}</div></div>`);
   });
-  let html = `<div class="legend"><i style="border-radius:50%"></i>停留所付近　<i style="border-radius:2px;margin-left:8px"></i>停留所の間を走行中　・車両をタップで詳細</div><div class="line">${rows.join("")}</div>`;
-  if (unknown.length) html += `<div class="sec-title">位置を特定できない車両</div><div class="list">${unknown.map(busChip).join("")}</div>`;
+  const lastName = n ? S.poleName(p.poles[n-1]) : "";
+  let html = `<div class="dirbar">${ARW_DOWN}<div><b>${esc(lastName)} 方面</b><small>バスは上から下へ進みます（▼の向きが進行方向）・車両をタップで詳細</small></div></div><div class="line">${rows.join("")}</div>`;
+  if (unknown.length) html += `<div class="sec-title">位置を特定できない車両</div><div class="list">${unknown.map(b => busChip(b, "list")).join("")}</div>`;
   if (!busesOn(p.id).length) html = `<div class="hint">この方向を走っている車両は今ありません。</div>` + html;
   $("lineArea").innerHTML = html;
 }
 function renderAllList(){
   const bs = cur.buses.slice().sort((a,b) => decodeNo(a["odpt:busNumber"]).label.localeCompare(decodeNo(b["odpt:busNumber"]).label, "en", {numeric:true}));
-  $("lineArea").innerHTML = bs.length ? `<div class="list">${bs.map(busChip).join("")}</div>` : '<div class="empty">いま走っている車両はありません</div>';
+  $("lineArea").innerHTML = bs.length ? `<div class="list">${bs.map(b => busChip(b, "list")).join("")}</div>` : '<div class="empty">いま走っている車両はありません</div>';
 }
 
 /* ===== 車両の詳細 ===== */
 function openBus(id){
   const b = cur.buses.find(x => (x["owl:sameAs"] || x["@id"]) === id); if (!b) return;
   const d = decodeNo(b["odpt:busNumber"]);
-  const p = S.patterns[b["odpt:busroutePattern"]];
-  const dest = p && p.poles.length ? S.poleName(p.poles[p.poles.length-1]) : (b["odpt:terminalBusstopPole"] ? S.poleName(b["odpt:terminalBusstopPole"]) : "");
+  const dest = destOf(b);
   const from = b["odpt:fromBusstopPole"] ? S.poleName(b["odpt:fromBusstopPole"]) : "";
   const to = b["odpt:toBusstopPole"] ? S.poleName(b["odpt:toBusstopPole"]) : "";
   const t = Date.parse(b["dc:date"]);
