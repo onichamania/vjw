@@ -734,7 +734,16 @@ for (const id of ["busSheet","setSheet"]) $(id).addEventListener("click", e => {
 
 /* ===== 画面遷移 ===== */
 function parseHash(){ const h = new URLSearchParams(location.hash.slice(1)); return { r: h.get("r"), p: h.get("p"), f: h.get("f") }; }
-function go(r, p, f){ const h = new URLSearchParams(); if (r) h.set("r", r); if (p) h.set("p", p); if (f) h.set("f", f); location.hash = h.toString(); }
+/* アプリ内で開いた画面には履歴に印を付け、戻るボタンでサイトの外へ出ないようにする */
+function go(r, p, f){
+  const h = new URLSearchParams(); if (r) h.set("r", r); if (p) h.set("p", p); if (f) h.set("f", f);
+  history.pushState({ tobus: 1 }, "", h.toString() ? "#" + h : location.pathname + location.search);
+  route();
+}
+function goHome(){
+  if (history.state && history.state.tobus) history.back();
+  else { history.replaceState(null, "", location.pathname + location.search); route(); }
+}
 function route(){
   if (!S) return;
   const { r, p, f } = parseHash();
@@ -745,16 +754,17 @@ function route(){
   else if (cur.route) closeRoute();
 }
 window.addEventListener("hashchange", route);
+window.addEventListener("popstate", route);
 document.addEventListener("click", e => {
   const gb = e.target.closest("[data-gr]"); if (gb) { $("busSheet").close(); go(gb.dataset.gr, gb.dataset.gp, gb.dataset.gf); return; }
   const tb = e.target.closest("[data-tab]"); if (tb) { showTab(tb.dataset.tab); return; }
   const fb = e.target.closest("[data-fk]"); if (fb) { setFilter(fb.dataset.fk, fb.dataset.fv); return; }
   const vb = e.target.closest("[data-v]"); if (vb) { openVehicle(vb.dataset.v, runByLabel.get(vb.dataset.v)); return; }
   const rb = e.target.closest("[data-r]"); if (rb) { go(rb.dataset.r); return; }
-  const pb = e.target.closest("[data-p]"); if (pb && cur.route) { cur.pattern = pb.dataset.p; history.replaceState(null, "", "#" + new URLSearchParams({ r: cur.route.id, p: cur.pattern }).toString()); renderRoute(); return; }
+  const pb = e.target.closest("[data-p]"); if (pb && cur.route) { cur.pattern = pb.dataset.p; history.replaceState(history.state, "", "#" + new URLSearchParams({ r: cur.route.id, p: cur.pattern }).toString()); renderRoute(); return; }
   const bb = e.target.closest("[data-b]"); if (bb) { openBus(bb.dataset.b); return; }
 });
-$("backBtn").onclick = () => { if (history.length > 1 && parseHash().r) history.back(); else go(null); };
+$("backBtn").onclick = goHome;
 $("reloadBtn").onclick = () => { if (cur.route) refresh(); else if (homeTab === "car") refreshCars(); else location.reload(); };
 $("q").addEventListener("input", () => S && renderHome());
 $("cq").addEventListener("input", () => renderCars());
