@@ -105,7 +105,9 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0}
 .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--ink);margin-left:6px}
-.sheet .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.sheet .row{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}
+a.btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+a.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
 .field{display:block;margin:10px 0}
 .field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 .field input{width:100%;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
@@ -611,10 +613,11 @@ function openVehicle(label, b){
     if (S.routeById[rid] && !(cur.route && cur.route.id === rid && cur.pattern === pid))
       goBtn = `<button class="btn" data-gr="${esc(rid)}" data-gp="${esc(pid)}" data-gf="${esc(d.label)}">路線図で現在地を見る</button>`;
   }
+  const webBtn = d.label ? `<a class="btn ghost" href="https://www.google.com/search?q=${encodeURIComponent("都営バス " + d.label)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>「都営バス ${esc(d.label)}」を検索</a>` : "";
   $("busBody").innerHTML = `<h2>${esc(d.label || "番号なし")}</h2><div class="sub">${esc(sub)}</div>
     <dl class="kv">${rows.join("")}</dl>
     <div class="sec-title">運用の記録（このアプリで見たもの）</div>${histHtml(d.label)}
-    <div class="row"><button class="btn ghost" onclick="$('busSheet').close()">閉じる</button>${goBtn}</div>`;
+    <div class="row"><button class="btn ghost" onclick="$('busSheet').close()">閉じる</button>${webBtn}${goBtn}</div>`;
   if (!$("busSheet").open) $("busSheet").showModal();
 }
 function openBus(id){
@@ -703,6 +706,7 @@ function renderCars(){
       for (let n = f[1]; n <= f[2]; n++) cand.add(f[0] + String(n).padStart(3, "0"));
     Object.keys(seen).forEach(l => cand.add(l));
   }
+  if (/^[A-Z]\d{3}$/.test(q) && YEAR[q[0]]) cand.add(q); // 一覧にない番号でも直接入力なら出す
   const list = [...cand].filter(l => (!q || normNo(l).includes(q)) && fitsF(decodeNo(l)))
     .map(l => { const d = decodeNo(l); return { l, y: d.yearAD || 0, n: d.num || 0 }; })
     .sort((a,b) => b.y - a.y || a.n - b.n).map(x => x.l);
