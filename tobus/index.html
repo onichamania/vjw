@@ -112,6 +112,22 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 footer.credit{color:var(--muted);font-size:11px;margin-top:28px;line-height:1.6}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
+.tabs{display:flex;gap:4px;background:var(--surface2);border-radius:12px;padding:4px;margin:14px 0 4px}
+.tab{flex:1;border:0;background:transparent;border-radius:9px;padding:8px 0;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
+.tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer}
+.fchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tog{display:flex;align-items:center;gap:8px;font-size:14px;margin:14px 2px 0}
+.tog input{width:18px;height:18px;accent-color:var(--accent)}
+.bus.off .arw{background:var(--surface2)}
+.bus.off .arw svg{stroke:var(--muted)}
+.bus.off .pos{color:var(--muted)}
+.bus.focus{outline:3px solid var(--accent);outline-offset:2px}
+.hist{list-style:none;margin:6px 0 0;padding:0;font-size:14px}
+.hist li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.hist li span:first-child{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sheet{max-height:85vh;overflow-y:auto}
 .hidden{display:none!important}
 .fav{background:transparent;border:0;cursor:pointer;padding:6px}
 .fav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
@@ -132,14 +148,27 @@ footer.credit{color:var(--muted);font-size:11px;margin-top:28px;line-height:1.6}
 
 <main class="wrap">
   <section id="home">
-    <div class="search"><input id="q" type="search" placeholder="系統名や停留所名で検索（例：都01、新橋）" autocomplete="off"></div>
     <div id="homeMsg"></div>
+    <div class="tabs"><button class="tab on" data-tab="route">系統から探す</button><button class="tab" data-tab="car">車両から探す</button></div>
+    <div id="carTab" class="hidden">
+      <div class="search"><input id="cq" type="search" placeholder="車両番号で検索（例：L328、M403）" autocomplete="off"></div>
+      <div class="sec-title">メーカー</div><div class="fchips" id="fMaker"></div>
+      <div class="sec-title">車種</div><div class="fchips" id="fModel"></div>
+      <div class="sec-title">年度</div><div class="fchips" id="fYear"></div>
+      <label class="tog"><input type="checkbox" id="onlyRun" checked> 運行中の車両だけ表示</label>
+      <div id="carMsg"></div>
+      <div class="sec-title" id="carTitle"></div>
+      <div class="list" id="carList"></div>
+    </div>
+    <div id="routeTab">
+    <div class="search"><input id="q" type="search" placeholder="系統名や停留所名で検索（例：都01、新橋）" autocomplete="off"></div>
     <div id="favSec" class="hidden">
       <div class="sec-title">お気に入り</div>
       <div class="routes" id="favList"></div>
     </div>
     <div class="sec-title" id="allTitle">系統一覧</div>
     <div class="routes" id="routeList"></div>
+    </div>
   </section>
 
   <section id="routeView" class="hidden">
@@ -283,7 +312,7 @@ const titleOf = o => {
 };
 const opMatch = x => { const o = x["odpt:operator"]; if (o == null) return true; return Array.isArray(o) ? o.includes(OP) : o === OP; };
 function fmtTime(d){ try { return d.toLocaleTimeString("ja-JP",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",second:"2-digit"}); } catch(e){ return d.toTimeString().slice(0,8); } }
-function ageText(sec){ if (sec < 0) sec = 0; if (sec < 60) return sec + "秒前"; if (sec < 3600) return Math.floor(sec/60) + "分前"; return Math.floor(sec/3600) + "時間前"; }
+function ageText(sec){ if (sec < 0) sec = 0; if (sec < 60) return sec + "秒前"; if (sec < 3600) return Math.floor(sec/60) + "分前"; if (sec < 86400) return Math.floor(sec/3600) + "時間前"; return Math.floor(sec/86400) + "日前"; }
 
 /* ===== 通信 ===== */
 let relay = ls.get("relay", "");
@@ -359,18 +388,19 @@ function build(c){
     const main = pats.slice().sort((a,b) => b.poles.length - a.poles.length)[0];
     const ends = main && main.poles.length ? `${poleName(main.poles[0])}〜${poleName(main.poles[main.poles.length-1])}` : "";
     const stopNames = new Set(); pats.forEach(p => p.poles.forEach(x => stopNames.add(poleName(x))));
-    return { id, label, ends, pats, search: (label + " " + ends + " " + [...stopNames].join(" ")).toLowerCase() };
+    return { id, label, ends, pats, search: norm(label + " " + ends + " " + [...stopNames].join(" ")) };
   }).sort((a,b) => a.label.localeCompare(b.label, "ja", { numeric:true }));
   S = { patterns: c.patterns, poles: c.poles, routes, routeById: Object.fromEntries(routes.map(r => [r.id, r])), poleName };
   return S;
 }
+const norm = s => String(s == null ? "" : s).normalize("NFKC").toLowerCase();
 const shortId = id => String(id || "").split(".").pop();
 
 /* ===== 画面：ホーム ===== */
 function setStatus(html){ $("status").innerHTML = html || ""; }
 function routeCard(r){ return `<button class="route" data-r="${esc(r.id)}"><b>${esc(r.label)}</b><span>${esc(r.ends)}</span></button>`; }
 function renderHome(){
-  const q = $("q").value.trim().toLowerCase();
+  const q = norm($("q").value.trim());
   const favs = ls.get("favs", []);
   const favRoutes = favs.map(id => S.routeById[id]).filter(Boolean);
   $("favSec").classList.toggle("hidden", !favRoutes.length || !!q);
@@ -390,11 +420,11 @@ function showError(where, e){
 }
 
 /* ===== 画面：系統 ===== */
-let cur = { route:null, pattern:null, buses:[], fetchedAt:null, timer:null };
-function openRoute(routeId, patternId){
+let cur = { route:null, pattern:null, buses:[], fetchedAt:null, timer:null, focus:null, focusDone:false };
+function openRoute(routeId, patternId, focus){
   const r = S.routeById[routeId];
   if (!r) { location.hash = ""; return; }
-  cur.route = r; cur.pattern = patternId || null; cur.buses = [];
+  cur.route = r; cur.pattern = patternId || null; cur.buses = []; cur.focus = focus || null; cur.focusDone = false;
   $("home").classList.add("hidden"); $("routeView").classList.remove("hidden");
   $("backBtn").classList.remove("hidden"); $("favBtn").classList.remove("hidden");
   $("title").textContent = r.label;
@@ -412,6 +442,7 @@ function closeRoute(){
   $("backBtn").classList.add("hidden"); $("favBtn").classList.add("hidden");
   $("title").textContent = "都バス現在地"; setStatus("");
   renderHome();
+  if (homeTab === "car") { renderCars(); refreshCars(); }
 }
 function startTimer(){ stopTimer(); cur.timer = setInterval(() => { if (!document.hidden) refresh(); }, REFRESH_SEC * 1000); }
 function stopTimer(){ if (cur.timer) clearInterval(cur.timer); cur.timer = null; }
@@ -433,7 +464,7 @@ async function refresh(){
   try {
     const buses = await fetchBuses(r);
     if (cur.route !== r) return;
-    cur.buses = buses; cur.fetchedAt = new Date();
+    cur.buses = buses; cur.fetchedAt = new Date(); recordSeen(buses);
     $("routeMsg").innerHTML = "";
     renderRoute();
     setStatus(fmtTime(cur.fetchedAt).slice(0,5) + " 更新");
@@ -480,7 +511,7 @@ function busChip(b, mode){
   const t = Date.parse(b["dc:date"]); const sec = isNaN(t) ? null : Math.round((Date.now() - t) / 1000);
   const stale = sec != null && sec > 180;
   const id = esc(b["owl:sameAs"] || b["@id"] || "");
-  return `<button class="bus${stale ? " stale" : ""}" style="--mk:var(${mk})" data-b="${id}">
+  return `<button class="bus${stale ? " stale" : ""}${cur.focus && d.label === cur.focus ? " focus" : ""}" style="--mk:var(${mk})" data-b="${id}">
     <span class="arw">${mode === "list" ? ARW_RIGHT : ARW_DOWN}</span>
     <span class="no">${esc(d.label || "番号なし")}</span><span class="txt">${pos ? `<span class="pos">${esc(pos)}</span>` : ""}<span class="md">${esc(md)}</span></span>${sec != null ? `<span class="age">${ageText(sec)}</span>` : ""}</button>`;
 }
@@ -508,20 +539,53 @@ function renderLine(p){
   if (unknown.length) html += `<div class="sec-title">位置を特定できない車両</div><div class="list">${unknown.map(b => busChip(b, "list")).join("")}</div>`;
   if (!busesOn(p.id).length) html = `<div class="hint">この方向を走っている車両は今ありません。</div>` + html;
   $("lineArea").innerHTML = html;
+  scrollFocus();
 }
 function renderAllList(){
   const bs = cur.buses.slice().sort((a,b) => decodeNo(a["odpt:busNumber"]).label.localeCompare(decodeNo(b["odpt:busNumber"]).label, "en", {numeric:true}));
   $("lineArea").innerHTML = bs.length ? `<div class="list">${bs.map(b => busChip(b, "list")).join("")}</div>` : '<div class="empty">いま走っている車両はありません</div>';
+  scrollFocus();
+}
+function scrollFocus(){
+  if (!cur.focus || cur.focusDone) return;
+  const el = document.querySelector("#lineArea .bus.focus");
+  if (el) { el.scrollIntoView({ block:"center" }); cur.focusDone = true; }
+}
+
+/* ===== 運用の記録（このアプリで見た分だけ） ===== */
+const busKey = b => b["owl:sameAs"] || b["@id"] || "";
+const routeIdOf = b => b["odpt:busroute"] || ((S.patterns[b["odpt:busroutePattern"]] || {}).route) || "";
+const routeName = id => (S.routeById[id] && S.routeById[id].label) || shortId(id);
+let seen = ls.get("seen", {}); // {番号: [[系統, パターン, 最初に見た時刻, 最後に見た時刻], ...]}
+function recordSeen(list){
+  const now = Date.now();
+  for (const b of list) {
+    const label = decodeNo(b["odpt:busNumber"]).label; if (!label) continue;
+    const r = routeIdOf(b), p = b["odpt:busroutePattern"] || "";
+    let t = Date.parse(b["dc:date"]); if (isNaN(t)) t = now;
+    const h = seen[label] || (seen[label] = []); const last = h[h.length-1];
+    if (last && last[0] === r && last[1] === p && t - last[3] < 90 * 60000) last[3] = Math.max(last[3], t);
+    else { h.push([r, p, t, t]); if (h.length > 12) h.splice(0, h.length - 12); }
+  }
+  ls.set("seen", seen);
+}
+function fmtWhen(ts){
+  const d = new Date(ts), day = x => x.toLocaleDateString("ja-JP", { timeZone:"Asia/Tokyo" });
+  const hm = fmtTime(d).slice(0,5);
+  return day(d) === day(new Date()) ? hm : d.toLocaleDateString("ja-JP", { timeZone:"Asia/Tokyo", month:"numeric", day:"numeric" }) + " " + hm;
+}
+function histHtml(label){
+  const h = (seen[label] || []).slice().reverse();
+  if (!h.length) return '<div class="hint">まだ記録がありません。</div>';
+  return `<ul class="hist">${h.map(([r, p, s, e]) => {
+    const pat = S.patterns[p], dest = pat && pat.poles.length ? S.poleName(pat.poles[pat.poles.length-1]) : "";
+    return `<li><span>${fmtWhen(s)}${e - s >= 60000 ? "〜" + fmtTime(new Date(e)).slice(0,5) : ""}</span><span><b>${esc(routeName(r))}</b>${dest ? "　" + esc(dest) + "行" : ""}</span></li>`;
+  }).join("")}</ul>`;
 }
 
 /* ===== 車両の詳細 ===== */
-function openBus(id){
-  const b = cur.buses.find(x => (x["owl:sameAs"] || x["@id"]) === id); if (!b) return;
-  const d = decodeNo(b["odpt:busNumber"]);
-  const dest = destOf(b);
-  const from = b["odpt:fromBusstopPole"] ? S.poleName(b["odpt:fromBusstopPole"]) : "";
-  const to = b["odpt:toBusstopPole"] ? S.poleName(b["odpt:toBusstopPole"]) : "";
-  const t = Date.parse(b["dc:date"]);
+function openVehicle(label, b){
+  const d = decodeNo(b ? b["odpt:busNumber"] : label);
   const rows = [];
   const add = (k, v) => { if (v != null && v !== "") rows.push(`<dt>${k}</dt><dd>${v}</dd>`); };
   if (d.fleet) {
@@ -532,15 +596,121 @@ function openBus(id){
   add("年度", d.yearAD ? `${d.yearAD}年度（${esc(d.year)}代）` : "");
   add("営業所", d.depotName ? `${esc(d.depotName)}（${esc(d.depot)}）` : "");
   add("区分", d.cls ? esc(d.cls) : "");
-  add("行先", esc(dest));
-  add("前の停留所", esc(from));
-  add("次の停留所", esc(to));
-  add("混雑", esc(OCC[b["odpt:occupancyStatus"]] || ""));
-  add("データ時刻", isNaN(t) ? "" : `${fmtTime(new Date(t))}（${ageText(Math.round((Date.now()-t)/1000))}）`);
-  add("元の番号", esc(d.raw));
-  $("busBody").innerHTML = `<h2>${esc(d.label || "番号なし")}</h2><div class="sub">${esc(cur.route ? cur.route.label : "")}${dest ? "　" + esc(dest) + "行" : ""}</div>
-    <dl class="kv">${rows.join("")}</dl><div class="row"><button class="btn ghost" onclick="$('busSheet').close()">閉じる</button></div>`;
-  $("busSheet").showModal();
+  let sub = "いま運行データはありません", goBtn = "";
+  if (b) {
+    const rid = routeIdOf(b), pid = b["odpt:busroutePattern"] || "", dest = destOf(b);
+    const t = Date.parse(b["dc:date"]);
+    sub = `${routeName(rid)}${dest ? "　" + dest + "行" : ""} で運行中`;
+    add("系統", esc(routeName(rid)));
+    add("行先", esc(dest));
+    add("前の停留所", esc(b["odpt:fromBusstopPole"] ? S.poleName(b["odpt:fromBusstopPole"]) : ""));
+    add("次の停留所", esc(b["odpt:toBusstopPole"] ? S.poleName(b["odpt:toBusstopPole"]) : ""));
+    add("混雑", esc(OCC[b["odpt:occupancyStatus"]] || ""));
+    add("データ時刻", isNaN(t) ? "" : `${fmtTime(new Date(t))}（${ageText(Math.round((Date.now()-t)/1000))}）`);
+    add("元の番号", esc(d.raw));
+    if (S.routeById[rid] && !(cur.route && cur.route.id === rid && cur.pattern === pid))
+      goBtn = `<button class="btn" data-gr="${esc(rid)}" data-gp="${esc(pid)}" data-gf="${esc(d.label)}">路線図で現在地を見る</button>`;
+  }
+  $("busBody").innerHTML = `<h2>${esc(d.label || "番号なし")}</h2><div class="sub">${esc(sub)}</div>
+    <dl class="kv">${rows.join("")}</dl>
+    <div class="sec-title">運用の記録（このアプリで見たもの）</div>${histHtml(d.label)}
+    <div class="row"><button class="btn ghost" onclick="$('busSheet').close()">閉じる</button>${goBtn}</div>`;
+  if (!$("busSheet").open) $("busSheet").showModal();
+}
+function openBus(id){
+  const b = cur.buses.find(x => busKey(x) === id) || allBuses.find(x => busKey(x) === id); if (!b) return;
+  openVehicle(decodeNo(b["odpt:busNumber"]).label, b);
+}
+
+/* ===== 画面：車両から探す ===== */
+let homeTab = ls.get("tab", "route");
+let allBuses = [], allAt = null, carTimer = null, carBusy = false, runByLabel = new Map();
+const F = { maker:null, model:null, year:null };
+const CAR_MAX = 400;
+const BUS_ICON = '<svg viewBox="0 0 24 24" style="stroke-width:2.2"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/></svg>';
+const normNo = s => String(s == null ? "" : s).normalize("NFKC").toUpperCase().replace(/[\s\-‐ー－―]/g, "");
+function showTab(t){
+  homeTab = t; ls.set("tab", t);
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === t));
+  $("carTab").classList.toggle("hidden", t !== "car");
+  $("routeTab").classList.toggle("hidden", t === "car");
+  if (t === "car") { renderCars(); if (!cur.route) refreshCars(); startCarTimer(); }
+  else { stopCarTimer(); if (!cur.route) setStatus(""); }
+}
+function startCarTimer(){ stopCarTimer(); carTimer = setInterval(() => { if (!document.hidden && !cur.route && homeTab === "car") refreshCars(); }, REFRESH_SEC * 1000); }
+function stopCarTimer(){ if (carTimer) clearInterval(carTimer); carTimer = null; }
+async function refreshCars(){
+  if (carBusy) return;
+  carBusy = true;
+  setStatus('<span class="spin"></span>更新中');
+  try {
+    allBuses = await getAllByOperator("odpt:Bus"); allAt = new Date();
+    recordSeen(allBuses);
+    $("carMsg").innerHTML = "";
+    if (!cur.route) { renderCars(); setStatus(fmtTime(allAt).slice(0,5) + " 更新"); }
+  } catch(e){
+    if (!cur.route) { setStatus("取得失敗"); showError($("carMsg"), e); }
+  } finally { carBusy = false; }
+}
+function fitsF(d){
+  if (F.maker && (!d.fleet || d.fleet.maker !== F.maker)) return false;
+  if (F.model && (!d.fleet || d.fleet.model !== F.model)) return false;
+  if (F.year && d.year !== F.year) return false;
+  return true;
+}
+function renderFilters(){
+  const okM = f => !F.maker || f[3] === F.maker;
+  const makers = [...new Set(FLEET.map(f => f[3]))];
+  const models = [...new Set(FLEET.filter(okM).map(f => f[4]))];
+  const years = new Set(FLEET.filter(f => okM(f) && (!F.model || f[4] === F.model)).map(f => f[0]));
+  if (!F.maker && !F.model) for (const l of runByLabel.keys()) { const y = decodeNo(l).year; if (YEAR[y]) years.add(y); }
+  const chip = (k, v, text) => `<button class="fchip${F[k] === v ? " on" : ""}" data-fk="${k}" data-fv="${esc(v)}">${esc(text)}</button>`;
+  $("fMaker").innerHTML = makers.map(m => chip("maker", m, m)).join("");
+  $("fModel").innerHTML = models.map(m => chip("model", m, m)).join("");
+  $("fYear").innerHTML = [...years].sort((a,b) => YEAR[b] - YEAR[a]).map(y => chip("year", y, `${YEAR[y]}（${y}）`)).join("");
+}
+function setFilter(k, v){
+  F[k] = F[k] === v ? null : v;
+  if (F.model && !FLEET.some(f => f[4] === F.model && (!F.maker || f[3] === F.maker))) F.model = null;
+  if (F.year && (F.maker || F.model) && !FLEET.some(f => f[0] === F.year && (!F.maker || f[3] === F.maker) && (!F.model || f[4] === F.model))) F.year = null;
+  renderCars();
+}
+function carRow(l, b){
+  const d = decodeNo(l);
+  const mk = d.fleet ? (MAKER_VAR[d.fleet.maker] || "--m-other") : "--m-other";
+  const md = d.fleet ? `${d.fleet.maker} ${d.fleet.model}` : (d.yearAD ? `${d.yearAD}年度車` : "車種不明");
+  let pos;
+  if (b) {
+    const dest = destOf(b), to = b["odpt:toBusstopPole"] ? S.poleName(b["odpt:toBusstopPole"]) : "";
+    pos = `<b>${esc(routeName(routeIdOf(b)))}</b>${dest ? "　" + esc(dest) + "行" : ""}${to ? "・次 " + esc(to) : ""}`;
+  } else {
+    const h = seen[l], last = h && h[h.length-1];
+    pos = "運行データなし" + (last ? `（最後：${esc(routeName(last[0]))} ${ageText(Math.round((Date.now() - last[3]) / 1000))}）` : "");
+  }
+  return `<button class="bus${b ? "" : " off"}" style="--mk:var(${mk})" data-v="${esc(l)}"><span class="arw">${b ? ARW_RIGHT : BUS_ICON}</span>
+    <span class="no">${esc(l)}</span><span class="txt"><span class="pos">${pos}</span><span class="md">${esc(md)}</span></span></button>`;
+}
+function renderCars(){
+  if (!S) return;
+  runByLabel = new Map();
+  for (const b of allBuses) { const l = decodeNo(b["odpt:busNumber"]).label; if (l) runByLabel.set(l, b); }
+  renderFilters();
+  const q = normNo($("cq").value.trim());
+  const all = !$("onlyRun").checked || !!q; // 番号で探すときは運行していない車両も出す
+  const cand = new Set(runByLabel.keys());
+  if (all) {
+    for (const f of FLEET) if ((!F.maker || f[3] === F.maker) && (!F.model || f[4] === F.model) && (!F.year || f[0] === F.year))
+      for (let n = f[1]; n <= f[2]; n++) cand.add(f[0] + String(n).padStart(3, "0"));
+    Object.keys(seen).forEach(l => cand.add(l));
+  }
+  const list = [...cand].filter(l => (!q || normNo(l).includes(q)) && fitsF(decodeNo(l)))
+    .map(l => { const d = decodeNo(l); return { l, y: d.yearAD || 0, n: d.num || 0 }; })
+    .sort((a,b) => b.y - a.y || a.n - b.n).map(x => x.l);
+  const nRun = list.filter(l => runByLabel.has(l)).length;
+  $("carTitle").textContent = allAt ? `${list.length}台（うち運行中 ${nRun}台）` : "運行データを取得中…";
+  if (!list.length) { $("carList").innerHTML = `<div class="empty">${allAt ? "見つかりませんでした" : '<span class="spin"></span>'}</div>`; return; }
+  $("carList").innerHTML = list.slice(0, CAR_MAX).map(l => carRow(l, runByLabel.get(l))).join("")
+    + (list.length > CAR_MAX ? `<div class="hint">ほか ${list.length - CAR_MAX}台。メーカー・車種・年度で絞り込んでください。</div>` : "");
 }
 
 /* ===== お気に入り・設定 ===== */
@@ -559,24 +729,33 @@ $("clearCache").onclick = async () => { await idbDel(STATIC_KEY); location.reloa
 for (const id of ["busSheet","setSheet"]) $(id).addEventListener("click", e => { if (e.target === $(id)) $(id).close(); });
 
 /* ===== 画面遷移 ===== */
-function parseHash(){ const h = new URLSearchParams(location.hash.slice(1)); return { r: h.get("r"), p: h.get("p") }; }
-function go(r, p){ const h = new URLSearchParams(); if (r) h.set("r", r); if (p) h.set("p", p); location.hash = h.toString(); }
+function parseHash(){ const h = new URLSearchParams(location.hash.slice(1)); return { r: h.get("r"), p: h.get("p"), f: h.get("f") }; }
+function go(r, p, f){ const h = new URLSearchParams(); if (r) h.set("r", r); if (p) h.set("p", p); if (f) h.set("f", f); location.hash = h.toString(); }
 function route(){
   if (!S) return;
-  const { r, p } = parseHash();
-  if (r) { if (!cur.route || cur.route.id !== r) openRoute(r, p); else if (p && p !== cur.pattern) { cur.pattern = p; renderRoute(); } }
+  const { r, p, f } = parseHash();
+  if (r) {
+    if (!cur.route || cur.route.id !== r) openRoute(r, p, f);
+    else { if (p) cur.pattern = p; if (f) { cur.focus = f; cur.focusDone = false; } renderRoute(); }
+  }
   else if (cur.route) closeRoute();
 }
 window.addEventListener("hashchange", route);
 document.addEventListener("click", e => {
+  const gb = e.target.closest("[data-gr]"); if (gb) { $("busSheet").close(); go(gb.dataset.gr, gb.dataset.gp, gb.dataset.gf); return; }
+  const tb = e.target.closest("[data-tab]"); if (tb) { showTab(tb.dataset.tab); return; }
+  const fb = e.target.closest("[data-fk]"); if (fb) { setFilter(fb.dataset.fk, fb.dataset.fv); return; }
+  const vb = e.target.closest("[data-v]"); if (vb) { openVehicle(vb.dataset.v, runByLabel.get(vb.dataset.v)); return; }
   const rb = e.target.closest("[data-r]"); if (rb) { go(rb.dataset.r); return; }
   const pb = e.target.closest("[data-p]"); if (pb && cur.route) { cur.pattern = pb.dataset.p; history.replaceState(null, "", "#" + new URLSearchParams({ r: cur.route.id, p: cur.pattern }).toString()); renderRoute(); return; }
   const bb = e.target.closest("[data-b]"); if (bb) { openBus(bb.dataset.b); return; }
 });
 $("backBtn").onclick = () => { if (history.length > 1 && parseHash().r) history.back(); else go(null); };
-$("reloadBtn").onclick = () => { if (cur.route) refresh(); else location.reload(); };
+$("reloadBtn").onclick = () => { if (cur.route) refresh(); else if (homeTab === "car") refreshCars(); else location.reload(); };
 $("q").addEventListener("input", () => S && renderHome());
-document.addEventListener("visibilitychange", () => { if (!document.hidden && cur.route) refresh(); });
+$("cq").addEventListener("input", () => renderCars());
+$("onlyRun").addEventListener("change", () => renderCars());
+document.addEventListener("visibilitychange", () => { if (document.hidden) return; if (cur.route) refresh(); else if (homeTab === "car") refreshCars(); });
 
 /* ===== 起動 ===== */
 (async function init(){
@@ -586,6 +765,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && cu
     setStatus("");
     if (!S.routes.length) throw new Error("系統データが空でした");
     renderHome();
+    showTab(homeTab);
     route();
   } catch(e){
     setStatus("");
