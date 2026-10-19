@@ -31,7 +31,7 @@
   #fxHurt { opacity:0; background:radial-gradient(ellipse at center, rgba(120,0,0,0) 35%, rgba(160,0,0,.55) 80%, rgba(90,0,0,.95) 115%); }
   #fxHide { opacity:0; transition:opacity .35s; }
   #fxHide.closet { background:
-      linear-gradient(90deg, #000 0%, #000 calc(50% - 7vw), rgba(0,0,0,.35) calc(50% - 3.5vw), rgba(0,0,0,0) calc(50% - 1.6vw), rgba(0,0,0,0) calc(50% + 1.6vw), rgba(0,0,0,.35) calc(50% + 3.5vw), #000 calc(50% + 7vw), #000 100%);
+      linear-gradient(90deg, #000 0%, #000 calc(50% - 12vw), rgba(0,0,0,.55) calc(50% - 7vw), rgba(0,0,0,0) calc(50% - 3vw), rgba(0,0,0,0) calc(50% + 3vw), rgba(0,0,0,.55) calc(50% + 7vw), #000 calc(50% + 12vw), #000 100%);
   }
   #fxHide.bed { background:
       linear-gradient(180deg, #000 0%, #000 22%, rgba(0,0,0,.5) 34%, rgba(0,0,0,0) 44%, rgba(0,0,0,0) 86%, rgba(0,0,0,.7) 94%, #000 100%);
@@ -96,7 +96,7 @@
   .tbtn:active, .tbtn.on { background:rgba(255,255,255,.25); }
   #tUse { right:28px; bottom:150px; width:78px; height:78px; font-size:30px; opacity:.35; transition:opacity .15s; }
   #tUse.ready { opacity:1; border-color:#fff; box-shadow:0 0 18px rgba(255,255,255,.35); }
-  #tCrouch { right:122px; bottom:100px; width:58px; height:58px; font-size:12px; }
+  #tCrouch { right:122px; bottom:100px; width:58px; height:58px; font-size:11px; line-height:1.1; }
   #tPause { right:16px; top:16px; width:44px; height:44px; font-size:14px; border-radius:10px; }
   #tItem { right:28px; bottom:244px; width:58px; height:58px; font-size:12px; display:none; }
   #tItem.on { display:grid; }
@@ -108,13 +108,14 @@
       radial-gradient(ellipse at 50% 120%, rgba(255,160,70,.25), rgba(0,0,0,0) 60%),
       radial-gradient(ellipse at center, rgba(30,20,12,.55), rgba(0,0,0,.95) 75%);
   }
-  .logo { font-family:"Oswald",sans-serif; font-weight:700; font-size:min(26vw,170px); letter-spacing:.06em; line-height:.9; color:#ece2cf;
+  .logo { font-family:"Oswald",sans-serif; font-weight:700; font-size:min(26vw,24vh,170px); letter-spacing:.06em; line-height:.9; color:#ece2cf;
     text-shadow:0 0 30px rgba(255,190,110,.25), 0 6px 0 #2a1d12, 0 10px 30px #000; position:relative; }
   .logo .o { position:relative; display:inline-block; }
   .logo .o::after { content:""; position:absolute; left:50%; top:52%; width:.2em; height:.2em; transform:translate(-50%,-50%); border-radius:50%;
     background:radial-gradient(circle, #fff 0 25%, #222 30% 55%, transparent 60%); animation:blink 6s infinite; }
   @keyframes blink { 0%,94%,100% { transform:translate(-50%,-50%) scaleY(1); } 96% { transform:translate(-50%,-50%) scaleY(.1); } }
   .sublogo { font-size:15px; letter-spacing:.55em; color:var(--sub); margin:6px 0 34px; text-transform:uppercase; }
+  #title { overflow-y:auto; justify-content:safe center; }
   .menu { display:flex; flex-direction:column; gap:10px; width:min(320px,86vw); }
   .mbtn { background:rgba(20,15,10,.75); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:13px 18px; font-size:19px;
     letter-spacing:.08em; cursor:pointer; transition:all .15s; text-align:center; }
@@ -185,6 +186,15 @@
   .heart .hbtns { display:flex; gap:20px; justify-content:center; }
   .heart .hbtns button { width:120px; height:64px; font-size:22px; border-radius:12px; border:2px solid #fff; background:rgba(0,0,0,.4); color:#fff; }
   .msgline { font-family:"Noto Sans JP"; font-size:14px; color:#d9cdb5; margin-top:10px; }
+  @media (max-height:520px) {
+    .sublogo { margin:2px 0 12px; font-size:12px; }
+    .menu { gap:7px; }
+    .mbtn { padding:8px 14px; font-size:16px; }
+    .mbtn.primary { font-size:18px; }
+    .knobs { margin-top:8px; }
+    .foot { position:static; margin-top:10px; }
+    .tbtn#tCrouch { font-size:11px; }
+  }
 </style>
 <script type="importmap">
 { "imports": {
@@ -386,11 +396,11 @@ const canvas = $('c');
 let renderer, composer = null, bloomPass = null, gradePass = null;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.FogExp2(0x060403, 0.045);
+scene.fog = new THREE.FogExp2(0x060403, 0.034);
 const camera = new THREE.PerspectiveCamera(SETTINGS.fov, innerWidth / innerHeight, 0.04, 140);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
-const hemi = new THREE.HemisphereLight(0xb39a7c, 0x2a1c12, 0.16);
+const hemi = new THREE.HemisphereLight(0xc4a27e, 0x2a1c12, 0.34);
 scene.add(hemi);
 const QUALITY = {
   low: { pr: 1, pool: 5, shadows: 0, bloom: false, tex: 512, aa: false },
@@ -444,7 +454,7 @@ function setupRenderer() {
     composer.setPixelRatio(q.pr);
     composer.setSize(innerWidth, innerHeight);
     composer.addPass(new RenderPass(scene, camera));
-    bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.62, 0.55, 0.78);
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 0.86);
     composer.addPass(bloomPass);
     composer.addPass(new OutputPass());
     gradePass = new ShaderPass(GradeShader);
@@ -1705,7 +1715,7 @@ function makeItemMesh(type, extra) {
       break;
     }
     case 'lighter': {
-      add(new THREE.BoxGeometry(0.04, 0.065, 0.018), std({ color: 0xa82a22, roughness: 0.4, metalness: 0.2 }), 0, 0.033, 0);
+      add(new THREE.BoxGeometry(0.04, 0.065, 0.018), std({ color: 0x6a1a14, roughness: 0.45, metalness: 0.3, envMap: ENV, envMapIntensity: 0.6 }), 0, 0.033, 0);
       add(new THREE.BoxGeometry(0.04, 0.018, 0.018), MAT.steel, 0, 0.074, 0);
       break;
     }
@@ -1871,7 +1881,7 @@ function addBed(room, x, z, ry, opt = {}) {
   const W = opt.double ? 1.7 : 1.15, L = 2.15, wood = MAT.darkWood;
   F.box(W + 0.1, 1.35, 0.1, wood, 0, 0.68, -L / 2);
   F.box(W + 0.14, 0.06, 0.14, MAT.trim, 0, 1.37, -L / 2);
-  F.box(W + 0.1, 0.62, 0.08, wood, 0, 0.31, L / 2);
+  F.box(W + 0.1, 0.55, 0.08, wood, 0, 0.64, L / 2);
   F.box(0.06, 0.16, L, wood, -W / 2, 0.42, 0); F.box(0.06, 0.16, L, wood, W / 2, 0.42, 0);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) F.box(0.08, 0.38, 0.08, wood, sx * (W / 2 - 0.02), 0.19, sz * (L / 2 - 0.05));
   F.box(W - 0.04, 0.2, L - 0.12, MAT.sheet, 0, 0.6, 0);
@@ -2788,8 +2798,9 @@ TPL.library = {
     const paperPos = desk.top.F.pt(0, 0.805, 0.1);
     const paper = makeItemMesh('paper'); paper.position.copy(paperPos); paper.rotation.y = 0.2; room.group.add(paper);
     room.addInteract(paper, { dist: 2.4, prompt: () => (GAME.hasItem('hint') ? null : 'ヒントの紙を拾う'), use: () => { GAME.giveItem('hint'); room.group.remove(paper); SFX.paper(); GAME.showHint('紙を手に入れた。本を集めて南京錠のコードを解こう。'); } });
-    for (const z of [-4, -11, -18]) addChandelier(room, 0, P.H, z, 1.3, { intensity: 6 });
-    for (const z of [-7, -15]) for (const x of [-7.5, 7.5]) addChandelier(room, x, P.H, z, 1.0, { intensity: 4.5 });
+    for (const z of [-4, -11, -18]) addChandelier(room, 0, P.H, z, 1.3, { intensity: 10, range: 18 });
+    for (const z of [-7, -15]) for (const x of [-7.5, 7.5]) addChandelier(room, x, P.H, z, 1.0, { intensity: 7, range: 15 });
+    sconcesAlong(room, 'W', 5, 2.9); sconcesAlong(room, 'E', 5, 2.9);
     sconcesAlong(room, 'S', 4, 2.6);
     // library code
     const shapes = r.shuffle(LIB_SHAPES.slice()).slice(0, 5);
@@ -2934,7 +2945,7 @@ TPL.courtyard = {
       room.addFixture({ local: L.pt(0, 3.35, 0), color: 0xffb466, intensity: 6, range: 12, mats: [{ mat: m, base: 3 }], glow: gl, kind: 'post' });
     }
     // moonlight
-    room.addFixture({ local: new THREE.Vector3(-4, 14, -P.D * 0.5), color: 0x7f9ad8, intensity: 60, range: 40, kind: 'moon', priority: 3, shadow: false });
+    room.addFixture({ local: new THREE.Vector3(-4, 14, -P.D * 0.5), color: 0x7f9ad8, intensity: 16, range: 40, kind: 'moon', priority: 3, shadow: false });
     // shed
     const S = new Frame(room, 5.5, 0, -19.8, 0);
     S.box(2.6, 2.4, 2.0, MAT.crateWood, 0, 1.2, 0); S.box(3.0, 0.12, 2.4, MAT.darkWood, 0, 2.5, 0, 0.12, 0, 0);
@@ -3032,7 +3043,7 @@ TPL.electrical = {
     for (const [x, z] of [[-10.6, -6], [10.6, -12], [-10.6, -19], [10.6, -24], [0, -0.4]]) {
       const m = std({ color: 0x300000, emissive: 0xff1a0a, emissiveIntensity: 2.5 });
       const b = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), m); b.position.set(x, 4.6, z); room.group.add(b); b.userData.ownMat = true;
-      room.addFixture({ local: new THREE.Vector3(x * 0.95, 4.4, z), color: 0xff2a10, intensity: 3.2, range: 11, mats: [{ mat: m, base: 2.5 }], kind: 'emergency', shadow: false });
+      room.addFixture({ local: new THREE.Vector3(x * 0.95, 4.4, z), color: 0xff3a1a, intensity: 2.6, range: 17, mats: [{ mat: m, base: 2.5 }], kind: 'emergency', shadow: false });
     }
     // breaker box on the west wall
     const bp = onWall(room, 'W', 1.4, 0.3, 'tall', { at: 21 }) || anyWall(room, 1.4, 0.3, 'tall', ['W', 'E'], { rng: r });
@@ -3147,7 +3158,7 @@ TPL.seekBranch = {
     const ri = inward(real), fi = inward(fake);
     const rw = room.walls[P.exits[0].wall], rt = wallT(room, P.exits[0].wall, P.exits[0].at);
     for (const s of [-1.35, 1.35]) { const q = rw.F.pt(rt + s, 0, 0); addSconce(room, q.x, 2.2, q.z, rw.F.ry, { intensity: 4 }); }
-    const guide = glowSprite(0x4aa0ff, 2.4, 0.5); guide.position.copy(rp).addScaledVector(ri, 0.8); guide.position.y = 1.4; room.group.add(guide);
+    const guide = glowSprite(0x4aa0ff, 1.6, 0.3); guide.position.copy(rp).addScaledVector(ri, 0.8); guide.position.y = 1.4; room.group.add(guide);
     room.addFixture({ local: rp.clone().addScaledVector(ri, 1.2).setY(1.6), color: 0x5aa8ff, intensity: 3, range: 6, kind: 'guide', shadow: false, priority: 1 });
     // fake doorway: black void with grasping hands
     const VF = new Frame(room, fp.x, 0, fp.z, fake.dry);
@@ -3237,7 +3248,7 @@ const WORLD = {
     if (c.lever) addGateAndLever(room, r);
     if (c.seekEyes) addSeekEyes(room, c.seekEyes, r);
     if (c.dark || room.meta.greenhouse) { room.dark = true; for (const f of room.fixtures) if (f.kind !== 'moon') f.state = 'off'; }
-    if (room.index > 0 && !room.meta.safe && r.chance(0.05)) room.meta.jackDoor = true;
+    if (room.index > 4 && !room.meta.safe && r.chance(0.02)) room.meta.jackDoor = true;
   },
   remove(room) {
     const i = this.rooms.indexOf(room); if (i < 0) return;
@@ -3323,6 +3334,7 @@ function segBox(x0, z0, x1, z1, bx0, bz0, bx1, bz1) {
 }
 
 /* ---- lights ---- */
+const LIGHT_SCALE = 1.0;
 const LIGHTS = {
   pool: [], lighter: null, flash: null, n: 0,
   init() {
@@ -3331,13 +3343,13 @@ const LIGHTS = {
     const q = Q();
     this.n = q.pool;
     for (let i = 0; i < this.n; i++) {
-      const l = new THREE.PointLight(0xffffff, 0, 10, 2);
+      const l = new THREE.PointLight(0xffffff, 0, 10, 1);
       if (i < q.shadows) { l.castShadow = true; l.shadow.mapSize.set(512, 512); l.shadow.bias = -0.004; l.shadow.normalBias = 0.03; l.shadow.camera.near = 0.15; l.shadow.camera.far = 16; l.shadow.radius = 3; }
       scene.add(l); this.pool.push(l);
     }
     if (!this.lighter) {
-      this.lighter = new THREE.PointLight(0xff9a40, 0, 9, 2); camera.add(this.lighter); this.lighter.position.set(0.25, -0.15, -0.45);
-      this.flash = new THREE.SpotLight(0xfff1d6, 0, 26, 0.48, 0.55, 1.6); camera.add(this.flash); this.flash.position.set(0.2, -0.15, 0); camera.add(this.flash.target); this.flash.target.position.set(0.1, -0.05, -5);
+      this.lighter = new THREE.PointLight(0xff9a40, 0, 9, 1); camera.add(this.lighter); this.lighter.position.set(0.05, 0.12, -0.6);
+      this.flash = new THREE.SpotLight(0xfff1d6, 0, 26, 0.48, 0.55, 1); camera.add(this.flash); this.flash.position.set(0.2, -0.15, 0); camera.add(this.flash.target); this.flash.target.position.set(0.1, -0.05, -5);
     }
   },
   update(dt, t) {
@@ -3356,7 +3368,7 @@ const LIGHTS = {
       if (!f) { l.intensity = 0; continue; }
       const w = cut === Infinity ? 1 : clamp((cut - f._d) / 3, 0, 1);
       l.position.copy(f.pos); l.color.copy(f.color); l.distance = f.range;
-      l.intensity = f.intensity * f.level * (f.flick || 1) * w * GAME.lightMul;
+      l.intensity = f.intensity * f.level * (f.flick || 1) * w * GAME.lightMul * LIGHT_SCALE;
     }
     if (Q().shadows) { this.shadowFrame++; if (this.shadowFrame % 2 === 0) renderer.shadowMap.needsUpdate = true; }
   },
@@ -3683,8 +3695,8 @@ GAME.updateItems = function (dt) {
     if (it.type === 'flashlight' && ls === 'flashlight' && GAME.selItem() === it) { it.charge = Math.max(0, it.charge - dt * 0.9); if (it.charge <= 0 && GAME.hasItem('battery')) { GAME.takeItem('battery'); it.charge = 100; GAME.showHint('電池を交換した'); } }
   }
   const t = GAME.time;
-  LIGHTS.lighter.intensity = ls === 'lighter' ? (1.6 + Math.sin(t * 23) * 0.15 + Math.sin(t * 9.1) * 0.15) * GAME.lightMul : 0;
-  LIGHTS.flash.intensity = ls === 'flashlight' ? 22 * GAME.lightMul * (GAME.selItem().charge < 10 ? (Math.sin(t * 30) > 0 ? 1 : 0.3) : 1) : 0;
+  LIGHTS.lighter.intensity = ls === 'lighter' ? (1.3 + Math.sin(t * 23) * 0.15 + Math.sin(t * 9.1) * 0.15) * GAME.lightMul : 0;
+  LIGHTS.flash.intensity = ls === 'flashlight' ? 7 * GAME.lightMul * (GAME.selItem().charge < 10 ? (Math.sin(t * 30) > 0 ? 1 : 0.3) : 1) : 0;
   UI.hotbarCharge();
 };
 GAME.heal = function (n) { PLAYER.hp = Math.min(100, PLAYER.hp + n); UI.hp(); };
@@ -3774,7 +3786,7 @@ GAME.enterHide = function (h) {
   PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0; PLAYER.hideT = 0; PLAYER.crouch = false;
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
   const fx = $('fxHide'); fx.className = 'fx ' + (h.type === 'bed' ? 'bed' : 'closet'); setTimeout(() => { if (PLAYER.hidden === h) fx.style.opacity = 1; }, 250);
-  if (h.type === 'closet') { SFX.closet(h.cam); animateClosetDoors(h); } else SFX.bed();
+  if (h.type === 'closet') { SFX.closet(h.cam); animateClosetDoors(h); setTimeout(() => { if (PLAYER.hidden === h) h.doors.forEach(d => (d.visible = false)); }, 420); } else SFX.bed();
   NOISE.emit(PLAYER.pos, 3);
 };
 GAME.exitHide = function (force = false) {
@@ -3784,7 +3796,7 @@ GAME.exitHide = function (force = false) {
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z);
   PLAYER.camY = h.exitP.y + 1.62;
   $('fxHide').style.opacity = 0;
-  if (h.type === 'closet') { SFX.closet(h.cam); animateClosetDoors(h); } else SFX.bed();
+  if (h.type === 'closet') { h.doors.forEach(d => (d.visible = true)); SFX.closet(h.cam); animateClosetDoors(h); } else SFX.bed();
   ENT.onExitHide();
 };
 function animateClosetDoors(h) {
@@ -3800,17 +3812,17 @@ function animateClosetDoors(h) {
 /* ---------- held item view model ---------- */
 const VIEW = {
   g: new THREE.Group(), cur: null, flame: null,
-  init() { camera.add(this.g); this.g.position.set(0.28, -0.26, -0.5); },
+  init() { camera.add(this.g); this.g.position.set(0.3, -0.27, -0.55); },
   set(it) {
     if (this.cur) { this.g.remove(this.cur); this.cur = null; this.flame = null; }
     if (!it) return;
     const m = makeItemMesh(it.type === 'hint' ? 'paper' : it.type);
-    m.scale.setScalar(it.type === 'hint' ? 1.3 : 2.2);
+    m.scale.setScalar(it.type === 'hint' ? 1.3 : it.type === 'lighter' ? 1.25 : 1.7);
     if (it.type === 'flashlight') m.rotation.y = Math.PI / 2;
     if (it.type === 'key' || it.type === 'skeleton' || it.type === 'lockpick') m.rotation.set(0.3, 1.2, 0.2);
     if (it.type === 'hint') m.rotation.set(1.1, 0, 0);
     if (it.type === 'lighter') {
-      const fl = glowSprite(0xffa040, 0.12, 0.95); fl.position.set(0, 0.11, 0); m.add(fl); this.flame = fl;
+      const fl = glowSprite(0xffb050, 0.06, 0.7); fl.position.set(0, 0.1, 0); m.add(fl); this.flame = fl;
       const core = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffe0a0 })); core.scale.y = 2.2; core.position.set(0, 0.095, 0); fl.add(core);
     }
     m.traverse(o => { if (o.isMesh) { o.renderOrder = 10; } });
@@ -3818,9 +3830,9 @@ const VIEW = {
   },
   update(dt) {
     const b = PLAYER.bob, k = Math.min(1, PLAYER.speed / 4);
-    this.g.position.set(0.28 + Math.cos(b) * 0.012 * k, -0.26 + Math.abs(Math.sin(b)) * 0.012 * k - PLAYER.crouchT * 0.02, -0.5);
+    this.g.position.set(0.3 + Math.cos(b) * 0.012 * k, -0.27 + Math.abs(Math.sin(b)) * 0.012 * k - PLAYER.crouchT * 0.02, -0.55);
     this.g.visible = !PLAYER.hidden && PLAYER.alive;
-    if (this.flame) { const on = GAME.lightSource() === 'lighter'; this.flame.visible = on; const s = 0.1 + Math.sin(GAME.time * 25) * 0.01; this.flame.scale.set(s, s * 1.5, s); }
+    if (this.flame) { const on = GAME.lightSource() === 'lighter'; this.flame.visible = on; const s = 0.055 + Math.sin(GAME.time * 25) * 0.006; this.flame.scale.set(s, s * 1.6, s); }
   },
 };
 
@@ -4333,7 +4345,7 @@ const ENT = {
           const k = this.t / this.rise;
           this.puddle.scale.setScalar(Math.min(1, k * 3));
           this.model.position.y = this.trail[0].y - 2.6 * (1 - smoothstep(0.2, 1, k));
-          this.model.lookAt(PLAYER.pos.x, this.model.position.y, PLAYER.pos.z);
+          this.model.rotation.set(0, Math.atan2(PLAYER.pos.x - this.model.position.x, PLAYER.pos.z - this.model.position.z), 0);
           animateSeek(this.model, this.t, 0);
           return;
         }
@@ -4535,8 +4547,8 @@ function makeSeekModel() {
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.75, 6, 12), m); torso.position.y = 1.45; g.add(torso);
   const head = new THREE.Group(); head.position.y = 2.15; g.add(head);
   const hs = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), m); hs.scale.set(1, 1.15, 1); head.add(hs);
-  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.2, emissive: 0x555555, emissiveIntensity: 0.6 })); eye.position.set(0, 0.02, 0.2); eye.scale.set(1, 1, 0.6); head.add(eye);
-  const pup = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: 0x000000 })); pup.position.set(0, 0.02, 0.3); head.add(pup);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.21, 18, 14), new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.2, emissive: 0x777777, emissiveIntensity: 0.8 })); eye.position.set(0, 0.03, 0.24); eye.scale.set(1, 0.9, 0.7); head.add(eye);
+  const pup = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: 0x000000 })); pup.position.set(0, 0.03, 0.385); head.add(pup);
   const limb = (r0, r1, l) => { const gg = new THREE.Group(); const mm = new THREE.Mesh(new THREE.CapsuleGeometry((r0 + r1) / 2, l, 4, 8), m); mm.position.y = -l / 2; gg.add(mm); return gg; };
   g.userData.limbs = {};
   for (const s of [-1, 1]) {
@@ -4935,10 +4947,10 @@ function update(dt) {
     // ambience per room
     const rm = GAME.room;
     const dark = rm && rm.dark, out = rm && rm.outdoor, gh = rm && rm.meta.greenhouse;
-    hemi.intensity = damp(hemi.intensity, out ? 0.3 : dark ? 0.035 : 0.15, 2, dt);
-    hemi.color.setHex(out ? 0x8ea4d8 : 0xb39a7c);
+    hemi.intensity = damp(hemi.intensity, out ? 0.4 : gh ? 0.07 : dark ? 0.05 : rm.index === 100 && !rm.meta.powered ? 0.12 : 0.38, 2, dt);
+    hemi.color.setHex(out || gh ? 0x8ea4d8 : 0xc4a27e);
     scene.fog.color.lerp(out ? FOG_OUT : gh ? FOG_GH : FOG_DEFAULT, Math.min(1, dt * 2));
-    scene.fog.density = damp(scene.fog.density, out ? 0.022 : 0.045, 2, dt);
+    scene.fog.density = damp(scene.fog.density, out ? 0.02 : 0.034, 2, dt);
     if (gh || out) {
       lightningT -= dt;
       if (lightningT <= 0) { lightningT = rng.range(9, 22); POST.flash = 0.9; setTimeout(() => (POST.flash = 0.6), 120); SFX.thunder(); }
@@ -4993,7 +5005,7 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
-window.__DOORS = { GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
+window.__DOORS = { GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
 </script>
 </body>
 </html>
