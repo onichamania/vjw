@@ -3,12 +3,12 @@ const SAVE_KEY='lu-save';
 function snapshot(){const nodes=[];for(const o of NODES)if(!o.alive)nodes.push([o.id,Math.max(0,Math.round(o.t))]);
   const b={};for(const B of BLDS)if(B.st&&Object.keys(B.st).length)b[B.n]=B.st;
   return{v:1,w:'gaia',open:[...W.open],paid:W.paid,inv:PL.inv,tools:PL.tools,hp:Math.round(PL.hp),skin:PL.skin,owned:PL.owned,pos:[PL.u.x,PL.u.y,PL.u.z].map(v=>+v.toFixed(4)),camf:[CAM.f.x,CAM.f.y,CAM.f.z].map(v=>+v.toFixed(4)),
-    nodes,b,sword:W.sword||0,core:W.core||0,seen:[...AREA_SEEN],ts:Date.now(),clear:W.clear||0,play:Math.round(W.play||0)}}
+    nodes,b,sword:W.sword||0,core:W.core||0,seen:[...AREA_SEEN],ts:Date.now(),clear:W.clear||0,play:Math.round(W.play||0),...(CLOUD.key?{cloud:CLOUD.key,cloudS:CLOUD.s}:{})}}
 // プレイヤーの分だけ（オンラインでほかの人の星にいるとき）
 function playerPart(){return{inv:PL.inv,tools:PL.tools,skin:PL.skin,owned:PL.owned}}
 let saveT=0;function saveSoon(){saveT=Math.min(saveT||1.5,1.5)}
-function saveGame(){if(!GAME_READY)return;try{if(NET.on&&!NET.host){const old=JSON.parse(LSget(SAVE_KEY,'null'));if(old){Object.assign(old,playerPart());LSset(SAVE_KEY,JSON.stringify(old))}return}
-  LSset(SAVE_KEY,JSON.stringify(snapshot()))}catch(e){}}
+function saveGame(){if(!GAME_READY)return;try{if(NET.on&&!NET.host){const old=JSON.parse(LSget(SAVE_KEY,'null'));if(old){Object.assign(old,playerPart());LSset(SAVE_KEY,JSON.stringify(old))}clAfterSave();return}
+  LSset(SAVE_KEY,JSON.stringify(snapshot()))}catch(e){}clAfterSave()}
 function loadSave(){try{return JSON.parse(LSget(SAVE_KEY,'null'))}catch(e){return null}}
 // セーブを星にあてはめる（はじめからのときは null）
 function applySave(s,opt){opt=opt||{};
@@ -17,9 +17,9 @@ function applySave(s,opt){opt=opt||{};
   for(const n of [...W.open])if(n!==0){W.open.delete(n)}W.paid={};
   for(const ci in TILE_MESH)TILE_MESH[ci].visible=false;for(const B of BLDS){B.m.visible=false;B.st={};if(B.pads){B.pads.forEach(m=>{world.remove(m)});B.pads=null}if(B.pile){B.pile.forEach(m=>world.remove(m));B.pile=[]}}
   if(s){for(const n of s.open||[])if(TILES[n])W.open.add(n);W.paid=s.paid&&typeof s.paid==='object'?s.paid:{};W.sword=s.sword||0;W.core=s.core||0;W.clear=s.clear||0;W.play=s.play||0;
-    if(!opt.worldOnly){PL.inv=Object.assign({},s.inv||{});PL.tools=Object.assign({axe:1,pick:1,weap:1},s.tools||{});PL.skin=s.skin||'stick';PL.owned=Object.assign({stick:1},s.owned||{})}
+    if(!opt.worldOnly){CLOUD.key=s.cloud||null;CLOUD.s=s.cloudS||null;PL.inv=Object.assign({},s.inv||{});PL.tools=Object.assign({axe:1,pick:1,weap:1},s.tools||{});PL.skin=s.skin||'stick';PL.owned=Object.assign({stick:1},s.owned||{})}
     AREA_SEEN=new Set(s.seen||[1])}
-  else{W.sword=0;W.core=0;W.clear=0;W.play=0;if(!opt.worldOnly){PL.inv={};PL.tools={axe:1,pick:1,weap:1};PL.skin='stick';PL.owned={stick:1}}AREA_SEEN=new Set([1])}
+  else{W.sword=0;W.core=0;W.clear=0;W.play=0;if(!opt.worldOnly){CLOUD.key=null;CLOUD.s=null;PL.inv={};PL.tools={axe:1,pick:1,weap:1};PL.skin='stick';PL.owned={stick:1}}AREA_SEEN=new Set([1])}
   oldCells.forEach(drawDecoCell);
   for(const n of W.open){const T=TILES[n];if(n===0)T.cells.forEach(ci=>showTile(ci,false));else showTile(T.cell,false)}
   // 木・岩

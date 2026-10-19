@@ -77,7 +77,7 @@ function ask(title,msg,opt){opt=opt||{};return new Promise(res=>{const back=docu
   $('dlgOk').textContent=opt.ok||'OK';const done=v=>{$('dlgOk').onclick=$('dlgNo').onclick=null;showScr(backId);res(v)};$('dlgOk').onclick=()=>{SFX.click();done(opt.input!=null?inp.value:true)};$('dlgNo').onclick=()=>{SFX.click();done(null)};
   inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')$('dlgOk').click()};showScr('dlg');if(opt.input!=null)setTimeout(()=>{try{inp.focus()}catch(e){}},50)})}
 // ---- メニュー ----
-function openMenu(){if(STATE!=='play')return;inputReset();$('mYield').textContent='資源の量：×'+OPT.yield+(OPT.yield===1?'（本家どおり）':'');$('mSound').textContent='音：'+(SET.sound?'オン':'オフ');$('mName').textContent='名前：'+myName();
+function openMenu(){if(STATE!=='play')return;inputReset();saveGame();clAfterSave(true);$('mYield').textContent='資源の量：×'+OPT.yield+(OPT.yield===1?'（本家どおり）':'');$('mSound').textContent='音：'+(SET.sound?'オン':'オフ');$('mName').textContent='名前：'+myName();
   $('mOnline').textContent=NET.on?(NET.host?'オンラインの部屋を閉じる':'部屋から出て自分の星にもどる'):'オンライン（いっしょに遊ぶ）';showScr('menu')}
 function closeMenu(){showScr('');SFX.click()}
 $('bMenu').onclick=()=>{SFX.click();openMenu()};
@@ -86,14 +86,28 @@ $('mClose').onclick=closeMenu;
 $('mYield').onclick=()=>{SFX.click();OPT.yield=OPT.yield===1?2:OPT.yield===2?5:1;LSset('lu-yield',String(OPT.yield));openMenu()};
 $('mSound').onclick=()=>{SET.sound=!SET.sound;LSset('lu-sound',SET.sound?'1':'0');SFX.click();openMenu()};
 $('mSkin').onclick=()=>{SFX.click();openSkins(true)};
-$('mCode').onclick=async()=>{SFX.click();saveGame();$('codeTa').value='作っています…';showScr('codeScr');$('codeTa').value=await packCode(snapshot());$('codeMsg').textContent='このコードをメモしておくと、ほかの端末やあとで同じところから遊べます。'};
+// セーブコードの画面：ずっと使えるコード（LUC-…）があればそれを、なければ長いコード（いまの内容だけ）
+let codeMode='';
+const codeBig=on=>{const t=$('codeTa').style;t.height=on?'52px':'';t.fontSize=on?'22px':'';t.textAlign=on?'center':'';t.fontWeight=on?'800':''};
+function codeLong(){codeMode='long';codeBig(false);$('codeTa').value='作っています…';saveGame();packCode(snapshot()).then(c=>{if(codeMode==='long')$('codeTa').value=c});
+  $('codeCloud').textContent=CLOUD.key?'ずっと使えるコードを出す':'ずっと使えるコードを作る';
+  $('codeMsg').textContent=CLOUD.key?'これは「いまの内容だけ」の長いコードです。このあと遊んだ分は入りません（ずっと使えるコードのほうが便利です）。':'このコードをメモしておくと、ほかの端末やあとで同じところから遊べます（いまの内容だけ）。「ずっと使えるコードを作る」と、セーブのたびに上書きされる短いコードになります。'}
+function codeCloudShow(fresh){codeMode='cloud';$('codeTa').value=clShow(CLOUD.key);codeBig(true);$('codeCloud').textContent='長いコード（いまの内容だけ）を出す';
+  $('codeMsg').textContent='このコードは、セーブするたびに最新の内容に上書きされます。ずっとこのコードで続きから遊べます（「セーブコードで遊ぶ」にはりつける）。最新にしています…';
+  const done=()=>{if(codeMode==='cloud')$('codeMsg').textContent=$('codeMsg').textContent.replace('最新にしています…',CL.conf?'（別の場所で新しくなっているので、この端末のぶんは上書きしていません。コードを読みこみなおすと最新で遊べます）':CL.bad?'（いまは上書きできません）':'いま最新になっています。')};
+  if(fresh)done();else{saveGame();clSync().then(done,done)}}
+$('mCode').onclick=()=>{SFX.click();$('codeCloud').style.display='';showScr('codeScr');if(CLOUD.key)codeCloudShow();else codeLong()};
+$('codeCloud').onclick=async()=>{SFX.click();if(codeMode==='cloud'){codeLong();return}if(CLOUD.key){codeCloudShow();return}
+  $('codeMsg').textContent='ずっと使えるコードを作っています…';try{await clMake();codeCloudShow(true)}catch(e){$('codeMsg').textContent='作れませんでした：'+clErr(e)}};
 $('codeCopy').onclick=()=>{SFX.click();const t=$('codeTa');t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast('コピーしました'),()=>{document.execCommand('copy');toast('コピーしました')})}catch(e){document.execCommand('copy');toast('コピーしました')}};
-$('codeLoad').onclick=async()=>{SFX.click();let o=null;try{o=await unpackCode($('codeTa').value)}catch(e){o=null}if(!validSave(o)){$('codeMsg').textContent='コードが読めませんでした。全部はりつけたか確かめてね。';return}
-  if(NET.on)await netLeave();LSset(SAVE_KEY,JSON.stringify(o));applySave(o);toast('セーブコードを読みこみました');startPlay()};
+$('codeLoad').onclick=async()=>{SFX.click();const txt=$('codeTa').value;const key=clKey(txt);let o=null;
+  if(key){if(CLOUD.key===key&&codeMode==='cloud'&&STATE==='play'){$('codeMsg').textContent='いま遊んでいるコードです';return}$('codeMsg').textContent='ずっと使えるコードの中身を受け取っています…';try{o=await clLoad(key)}catch(e){$('codeMsg').textContent='読みこめませんでした：'+clErr(e);return}}
+  else{try{o=await unpackCode(txt)}catch(e){o=null}if(!validSave(o)){$('codeMsg').textContent='コードが読めませんでした。全部はりつけたか確かめてね。';return}delete o.cloud;delete o.cloudS}
+  if(NET.on)await netLeave();LSset(SAVE_KEY,JSON.stringify(o));applySave(o);toast(key?'ずっと使えるコード '+clShow(key)+' で遊びます':'セーブコードを読みこみました');startPlay()};
 $('codeBack').onclick=()=>{SFX.click();showScr(STATE==='play'?'menu':'title')};
 $('mOnline').onclick=async()=>{SFX.click();if(NET.on){if(NET.host){await netLeave();toast('部屋を閉じました')}else await netLeave();openMenu();return}openOnline()};
 $('mName').onclick=async()=>{SFX.click();const n=await ask('名前','オンラインでほかの人に見える名前です（14文字まで）',{input:myName()});if(n!=null){const v=netClean(n).slice(0,14);if(v)LSset('lu-name',v)}openMenu()};
-$('mTitle').onclick=()=>{SFX.click();saveGame();toTitle()};
+$('mTitle').onclick=()=>{SFX.click();saveGame();clAfterSave(true);toTitle()};
 // ---- キャラクター ----
 function openSkins(fromMenu){inputReset();const el=$('skinList');el.innerHTML='';
   for(const S of SKINS){const own=PL.owned[S.id],can=S.cost&&Object.keys(S.cost).every(k=>(PL.inv[k]||0)>=S.cost[k]);const d=document.createElement('div');d.className='skin'+(PL.skin===S.id?' sel':'');
@@ -121,10 +135,14 @@ function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.di
 // ---- タイトル ----
 function toTitle(){if(NET.on)netLeave();STATE='title';document.body.classList.remove('playing');CAM.map=true;document.body.classList.add('mapv');showScr('title');const s=loadSave();$('tCont').style.display=s?'':'none';$('tNew').textContent=s?'はじめから':'はじめる'}
 function startPlay(keepScr){STATE='play';MUSIC.on=true;document.body.classList.add('playing');CAM.map=false;document.body.classList.remove('mapv');CAM.ready=0;if(!keepScr)showScr('');uiMap();HUD_DIRTY=true;resKey='';topKey=''}
-$('tCont').onclick=()=>{SFX.click();ac();const s=loadSave();const made=applySave(s);startPlay();if(made>0)setTimeout(()=>toast('いないあいだに精錬所が '+made+' こ作っていました'),400)};
-$('tNew').onclick=async()=>{SFX.click();ac();if(loadSave()&&!(await ask('はじめから','いまのセーブを消して、はじめからにしますか？（消す前にメニューのセーブコードでとっておけます）',{ok:'はじめからにする'})))return;applySave(null);LSset(SAVE_KEY,JSON.stringify(snapshot()));startPlay();setTimeout(()=>banner('ガイア','木に近づくと自動で切れるよ'),500)};
+$('tCont').onclick=async()=>{SFX.click();ac();let s=loadSave();
+  if(s&&s.cloud){let h=null;try{h=await Promise.race([clHead(s.cloud),new Promise(r=>setTimeout(()=>r(undefined),4000))])}catch(e){h=undefined}
+    if(h&&h.s&&h.s!==s.cloudS){const yes=await ask('ずっと使えるコード','コード '+clShow(s.cloud)+' は、別の場所で新しくなっています（'+(h.p|0)+'%）。最新の中身を読みこみますか？',{ok:'最新を読みこむ'});
+      if(yes){try{s=await clLoad(s.cloud);LSset(SAVE_KEY,JSON.stringify(s))}catch(e){toast('読みこめませんでした：'+clErr(e))}}else{CL.conf=true;toast('この端末のぶんで続けます（コードには上書きしません）')}}}
+  const made=applySave(s);startPlay();if(made>0)setTimeout(()=>toast('いないあいだに精錬所が '+made+' こ作っていました'),400)};
+$('tNew').onclick=async()=>{SFX.click();ac();const old=loadSave();if(old&&!(await ask('はじめから','いまのセーブを消して、はじめからにしますか？'+(old.cloud?'（ずっと使えるコード '+clShow(old.cloud)+' の中身はそのまま残ります。新しいゲームはそのコードには上書きしません）':'（消す前にメニューのセーブコードでとっておけます）'),{ok:'はじめからにする'})))return;applySave(null);LSset(SAVE_KEY,JSON.stringify(snapshot()));startPlay();setTimeout(()=>banner('ガイア','木に近づくと自動で切れるよ'),500)};
 $('tOnline').onclick=()=>{SFX.click();ac();openOnline()};
-$('tCode').onclick=()=>{SFX.click();$('codeTa').value='';$('codeMsg').textContent='セーブコードをはりつけて「読みこむ」を押してね';showScr('codeScr')};
+$('tCode').onclick=()=>{SFX.click();codeMode='';$('codeCloud').style.display='none';codeBig(false);$('codeTa').value='';$('codeMsg').textContent='セーブコード（長いコードか、ずっと使えるコード LUC-…）をはりつけて「このコードを読みこむ」を押してね';showScr('codeScr')};
 // ---- エンディング ----
 function goPortal(){SFX.portal();W.clear=1;saveGame();const t=Math.round(W.play||0);$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;showScr('ending');STATE='ending';document.body.classList.remove('playing')}
 $('endBack').onclick=()=>{SFX.click();const B=portalB();if(B)B.went=0;respawn();startPlay()};

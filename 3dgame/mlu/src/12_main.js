@@ -20,4 +20,4 @@ function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(
   else{for(const n in PTAGS)PTAGS[n].style.display='none'}}
 init();
 // テスト用
-window.__L={renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
+window.__L={CLOUD,CL,clMake,clSync,clLoad,clShow,renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};

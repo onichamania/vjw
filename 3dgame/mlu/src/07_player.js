@@ -38,7 +38,7 @@ gameEl.addEventListener('wheel',e=>{if(STATE!=='play')return;if(CAM.map)CAM.mapD
 addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;IN.keys[e.code]=true;if(e.code==='KeyM'&&STATE==='play')toggleMap();if(e.code==='Escape'&&STATE==='play')openMenu()});
 addEventListener('keyup',e=>{IN.keys[e.code]=false});
 const inputReset=()=>{stickOff();IN.keys={};mouseDown=null;IN.pinch=null;IN.mapT=null};
-addEventListener('blur',inputReset);document.addEventListener('visibilitychange',()=>{if(document.hidden){inputReset();saveGame()}});
+addEventListener('blur',inputReset);document.addEventListener('visibilitychange',()=>{if(document.hidden){inputReset();saveGame();clAfterSave(true)}});
 function moveInput(){let x=IN.x,y=IN.y;const K=IN.keys;if(K.KeyW||K.ArrowUp)y+=1;if(K.KeyS||K.ArrowDown)y-=1;if(K.KeyA||K.ArrowLeft)x-=1;if(K.KeyD||K.ArrowRight)x+=1;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return[x,y]}
 // ---- 地面の種類 ----
 // 'land'：開いたタイル / 'ghost'：今買えるタイルの光る板 / 'bridge'：橋 / 'water'：海

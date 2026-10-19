@@ -121,7 +121,7 @@ textarea{width:100%;height:96px;border-radius:12px;border:2px solid #b8a8ff;padd
  <button class="btn gr" id="mYield">資源の量</button><button class="btn gr" id="mName">名前</button><button class="btn gr" id="mSound">音</button><button class="btn gr" id="mTitle">タイトルへ</button></div></div>
 <div id="skins" class="scr panel"><div class="box"><h2>キャラクター</h2><div class="msg" id="skinNote"></div><div class="skins" id="skinList"></div><button class="btn gr" id="skinBack">もどる</button></div></div>
 <div id="online" class="scr panel"><div class="box"><h2>オンライン</h2><div class="msg" id="nState"></div><div id="nRooms"></div><button class="btn y" id="nHost">自分の星で部屋を開く</button><div class="msg">同じ星でいっしょにタイルを開けます。持ち物と道具はそれぞれのもの。部屋に入ると、ホストの星で遊びます（自分の星はそのまま残ります）。</div><button class="btn gr" id="nBack">もどる</button></div></div>
-<div id="codeScr" class="scr panel"><div class="box"><h2>セーブコード</h2><textarea id="codeTa" spellcheck="false"></textarea><div class="msg" id="codeMsg"></div><button class="btn" id="codeCopy">コピー</button><button class="btn g" id="codeLoad">このコードを読みこむ</button><button class="btn gr" id="codeBack">もどる</button></div></div>
+<div id="codeScr" class="scr panel"><div class="box"><h2>セーブコード</h2><textarea id="codeTa" spellcheck="false"></textarea><div class="msg" id="codeMsg"></div><button class="btn" id="codeCopy">コピー</button><button class="btn y" id="codeCloud">ずっと使えるコードを作る</button><button class="btn g" id="codeLoad">このコードを読みこむ</button><button class="btn gr" id="codeBack">もどる</button></div></div>
 <div id="dlg" class="scr panel"><div class="box"><h2 id="dlgT"></h2><div class="msg" id="dlgM"></div><input id="dlgIn" maxlength="14" style="width:100%;font:800 16px 'M PLUS Rounded 1c',sans-serif;padding:10px;border-radius:12px;border:2px solid #b8a8ff;-webkit-user-select:text;user-select:text"><button class="btn g" id="dlgOk">OK</button><button class="btn gr" id="dlgNo">やめる</button></div></div>
 <div id="loading" class="scr"><div id="loadTxt">読みこみ中…</div></div>
 <div id="ending" class="scr panel"><div class="box"><h2>ガイアをクリア！</h2><div class="msg">ポータルが動いて、光の向こうに次の星が見えた！<br>（次の星「トロルヘイム」はまだ準備中です）</div><div class="msg" id="endStat"></div><button class="btn g" id="endBack">ガイアにもどる</button></div></div>
@@ -894,7 +894,7 @@ gameEl.addEventListener('wheel',e=>{if(STATE!=='play')return;if(CAM.map)CAM.mapD
 addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;IN.keys[e.code]=true;if(e.code==='KeyM'&&STATE==='play')toggleMap();if(e.code==='Escape'&&STATE==='play')openMenu()});
 addEventListener('keyup',e=>{IN.keys[e.code]=false});
 const inputReset=()=>{stickOff();IN.keys={};mouseDown=null;IN.pinch=null;IN.mapT=null};
-addEventListener('blur',inputReset);document.addEventListener('visibilitychange',()=>{if(document.hidden){inputReset();saveGame()}});
+addEventListener('blur',inputReset);document.addEventListener('visibilitychange',()=>{if(document.hidden){inputReset();saveGame();clAfterSave(true)}});
 function moveInput(){let x=IN.x,y=IN.y;const K=IN.keys;if(K.KeyW||K.ArrowUp)y+=1;if(K.KeyS||K.ArrowDown)y-=1;if(K.KeyA||K.ArrowLeft)x-=1;if(K.KeyD||K.ArrowRight)x+=1;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return[x,y]}
 // ---- 地面の種類 ----
 // 'land'：開いたタイル / 'ghost'：今買えるタイルの光る板 / 'bridge'：橋 / 'water'：海
@@ -1157,12 +1157,12 @@ const SAVE_KEY='lu-save';
 function snapshot(){const nodes=[];for(const o of NODES)if(!o.alive)nodes.push([o.id,Math.max(0,Math.round(o.t))]);
   const b={};for(const B of BLDS)if(B.st&&Object.keys(B.st).length)b[B.n]=B.st;
   return{v:1,w:'gaia',open:[...W.open],paid:W.paid,inv:PL.inv,tools:PL.tools,hp:Math.round(PL.hp),skin:PL.skin,owned:PL.owned,pos:[PL.u.x,PL.u.y,PL.u.z].map(v=>+v.toFixed(4)),camf:[CAM.f.x,CAM.f.y,CAM.f.z].map(v=>+v.toFixed(4)),
-    nodes,b,sword:W.sword||0,core:W.core||0,seen:[...AREA_SEEN],ts:Date.now(),clear:W.clear||0,play:Math.round(W.play||0)}}
+    nodes,b,sword:W.sword||0,core:W.core||0,seen:[...AREA_SEEN],ts:Date.now(),clear:W.clear||0,play:Math.round(W.play||0),...(CLOUD.key?{cloud:CLOUD.key,cloudS:CLOUD.s}:{})}}
 // プレイヤーの分だけ（オンラインでほかの人の星にいるとき）
 function playerPart(){return{inv:PL.inv,tools:PL.tools,skin:PL.skin,owned:PL.owned}}
 let saveT=0;function saveSoon(){saveT=Math.min(saveT||1.5,1.5)}
-function saveGame(){if(!GAME_READY)return;try{if(NET.on&&!NET.host){const old=JSON.parse(LSget(SAVE_KEY,'null'));if(old){Object.assign(old,playerPart());LSset(SAVE_KEY,JSON.stringify(old))}return}
-  LSset(SAVE_KEY,JSON.stringify(snapshot()))}catch(e){}}
+function saveGame(){if(!GAME_READY)return;try{if(NET.on&&!NET.host){const old=JSON.parse(LSget(SAVE_KEY,'null'));if(old){Object.assign(old,playerPart());LSset(SAVE_KEY,JSON.stringify(old))}clAfterSave();return}
+  LSset(SAVE_KEY,JSON.stringify(snapshot()))}catch(e){}clAfterSave()}
 function loadSave(){try{return JSON.parse(LSget(SAVE_KEY,'null'))}catch(e){return null}}
 // セーブを星にあてはめる（はじめからのときは null）
 function applySave(s,opt){opt=opt||{};
@@ -1171,9 +1171,9 @@ function applySave(s,opt){opt=opt||{};
   for(const n of [...W.open])if(n!==0){W.open.delete(n)}W.paid={};
   for(const ci in TILE_MESH)TILE_MESH[ci].visible=false;for(const B of BLDS){B.m.visible=false;B.st={};if(B.pads){B.pads.forEach(m=>{world.remove(m)});B.pads=null}if(B.pile){B.pile.forEach(m=>world.remove(m));B.pile=[]}}
   if(s){for(const n of s.open||[])if(TILES[n])W.open.add(n);W.paid=s.paid&&typeof s.paid==='object'?s.paid:{};W.sword=s.sword||0;W.core=s.core||0;W.clear=s.clear||0;W.play=s.play||0;
-    if(!opt.worldOnly){PL.inv=Object.assign({},s.inv||{});PL.tools=Object.assign({axe:1,pick:1,weap:1},s.tools||{});PL.skin=s.skin||'stick';PL.owned=Object.assign({stick:1},s.owned||{})}
+    if(!opt.worldOnly){CLOUD.key=s.cloud||null;CLOUD.s=s.cloudS||null;PL.inv=Object.assign({},s.inv||{});PL.tools=Object.assign({axe:1,pick:1,weap:1},s.tools||{});PL.skin=s.skin||'stick';PL.owned=Object.assign({stick:1},s.owned||{})}
     AREA_SEEN=new Set(s.seen||[1])}
-  else{W.sword=0;W.core=0;W.clear=0;W.play=0;if(!opt.worldOnly){PL.inv={};PL.tools={axe:1,pick:1,weap:1};PL.skin='stick';PL.owned={stick:1}}AREA_SEEN=new Set([1])}
+  else{W.sword=0;W.core=0;W.clear=0;W.play=0;if(!opt.worldOnly){CLOUD.key=null;CLOUD.s=null;PL.inv={};PL.tools={axe:1,pick:1,weap:1};PL.skin='stick';PL.owned={stick:1}}AREA_SEEN=new Set([1])}
   oldCells.forEach(drawDecoCell);
   for(const n of W.open){const T=TILES[n];if(n===0)T.cells.forEach(ci=>showTile(ci,false));else showTile(T.cell,false)}
   // 木・岩
@@ -1198,6 +1198,54 @@ async function packCode(o){const txt=JSON.stringify(o);try{if(window.Compression
 async function unpackCode(code){code=String(code||'').replace(/\s+/g,'');const m=/^LU([01])\.([A-Za-z0-9_-]+)$/.exec(code);if(!m)throw new Error('code');let b=m[2].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';const bin=atob(b);
   if(m[1]==='0')return JSON.parse(decodeURIComponent(escape(bin)));const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const ds=new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return JSON.parse(await new Response(ds).text())}
 function validSave(o){return o&&typeof o==='object'&&o.w==='gaia'&&Array.isArray(o.open)}
+
+// ---- 09b_cloud.js ----
+// ---- ずっと使えるコード（LUC-XXXX-XXXX）：セーブするたびに、同じコードの中身を最新に上書きする ----
+// 中身はランチャー（Claude のアーティファクト）のデータ（db）に置く：lusave/<コード> に見出し、lusave/<コード>/<a|b>/<番号> にセーブコード。
+// 書くときは、いま見出しが指していない方（a/b）に書いてから見出しを切りかえる（読んでいる人に書きかけを見せない）。書けるのはランチャーの持ち主（と編集できる人）だけ
+const CLOUD={key:null,s:null};   // このセーブがつながっているコードと、最後に読んだ／書いた版
+const CL={p:null,db:null,canW:null,chain:Promise.resolve(),queued:false,qp:null,last:-1e9,tm:0,said:false,bad:false,conf:false};
+const clRun=fn=>{const q=CL.chain.then(fn);CL.chain=q.catch(()=>{});return q};   // 書くのはいつも1つずつ
+const CL_ABC='23456789ABCDEFGHJKMNPQRSTUVWXYZ',CL_PART=200000;
+const clKey=s=>{const m=String(s||'').toUpperCase().replace(/[\s-]/g,'').match(/^LUC([2-9A-Z]{8})$/);return m?m[1]:null};
+const clShow=k=>'LUC-'+k.slice(0,4)+'-'+k.slice(4);
+function clInit(){return CL.p||(CL.p=(async()=>{const C=netClaude();if(!C)return null;let db=null;try{db=await C.use('db')}catch(e){db=null}CL.db=db;
+  if(db){try{const u=await C.use('user');CL.canW=u?await u.can('data.write'):null}catch(e){CL.canW=null}}return db})())}
+const clNoDb='この画面ではずっと使えるコードを使えません。Claude にサインインしてランチャーを開いてください（ふつうの長いセーブコードは使えます）';
+// 上げるセーブ（コードの情報はのぞく）
+const clBody=s=>{const o=Object.assign({},s);delete o.cloud;delete o.cloudS;return o};
+// 読む：見出しと同じ印（s）の部分だけをつなぐ。ちょうど書きかえ中なら少し待って読みなおす
+async function clHead(key){const db=await clInit();if(!db)throw new Error(clNoDb);const hs=await db.doc('lusave/'+key).get();return hs.exists?hs.data():null}
+async function clGet(key){const db=await clInit();if(!db)throw new Error(clNoDb);const H=db.doc('lusave/'+key);
+  for(let tr=0;tr<5;tr++){const hs=await H.get();if(!hs.exists)throw new Error('このコード（'+clShow(key)+'）は見つかりません');const h=hs.data();
+    const ps=await Promise.all(Array.from({length:h.n|0},(_,i)=>H.collection(h.g).doc(String(i)).get()));
+    if(ps.length&&ps.every(q=>q.exists&&q.data().s===h.s))return{code:ps.map(q=>q.data().d).join(''),h};await new Promise(r=>setTimeout(r,1200))}
+  throw new Error('いま上書きしているところのようです。少し待ってからもう一度読みこんでください')}
+// 書く：base（この端末が最後に読んだ／書いた版）とちがう版になっていたら、別の場所で新しくなっているので上書きしない
+async function clPut(key,save,base){const db=await clInit();if(!db)throw new Error(clNoDb);const code=await packCode(clBody(save)),H=db.doc('lusave/'+key);let h=null;try{const hs=await H.get();h=hs.exists?hs.data():null}catch(e){}
+  if(base&&h&&h.s!==base)throw{code:'conflict',message:'conflict'};
+  const g=h&&h.g==='a'?'b':'a',ng=Object.assign({a:0,b:0},h&&h.ng),s=Date.now().toString(36)+Math.random().toString(36).slice(2,6),n=Math.max(1,Math.ceil(code.length/CL_PART));
+  for(let i=0;i<n;i++)await H.collection(g).doc(String(i)).set({s,d:code.slice(i*CL_PART,(i+1)*CL_PART)});
+  for(let i=n;i<(ng[g]|0);i++)try{await H.collection(g).doc(String(i)).delete()}catch(e){}   // 前より短くなった分
+  ng[g]=n;const pct=Math.floor(((save.open||[]).length-1)/NTILE*100);await H.set({v:1,g,n,s,ng,len:code.length,t:Date.now(),p:pct});return{s}}
+// 書いた版をおぼえる（この端末のセーブにも）
+function clMark(s){CLOUD.s=s;try{const o=loadSave();if(o&&o.cloud===CLOUD.key&&o.cloudS!==s){o.cloudS=s;LSset(SAVE_KEY,JSON.stringify(o))}}catch(e){}}
+// 新しいコードを作って、いまのセーブをつなぐ
+async function clMake(){const db=await clInit();if(!db)throw new Error(clNoDb);if(CL.canW===false)throw new Error('ずっと使えるコードを作れるのは、このランチャーの持ち主だけです');
+  saveGame();const save=loadSave();if(!save)throw new Error('セーブがありません');
+  let key='';for(let tr=0;tr<5;tr++){key=Array.from({length:8},()=>CL_ABC[Math.random()*CL_ABC.length|0]).join('');const hs=await db.doc('lusave/'+key).get();if(!hs.exists)break}
+  const r=await clRun(()=>clPut(key,save));CLOUD.key=key;CL.conf=false;CL.bad=false;CL.said=true;clMark(r.s);saveGame();return key}
+const clErr=e=>e&&e.code==='conflict'?'別の場所でこのコードが新しくなっています':e&&(e.code==='invalid_argument'||e.code==='not_granted'||e.code==='permission_denied')?'このコードに上書きできるのは、ランチャーの持ち主だけです':e&&e.code==='quota_exceeded'?'保存できる量がいっぱいです':(e&&e.message)||'うまくいきませんでした';
+// セーブのあと：遊んでいる間は40秒に1回まで、メニューを開いた・やめたときはすぐ
+function clAfterSave(now){if(!CLOUD.key||CL.bad||CL.conf)return;const t=performance.now();clearTimeout(CL.tm);
+  if(now||STATE!=='play'||t-CL.last>=40000)clSync();else CL.tm=setTimeout(()=>clAfterSave(),40000-(t-CL.last))}
+function clSync(){if(CL.queued)return CL.qp;CL.queued=true;CL.last=performance.now();return CL.qp=clRun(()=>{CL.queued=false;return clDo()})}   // まだ始まっていない上書きは1つにまとめる
+async function clDo(){if(CL.bad||CL.conf)return;try{const save=loadSave();if(!save||!save.cloud)return;const r=await clPut(save.cloud,save,save.cloudS);clMark(r.s);
+    if(!CL.said){CL.said=true;toast('ずっと使えるコード '+clShow(save.cloud)+' を最新にしました（このあともセーブのたびに上書きします）')}}
+  catch(e){if(e&&e.code==='conflict'){CL.conf=true;toast('ずっと使えるコードは別の場所で新しくなっています。この端末のぶんでは上書きしません')}
+    else if(e&&(e.code==='invalid_argument'||e.code==='not_granted'||e.code==='permission_denied'||e.code==='quota_exceeded'||e.message===clNoDb)){CL.bad=true;toast('ずっと使えるコードに上書きできません：'+clErr(e))}}}
+// コードを読みこむ（ずっと使えるコードなら、つないだまま）
+async function clLoad(key){const {code,h}=await clGet(key);const o=await unpackCode(code);if(!validSave(o))throw new Error('中身が読めませんでした');o.cloud=key;o.cloudS=h.s;CL.conf=false;CL.bad=false;CL.said=true;return o}
 
 // ---- 10_net.js ----
 // ================= オンライン（同じ星でいっしょに遊ぶ）=================
@@ -1393,7 +1441,7 @@ function ask(title,msg,opt){opt=opt||{};return new Promise(res=>{const back=docu
   $('dlgOk').textContent=opt.ok||'OK';const done=v=>{$('dlgOk').onclick=$('dlgNo').onclick=null;showScr(backId);res(v)};$('dlgOk').onclick=()=>{SFX.click();done(opt.input!=null?inp.value:true)};$('dlgNo').onclick=()=>{SFX.click();done(null)};
   inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')$('dlgOk').click()};showScr('dlg');if(opt.input!=null)setTimeout(()=>{try{inp.focus()}catch(e){}},50)})}
 // ---- メニュー ----
-function openMenu(){if(STATE!=='play')return;inputReset();$('mYield').textContent='資源の量：×'+OPT.yield+(OPT.yield===1?'（本家どおり）':'');$('mSound').textContent='音：'+(SET.sound?'オン':'オフ');$('mName').textContent='名前：'+myName();
+function openMenu(){if(STATE!=='play')return;inputReset();saveGame();clAfterSave(true);$('mYield').textContent='資源の量：×'+OPT.yield+(OPT.yield===1?'（本家どおり）':'');$('mSound').textContent='音：'+(SET.sound?'オン':'オフ');$('mName').textContent='名前：'+myName();
   $('mOnline').textContent=NET.on?(NET.host?'オンラインの部屋を閉じる':'部屋から出て自分の星にもどる'):'オンライン（いっしょに遊ぶ）';showScr('menu')}
 function closeMenu(){showScr('');SFX.click()}
 $('bMenu').onclick=()=>{SFX.click();openMenu()};
@@ -1402,14 +1450,28 @@ $('mClose').onclick=closeMenu;
 $('mYield').onclick=()=>{SFX.click();OPT.yield=OPT.yield===1?2:OPT.yield===2?5:1;LSset('lu-yield',String(OPT.yield));openMenu()};
 $('mSound').onclick=()=>{SET.sound=!SET.sound;LSset('lu-sound',SET.sound?'1':'0');SFX.click();openMenu()};
 $('mSkin').onclick=()=>{SFX.click();openSkins(true)};
-$('mCode').onclick=async()=>{SFX.click();saveGame();$('codeTa').value='作っています…';showScr('codeScr');$('codeTa').value=await packCode(snapshot());$('codeMsg').textContent='このコードをメモしておくと、ほかの端末やあとで同じところから遊べます。'};
+// セーブコードの画面：ずっと使えるコード（LUC-…）があればそれを、なければ長いコード（いまの内容だけ）
+let codeMode='';
+const codeBig=on=>{const t=$('codeTa').style;t.height=on?'52px':'';t.fontSize=on?'22px':'';t.textAlign=on?'center':'';t.fontWeight=on?'800':''};
+function codeLong(){codeMode='long';codeBig(false);$('codeTa').value='作っています…';saveGame();packCode(snapshot()).then(c=>{if(codeMode==='long')$('codeTa').value=c});
+  $('codeCloud').textContent=CLOUD.key?'ずっと使えるコードを出す':'ずっと使えるコードを作る';
+  $('codeMsg').textContent=CLOUD.key?'これは「いまの内容だけ」の長いコードです。このあと遊んだ分は入りません（ずっと使えるコードのほうが便利です）。':'このコードをメモしておくと、ほかの端末やあとで同じところから遊べます（いまの内容だけ）。「ずっと使えるコードを作る」と、セーブのたびに上書きされる短いコードになります。'}
+function codeCloudShow(fresh){codeMode='cloud';$('codeTa').value=clShow(CLOUD.key);codeBig(true);$('codeCloud').textContent='長いコード（いまの内容だけ）を出す';
+  $('codeMsg').textContent='このコードは、セーブするたびに最新の内容に上書きされます。ずっとこのコードで続きから遊べます（「セーブコードで遊ぶ」にはりつける）。最新にしています…';
+  const done=()=>{if(codeMode==='cloud')$('codeMsg').textContent=$('codeMsg').textContent.replace('最新にしています…',CL.conf?'（別の場所で新しくなっているので、この端末のぶんは上書きしていません。コードを読みこみなおすと最新で遊べます）':CL.bad?'（いまは上書きできません）':'いま最新になっています。')};
+  if(fresh)done();else{saveGame();clSync().then(done,done)}}
+$('mCode').onclick=()=>{SFX.click();$('codeCloud').style.display='';showScr('codeScr');if(CLOUD.key)codeCloudShow();else codeLong()};
+$('codeCloud').onclick=async()=>{SFX.click();if(codeMode==='cloud'){codeLong();return}if(CLOUD.key){codeCloudShow();return}
+  $('codeMsg').textContent='ずっと使えるコードを作っています…';try{await clMake();codeCloudShow(true)}catch(e){$('codeMsg').textContent='作れませんでした：'+clErr(e)}};
 $('codeCopy').onclick=()=>{SFX.click();const t=$('codeTa');t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast('コピーしました'),()=>{document.execCommand('copy');toast('コピーしました')})}catch(e){document.execCommand('copy');toast('コピーしました')}};
-$('codeLoad').onclick=async()=>{SFX.click();let o=null;try{o=await unpackCode($('codeTa').value)}catch(e){o=null}if(!validSave(o)){$('codeMsg').textContent='コードが読めませんでした。全部はりつけたか確かめてね。';return}
-  if(NET.on)await netLeave();LSset(SAVE_KEY,JSON.stringify(o));applySave(o);toast('セーブコードを読みこみました');startPlay()};
+$('codeLoad').onclick=async()=>{SFX.click();const txt=$('codeTa').value;const key=clKey(txt);let o=null;
+  if(key){if(CLOUD.key===key&&codeMode==='cloud'&&STATE==='play'){$('codeMsg').textContent='いま遊んでいるコードです';return}$('codeMsg').textContent='ずっと使えるコードの中身を受け取っています…';try{o=await clLoad(key)}catch(e){$('codeMsg').textContent='読みこめませんでした：'+clErr(e);return}}
+  else{try{o=await unpackCode(txt)}catch(e){o=null}if(!validSave(o)){$('codeMsg').textContent='コードが読めませんでした。全部はりつけたか確かめてね。';return}delete o.cloud;delete o.cloudS}
+  if(NET.on)await netLeave();LSset(SAVE_KEY,JSON.stringify(o));applySave(o);toast(key?'ずっと使えるコード '+clShow(key)+' で遊びます':'セーブコードを読みこみました');startPlay()};
 $('codeBack').onclick=()=>{SFX.click();showScr(STATE==='play'?'menu':'title')};
 $('mOnline').onclick=async()=>{SFX.click();if(NET.on){if(NET.host){await netLeave();toast('部屋を閉じました')}else await netLeave();openMenu();return}openOnline()};
 $('mName').onclick=async()=>{SFX.click();const n=await ask('名前','オンラインでほかの人に見える名前です（14文字まで）',{input:myName()});if(n!=null){const v=netClean(n).slice(0,14);if(v)LSset('lu-name',v)}openMenu()};
-$('mTitle').onclick=()=>{SFX.click();saveGame();toTitle()};
+$('mTitle').onclick=()=>{SFX.click();saveGame();clAfterSave(true);toTitle()};
 // ---- キャラクター ----
 function openSkins(fromMenu){inputReset();const el=$('skinList');el.innerHTML='';
   for(const S of SKINS){const own=PL.owned[S.id],can=S.cost&&Object.keys(S.cost).every(k=>(PL.inv[k]||0)>=S.cost[k]);const d=document.createElement('div');d.className='skin'+(PL.skin===S.id?' sel':'');
@@ -1437,10 +1499,14 @@ function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.di
 // ---- タイトル ----
 function toTitle(){if(NET.on)netLeave();STATE='title';document.body.classList.remove('playing');CAM.map=true;document.body.classList.add('mapv');showScr('title');const s=loadSave();$('tCont').style.display=s?'':'none';$('tNew').textContent=s?'はじめから':'はじめる'}
 function startPlay(keepScr){STATE='play';MUSIC.on=true;document.body.classList.add('playing');CAM.map=false;document.body.classList.remove('mapv');CAM.ready=0;if(!keepScr)showScr('');uiMap();HUD_DIRTY=true;resKey='';topKey=''}
-$('tCont').onclick=()=>{SFX.click();ac();const s=loadSave();const made=applySave(s);startPlay();if(made>0)setTimeout(()=>toast('いないあいだに精錬所が '+made+' こ作っていました'),400)};
-$('tNew').onclick=async()=>{SFX.click();ac();if(loadSave()&&!(await ask('はじめから','いまのセーブを消して、はじめからにしますか？（消す前にメニューのセーブコードでとっておけます）',{ok:'はじめからにする'})))return;applySave(null);LSset(SAVE_KEY,JSON.stringify(snapshot()));startPlay();setTimeout(()=>banner('ガイア','木に近づくと自動で切れるよ'),500)};
+$('tCont').onclick=async()=>{SFX.click();ac();let s=loadSave();
+  if(s&&s.cloud){let h=null;try{h=await Promise.race([clHead(s.cloud),new Promise(r=>setTimeout(()=>r(undefined),4000))])}catch(e){h=undefined}
+    if(h&&h.s&&h.s!==s.cloudS){const yes=await ask('ずっと使えるコード','コード '+clShow(s.cloud)+' は、別の場所で新しくなっています（'+(h.p|0)+'%）。最新の中身を読みこみますか？',{ok:'最新を読みこむ'});
+      if(yes){try{s=await clLoad(s.cloud);LSset(SAVE_KEY,JSON.stringify(s))}catch(e){toast('読みこめませんでした：'+clErr(e))}}else{CL.conf=true;toast('この端末のぶんで続けます（コードには上書きしません）')}}}
+  const made=applySave(s);startPlay();if(made>0)setTimeout(()=>toast('いないあいだに精錬所が '+made+' こ作っていました'),400)};
+$('tNew').onclick=async()=>{SFX.click();ac();const old=loadSave();if(old&&!(await ask('はじめから','いまのセーブを消して、はじめからにしますか？'+(old.cloud?'（ずっと使えるコード '+clShow(old.cloud)+' の中身はそのまま残ります。新しいゲームはそのコードには上書きしません）':'（消す前にメニューのセーブコードでとっておけます）'),{ok:'はじめからにする'})))return;applySave(null);LSset(SAVE_KEY,JSON.stringify(snapshot()));startPlay();setTimeout(()=>banner('ガイア','木に近づくと自動で切れるよ'),500)};
 $('tOnline').onclick=()=>{SFX.click();ac();openOnline()};
-$('tCode').onclick=()=>{SFX.click();$('codeTa').value='';$('codeMsg').textContent='セーブコードをはりつけて「読みこむ」を押してね';showScr('codeScr')};
+$('tCode').onclick=()=>{SFX.click();codeMode='';$('codeCloud').style.display='none';codeBig(false);$('codeTa').value='';$('codeMsg').textContent='セーブコード（長いコードか、ずっと使えるコード LUC-…）をはりつけて「このコードを読みこむ」を押してね';showScr('codeScr')};
 // ---- エンディング ----
 function goPortal(){SFX.portal();W.clear=1;saveGame();const t=Math.round(W.play||0);$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;showScr('ending');STATE='ending';document.body.classList.remove('playing')}
 $('endBack').onclick=()=>{SFX.click();const B=portalB();if(B)B.went=0;respawn();startPlay()};
@@ -1468,7 +1534,7 @@ function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(
   else{for(const n in PTAGS)PTAGS[n].style.display='none'}}
 init();
 // テスト用
-window.__L={renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
+window.__L={CLOUD,CL,clMake,clSync,clLoad,clShow,renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
 
 </script>
 </body>
