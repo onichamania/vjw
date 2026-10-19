@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Little Universe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{--sat:env(safe-area-inset-top,0px);--sar:env(safe-area-inset-right,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--ink:#2a1a3a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#0c1236;font-family:'M PLUS Rounded 1c',system-ui,sans-serif;color:#fff;touch-action:none}
+#game{position:fixed;inset:0}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ol{text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink),1.5px 1.5px 0 var(--ink),-1.5px 1.5px 0 var(--ink),1.5px -1.5px 0 var(--ink),-1.5px -1.5px 0 var(--ink)}
+.ic{width:22px;height:22px;vertical-align:middle;object-fit:contain;filter:drop-shadow(0 1px 0 rgba(0,0,0,.35))}
+#tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#tags>div{position:absolute;left:0;top:0;will-change:transform}
+/* 左：資源 */
+#res{position:absolute;left:calc(var(--sal) + 8px);top:calc(var(--sat) + 64px);display:flex;flex-direction:column;gap:4px;pointer-events:none;max-height:calc(100% - 140px);flex-wrap:wrap}
+.rrow{display:flex;align-items:center;gap:5px;background:rgba(20,16,50,.55);border:2px solid rgba(255,255,255,.18);border-radius:14px;padding:2px 10px 2px 4px;font-weight:800;font-size:16px;min-width:74px}
+.rrow .ic{width:26px;height:26px}
+.rrow span{text-shadow:0 2px 0 rgba(0,0,0,.5)}
+.rrow.pop{animation:pop .35s}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+/* 上 */
+#topbar{position:absolute;top:calc(var(--sat) + 8px);left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;pointer-events:none}
+.pill{white-space:nowrap;background:rgba(20,16,50,.6);border:2px solid rgba(255,255,255,.2);border-radius:16px;padding:4px 10px;display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px}
+.bar{position:relative;width:86px;height:12px;border-radius:7px;background:rgba(0,0,0,.45);overflow:hidden;border:1.5px solid rgba(255,255,255,.35)}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(#9ef56a,#3fbf2a)}
+#hpBar{background:linear-gradient(#ff8a8a,#e02a3a)!important}
+#tools{display:flex;gap:6px}
+@media (max-width:600px){#topbar{flex-wrap:wrap;justify-content:center;width:calc(100vw - 120px);gap:4px}.pill{font-size:12px;padding:3px 7px;gap:4px}.bar{width:52px;height:10px}#hpTxt{display:none}#res{top:calc(var(--sat) + 84px)}.rrow{font-size:14px;min-width:62px;padding:1px 8px 1px 3px}.rrow .ic{width:22px;height:22px}}#tools span{display:flex;align-items:center;gap:1px;font-size:13px}#tools .ic{width:20px;height:20px}
+/* 右上のボタン（歯車の下）*/
+#btns{position:absolute;right:calc(var(--sar) + 10px);top:calc(var(--sat) + 62px);display:flex;flex-direction:column;gap:8px}
+.rb{width:46px;height:46px;border-radius:14px;border:2px solid rgba(255,255,255,.5);background:linear-gradient(#5a6aff,#3a3ad0);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #1e1e80;cursor:pointer;padding:0}
+.rb.act{background:linear-gradient(#ffcf3a,#f09a1a);box-shadow:0 3px 0 #a05a00}
+.rb:active{transform:translateY(2px);box-shadow:0 1px 0 #1e1e80}
+#netbox{position:absolute;right:calc(var(--sar) + 64px);top:calc(var(--sat) + 66px);font-size:12px;font-weight:800;background:rgba(20,16,50,.6);padding:3px 8px;border-radius:10px;display:none;pointer-events:none}
+/* スティック */
+#stick{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.4);display:none;pointer-events:none}
+#knob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+/* 値札・建物の名前 */
+.ptag{display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:220px;background:rgba(255,255,255,.92);color:var(--ink);border-radius:12px;padding:3px 8px;font-weight:800;font-size:15px;box-shadow:0 3px 0 rgba(30,20,80,.35);transform-origin:50% 100%}
+.ptag span{display:flex;align-items:center;gap:2px;color:#d0303a}.ptag span.ok{color:#1a9a2a}.ptag .ic{width:22px;height:22px}
+.ptag i{font-style:normal;font-size:11px;color:#7a5a20;width:100%;text-align:center}
+.ptag.here{background:#fff6c0;box-shadow:0 0 0 3px #ffd21f,0 3px 0 rgba(30,20,80,.35)}
+.btag{background:rgba(20,16,50,.72);border:2px solid rgba(255,255,255,.3);border-radius:12px;padding:4px 9px;font-size:12px;text-align:center;white-space:nowrap;font-weight:800}
+.btag b{display:block;font-size:13px;color:#ffe680}.btag div{display:flex;align-items:center;justify-content:center;gap:3px}.btag .sm{font-size:11px;color:#c8d0ff;font-weight:500}.btag .ic{width:20px;height:20px}
+.lock{display:flex;align-items:center;gap:2px;background:rgba(40,10,20,.75);border:2px solid #ff7a8a;border-radius:10px;padding:2px 7px;font-weight:800;font-size:13px}.lock .ic{width:20px;height:20px}
+.ebar,#meBar{width:56px;height:8px;border-radius:5px;background:rgba(0,0,0,.55);border:1.5px solid rgba(255,255,255,.6);overflow:hidden}
+.ebar i,#meBar i{display:block;height:100%;background:linear-gradient(#ff8a8a,#e02a3a)}.ebar.boss{width:110px;height:11px}
+#meBar i{background:linear-gradient(#9ef56a,#3fbf2a)}
+#meBar,#swimT{display:none}
+#swimT{font-weight:800;font-size:16px;background:rgba(0,40,90,.7);border-radius:10px;padding:2px 8px}
+.flt{font-weight:800;font-size:20px;text-shadow:0 2px 0 #2a1a3a,1px 0 0 #2a1a3a,-1px 0 0 #2a1a3a}
+.nameTag{font-weight:800;font-size:13px;transform:translate(-50%,-100%);background:rgba(20,16,50,.6);padding:1px 7px;border-radius:8px;white-space:nowrap}
+/* 下：台の説明 */
+#padui{position:absolute;left:50%;bottom:calc(var(--sab) + 18px);transform:translate(-50%,40px);opacity:0;transition:transform .2s,opacity .2s;background:rgba(255,255,255,.95);color:var(--ink);border-radius:18px;padding:10px 16px;min-width:240px;max-width:min(92vw,460px);text-align:center;box-shadow:0 4px 0 rgba(30,20,80,.4);pointer-events:none;font-weight:800;font-size:14px}
+#padui.on{transform:translate(-50%,0);opacity:1}
+#padui b{display:block;font-size:15px;margin-bottom:3px;color:#5a2aa0}#padui div{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}
+#padui .sm{font-size:12px;color:#6a6080;font-weight:500;margin-top:3px}#padui .cost span{display:flex;align-items:center;gap:2px;margin:0 3px;font-size:16px}#padui .cost .ok{color:#1a9a2a}#padui .cost .lack{color:#d0303a}
+/* お知らせ */
+#toast{position:absolute;left:50%;top:calc(var(--sat) + 52px);transform:translate(-50%,-10px);opacity:0;transition:.25s;background:rgba(20,16,50,.85);border-radius:14px;padding:7px 14px;font-weight:800;font-size:14px;pointer-events:none;max-width:86vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#banner{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;text-align:center;transition:none}
+#banner.on{animation:ban 2.8s forwards}
+#banner b{display:block;font-size:40px;color:#ffe25a;text-shadow:0 4px 0 #5a2aa0,3px 0 0 #5a2aa0,-3px 0 0 #5a2aa0,0 -3px 0 #5a2aa0,2px 2px 0 #5a2aa0,-2px 2px 0 #5a2aa0}
+#banner small{display:block;font-size:16px;font-weight:800;margin-top:4px;text-shadow:0 2px 0 #2a1a3a}
+@keyframes ban{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}10%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}16%{transform:translate(-50%,-50%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
+#hurt{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 90px rgba(255,0,40,.0)}
+#hurt.on{animation:hurt .45s}
+@keyframes hurt{0%{box-shadow:inset 0 0 90px rgba(255,0,40,.7)}100%{box-shadow:inset 0 0 90px rgba(255,0,40,0)}}
+#mapInfo{position:absolute;left:50%;bottom:calc(var(--sab) + 22px);transform:translateX(-50%);text-align:center;display:none;pointer-events:none}
+#mapInfo b{display:block;font-size:30px;color:#ffe25a}#mapInfo span{font-weight:800}#mapInfo small{display:block;font-size:12px;opacity:.8;margin-top:4px}
+body.mapv #res,body.mapv #topbar,body.mapv #padui{opacity:0}
+body:not(.playing) #btns,body:not(.playing) #res,body:not(.playing) #topbar,body:not(.playing) #padui,body:not(.playing) #netbox{display:none!important}
+/* 画面（メニューなど）*/
+.scr{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:20;padding:calc(var(--sat) + 12px) 12px calc(var(--sab) + 12px)}
+.scr.on{display:flex}
+.panel{background:rgba(8,6,30,.55)}
+.box{background:linear-gradient(#fdfbff,#e8e2ff);color:var(--ink);border-radius:22px;padding:16px;width:min(92vw,420px);max-height:100%;overflow:auto;box-shadow:0 6px 0 rgba(30,20,80,.5);text-align:center}
+.box h2{margin:2px 0 10px;font-size:22px;color:#5a2aa0}
+.btn{display:block;width:100%;margin:8px 0;padding:12px;border:0;border-radius:14px;font:800 16px 'M PLUS Rounded 1c',system-ui,sans-serif;color:#fff;background:linear-gradient(#5a6aff,#3a3ad0);box-shadow:0 4px 0 #1e1e80;cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #1e1e80}.btn:disabled{opacity:.5}
+.btn.g{background:linear-gradient(#6ee05a,#2faa2a);box-shadow:0 4px 0 #1a6a1a}.btn.y{background:linear-gradient(#ffcf3a,#f09a1a);box-shadow:0 4px 0 #a05a00}.btn.gr{background:linear-gradient(#9aa0b8,#6a708a);box-shadow:0 4px 0 #3a3f55}
+textarea{width:100%;height:96px;border-radius:12px;border:2px solid #b8a8ff;padding:8px;font:12px monospace;resize:none;-webkit-user-select:text;user-select:text}
+.msg{font-size:13px;color:#5a4a7a;margin:6px 0}
+#title{flex-direction:column;justify-content:space-between;background:none}
+#title .logo{margin-top:4vh;text-align:center}
+#title .logo b{display:block;font-size:min(13vw,62px);line-height:1;color:#ffe25a;text-shadow:0 5px 0 #5a2aa0,4px 0 0 #5a2aa0,-4px 0 0 #5a2aa0,0 -4px 0 #5a2aa0,3px 3px 0 #5a2aa0,-3px 3px 0 #5a2aa0,3px -3px 0 #5a2aa0,-3px -3px 0 #5a2aa0}
+#title .logo small{display:block;font-weight:800;font-size:15px;margin-top:10px;text-shadow:0 2px 0 #2a1a3a}
+#title .tb{width:min(86vw,340px);margin-bottom:2vh}
+#loading{background:rgba(8,6,30,.85);flex-direction:column;font-weight:800}
+.skins{display:flex;gap:8px;overflow-x:auto;padding:4px}
+.skin{flex:0 0 120px;background:#fff;border-radius:14px;padding:6px;border:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px}
+.skin.sel{border-color:#ffd21f}.skin canvas{width:96px;height:110px}.skin b{font-size:13px}.skin small{font-size:10px;color:#6a6080;min-height:26px}.skin em{font-style:normal;font-size:12px;color:#1a9a2a;font-weight:800}
+.skin button{border:0;border-radius:10px;padding:6px 8px;font:800 12px 'M PLUS Rounded 1c',sans-serif;background:#5a6aff;color:#fff}.skin button:disabled{opacity:.45}
+.cost{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}.cst{display:flex;align-items:center;font-size:12px;font-weight:800}.cst.lack{color:#d0303a}
+.room{background:#fff;border-radius:12px;padding:10px;margin:6px 0;cursor:pointer;text-align:left;border:2px solid #d8d0ff}.room b{display:block}.room small{color:#6a6080}.empty{color:#8a80a0;padding:12px}
+#nRooms{max-height:40vh;overflow:auto}
+</style>
+</head>
+<body>
+<div id="game">
+<canvas id="c"></canvas>
+<div id="tags"><div id="meBar"><i></i></div><div id="swimT"></div></div>
+<div id="stick"><div id="knob"></div></div>
+<div id="res" class="ui"></div>
+<div id="topbar" class="ui"><div class="pill">🌍 ガイア <div class="bar"><i id="pBar"></i></div><span id="pPct">0%</span></div><div class="pill">❤️ <div class="bar"><i id="hpBar"></i></div><span id="hpTxt" style="font-size:12px"></span></div><div class="pill" id="tools"></div></div>
+<div id="btns" class="ui"><button class="rb" id="bMenu" title="メニュー">☰</button><button class="rb" id="bMap" title="星の地図">🌍</button></div>
+<div id="netbox"></div>
+<div id="padui"></div>
+<div id="mapInfo"></div>
+<div id="toast"></div><div id="banner"></div><div id="hurt"></div>
+</div>
+<div id="title" class="scr"><div class="logo"><b>Little<br>Universe</b><small>小さな星をひらいていこう</small></div>
+ <div class="tb"><button class="btn g" id="tCont">つづきから</button><button class="btn" id="tNew">はじめる</button><button class="btn y" id="tOnline">オンライン（いっしょに遊ぶ）</button><button class="btn gr" id="tCode">セーブコードで遊ぶ</button></div></div>
+<div id="menu" class="scr panel"><div class="box"><h2>メニュー</h2>
+ <button class="btn g" id="mClose">ゲームにもどる</button><button class="btn" id="mSkin">キャラクター</button><button class="btn y" id="mOnline">オンライン</button><button class="btn" id="mCode">セーブコード</button>
+ <button class="btn gr" id="mYield">資源の量</button><button class="btn gr" id="mName">名前</button><button class="btn gr" id="mSound">音</button><button class="btn gr" id="mTitle">タイトルへ</button></div></div>
+<div id="skins" class="scr panel"><div class="box"><h2>キャラクター</h2><div class="msg" id="skinNote"></div><div class="skins" id="skinList"></div><button class="btn gr" id="skinBack">もどる</button></div></div>
+<div id="online" class="scr panel"><div class="box"><h2>オンライン</h2><div class="msg" id="nState"></div><div id="nRooms"></div><button class="btn y" id="nHost">自分の星で部屋を開く</button><div class="msg">同じ星でいっしょにタイルを開けます。持ち物と道具はそれぞれのもの。部屋に入ると、ホストの星で遊びます（自分の星はそのまま残ります）。</div><button class="btn gr" id="nBack">もどる</button></div></div>
+<div id="codeScr" class="scr panel"><div class="box"><h2>セーブコード</h2><textarea id="codeTa" spellcheck="false"></textarea><div class="msg" id="codeMsg"></div><button class="btn" id="codeCopy">コピー</button><button class="btn g" id="codeLoad">このコードを読みこむ</button><button class="btn gr" id="codeBack">もどる</button></div></div>
+<div id="dlg" class="scr panel"><div class="box"><h2 id="dlgT"></h2><div class="msg" id="dlgM"></div><input id="dlgIn" maxlength="14" style="width:100%;font:800 16px 'M PLUS Rounded 1c',sans-serif;padding:10px;border-radius:12px;border:2px solid #b8a8ff;-webkit-user-select:text;user-select:text"><button class="btn g" id="dlgOk">OK</button><button class="btn gr" id="dlgNo">やめる</button></div></div>
+<div id="loading" class="scr"><div id="loadTxt">読みこみ中…</div></div>
+<div id="ending" class="scr panel"><div class="box"><h2>ガイアをクリア！</h2><div class="msg">ポータルが動いて、光の向こうに次の星が見えた！<br>（次の星「トロルヘイム」はまだ準備中です）</div><div class="msg" id="endStat"></div><button class="btn g" id="endBack">ガイアにもどる</button></div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
