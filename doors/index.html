@@ -2806,6 +2806,7 @@ TPL.library = {
     const shapes = r.shuffle(LIB_SHAPES.slice()).slice(0, 5);
     const digits = shapes.map(() => r.int(0, 9));
     room.meta.library = { shapes, digits, found: [false, false, false, false, false] };
+    GAME.library = room.meta.library;
     const picks = r.shuffle(shelves.slice()).slice(0, 5);
     picks.forEach((s, i) => {
       const lx = r.range(-s.w / 2 + 0.3, s.w / 2 - 0.3), ly = 0.08 + s.sh * r.int(2, 4) + 0.02;
@@ -3785,6 +3786,7 @@ GAME.enterHide = function (h) {
   h.enterT = GAME.time; h.from = camera.position.clone();
   PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0; PLAYER.hideT = 0; PLAYER.crouch = false;
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
+  PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z); PLAYER.vel.set(0, 0, 0);
   const fx = $('fxHide'); fx.className = 'fx ' + (h.type === 'bed' ? 'bed' : 'closet'); setTimeout(() => { if (PLAYER.hidden === h) fx.style.opacity = 1; }, 250);
   if (h.type === 'closet') { SFX.closet(h.cam); animateClosetDoors(h); setTimeout(() => { if (PLAYER.hidden === h) h.doors.forEach(d => (d.visible = false)); }, 420); } else SFX.bed();
   NOISE.emit(PLAYER.pos, 3);
@@ -4658,13 +4660,13 @@ const UI = {
   },
   shapeSvg(name, color = '#2a2216') { return `<svg viewBox="0 0 40 40" fill="${color}">${SHAPE_SVG[name]}</svg>`; },
   paper() {
-    const lib = WORLD.room(50) && WORLD.room(50).meta.library; if (!lib) return;
+    const lib = GAME.library; if (!lib) return;
     const cells = lib.shapes.map((s, i) => `<div class="s">${UI.shapeSvg(s)}<b>${lib.found[i] ? lib.digits[i] : '?'}</b></div>`).join('');
     UI.openModal(`<div class="paper"><button class="close" data-close>×</button><h3>— 南京錠のコード —</h3><div class="msgline" style="color:#5a4a30">本に描かれた記号と数字を、この順番に並べよ。</div><div class="shapes">${cells}</div><div class="msgline" style="color:#5a4a30">見つけた本：${lib.found.filter(Boolean).length} / 5</div></div>`);
     SFX.paper();
   },
   padlock(door) {
-    const lib = WORLD.room(50).meta.library; const v = [0, 0, 0, 0, 0];
+    const lib = door.room.meta.library; const v = [0, 0, 0, 0, 0];
     const draw = () => v.forEach((d, i) => { $('pd' + i).textContent = d; });
     const html = `<div class="lock"><button class="close" data-close style="color:#ddd">×</button><div style="font-size:18px;letter-spacing:.2em;color:#e9d9b8">PADLOCK</div><div class="wheels">${v.map((_, i) => `<div class="wheel"><button data-i="${i}" data-d="1">▲</button><div class="d" id="pd${i}">0</div><button data-i="${i}" data-d="-1">▼</button></div>`).join('')}</div><button class="mbtn primary" id="pdGo" style="width:100%">開ける</button><div class="msgline">${GAME.hasItem('hint') ? 'ヒントの紙（アイテム）を使うとコードの手がかりが見られる。' : '机の上のヒントの紙と、本棚の本を探そう。'}</div></div>`;
     const m = UI.openModal(html, { key: e => { if (/^Digit\d$/.test(e.code)) { const k = UI._pi || 0; v[k] = +e.code.slice(5); UI._pi = (k + 1) % 5; draw(); } if (e.code === 'Enter') $('pdGo').click(); } });
@@ -4805,6 +4807,7 @@ GAME.startRun = async function () {
   UI.show('title', false); UI.show('death', false); UI.show('win', false);
   if (!materialsReady) {
     UI.show('loading');
+    if (document.fonts) await Promise.race([document.fonts.load('600 58px "Oswald"').catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
     await buildMaterials(p => { $('loadBar').style.width = Math.round(p * 100) + '%'; });
     genEntityTextures();
     materialsReady = true;
@@ -4814,7 +4817,7 @@ GAME.startRun = async function () {
   rng = new RNG(RUN.seed);
   DIRECTOR.newRun(RUN.seed);
   ENT.reset(); WORLD.reset(); PARTICLES.clear(); NOISE.events = []; MUSIC.stop(0.3);
-  GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
+  GAME.library = null; GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
   GAME.heartKey = () => {};
   POST.hurt = 0; POST.shake = 0; POST.flash = 0; POST.halt = 0; POST.eyes = 0; POST.aberr = 0;
   LIGHTS.init();
@@ -4840,7 +4843,7 @@ GAME.startRun = async function () {
 GAME.onEnterRoom = function (room) {
   if (room.index > GAME.maxRoom) {
     GAME.maxRoom = room.index;
-    if (room.index < 100 && !WORLD.room(room.index + 1)) { const nr = WORLD.generate(room.index + 1); ENT.onRoomGenerated(nr); }
+    if (room.index < 100 && room.type !== 'electrical' && !WORLD.room(room.index + 1)) { const nr = WORLD.generate(room.index + 1); ENT.onRoomGenerated(nr); }
     WORLD.trim(room.index);
     DIRECTOR.onEnterRoom(room);
     const rn = $('roomnum'); rn.textContent = pad4(room.index); rn.style.transition = 'none'; rn.style.opacity = 0.9; void rn.offsetWidth; rn.style.transition = 'opacity 2.5s'; rn.style.opacity = 0;
@@ -4874,11 +4877,12 @@ GAME.kill = function (cause) {
   }, 2200);
 };
 GAME.foundBook = function (i) {
-  const lib = WORLD.room(50).meta.library; lib.found[i] = true;
+  const lib = GAME.library; lib.found[i] = true;
   SFX.book(PLAYER.pos); NOISE.emit(PLAYER.pos, 5);
   const k = lib.found.filter(Boolean).length;
   UI.openModal(`<div class="paper" style="text-align:center"><button class="close" data-close>×</button><h3>本を見つけた（${k}/5）</h3><div class="shapes"><div class="s">${UI.shapeSvg(lib.shapes[i])}<b>${lib.digits[i]}</b></div></div><div class="msgline" style="color:#5a4a30">${GAME.hasItem('hint') ? 'ヒントの紙に書き込まれた。' : '中央の机にあるヒントの紙も探そう。'}</div></div>`);
-  setTimeout(() => { if (GAME.modal && !GAME.heartbeat) UI.closeModal(); }, 2600);
+  const mine = GAME.modal;
+  setTimeout(() => { if (GAME.modal === mine) UI.closeModal(); }, 2600);
 };
 GAME.openBreaker = function (room) {
   if (room.meta.powered) return;
@@ -4897,7 +4901,7 @@ GAME.powerOn = function (room) {
 };
 GAME.win = function () {
   if (GAME.won) return; GAME.won = true; GAME.cutscene = true;
-  const room = WORLD.room(100); room.meta.elevator.open = false;
+  const room = GAME.room; room.meta.elevator.open = false;
   PLAYER.frozen = true;
   setTimeout(() => { SFX.ding(); MUSIC.play('elevator'); ENT.despawn('figure'); }, 1500);
   setTimeout(() => { $('fxBlack').style.opacity = 1; }, 3800);
@@ -4942,8 +4946,8 @@ function update(dt) {
     VIEW.update(dt);
     GAME.updateTarget();
     // escape check
-    const er = WORLD.room(100);
-    if (er && GAME.room === er && er.meta.elevator.open && PLAYER.alive) { const l = er.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z); if (l.z < -er.D - 0.9) GAME.win(); }
+    const er = GAME.room && GAME.room.type === 'electrical' ? GAME.room : null;
+    if (er && er.meta.elevator.open && PLAYER.alive) { const l = er.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z); if (l.z < -er.D - 0.9) GAME.win(); }
     // ambience per room
     const rm = GAME.room;
     const dark = rm && rm.dark, out = rm && rm.outdoor, gh = rm && rm.meta.greenhouse;
