@@ -3448,7 +3448,7 @@ const GAME = {
 const RUN = { seed: 1 };
 
 /* ---------- input ---------- */
-const INPUT = { keys: {}, mdx: 0, mdy: 0, locked: false, joy: { x: 0, y: 0, id: null, ox: 0, oy: 0 }, look: { id: null, x: 0, y: 0, sx: 0, sy: 0, t: 0, moved: 0 } };
+const INPUT = { keys: {}, mdx: 0, mdy: 0, locked: false, noLock: false, drag: null, joy: { x: 0, y: 0, id: null, ox: 0, oy: 0 }, look: { id: null, x: 0, y: 0, sx: 0, sy: 0, t: 0, moved: 0 } };
 const KEYMAP = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
 addEventListener('keydown', e => {
   if (GAME.state !== 'play') return;
@@ -3464,12 +3464,24 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { if (KEYMAP[e.code]) INPUT.keys[KEYMAP[e.code]] = false; });
 addEventListener('blur', () => { INPUT.keys = {}; });
+/* Pointer lock can be refused (e.g. inside an embedded viewer). Then dragging turns the view and a click interacts. */
+function requestLock() {
+  if (INPUT.noLock || !canvas.requestPointerLock) return;
+  try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { INPUT.noLock = true; }); } catch (e) { INPUT.noLock = true; }
+}
+document.addEventListener('pointerlockerror', () => { if (!INPUT.noLock && GAME.state === 'play') UI.hint('ドラッグで視点を動かせます'); INPUT.noLock = true; });
 canvas.addEventListener('mousedown', e => {
   if (GAME.state !== 'play' || IS_TOUCH || GAME.modal) return;
   AU.resume();
-  if (!INPUT.locked) { canvas.requestPointerLock && canvas.requestPointerLock(); return; }
+  if (!INPUT.locked) { INPUT.drag = { button: e.button, moved: 0 }; requestLock(); return; }
   if (e.button === 0) { if (!GAME.interact()) GAME.useItem(); }
   if (e.button === 2) GAME.useItem();
+});
+addEventListener('mouseup', e => {
+  const d = INPUT.drag; INPUT.drag = null;
+  if (!d || INPUT.locked || GAME.state !== 'play' || GAME.modal || d.moved > 6) return;
+  if (d.button === 2) { GAME.useItem(); return; }
+  if (d.button === 0 && !GAME.interact()) { const p = toStage(e.clientX, e.clientY); if (!GAME.tapAt(p.x, p.y)) GAME.useItem(); }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('wheel', e => { if (GAME.state === 'play' && GAME.inv.length) GAME.select(((GAME.sel < 0 ? 0 : GAME.sel) + (e.deltaY > 0 ? 1 : -1) + GAME.inv.length) % GAME.inv.length); }, { passive: true });
@@ -3478,7 +3490,10 @@ document.addEventListener('pointerlockchange', () => {
   if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cutscene) UI.pause();
 });
 document.addEventListener('mousemove', e => {
-  if (!INPUT.locked) return;
+  if (!INPUT.locked) {
+    if (!INPUT.drag || !e.buttons) return;
+    INPUT.drag.moved += Math.abs(e.movementX) + Math.abs(e.movementY);
+  }
   if (ROT.on) { INPUT.mdx += e.movementY; INPUT.mdy -= e.movementX; } else { INPUT.mdx += e.movementX; INPUT.mdy += e.movementY; }
 });
 
@@ -3645,9 +3660,10 @@ GAME.interact = function () {
   return true;
 };
 GAME.tapAt = function (x, y) {
-  if (PLAYER.hidden) { GAME.exitHide(); return; }
+  if (PLAYER.hidden) { GAME.exitHide(); return true; }
   const t = findTarget(new THREE.Vector2(x / VW() * 2 - 1, -(y / VH()) * 2 + 1));
   if (t) t.ia.use();
+  return !!t;
 };
 
 /* ---------- inventory ---------- */
@@ -4667,7 +4683,7 @@ const UI = {
     const bars = $('hotbar').querySelectorAll('.slot');
     GAME.inv.forEach((it, i) => { const b = bars[i] && bars[i].querySelector('.bar i'); if (b) b.style.width = it.charge + '%'; });
   },
-  closeModal() { $('modal').classList.add('hidden'); $('modal').innerHTML = ''; const m = GAME.modal; GAME.modal = null; if (m && m.onClose) m.onClose(); if (!IS_TOUCH && GAME.state === 'play' && PLAYER.alive) canvas.requestPointerLock && canvas.requestPointerLock(); },
+  closeModal() { $('modal').classList.add('hidden'); $('modal').innerHTML = ''; const m = GAME.modal; GAME.modal = null; if (m && m.onClose) m.onClose(); if (!IS_TOUCH && GAME.state === 'play' && PLAYER.alive) requestLock(); },
   openModal(html, opts = {}) {
     const m = $('modal'); m.innerHTML = html; m.classList.remove('hidden');
     GAME.modal = opts;
@@ -4770,7 +4786,7 @@ const UI = {
   },
   resume() {
     GAME.paused = false; UI.show('pause', false); AU.resume();
-    if (!IS_TOUCH) canvas.requestPointerLock && canvas.requestPointerLock();
+    if (!IS_TOUCH) requestLock();
   },
   death(cause) {
     const lines = GUIDING[cause] || GUIDING.generic;
@@ -4854,7 +4870,7 @@ GAME.startRun = async function () {
   MUSIC.play('elevator');
   GAME.cutscene = true;
   setTimeout(() => { if (GAME.state !== 'play') return; SFX.ding(); r0.meta.elevator.open = true; MUSIC.stop(2.5); GAME.cutscene = false; }, 4200);
-  if (!IS_TOUCH) { canvas.requestPointerLock && canvas.requestPointerLock(); UI.hint('クリックで操作開始 ・ WASDで移動 ・ Eで調べる', 4000); }
+  if (!IS_TOUCH) { requestLock(); UI.hint('クリックで操作開始 ・ WASDで移動 ・ Eで調べる', 4000); }
   else UI.hint('左側で移動・右側で視点・✋で調べる', 4000);
 };
 GAME.onEnterRoom = function (room) {
