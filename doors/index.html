@@ -484,6 +484,12 @@ addEventListener('resize', onResize);
 setupRenderer();
 const maxAniso = () => Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
+/* Short UI/prop animations are stepped from the main loop: a second requestAnimationFrame
+   loop can be starved by a host page's frame limiter. fn returns true while it wants more frames. */
+const ANIMS = new Set();
+const animate = fn => { if (fn() !== false) ANIMS.add(fn); };
+function stepAnims() { for (const fn of [...ANIMS]) { let more = false; try { more = fn() === true; } catch (e) { more = false; } if (!more) ANIMS.delete(fn); } }
+
 /* Post FX state shared by gameplay */
 const POST = { tint: new THREE.Color(1, 1, 1), tintAmt: 0, aberr: 0, desat: 0, warp: 0, shake: 0, hurt: 0, flash: 0 };
 
@@ -2660,7 +2666,7 @@ function addGateAndLever(room, r) {
     use: () => {
       if (st.open) return; st.open = true; col.on = false;
       SFX.lever(room.toWorld(p.x, 1.25, p.z)); setTimeout(() => SFX.gate(room.toWorld(el.door.x, 1.5, el.door.z)), 300);
-      const t0 = performance.now(); const anim = () => { const k = Math.min(1, (performance.now() - t0) / 250); piv.rotation.x = 0.7 - 1.4 * k; if (k < 1) requestAnimationFrame(anim); }; anim();
+      const t0 = performance.now(); animate(() => { const k = Math.min(1, (performance.now() - t0) / 250); piv.rotation.x = 0.7 - 1.4 * k; return k < 1; });
     },
   });
   room.meta.gate = st;
@@ -3463,7 +3469,11 @@ addEventListener('keydown', e => {
   if (e.code === 'Escape' && !INPUT.locked) UI.pause();
 });
 addEventListener('keyup', e => { if (KEYMAP[e.code]) INPUT.keys[KEYMAP[e.code]] = false; });
-addEventListener('blur', () => { INPUT.keys = {}; });
+addEventListener('blur', () => {
+  INPUT.keys = {};
+  // inside 3dgame, tapping the hub's ⚙ moves focus out of the game: pause so nothing attacks while the panel is open
+  if (HUB.embedded && GAME.state === 'play' && !GAME.modal && !GAME.cutscene && PLAYER.alive && !INPUT.locked) UI.pause();
+});
 /* Pointer lock can be refused (e.g. inside an embedded viewer). Then dragging turns the view and a click interacts. */
 function requestLock() {
   if (INPUT.noLock || !canvas.requestPointerLock) return;
@@ -3836,12 +3846,11 @@ GAME.exitHide = function (force = false) {
 };
 function animateClosetDoors(h) {
   const t0 = performance.now();
-  const f = () => {
+  animate(() => {
     const k = (performance.now() - t0) / 600, a = Math.sin(Math.min(1, k) * Math.PI) * 1.1;
     h.doors.forEach((d, i) => { d.rotation.y = d.userData.baseRy + (i === 0 ? -a : a); });
-    if (k < 1) requestAnimationFrame(f);
-  };
-  f();
+    return k < 1;
+  });
 }
 
 /* ---------- held item view model ---------- */
@@ -4745,17 +4754,16 @@ const UI = {
       else { fails++; SFX.buzz(); if (fails >= 2) finish(false); }
     };
     $('hbL').addEventListener('pointerdown', () => GAME.heartKey('L')); $('hbR').addEventListener('pointerdown', () => GAME.heartKey('R'));
-    const tick = () => {
-      if (finished) return;
+    animate(() => {
+      if (finished) return false;
       const now = (performance.now() - start) / 1000, w = lane.clientWidth;
       for (const b of beats) {
         b.el.style.left = (w / 2 + (b.at - now) * w * 0.38) + 'px';
-        if (!b.done && now - b.at > 0.32) { b.done = true; b.el.style.background = '#555'; fails++; SFX.buzz(); if (fails >= 2) return finish(false); }
+        if (!b.done && now - b.at > 0.32) { b.done = true; b.el.style.background = '#555'; fails++; SFX.buzz(); if (fails >= 2) { finish(false); return false; } }
       }
-      if (beats.every(b => b.done) && now > beats[beats.length - 1].at + 0.4) return finish(true);
-      requestAnimationFrame(tick);
-    };
-    tick();
+      if (beats.every(b => b.done) && now > beats[beats.length - 1].at + 0.4) { finish(true); return false; }
+      return true;
+    });
     void m;
   },
   jumpscare(kind, dur = 0.8) {
@@ -4767,15 +4775,15 @@ const UI = {
     const draw = () => {
       const k = (performance.now() - t0) / 1000 / dur;
       g.clearRect(0, 0, c.width, c.height);
-      if (k >= 1) { c.style.display = 'none'; return; }
+      if (k >= 1) { c.style.display = 'none'; return false; }
       g.fillStyle = `rgba(0,0,0,${0.55 * (1 - k)})`; g.fillRect(0, 0, c.width, c.height);
       if (img) {
         const s = Math.min(c.width, c.height) * (1.0 + k * 0.6), sx = (Math.random() - 0.5) * 40, sy = (Math.random() - 0.5) * 40;
         g.globalAlpha = k < 0.8 ? 1 : (1 - k) * 5; g.drawImage(img, (c.width - s) / 2 + sx, (c.height - s) / 2 + sy, s, s); g.globalAlpha = 1;
       }
-      requestAnimationFrame(draw);
+      return true;
     };
-    draw();
+    animate(draw);
     POST.shake = 1.2;
   },
   pause() {
@@ -4959,6 +4967,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const real = (now - lastT) / 1000, dt = Math.min(0.05, real); lastT = now;
   fpsAcc += real; fpsN++; if (fpsAcc > 0.5) { if (SETTINGS.fps) $('fps').textContent = Math.round(fpsN / fpsAcc) + ' fps'; fpsAcc = 0; fpsN = 0; }
+  stepAnims();
   if (GAME.state !== 'play' && GAME.state !== 'dead' && GAME.state !== 'won') return;
   update(dt);
   if (composer) composer.render(dt); else renderer.render(scene, camera);
