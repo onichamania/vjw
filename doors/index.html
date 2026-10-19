@@ -186,15 +186,16 @@
   .heart .hbtns { display:flex; gap:20px; justify-content:center; }
   .heart .hbtns button { width:120px; height:64px; font-size:22px; border-radius:12px; border:2px solid #fff; background:rgba(0,0,0,.4); color:#fff; }
   .msgline { font-family:"Noto Sans JP"; font-size:14px; color:#d9cdb5; margin-top:10px; }
-  @media (max-height:520px) {
-    .sublogo { margin:2px 0 12px; font-size:12px; }
-    .menu { gap:7px; }
-    .mbtn { padding:8px 14px; font-size:16px; }
-    .mbtn.primary { font-size:18px; }
-    .knobs { margin-top:8px; }
-    .foot { position:static; margin-top:10px; }
-    .tbtn#tCrouch { font-size:11px; }
-  }
+  /* short screens (phone landscape, or the rotated stage inside 3dgame) */
+  body.short .sublogo { margin:2px 0 12px; font-size:12px; }
+  body.short .menu { gap:7px; }
+  body.short .mbtn { padding:8px 14px; font-size:16px; }
+  body.short .mbtn.primary { font-size:18px; }
+  body.short .knobs { margin-top:8px; }
+  body.short .foot { position:static; margin-top:10px; }
+  body.short .logo { font-size:min(26vw,22vh,120px); }
+  /* the whole game sits on a stage that can be turned 90deg (3dgame's 横画面) */
+  #rot { position:fixed; left:0; top:0; width:100%; height:100%; transform-origin:0 0; overflow:hidden; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -204,6 +205,7 @@
 </script>
 </head>
 <body>
+<div id="rot">
 <canvas id="c"></canvas>
 <div id="fxVignette" class="fx"></div>
 <div id="fxTint" class="fx"></div>
@@ -322,6 +324,7 @@
 </div>
 
 <div id="modal" class="hidden"></div>
+</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -397,7 +400,13 @@ let renderer, composer = null, bloomPass = null, gradePass = null;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 scene.fog = new THREE.FogExp2(0x060403, 0.034);
-const camera = new THREE.PerspectiveCamera(SETTINGS.fov, innerWidth / innerHeight, 0.04, 140);
+/* Stage size: inside 3dgame the stage may be turned 90deg (横画面), so width/height swap */
+const ROT = { on: false };
+const VW = () => (ROT.on ? innerHeight : innerWidth), VH = () => (ROT.on ? innerWidth : innerHeight);
+const toStage = (cx, cy) => (ROT.on ? { x: cy, y: innerWidth - cx } : { x: cx, y: cy });
+/* Settings handed down by the 3dgame home screen (only when embedded there) */
+const HUB = { embedded: window.parent !== window, vol: 1, sens: 1 };
+const camera = new THREE.PerspectiveCamera(SETTINGS.fov, VW() / VH(), 0.04, 140);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 const hemi = new THREE.HemisphereLight(0xc4a27e, 0x2a1c12, 0.34);
@@ -441,7 +450,7 @@ function setupRenderer() {
   if (renderer) { renderer.dispose(); }
   renderer = new THREE.WebGLRenderer({ canvas, antialias: q.aa, powerPreference: 'high-performance', stencil: false });
   renderer.setPixelRatio(q.pr);
-  renderer.setSize(innerWidth, innerHeight, false);
+  renderer.setSize(VW(), VH(), false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0 * SETTINGS.bright;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -452,9 +461,9 @@ function setupRenderer() {
   if (q.bloom) {
     composer = new EffectComposer(renderer);
     composer.setPixelRatio(q.pr);
-    composer.setSize(innerWidth, innerHeight);
+    composer.setSize(VW(), VH());
     composer.addPass(new RenderPass(scene, camera));
-    bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 0.86);
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(VW(), VH()), 0.5, 0.5, 0.86);
     composer.addPass(bloomPass);
     composer.addPass(new OutputPass());
     gradePass = new ShaderPass(GradeShader);
@@ -462,10 +471,14 @@ function setupRenderer() {
   }
 }
 function onResize() {
-  camera.aspect = innerWidth / innerHeight;
+  const r = $('rot');
+  r.style.width = VW() + 'px'; r.style.height = VH() + 'px';
+  r.style.transform = ROT.on ? 'rotate(90deg) translateY(-100%)' : 'none';
+  document.body.classList.toggle('short', VH() < 520);
+  camera.aspect = VW() / VH();
   camera.updateProjectionMatrix();
-  if (renderer) renderer.setSize(innerWidth, innerHeight, false);
-  if (composer) composer.setSize(innerWidth, innerHeight);
+  if (renderer) renderer.setSize(VW(), VH(), false);
+  if (composer) composer.setSize(VW(), VH());
 }
 addEventListener('resize', onResize);
 setupRenderer();
@@ -1039,7 +1052,7 @@ const AU = {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const ctx = this.ctx = new AC();
-    this.master = ctx.createGain(); this.master.gain.value = SETTINGS.volume;
+    this.master = ctx.createGain(); this.master.gain.value = SETTINGS.volume * HUB.vol;
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
     this.master.connect(comp); comp.connect(ctx.destination);
     this.sfx = ctx.createGain(); this.sfx.connect(this.master);
@@ -3464,7 +3477,10 @@ document.addEventListener('pointerlockchange', () => {
   INPUT.locked = document.pointerLockElement === canvas;
   if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cutscene) UI.pause();
 });
-document.addEventListener('mousemove', e => { if (INPUT.locked) { INPUT.mdx += e.movementX; INPUT.mdy += e.movementY; } });
+document.addEventListener('mousemove', e => {
+  if (!INPUT.locked) return;
+  if (ROT.on) { INPUT.mdx += e.movementY; INPUT.mdy -= e.movementX; } else { INPUT.mdx += e.movementX; INPUT.mdy += e.movementY; }
+});
 
 /* touch controls */
 function setupTouch() {
@@ -3472,13 +3488,14 @@ function setupTouch() {
   const J = INPUT.joy, L = INPUT.look;
   sz.addEventListener('touchstart', e => {
     AU.resume();
-    const t = e.changedTouches[0]; J.id = t.identifier; J.ox = t.clientX; J.oy = t.clientY;
-    base.style.display = 'block'; base.style.left = t.clientX + 'px'; base.style.top = t.clientY + 'px'; knob.style.transform = 'translate(0,0)';
+    const t = e.changedTouches[0], p = toStage(t.clientX, t.clientY); J.id = t.identifier; J.ox = p.x; J.oy = p.y;
+    base.style.display = 'block'; base.style.left = (p.x - sz.offsetLeft) + 'px'; base.style.top = (p.y - sz.offsetTop) + 'px'; knob.style.transform = 'translate(0,0)';
     e.preventDefault();
   }, { passive: false });
   const jm = e => {
     for (const t of e.changedTouches) if (t.identifier === J.id) {
-      let dx = t.clientX - J.ox, dy = t.clientY - J.oy; const l = Math.hypot(dx, dy), m = 55;
+      const p = toStage(t.clientX, t.clientY);
+      let dx = p.x - J.ox, dy = p.y - J.oy; const l = Math.hypot(dx, dy), m = 55;
       if (l > m) { dx *= m / l; dy *= m / l; }
       J.x = dx / m; J.y = dy / m; knob.style.transform = `translate(${dx}px,${dy}px)`;
     }
@@ -3488,12 +3505,12 @@ function setupTouch() {
   sz.addEventListener('touchmove', jm, { passive: false }); sz.addEventListener('touchend', je); sz.addEventListener('touchcancel', je);
   look.addEventListener('touchstart', e => {
     AU.resume();
-    const t = e.changedTouches[0]; L.id = t.identifier; L.x = L.sx = t.clientX; L.y = L.sy = t.clientY; L.t = performance.now(); L.moved = 0;
+    const t = e.changedTouches[0], p = toStage(t.clientX, t.clientY); L.id = t.identifier; L.x = L.sx = p.x; L.y = L.sy = p.y; L.t = performance.now(); L.moved = 0;
     e.preventDefault();
   }, { passive: false });
   look.addEventListener('touchmove', e => {
     for (const t of e.changedTouches) if (t.identifier === L.id) {
-      const dx = t.clientX - L.x, dy = t.clientY - L.y; L.x = t.clientX; L.y = t.clientY; L.moved += Math.abs(dx) + Math.abs(dy);
+      const p = toStage(t.clientX, t.clientY), dx = p.x - L.x, dy = p.y - L.y; L.x = p.x; L.y = p.y; L.moved += Math.abs(dx) + Math.abs(dy);
       INPUT.mdx += dx * 2.2; INPUT.mdy += dy * 2.2;
     }
     e.preventDefault();
@@ -3501,7 +3518,7 @@ function setupTouch() {
   const le = e => {
     for (const t of e.changedTouches) if (t.identifier === L.id) {
       L.id = null;
-      if (L.moved < 12 && performance.now() - L.t < 300) GAME.tapAt(t.clientX, t.clientY);
+      if (L.moved < 12 && performance.now() - L.t < 300) { const p = toStage(t.clientX, t.clientY); GAME.tapAt(p.x, p.y); }
     }
   };
   look.addEventListener('touchend', le); look.addEventListener('touchcancel', le);
@@ -3523,7 +3540,7 @@ const PLAYER = {
   toggleCrouch() { if (!this.hidden) { this.crouch = !this.crouch; $('tCrouch').classList.toggle('on', this.crouch); } },
   update(dt) {
     let lookX = INPUT.mdx, lookY = INPUT.mdy; INPUT.mdx = 0; INPUT.mdy = 0;
-    const sens = 0.0022 * SETTINGS.sens;
+    const sens = 0.0022 * SETTINGS.sens * HUB.sens;
     if (this.hidden) {
       const h = this.hidden, lim = h.type === 'bed' ? 0.9 : 0.55;
       this.hideLook.y = clamp(this.hideLook.y - lookX * sens, -lim, lim); this.hideLook.p = clamp(this.hideLook.p - lookY * sens, -0.35, 0.3);
@@ -3629,7 +3646,7 @@ GAME.interact = function () {
 };
 GAME.tapAt = function (x, y) {
   if (PLAYER.hidden) { GAME.exitHide(); return; }
-  const t = findTarget(new THREE.Vector2(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1));
+  const t = findTarget(new THREE.Vector2(x / VW() * 2 - 1, -(y / VH()) * 2 + 1));
   if (t) t.ia.use();
 };
 
@@ -4727,7 +4744,7 @@ const UI = {
   },
   jumpscare(kind, dur = 0.8) {
     const c = $('jumpscare'), g = c.getContext('2d');
-    c.width = innerWidth; c.height = innerHeight; c.style.display = 'block';
+    c.width = VW(); c.height = VH(); c.style.display = 'block';
     const img = ETEX[kind] && ETEX[kind].image;
     const t0 = performance.now();
     POST.aberr = 0.02;
@@ -4781,7 +4798,7 @@ const UI = {
     const seg = (id, key, conv = v => v) => { const el = $(id); el.querySelectorAll('button').forEach(b => { b.classList.toggle('on', String(SETTINGS[key]) === b.dataset.v); b.onclick = () => { SETTINGS[key] = conv(b.dataset.v); saveSettings(); seg(id, key, conv); if (key === 'quality') UI._qualityChanged = true; if (key === 'fps') $('fps').style.display = SETTINGS.fps ? 'block' : 'none'; }; }); };
     seg('sQuality', 'quality'); seg('sFps', 'fps', v => +v);
     const rng_ = (id, key, fn) => { const el = $(id); el.value = SETTINGS[key]; el.oninput = () => { SETTINGS[key] = +el.value; saveSettings(); fn && fn(); }; };
-    rng_('sBright', 'bright'); rng_('sSens', 'sens'); rng_('sFov', 'fov', () => { camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }); rng_('sVol', 'volume', () => AU.setVolume(SETTINGS.volume));
+    rng_('sBright', 'bright'); rng_('sSens', 'sens'); rng_('sFov', 'fov', () => { camera.fov = SETTINGS.fov; camera.updateProjectionMatrix(); }); rng_('sVol', 'volume', () => AU.setVolume(SETTINGS.volume * HUB.vol));
     $('sBack').onclick = () => { UI.show('settings', false); if (UI._qualityChanged && GAME.state === 'title') { location.reload(); return; } if (UI._qualityChanged) UI.hint('画質の変更は次回のプレイから反映されます'); back && back(); };
   },
   preshop() {
@@ -4989,7 +5006,22 @@ function update(dt) {
 /* =========================================================================
    Boot
    ========================================================================= */
+/* 3dgame home screen settings: 横画面 (rotate the stage), sound on/off, volume, look sensitivity */
+function applyHome(S) {
+  if (!S || typeof S !== 'object') return;
+  if (typeof S.land === 'boolean' && S.land !== ROT.on) { ROT.on = S.land; onResize(); }
+  if (typeof S.sound === 'boolean' || typeof S.vol === 'number') {
+    HUB.vol = S.sound === false ? 0 : clamp(typeof S.vol === 'number' ? S.vol : HUB.vol, 0, 1);
+    AU.setVolume(SETTINGS.volume * HUB.vol);
+  }
+  if (typeof S.sens === 'number') HUB.sens = clamp(S.sens, 0.4, 2.2);
+}
 function boot() {
+  if (HUB.embedded) {
+    try { applyHome(JSON.parse(localStorage.getItem('3dame-settings'))); } catch (e) { /* no saved home settings */ }
+    addEventListener('message', e => { if (e.data && e.data.h3dSet) applyHome(e.data.h3dSet); });
+  }
+  onResize();
   VIEW.init();
   if (IS_TOUCH) setupTouch();
   $('bPlay').onclick = () => GAME.startRun();
