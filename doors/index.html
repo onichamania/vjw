@@ -3626,7 +3626,8 @@ TPL.electrical = {
     rack(22.6, -11.8, 0, 5.4); rack(22.6, -12.5, Math.PI, 5.4);
     rack(10.5, -4.4, Math.PI); rack(24.5, -4.4, Math.PI); rack(30.4, -15.5, -Math.PI / 2); rack(30.4, -18.8, -Math.PI / 2);
     rack(33.6, -5.2, Math.PI); rack(35.9, -8.6, -Math.PI / 2);
-    for (const [x, z, ry] of [[0.6, -10.3, -Math.PI / 2], [12.3, -18.75, Math.PI], [17.9, -18.75, Math.PI], [13.9, -15.4, Math.PI / 2], [16.1, -15.0, -Math.PI / 2], [29.9, -8.7, Math.PI / 2]]) addWardrobe(room, x, z, ry + Math.PI);
+    // closets with their backs to the storage rooms' outer walls, doors to the corridor
+    for (const [x, z, ry] of [[0.9, -10.3, -Math.PI / 2], [12.3, -18.06, Math.PI], [17.9, -18.06, Math.PI], [13.86, -15.4, Math.PI / 2], [16.15, -15.0, -Math.PI / 2], [29.16, -8.7, Math.PI / 2]]) addWardrobe(room, x, z, ry);
     for (let i = 0; i < 8; i++) { const [x, z] = r.pick([[4, -5.6], [26, -5.3], [4.5, -9.2], [6, -19.6], [27, -19.6], [30.3, -12], [34.5, -9.6], [9, -8]]); addCrate(room, x + r.range(-0.3, 0.3), z + r.range(-0.2, 0.2), r.range(0.6, 0.9), r.range(0, 1)); }
     for (const [x, z] of [[1.0, -2.3], [29.8, -5.0], [-1.0, -19.6]]) { const Bf = new Frame(room, x, 0, z, 0); Bf.cyl(0.3, 0.3, 0.9, MAT.iron, 0, 0.45, 0, 12); Bf.collide(-0.3, 0.3, 0, 0.9, -0.3, 0.3); }
     // tube lamps along the corridors and in the rooms
@@ -5665,7 +5666,7 @@ function navPath(room, from, to) {
       const k = nj * n.nx + ni; if (prev[k] !== -1) continue; prev[k] = c; q[qt++] = k;
     }
   }
-  if (prev[t] === -1) return [to.clone()];
+  if (prev[t] === -1) return [];   // unreachable: don't walk through walls
   const cells = []; let c = t; while (c !== s) { cells.push(c); c = prev[c]; }
   cells.reverse();
   const pts = [];
