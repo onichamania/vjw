@@ -1392,7 +1392,7 @@ const LOOPS = {
       const far = AU.ctx.createBufferSource(), near = AU.ctx.createBufferSource();
       far.buffer = near.buffer = buf; far.loop = near.loop = true;
       far.playbackRate.value = 1 / 16; near.playbackRate.value = 1 / 5;
-      const fl = AU.filt('lowpass', 1600, 0.6), fg = AU.gain(0); far.connect(fl); fl.connect(fg); fg.connect(out);
+      const fl = AU.filt('lowpass', 1100, 0.6), fg = AU.gain(0); far.connect(fl); fl.connect(fg); fg.connect(out);
       const nh = AU.filt('highpass', 260, 0.6), ng = AU.gain(0); near.connect(nh); nh.connect(ng); ng.connect(out);
       return {
         nodes: [far, near],
@@ -3261,7 +3261,7 @@ TPL.library = {
     addChandelier(room, -8.5, H, -16, 1.0, { intensity: 6, range: 12 }); addChandelier(room, 0, H, -D + 4, 1.1, { intensity: 7, range: 13 });
     // ---- left (player's left) side: shelf stacks, then the librarian's desk by the windows ----
     for (const sx of [-1, 1]) {
-      shelf(sx * (hw - 0.25), -0.3, Math.PI, 2.6); shelf(sx * (hw - 2.9), -0.3, Math.PI, 2.6);
+      shelf(sx * (hw - 1.45), -0.3, Math.PI, 2.6); shelf(sx * (hw - 4.15), -0.3, Math.PI, 2.6);
       for (const z of [-5.8, -10.2]) { shelf(sx * (hw - 2.2), z, 0, 3.2, 3.8, true); shelf(sx * (hw - 5.5), z, 0, 3.2, 3.8, true); }
     }
     const dx = -hw + 2.6, dz = -16;
@@ -3275,7 +3275,7 @@ TPL.library = {
     addRug(room, dx + 1.5, dz, 5, 6, Math.PI / 2, 3);
     const paperPos = DK.pt(0.1, 1.065, 0.15);
     const paper = makeItemMesh('paper'); paper.position.copy(paperPos); paper.rotation.y = 0.3; room.group.add(paper);
-    room.addInteract(paper, { dist: 2.4, prompt: () => (GAME.hasItem('hint') ? null : 'ヒントの紙を拾う'), use: () => { GAME.giveItem('hint'); room.group.remove(paper); SFX.paper(); GAME.showHint('紙を手に入れた。本を集めて、紙に描かれた記号の順に数字を並べよう。'); } });
+    room.addInteract(paper, { dist: 2.4, prompt: () => (GAME.hasItem('hint') ? null : 'ヒントの紙を拾う'), use: () => { if (!GAME.giveItem('hint')) return; room.group.remove(paper); SFX.paper(); GAME.showHint('紙を手に入れた。本を集めて、紙に描かれた記号の順に数字を並べよう。'); } });
     for (const z of [-12.5, -19.5]) addGothicWindow(room, 'W', -z, 2.2, 1.6, 3.6);
     for (const tz of [-14.4, -17.6]) { const t = addTable(room, -6.4, tz, 0, 2.2, 1.1, 0.78, MAT.darkWood); addTableLamp(room, t.top.F, 0, 0.8, 0, { intensity: 1.6 }); for (const e of [-0.6, 0.6]) { addChair(room, -6.4 + e, tz + 0.8, Math.PI, MAT.velvetGreen); addChair(room, -6.4 + e, tz - 0.8, 0, MAT.velvetGreen); } }
     addWardrobe(room, -hw + 0.45, -20.4, Math.PI / 2);
@@ -3315,7 +3315,8 @@ TPL.library = {
     const picks = r.shuffle(shelves.filter(s => s.w >= 2.4).slice()).slice(0, 8);
     const spine = [0x2a3f7a, 0x4a2a6a, 0x2f5a35, 0x8a6a3a, 0x7a2a2a];
     picks.forEach(s => {
-      const lx = r.range(-s.w / 2 + 0.3, s.w / 2 - 0.3), ly = 0.08 + s.sh * r.int(0, 2) + 0.02;
+      let lx = r.range(-s.w / 2 + 0.3, s.w / 2 - 0.3); const ly = 0.08 + s.sh * r.int(0, 2) + 0.02;
+      for (let k = 0; k < 8 && Math.abs(s.F.pt(lx, ly, 0.13).x) > hw - 0.4; k++) lx *= 0.6;   // never inside a side wall
       const book = makeItemMesh('book', { color: r.pick(spine) });
       book.position.copy(s.F.pt(lx, ly, 0.13)); book.rotation.set(0, s.ry + Math.PI / 2, r.range(-0.25, 0.25));
       room.group.add(book);
@@ -3700,7 +3701,11 @@ TPL.electrical = {
     addCrate(room, 9.4, -63.6, 0.9, 0.3); addCrate(room, 23.2, -63.7, 0.8); addCrate(room, 7.4, -59.0, 0.7, 0.4);
     room.fy = 0;
     // the key on one of the shelves along the elevator room's east wall
-    { const kz = r.pick([-53.8, -56.8, -59.8]); spawnPickup(room, 'ekey', new THREE.Vector3(35.7, RISE + r.pick([0.98, 1.72]), kz + r.range(-0.6, 0.6)), r.range(0, TAU)); }
+    { // on the front lip of a shelf, in front of the boxes
+      const kz = r.pick([-53.8, -56.8, -59.8]), sy = r.pick([0.8375, 1.525]);
+      const km = spawnPickup(room, 'ekey', new THREE.Vector3(35.6, RISE + sy + 0.03, kz + r.range(-0.8, 0.8)), r.range(0, TAU));
+      const gl = glowSprite(0x9fd8ff, 0.4, 0.4); gl.position.y = 0.04; km.add(gl);
+    }
     for (const [x0, x1, z0, z1] of [[24.2, 28.6, -52.0, -51.85], [24.2, 28.6, -54.6, -54.45], [24.2, 24.35, -54.6, -51.85], [28.45, 28.6, -54.6, -51.85]]) box(x0, x1, RISE + 0.012, RISE + 0.02, z0, z1, MAT.hazard);
     // ---------- the mining elevator ----------
     const CF = new Frame(room, 26.4, RISE, -49.4, 0);
@@ -3708,7 +3713,7 @@ TPL.electrical = {
     CF.box(4.0, 0.08, 4.2, MAT.metalPanel, 0, 3.0, 0);
     for (const [w, d, x, z] of [[0.05, 4.2, -2.0, 0], [0.05, 4.2, 2.0, 0], [4.0, 0.05, 0, 2.1]]) { const mp = latticePanel(Math.max(w, d), 2.9, 0.18); mp.position.copy(CF.pt(x, 1.5, z)); mp.rotation.y = w < d ? Math.PI / 2 : 0; room.group.add(mp); }
     for (const [x, z] of [[-2, 2.1], [2, 2.1], [-2, -2.1], [2, -2.1]]) CF.box(0.1, 3.0, 0.1, MAT.iron, x, 1.5, z);
-    room.addCollider(24.3, 24.5, RISE, TH, -51.5, -47.3, 'iwall'); room.addCollider(28.3, 28.5, RISE, TH, -51.5, -47.3, 'iwall'); room.addCollider(24.3, 28.5, RISE, TH, -47.4, -47.2, 'iwall');
+    room.addCollider(24.3, 24.5, 0, TH, -51.5, -47.3, 'iwall'); room.addCollider(28.3, 28.5, 0, TH, -51.5, -47.3, 'iwall'); room.addCollider(24.3, 28.5, 0, TH, -47.4, -47.2, 'iwall');
     CF.box(0.5, 0.5, 0.5, MAT.crateWood, -1.5, 0.35, 1.6); CF.box(0.5, 0.5, 0.5, MAT.crateWood, 1.5, 0.35, 1.6); CF.cyl(0.35, 0.35, 0.5, MAT.wood, 1.4, 0.35, -1.4, 12, Math.PI / 2, 0, 0);
     CF.box(0.18, 0.26, 0.08, std({ color: 0x9a9a92, roughness: 0.6 }), 1.85, 1.4, -1.7); const btnM = std({ color: 0x400000, emissive: 0xff1a1a, emissiveIntensity: 0.6 }); CF.dyn(new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), btnM), 1.8, 1.42, -1.65);
     const carLight = addCeilingLamp(room, 26.4, RISE + 2.95, -49.2, { color: 0xffa860, intensity: 3.5, range: 6 }); carLight.state = 'off';
@@ -3723,12 +3728,13 @@ TPL.electrical = {
       e.elCol.on = e.t > 0.5;
     });
     // ---------- breaker poles: 10 of these 21 spots ----------
-    const spots = [[5.9, 0, -19.2], [8.6, 0, -4.4], [20.9, 0, -5.5], [27.9, 0, -4.6], [3.7, 0, -8.2], [4.2, 0, -12.2], [5.1, 0, -15.6], [9.8, 0, -15.8], [12.1, 0, -8.5], [12.2, 0, -13], [14.7, 0, -10.8], [20.8, 0, -9.7], [22.1, 0, -15.6], [27.2, 0, -11.7], [29.4, 0, -7.4], [30.2, 0, -14.3], [33.5, 0, -7.4], [11.7, RISE, -58.8], [12.3, RISE, -62.4], [22.8, RISE, -53.6], [32.4, RISE, -52.9]];
-    for (const [x, y, z] of r.shuffle(spots.slice()).slice(0, 10)) {
+    const spots = [[4.4, 0, -18.5], [8.6, 0, -4.4], [20.9, 0, -5.5], [27.9, 0, -4.6], [3.7, 0, -8.2], [4.2, 0, -12.2], [5.1, 0, -15.6], [9.8, 0, -15.8], [12.1, 0, -8.5], [12.2, 0, -13], [14.7, 0, -10.8], [20.8, 0, -9.7], [22.1, 0, -15.6], [27.2, 0, -11.7], [29.4, 0, -7.4], [29.3, 0, -13.6], [33.5, 0, -7.4], [11.7, RISE, -58.8], [12.3, RISE, -62.4], [22.8, RISE, -53.6], [32.4, RISE, -52.9]];
+    const clear = ([x, y, z]) => !room.colliders.some(c => c.tag !== 'wall' && c.tag !== 'iwall' && x > c.lx0 - 0.25 && x < c.lx1 + 0.25 && z > c.lz0 - 0.25 && z < c.lz1 + 0.25 && c.y0 < y + 0.4 && c.y1 > y);
+    for (const [x, y, z] of r.shuffle(spots.filter(clear)).concat(r.shuffle(spots.filter(p => !clear(p)))).slice(0, 10)) {
       const m = spawnPickup(room, 'breaker', new THREE.Vector3(x, y + 0.01, z), r.range(0, TAU));
       const gl = glowSprite(0x6ff0ff, 0.45, 0.35); gl.position.y = 0.1; m.add(gl);
     }
-    room.meta.figureSpawn = new THREE.Vector3(7.6, RISE, -59.3);
+    room.meta.figureSpawn = new THREE.Vector3(10.4, RISE, -59.3);
     room.meta.navArea = [-1.4, 36.4, -27.6, -0.2];
     room.meta.navRoom = true;
     room.path = [[0, 1.55, -1], [0, 1.55, -19], [15, 1.55, -19], [15, 1.55, -35]];
@@ -4494,7 +4500,7 @@ const PLAYER = {
       this.speed = 0; this.noise = 0;
       return;
     }
-    if (!this.alive || this.frozen || (GAME.modal && !GAME.heartbeat)) { this.speed = 0; this.vel.set(0, 0, 0); return; }
+    if (!this.alive || this.frozen || (GAME.modal && !GAME.heartbeat)) { this.speed = 0; this.noise = 0; this.vel.set(0, 0, 0); return; }
     this.yaw -= lookX * sens; this.pitch = clamp(this.pitch - lookY * sens, -1.45, 1.45);
     let ix = 0, iz = 0;
     if (INPUT.keys.f) iz -= 1; if (INPUT.keys.b) iz += 1; if (INPUT.keys.l) ix -= 1; if (INPUT.keys.r) ix += 1;
@@ -4997,7 +5003,14 @@ const DIRECTOR = {
         const ambush = n >= 12 && n - this.lastAmbush > 14 && rng.chance(0.22);
         if (ambush) this.lastAmbush = n;
         // the lights can start flickering a few seconds after the door opens
-        ENT.add({ kind: 'rushPending', t: rng.range(0.4, 6), update(dt) { this.t -= dt; if (this.t <= 0) { ENT.remove(this); ENT.spawnRush(ambush); } } });
+        ENT.add({ kind: 'rushPending', t: rng.range(0.4, 6), update(dt) {
+          this.t -= dt; if (this.t > 0) return;
+          ENT.remove(this);
+          const g = GAME.room;   // not if you have since walked into a room with nowhere to hide
+          if (!g || g.meta.noRush || g.meta.halt || g.meta.seek || g.meta.navRoom || g.meta.safe || !g.hides.length && !(WORLD.room(g.index - 1) || { hides: [] }).hides.length) return;
+          if (ENT.active.some(e => ['seek', 'seekArm', 'halt', 'figure'].includes(e.kind))) return;
+          ENT.spawnRush(ambush);
+        } });
         return;
       }
       if (rng.chance(0.03)) flickerRoom(cur, 1.2);
@@ -5006,13 +5019,13 @@ const DIRECTOR = {
   },
   onEnterRoom(room) {
     const n = room.index;
-    if (n === 50 || n === 100) ENT.startFigureRoom(room);
-    if (room.meta.halt) ENT.startHalt(room);
+    if (n === 50 || n === 100) whenInside(room, 1.2, () => ENT.startFigureRoom(room));
+    if (room.meta.halt) whenInside(room, 1.2, () => ENT.startHalt(room));
     if (room.spec && room.spec.flags.crescendo) flickerRoom(room, room.spec.flags.crescendo > 1 ? 2.8 : 0.9);
-    if (room.meta.seek === 'start') ENT.armSeek(room);
+    if (room.meta.seek === 'start') { ENT.despawn('rushPending'); ENT.armSeek(room); }
     const ch = this.chaseOf(n - 1);
     if (ch && n - 1 === ch.S + ch.L - 1) ENT.endSeek(room);
-    if (n === 51 || n === 101) ENT.despawn('figure');
+    if (n === 51 || n === 101) { ENT.despawn('figure'); MUSIC.stop(2); }
     if (room.type === 'courtyard') { GAME.showHint('中庭に出た…'); }
     if (n === 90) GAME.showHint('温室 — 暗闇に注意');
     if (room.type === 'jeff') GAME.showHint('ジェフの店へようこそ。金貨でアイテムを買える。');
@@ -5355,8 +5368,7 @@ const ENT = {
      and the nearer you are to the exit. */
   startHalt(room) {
     if (this.has('halt')) return;
-    const prev = WORLD.room(room.index - 1);
-    if (prev && prev.door) { const d = prev.door; setTimeout(() => { d.open = false; d.collider.on = true; d.locked = true; d.lockType = 'elevator'; SFX.slam(d.center.clone().applyMatrix4(prev.group.matrixWorld)); }, 900); }
+    sealBehind(room); ENT.despawn('rushPending');
     room.fixtures.forEach(f => (f.state = 'off'));
     const body = makeHaltBody(); scene.add(body.g);
     const light = { pos: new THREE.Vector3(), color: new THREE.Color(0x2fe2ff), intensity: 13, range: 19, level: 1, priority: 2 };
@@ -5536,13 +5548,13 @@ const ENT = {
   /* ---------------- Figure ---------------- */
   startFigureRoom(room) {
     if (room._figure) return; room._figure = true;
-    const prev = WORLD.room(room.index - 1);
-    if (prev && prev.door) setTimeout(() => { const d = prev.door; d.open = false; d.collider.on = true; d.locked = true; d.lockType = 'elevator'; SFX.slam(d.center.clone().applyMatrix4(prev.group.matrixWorld)); }, 1200);
+    sealBehind(room);
     buildNav(room);
     MUSIC.play('tense');
     if (room.type === 'electrical') { GAME.showHint('エレベーターの電源を戻して脱出しよう。まずは奥のレバーへ。', 4500); return; }
+    const run = RUN.seed;
     setTimeout(() => {
-      if (GAME.room !== room || !PLAYER.alive) return;
+      if (RUN.seed !== run || GAME.state !== 'play' || GAME.room !== room || !PLAYER.alive) return;
       ENT.spawnFigure(room);
       GAME.showHint(room.index === 50 ? 'Figure は目が見えない。音を立てないように（しゃがむと静かに動ける）' : 'ブレーカースイッチを10個集めて電源を復旧しよう');
     }, 2500);
@@ -5594,11 +5606,27 @@ const ENT = {
         }
         if (PLAYER.alive && !PLAYER.hidden && d < 1.15) { if (ENT.tryCrucifix(this)) { this.state = 'wander'; return; } GAME.kill('figure'); }
       },
-      dispose() { scene.remove(this.model); },
+      dispose() { scene.remove(this.model); if (room.type === 'electrical') GAME.speedMul = 1; },
     };
     this.add(e);
   },
 };
+/* run fn once the player is depth metres past this room's entrance */
+function whenInside(room, depth, fn) {
+  let done = false;
+  room.updaters.push(() => {
+    if (done || GAME.room !== room || !PLAYER.alive) return;
+    const lp = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
+    if (lp.z < -depth) { done = true; fn(); }
+  });
+}
+/* slam and lock the door you came through */
+function sealBehind(room) {
+  const prev = WORLD.room(room.index - 1);
+  if (!prev || !prev.door) return;
+  const d = prev.door; d.open = false; d.collider.on = true; d.locked = true; d.lockType = 'elevator';
+  SFX.slam(d.center.clone().applyMatrix4(prev.group.matrixWorld));
+}
 
 /* ---- navigation grid for Figure ---- */
 function buildNav(room) {
@@ -5606,7 +5634,7 @@ function buildNav(room) {
   const blocked = new Uint8Array(nx * nz);
   const pad = 0.35;
   for (const c of room.colliders) {
-    if (c.tag === 'wall' || c.y0 > 2) continue;
+    if (c.tag === 'wall' || c.y0 > 2 || !c.on) continue;
     const ia = Math.max(0, Math.floor((c.lx0 - pad - x0) / cell)), ib = Math.min(nx - 1, Math.floor((c.lx1 + pad - x0) / cell));
     const ja = Math.max(0, Math.floor((c.lz0 - pad - z0) / cell)), jb = Math.min(nz - 1, Math.floor((c.lz1 + pad - z0) / cell));
     for (let i = ia; i <= ib; i++) for (let j = ja; j <= jb; j++) blocked[j * nx + i] = 1;
@@ -5878,7 +5906,7 @@ const UI = {
     POST.shake = 1.2;
   },
   pause() {
-    if (GAME.state !== 'play' || GAME.paused || !PLAYER.alive || GAME.modal) return;
+    if (GAME.state !== 'play' || GAME.paused || !PLAYER.alive || GAME.modal || GAME.won) return;
     GAME.paused = true; UI.show('pause');
     $('pauseInfo').textContent = `現在の部屋：ドア ${pad4(GAME.room ? GAME.room.index : 0)}　/　金貨 ${GAME.gold}`;
     if (AU.ctx) AU.ctx.suspend();
@@ -5905,7 +5933,8 @@ const UI = {
     ['hud', 'touch', 'death', 'win', 'pause', 'loading', 'settings', 'how', 'preshop'].forEach(i => UI.show(i, false));
     UI.show('title');
     $('knobN').textContent = SAVE.knobs; $('bestN').textContent = pad4(SAVE.best);
-    MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
+    MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; } stopRain();
+    GAME.room = null;
     $('fxBlack').style.opacity = 0;
   },
   settings(back) {
@@ -5951,7 +5980,8 @@ GAME.startRun = async function () {
   ENT.reset(); WORLD.reset(); PARTICLES.clear(); NOISE.events = []; MUSIC.stop(0.3);
   GAME.library = null; UI.libList(true); GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
   GAME.heartKey = () => {};
-  POST.hurt = 0; POST.shake = 0; POST.flash = 0; POST.halt = 0; POST.eyes = 0; POST.aberr = 0;
+  POST.hurt = 0; POST.shake = 0; POST.flash = 0; POST.halt = 0; POST.eyes = 0; POST.aberr = 0; POST.tintFlash = null;
+  GAME.speedMul = 1; GAME.lightMul = 1; GAME.paused = false; UI.show('pause', false); stopRain();
   LIGHTS.init();
   const r0 = WORLD.generate(0); ENT.onRoomGenerated(r0);
   const r1 = WORLD.generate(1); ENT.onRoomGenerated(r1);
@@ -5989,8 +6019,9 @@ GAME.damage = function (n, cause, quiet = false) {
   UI.hp();
   if (PLAYER.hp <= 0) GAME.kill(cause);
 };
+function stopRain() { if (GAME.rain) { GAME.rain.stop(1); GAME.rain = null; } }
 GAME.kill = function (cause) {
-  if (!PLAYER.alive) return;
+  if (!PLAYER.alive || GAME.won) return;
   PLAYER.alive = false; PLAYER.hp = 0; UI.hp();
   if (PLAYER.hidden) GAME.exitHide(true);
   if (GAME.modal) UI.closeModal();
@@ -6001,6 +6032,7 @@ GAME.kill = function (cause) {
   SAVE.knobs += GAME.knobsEarned; SAVE.best = Math.max(SAVE.best, GAME.maxRoom); SAVE.runs++; saveGame();
   setTimeout(() => { $('fxBlack').style.opacity = 1; }, 900);
   setTimeout(() => {
+    stopRain();
     GAME.state = 'dead';
     if (document.pointerLockElement) document.exitPointerLock();
     UI.show('hud', false); UI.show('touch', false);
@@ -6029,11 +6061,13 @@ GAME.foundBook = function () {
 GAME.ev100Lever = function (room) {   // the lever by the exit gate: gate opens, wire gates lift, Figure wakes
   const ev = room.meta.ev; if (ev.stage !== 'start') return;
   ev.stage = 'chase1'; ev.gateT = 0.001;
+  const run = RUN.seed, live = () => RUN.seed === run && GAME.state === 'play' && GAME.room === room && PLAYER.alive && !GAME.won;
   setTimeout(() => SFX.gate(room.toWorld(14.2, 1.5, -42.8)), 300);
-  ev.wire.forEach((w, i) => setTimeout(() => { w.up = true; SFX.gate(w.g.getWorldPosition(new THREE.Vector3())); }, 900 + i * 250));
+  ev.wire.forEach((w, i) => { w.col.on = false; setTimeout(() => { if (!live()) return; w.up = true; SFX.gate(w.g.getWorldPosition(new THREE.Vector3())); }, 900 + i * 250); });
   GAME.showHint('ゲートが開いた…何かが目を覚ました！ 隠れろ！', 3500);
   setTimeout(() => {
-    if (GAME.room !== room || !PLAYER.alive) return;
+    if (!live()) return;
+    buildNav(room);   // the gates are open now
     ENT.spawnFigure(room);
     const f = ENT.active.find(e => e.kind === 'figure'); if (!f) return;
     f.hunt = true; f.huntSpeed = 4.6; GAME.speedMul = 1.33; POST.shake = 0.8; MUSIC.play('chase');
@@ -6058,14 +6092,16 @@ GAME.openBreaker = function (room) {
 };
 GAME.powerOn = function (room) {
   const ev = room.meta.ev; ev.powered = true; ev.stage = 'powered'; SFX.ding();
+  const run = RUN.seed, live = () => RUN.seed === run && GAME.state === 'play' && GAME.room === room && PLAYER.alive && !GAME.won;
   ev.led.emissive.setHex(0x00ff40);
   const el = room.meta.elevator; el.open = true; el.carLight.state = 'on'; el.btnM.emissive.setHex(0x30ff60);
   GAME.showHint('エレベーターに電源が入った！ 上の階のエレベーターへ走れ！', 4000);
   // Figure bangs on the breaker room's back door three times, breaks it down and comes for you
-  for (let i = 0; i < 3; i++) setTimeout(() => { SFX.slam(room.toWorld(2.5, 1.2, -39.5)); POST.shake = Math.max(POST.shake, 0.6); }, 1200 + i * 800);
+  for (let i = 0; i < 3; i++) setTimeout(() => { if (!live()) return; SFX.slam(room.toWorld(2.5, 1.2, -39.5)); POST.shake = Math.max(POST.shake, 0.6); }, 1200 + i * 800);
   setTimeout(() => {
-    if (GAME.room !== room || !PLAYER.alive || GAME.won) return;
+    if (!live()) return;
     ev.back.rotation.z = -1.4; ev.back.position.y = 0.1; ev.backCol.on = false; SFX.crash(room.toWorld(2.5, 1.2, -39.5));
+    buildNav(room);
     room.meta.figureSpawn = new THREE.Vector3(1.4, 0, -39.5);
     ENT.spawnFigure(room);
     const f = ENT.active.find(e => e.kind === 'figure'); if (f) { f.hunt = true; f.huntSpeed = 5.4; }
@@ -6076,11 +6112,14 @@ GAME.win = function () {
   if (GAME.won) return; GAME.won = true; GAME.cutscene = true;
   const room = GAME.room; room.meta.elevator.open = false;
   PLAYER.frozen = true; GAME.speedMul = 1;
-  const f = ENT.active.find(e => e.kind === 'figure'); if (f) { f.hunt = false; f.path = []; f.target = null; }
-  setTimeout(() => { SFX.slam(PLAYER.pos); POST.shake = 1; }, 900);
-  setTimeout(() => { SFX.ding(); MUSIC.play('elevator'); ENT.despawn('figure'); }, 1500);
-  setTimeout(() => { $('fxBlack').style.opacity = 1; }, 3800);
+  ENT.despawn('figure');
+  const run = RUN.seed, same = () => RUN.seed === run && GAME.won;
+  setTimeout(() => { if (!same()) return; SFX.slam(PLAYER.pos); POST.shake = 1; }, 900);
+  setTimeout(() => { if (!same()) return; SFX.ding(); MUSIC.play('elevator'); }, 1500);
+  setTimeout(() => { if (same()) $('fxBlack').style.opacity = 1; }, 3800);
   setTimeout(() => {
+    if (!same() || GAME.state !== 'play') return;
+    stopRain();
     GAME.state = 'won';
     if (document.pointerLockElement) document.exitPointerLock();
     UI.show('hud', false); UI.show('touch', false);
