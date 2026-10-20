@@ -1259,6 +1259,12 @@ const SFX = {
     for (let i = 0; i < 3; i++) AU.burst({ t0: t + i * 0.22, a: 0.03, dur: 0.2, f: [900, 2400, 1400][i], q: 4, vol, rev: 0.6 });
   },
   haltWhoosh() { if (!AU.ok) return; AU.burst({ dur: 1.4, a: 0.3, f: 300, q: 2, vol: 0.5, sweepTo: 3000, rev: 0.6 }); AU.tone({ type: 'sine', f: 200, f2: 700, dur: 1.2, vol: 0.15, rev: 0.6 }); },
+  rushPass(pos, ambush = false) {
+    if (!AU.ok) return;
+    AU.burst({ pos, a: 0.05, dur: 1.1, f: 4000, q: 0.6, vol: 0.9, sweepTo: 300, rev: 0.6 });
+    AU.burst({ pos, a: 0.02, dur: 0.9, f: 260, q: 0.5, type: 'lowpass', vol: 1, brown: true, rev: 0.5 });
+    if (ambush) AU.tone({ pos, type: 'sawtooth', f: 900, f2: 300, dur: 0.8, vol: 0.25, filter: 3000, rev: 0.6 });
+  },
   rushWarn() { if (!AU.ok) return; AU.burst({ a: 0.4, dur: 1.4, f: 120, q: 0.5, type: 'lowpass', vol: 0.5, brown: true, rev: 0.8 }); },
   ambushWarn() { if (!AU.ok) return; AU.tone({ type: 'sawtooth', f: 330, f2: 990, dur: 1.2, a: 0.2, vol: 0.18, filter: 2500, rev: 0.7 }); AU.burst({ a: 0.2, dur: 1.4, f: 900, q: 1, vol: 0.4, rev: 0.7 }); },
   sting() { if (!AU.ok) return; for (const f of [110, 116.5, 164.8]) AU.tone({ type: 'sawtooth', f, dur: 2.2, a: 0.01, vol: 0.12, filter: 1400, rev: 0.7 }); },
@@ -1287,24 +1293,48 @@ function makeLoop(build, pos = null, rev = 0.4, bus = null) {
   };
 }
 const LOOPS = {
+  /* Rush / Ambush: a heavy, fast-wobbling roar (like a train rushing through a tunnel) with a scraping
+     metallic shriek on top. Far away it is muffled; close it opens up; the pitch bends with its speed
+     (doppler). parts.update(dist, radialSpeed) is called every frame by the entity. */
   rush(ambush = false) {
     return makeLoop(out => {
-      const n = AU.noiseSrc(true), lp = AU.filt('lowpass', 220, 0.8), ng = AU.gain(2.2);
-      const lfo = AU.osc('sine', 3.3), lg = AU.gain(90); lfo.connect(lg); lg.connect(lp.frequency);
-      n.connect(lp); lp.connect(ng); ng.connect(out);
-      const s = AU.osc('sawtooth', ambush ? 70 : 46), ws = AU.shaper(30), sl = AU.filt('lowpass', ambush ? 1400 : 650, 1), sg = AU.gain(0.32);
-      const vib = AU.osc('sine', ambush ? 7 : 4), vg = AU.gain(ambush ? 14 : 6); vib.connect(vg); vg.connect(s.frequency);
-      s.connect(ws); ws.connect(sl); sl.connect(sg); sg.connect(out);
-      const m = AU.noiseSrc(false), mb = AU.filt('bandpass', ambush ? 3600 : 2300, 7), mg = AU.gain(ambush ? 0.5 : 0.25);
-      const ml = AU.osc('sine', 0.7), mlg = AU.gain(900); ml.connect(mlg); mlg.connect(mb.frequency);
-      m.connect(mb); mb.connect(mg); mg.connect(out);
-      const nodes = [n, lfo, s, vib, m, ml];
-      if (ambush) {
-        const sc = AU.osc('sawtooth', 460), sv = AU.osc('sine', 9), svg = AU.gain(60), sb = AU.filt('bandpass', 1100, 2), scg = AU.gain(0.35);
-        sv.connect(svg); svg.connect(sc.frequency); sc.connect(sb); sb.connect(scg); scg.connect(out);
-        nodes.push(sc, sv);
-      }
-      return { nodes, rate(r) { s.frequency.value = (ambush ? 70 : 46) * r; } };
+      const nodes = [];
+      const tone = AU.filt('lowpass', 600, 0.6);             // distance muffling
+      const drive = AU.shaper(ambush ? 60 : 40), pre = AU.gain(1.4), post = AU.gain(0.9);
+      pre.connect(drive); drive.connect(tone); tone.connect(post); post.connect(out);
+      // 1) rumbling body: brown noise, band-limited, with a fast tremolo ("brrrrrr")
+      const n = AU.noiseSrc(true), nb = AU.filt('bandpass', ambush ? 260 : 170, 0.7), trem = AU.gain(0.9);
+      const tl = AU.osc('square', ambush ? 17 : 13), tlg = AU.gain(0.55); tl.connect(tlg); tlg.connect(trem.gain);
+      n.connect(nb); nb.connect(trem); trem.connect(pre); nodes.push(n, tl);
+      // 2) low growl: two detuned saws beating against each other
+      const base = ambush ? 62 : 44;
+      const s1 = AU.osc('sawtooth', base), s2 = AU.osc('sawtooth', base * 1.47), sg = AU.gain(0.22);
+      s2.detune.value = 18;
+      const vib = AU.osc('sine', ambush ? 6.5 : 3.2), vg = AU.gain(base * 0.06); vib.connect(vg); vg.connect(s1.frequency); vg.connect(s2.frequency);
+      s1.connect(sg); s2.connect(sg); sg.connect(pre); nodes.push(s1, s2, vib);
+      // 3) scraping metal: narrow resonances swept slowly, ring-modulated
+      const m = AU.noiseSrc(false), mb1 = AU.filt('bandpass', ambush ? 2900 : 1900, 14), mb2 = AU.filt('bandpass', ambush ? 4300 : 3100, 18), mg = AU.gain(ambush ? 0.9 : 0.55);
+      const sw = AU.osc('sine', 0.45), swg = AU.gain(ambush ? 900 : 650); sw.connect(swg); swg.connect(mb1.frequency); swg.connect(mb2.frequency);
+      const rm = AU.gain(0), rmo = AU.osc('sine', ambush ? 41 : 29), rmg = AU.gain(1); rmo.connect(rmg); rmg.connect(rm.gain);
+      m.connect(mb1); m.connect(mb2); mb1.connect(rm); mb2.connect(rm); rm.connect(mg); mg.connect(tone); nodes.push(m, sw, rmo);
+      // 4) shriek (stronger for Ambush): a wailing saw pair
+      const sh1 = AU.osc('sawtooth', ambush ? 520 : 330), sh2 = AU.osc('sawtooth', ambush ? 540 : 347), shb = AU.filt('bandpass', ambush ? 1300 : 900, 3), shg = AU.gain(ambush ? 0.32 : 0.12);
+      const shv = AU.osc('sine', ambush ? 8 : 5.5), shvg = AU.gain(ambush ? 70 : 35); shv.connect(shvg); shvg.connect(sh1.frequency); shvg.connect(sh2.frequency);
+      sh1.connect(shb); sh2.connect(shb); shb.connect(shg); shg.connect(tone); nodes.push(sh1, sh2, shv);
+      // 5) air: hiss that only shows up when close
+      const h = AU.noiseSrc(false), hp = AU.filt('highpass', 2500, 0.5), hg = AU.gain(0); h.connect(hp); hp.connect(hg); hg.connect(out); nodes.push(h);
+      const pitched = [[s1, base], [s2, base * 1.47], [sh1, ambush ? 520 : 330], [sh2, ambush ? 540 : 347]];
+      return {
+        nodes,
+        update(dist, vr) {
+          const t = AU.t, near = clamp(1 - dist / 28, 0, 1);
+          tone.frequency.setTargetAtTime(500 + 7500 * near * near, t, 0.05);
+          hg.gain.setTargetAtTime(0.35 * near * near, t, 0.05);
+          const r = clamp(343 / (343 + vr * 2.5), 0.75, 1.3);         // exaggerated doppler
+          for (const [o, f] of pitched) o.frequency.setTargetAtTime(f * r, t, 0.04);
+          n.playbackRate.setTargetAtTime(r, t, 0.04); m.playbackRate.setTargetAtTime(r, t, 0.04);
+        },
+      };
     }, null, 0.5);
   },
   eyes() {
@@ -1816,7 +1846,7 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
   const collider = F.collide(-DOOR_W / 2, DOOR_W / 2, 0, DOOR_H, -0.07, 0.07, 'door');
   const door = {
     room, pivot, leaf, number, F, open: false, openT: 0, locked: !!opt.locked, lockType: opt.lockType || (opt.locked ? 'key' : null),
-    collider, padlock: null, swing: opt.swing || 1.75, center: F.pt(0, 1.2, 0), slam: false, auto: opt.auto !== false, onOpen: null,
+    collider, padlock: null, swing: opt.swing || 1.75, center: F.pt(0, 1.2, 0), slam: false, auto: !!opt.auto, onOpen: null,
   };
   if (door.locked) {
     const lock = new THREE.Group();
@@ -1853,9 +1883,9 @@ function openDoor(door, silent = false) {
 function updateDoor(door, dt) {
   const target = door.open ? 1 : 0;
   if (door.openT !== target) {
-    const sp = door.open ? 2.4 : 6;
+    const sp = door.open ? (door.auto ? 1.6 : 0.85) : 6;
     door.openT = door.open ? Math.min(1, door.openT + dt * sp) : Math.max(0, door.openT - dt * sp);
-    const e = door.open ? 1 - Math.pow(1 - door.openT, 3) : door.openT;
+    const e = door.open ? smoothstep(0, 1, door.openT) : door.openT;
     door.pivot.rotation.y = door.pivot.userData.baseRy + e * door.swing;
   }
 }
@@ -2244,7 +2274,7 @@ function shell(room, P, c, o = {}) {
   const ex = P.exits[0];
   const el = exitLocal(P, ex);
   room.exit = el;
-  if (!o.noExitDoor) buildExitDoor(room, el.door.x, el.door.y, el.door.z, el.dry, c.n + 1, { locked: c.locked, lockType: c.lockType });
+  if (!o.noExitDoor) buildExitDoor(room, el.door.x, el.door.y, el.door.z, el.dry, c.n + 1, { locked: c.locked, lockType: c.lockType, auto: !!c.seekRole });
   for (const fk of P.fakes || []) { /* fake openings are handled by the template */ }
   if (!o.noPath) room.path = defaultPath(P, el);
   if (o.runner) addRunner(room, 0, -0.2, -D + 0.2, Math.min(1.5, W * 0.4));
@@ -4152,7 +4182,12 @@ const ENT = {
         this.spr.position.set((Math.random() - 0.5) * jit, (Math.random() - 0.5) * jit, 0);
         this.spr.material.rotation = Math.sin(this.t * 20) * 0.05;
         this.light.pos.copy(this.pos); this.light.level = 0.75 + Math.random() * 0.25;
-        this.loop.setPos(this.pos); this.loop.setVol(1.4, 0.05);
+        this.loop.setPos(this.pos); this.loop.setVol(1.6, 0.05);
+        { const dl = this.pos.distanceTo(GAME.camPos), vr = this.prevD == null ? 0 : (dl - this.prevD) / Math.max(dt, 1e-3);
+          if (this.loop.parts && this.loop.parts.update) this.loop.parts.update(dl, vr);
+          if (this.prevD != null && this.prevD < 9 && vr > 0 && !this.passed) { this.passed = true; SFX.rushPass(this.pos, this.kind === 'ambush'); }
+          if (vr < 0) this.passed = false;
+          this.prevD = dl; }
         for (const sm of this.smoke) {
           sm.life += dt * 1.6; if (sm.life > 1) { sm.life = 0; sm.s.position.copy(this.pos).add(tmpV.set((Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.2)); }
           sm.s.material.opacity = (1 - sm.life) * 0.55; sm.s.scale.setScalar(1 + sm.life * 2.2);
@@ -4680,7 +4715,7 @@ const UI = {
     GAME.inv.forEach((it, i) => {
       const d = document.createElement('div'); d.className = 'slot' + (i === GAME.sel ? ' sel' : '');
       d.innerHTML = `<span class="n">${i + 1}</span>${ICONS[it.type] || ''}` + ((it.count || 1) > 1 ? `<span class="c">${it.count}</span>` : '') + (['lighter', 'flashlight', 'skeleton'].includes(it.type) ? `<span class="bar"><i style="width:${it.charge}%"></i></span>` : '');
-      const pick = e => { e.preventDefault(); e.stopPropagation(); AU.resume(); if (GAME.sel === i && IS_TOUCH && it.type !== 'lighter' && it.type !== 'flashlight') { GAME.useItem(); return; } GAME.select(i); };
+      const pick = e => { e.preventDefault(); e.stopPropagation(); AU.resume(); GAME.select(i); };
       d.addEventListener('touchstart', pick, { passive: false }); d.addEventListener('mousedown', pick);
       hb.appendChild(d);
     });
