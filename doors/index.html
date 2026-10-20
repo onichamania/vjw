@@ -155,6 +155,13 @@
   .shapes .s { width:62px; text-align:center; }
   .shapes .s svg { width:46px; height:46px; }
   .shapes .s b { display:block; font-size:28px; font-family:"Oswald"; height:36px; }
+  .shapes.zig .s:nth-child(even) { margin-top:-18px; } .shapes.zig .s:nth-child(odd) { margin-top:14px; }
+  .shapes .s i { display:block; font-style:normal; font-family:"Noto Serif JP",serif; font-size:15px; color:#6a4a8a; }
+  .book2 { display:flex; gap:4px; justify-content:center; margin:8px 0 4px; }
+  .book2 > div { width:120px; height:150px; background:linear-gradient(90deg,#cfc8b8,#e6e0d0 60%,#d6cfbe); display:grid; place-items:center; border-radius:3px; box-shadow:inset 0 0 18px rgba(80,60,30,.35); }
+  .book2 svg { width:70px; height:70px; } .book2 b { font-family:"Oswald"; font-size:64px; color:#5a3a1a; }
+  #libList { position:absolute; left:18px; bottom:64px; display:none; flex-direction:column; gap:3px; font-family:"Oswald"; font-size:20px; color:#efe3c4; text-shadow:0 2px 4px #000; }
+  #libList > div { display:flex; align-items:center; gap:6px; } #libList svg { width:22px; height:22px; filter:drop-shadow(0 1px 2px #000); }
   .close { position:absolute; right:10px; top:6px; background:none; border:0; font-size:26px; cursor:pointer; color:inherit; }
   .lock { background:#2a2420; border:2px solid #6d5a3f; border-radius:14px; padding:22px; text-align:center; width:min(420px,94vw); position:relative; }
   .wheels { display:flex; gap:8px; justify-content:center; margin:16px 0; }
@@ -222,6 +229,7 @@
   <div id="bigmsg"></div>
   <div id="hint"></div>
   <div id="itemname"></div>
+  <div id="libList"></div>
   <div id="hpwrap"><svg viewBox="0 0 24 24"><path fill="#ff4a3a" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.5.7-1.3 2.2-2.5 4.3-2.5 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg><div id="hpbar"><div id="hpfill"></div></div></div>
   <div id="gold"><span class="coin"></span><span id="goldN">0</span><span id="goldAdd"></span></div>
   <div id="hotbar"></div>
@@ -1297,6 +1305,12 @@ const SFX = {
     AU.burst({ dur: 0.6, a: 0.005, f: 900, q: 0.7, type: 'highpass', vol: 0.45, rev: 0.4 });
     AU.tone({ type: 'sawtooth', f: 220, f2: 110, dur: 0.6, vol: 0.18, rev: 0.4, filter: 1800 });
     AU.tone({ type: 'square', f: 233, f2: 116, dur: 0.6, vol: 0.1, rev: 0.4, filter: 1500 });
+  },
+  glass(pos) {
+    if (!AU.ok) return;
+    AU.burst({ pos, dur: 0.35, a: 0.001, f: 5200, q: 0.7, type: 'highpass', vol: 0.7, rev: 0.5 });
+    AU.burst({ pos, dur: 0.12, f: 900, q: 0.8, vol: 0.5, rev: 0.3 });
+    for (let i = 0; i < 8; i++) AU.tone({ pos, t0: AU.t + 0.05 + Math.random() * 0.5, type: 'sine', f: 2500 + Math.random() * 4000, dur: 0.08, vol: 0.06, rev: 0.6 });
   },
   haltWhoosh() { if (!AU.ok) return; AU.burst({ dur: 1.4, a: 0.3, f: 300, q: 2, vol: 0.5, sweepTo: 3000, rev: 0.6 }); AU.tone({ type: 'sine', f: 200, f2: 700, dur: 1.2, vol: 0.15, rev: 0.6 }); },
   rushPass(pos, ambush = false) {
@@ -3098,68 +3112,154 @@ TPL.lobby = {
   },
 };
 
-const LIB_SHAPES = ['circle', 'triangle', 'square', 'star', 'diamond', 'heart', 'moon', 'cross'];
+const LIB_SHAPES = ['circle', 'cross', 'diamond', 'hexagon', 'pentagon', 'square', 'star', 'triangle'];
 const SHAPE_SVG = {
   circle: '<circle cx="20" cy="20" r="13"/>',
-  triangle: '<path d="M20 5L35 33H5z"/>',
+  cross: '<path d="M10 6l10 10L30 6l4 4-10 10 10 10-4 4-10-10-10 10-4-4 10-10L6 10z"/>',
+  diamond: '<path d="M20 3l14 17-14 17L6 20z"/>',
+  hexagon: '<path d="M12 6h16l8 14-8 14H12L4 20z"/>',
+  pentagon: '<path d="M20 4l16 12-6 19H10L4 16z"/>',
   square: '<rect x="7" y="7" width="26" height="26"/>',
   star: '<path d="M20 4l4.7 10 10.8 1.2-8 7.4 2.2 10.7L20 28l-9.7 5.3 2.2-10.7-8-7.4L15.3 14z"/>',
-  diamond: '<path d="M20 3l14 17-14 17L6 20z"/>',
-  heart: '<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 5.5 2 7 4.5C21.5 8 24 6 27 6c4 0 8 3 8 8 0 11-15 20-15 20z"/>',
-  moon: '<path d="M26 5a15 15 0 1 0 9 22A12 12 0 0 1 26 5z"/>',
-  cross: '<path d="M15 4h10v11h11v10H25v11H15V25H4V15h11z"/>',
+  triangle: '<path d="M20 5L35 33H5z"/>',
 };
+/* ---- The Library (door 50), Hotel+ layout. Entrance in the middle of the near wall; an arched walkway
+   with a red runner leads to a raised platform across the far end, reached by a staircase near each side
+   wall (one is barricaded). The padlocked exit is on the platform. Left of the walkway: shelf stacks, then
+   the librarian's desk with the solution paper by the windows and reading tables. Right: shelf stacks
+   (Figure waits between them) and long shelves parallel to the walkway. 8 books, 5 of them in the code. ---- */
 TPL.library = {
-  plan(c) { return { W: 26, D: 25, H: 7, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
+  plan(c) { return { W: 26, D: 34, H: 9.5, exits: [{ wall: 'N', at: 0, yb: 1.6 }] }; },
   build(room, P, c) {
-    const r = c.rng;
+    const r = c.rng, W = P.W, D = P.D, H = P.H, hw = W / 2, PH = 1.6, PD = 9, PZ = -D + PD, BZ = PZ + 1.4, SR = 3.4, SW = 2.8;
     c.locked = true; c.lockType = 'padlock';
-    shell(room, P, c, { style: { pal: r.pick(['brown', 'red', 'green']), style: 'damask' } });
-    const shelves = [];
-    for (const bx of [-1, 1]) for (const z of [-5, -9.2, -13.4, -17.6]) for (const cx of [7.6, 4.2 + 0.0]) {
-      const x = bx * (cx === 7.6 ? 9.6 : 5.2);
-      const w = 3.0;
-      const a = addBookshelf(room, x, z + 0.215, 0, w, 3.6, { sparse: false });
-      const b = addBookshelf(room, x, z - 0.215, Math.PI, w, 3.6, { sparse: false });
-      shelves.push({ x, z: z + 0.215, ry: 0, w, F: a.F, sh: a.sh }, { x, z: z - 0.215, ry: Math.PI, w, F: b.F, sh: b.sh });
+    shell(room, P, c, { style: { pal: 'red', style: 'harlequin' } });
+    room.meta.rain = true;
+    const F = new Frame(room, 0, 0, 0, 0), shelves = [];
+    const shelf = (x, z, ry, w, h = 3.8, both = false) => {
+      const a = addBookshelf(room, x, z, ry, w, h); shelves.push({ F: a.F, sh: a.sh, w, ry, n: a.n });
+      if (both) { const bk = addBookshelf(room, x - Math.sin(ry) * 0.43, z - Math.cos(ry) * 0.43, ry + Math.PI, w, h); shelves.push({ F: bk.F, sh: bk.sh, w, ry: ry + Math.PI, n: bk.n }); }
+    };
+    // ---- the raised platform with its bulge, panelled front, railing and two staircases ----
+    F.box(W, PH, PD, MAT.floor, 0, PH / 2, -D + PD / 2); F.box(8, PH, 1.4, MAT.floor, 0, PH / 2, PZ + 0.7);
+    room.addFloor(-hw - 0.35, hw + 0.35, -D - 0.35, PZ, PH); room.addFloor(-4, 4, PZ, BZ, PH);
+    const stairX = [[-hw, -hw + SW], [hw - SW, hw]];
+    const fronts = [[-hw + SW, -4, PZ], [4, hw - SW, PZ], [-4, 4, BZ]];
+    for (const [a, b, z] of fronts) {
+      F.box(b - a, PH, 0.06, MAT.wainscot, (a + b) / 2, PH / 2, z + 0.03); F.box(b - a, 0.1, 0.12, MAT.trim, (a + b) / 2, PH, z + 0.04);
+      room.addCollider(a, b, -0.5, PH, z - 0.05, z + 0.1, 'furn');
+      addBalusters(F, a + 0.05, b - 0.05, PH, z - 0.1, 0.95);
+      room.addCollider(a, b, PH, PH + 1.3, z - 0.2, z, 'rail');
     }
-    for (const side of ['W', 'E']) for (const zz of [3.0, 7.2, 11.4, 15.6]) {
-      const p = onWall(room, side, 1.35, 0.74, 'tall', { at: side === 'W' ? zz + 0.1 : P.D - zz - 0.1 });
-      if (p) addWardrobe(room, p.x, p.z, p.ry);
-    }
-    for (const t of [3, 23]) { const p = onWall(room, 'N', 1.35, 0.74, 'tall', { at: t }); if (p) addWardrobe(room, p.x, p.z, p.ry); }
-    for (const side of ['W', 'E']) for (const zz of [1.2, 21.5]) { const p = onWall(room, side, 1.8, 0.42, 'tall', { at: side === 'W' ? zz : P.D - zz }); if (p) addBookshelf(room, p.x, p.z, p.ry, 1.8, 3.4); }
-    for (const t of [7, 19]) { const p = onWall(room, 'N', 2.6, 0.42, 'tall', { at: t }); if (p) addBookshelf(room, p.x, p.z, p.ry, 2.6, 3.6); }
-    // central desk with the hint paper
-    const desk = addTable(room, 0, -11.2, 0, 2.6, 1.2, 0.8, MAT.darkWood);
-    addTableLamp(room, desk.top.F, -0.9, 0.81, -0.3, { intensity: 2.2 }); addTableLamp(room, desk.top.F, 0.9, 0.81, -0.3, { intensity: 2.2 });
-    addChair(room, -0.6, -10.2, Math.PI, MAT.velvetGreen); addChair(room, 0.6, -10.2, Math.PI, MAT.velvetGreen);
-    addRug(room, 0, -11.2, 4.5, 6, 0, 2);
-    const paperPos = desk.top.F.pt(0, 0.805, 0.1);
-    const paper = makeItemMesh('paper'); paper.position.copy(paperPos); paper.rotation.y = 0.2; room.group.add(paper);
-    room.addInteract(paper, { dist: 2.4, prompt: () => (GAME.hasItem('hint') ? null : 'ヒントの紙を拾う'), use: () => { GAME.giveItem('hint'); room.group.remove(paper); SFX.paper(); GAME.showHint('紙を手に入れた。本を集めて南京錠のコードを解こう。'); } });
-    for (const z of [-4, -11, -18]) addChandelier(room, 0, P.H, z, 1.3, { intensity: 10, range: 18 });
-    for (const z of [-7, -15]) for (const x of [-7.5, 7.5]) addChandelier(room, x, P.H, z, 1.0, { intensity: 7, range: 15 });
-    sconcesAlong(room, 'W', 5, 2.9); sconcesAlong(room, 'E', 5, 2.9);
-    sconcesAlong(room, 'S', 4, 2.6);
-    // library code
-    const shapes = r.shuffle(LIB_SHAPES.slice()).slice(0, 5);
-    const digits = shapes.map(() => r.int(0, 9));
-    room.meta.library = { shapes, digits, found: [false, false, false, false, false] };
-    GAME.library = room.meta.library;
-    const picks = r.shuffle(shelves.slice()).slice(0, 5);
-    picks.forEach((s, i) => {
-      const lx = r.range(-s.w / 2 + 0.3, s.w / 2 - 0.3), ly = 0.08 + s.sh * r.int(2, 4) + 0.02;
-      const pos = s.F.pt(lx, ly, 0.12);
-      const book = makeItemMesh('book', { color: 0x1d3f8a });
-      book.position.copy(pos); book.rotation.y = s.ry + Math.PI / 2;
-      room.group.add(book);
-      const gl = glowSprite(0x6aa8ff, 0.5, 0.25); gl.position.set(0, 0.13, 0); book.add(gl);
-      room.addInteract(book, { dist: 2.6, prompt: () => '本を取る', use: () => { room.group.remove(book); GAME.foundBook(i); } });
+    for (const sx of [-1, 1]) { F.box(0.06, PH, 1.4, MAT.wainscot, sx * 4, PH / 2, PZ + 0.7); room.addCollider(sx * 4 - 0.05, sx * 4 + 0.05, -0.5, PH, PZ, BZ, 'furn'); addBalusters(new Frame(room, sx * 4, 0, PZ + 0.7, Math.PI / 2), -0.65, 0.65, PH, -sx * 0.1, 0.95); }
+    const blocked = r.chance(0.5) ? 0 : 1;
+    stairX.forEach(([a, b], k) => {
+      const n = 8;
+      for (let i = 0; i < n; i++) { const top = PH * (n - i) / (n + 1), za = PZ + i * SR / n, zb = PZ + (i + 1) * SR / n; F.box(b - a, top, zb - za + 0.01, MAT.floor, (a + b) / 2, top / 2, (za + zb) / 2); }
+      room.addFloor(a, b, PZ, PZ + SR, PH, 0, 'z', PZ, PZ + SR);
+      const ix = k ? a : b, ox = k ? a - 0.1 : b + 0.1;
+      const sl = Math.hypot(SR, PH), ang = Math.atan2(PH, SR);
+      F.box(0.12, 0.08, sl, MAT.darkWood, ox, PH / 2 + 0.95, PZ + SR / 2, -ang, 0, 0);
+      for (let i = 0; i <= 6; i++) { const zz = PZ + i * SR / 6, yy = PH * (1 - i / 6); F.box(0.05, 0.95, 0.05, MAT.darkWood, ox, yy + 0.47, zz); }
+      F.box(0.2, PH + 1.1, 0.2, MAT.darkWood, ox, (PH + 1.1) / 2, PZ + SR);
+      room.addCollider(ix - 0.12, ix + 0.12, -0.5, PH + 1.3, PZ, PZ + SR, 'rail');
+      if (k === blocked) { // toppled sofa and a chair jammed on the steps
+        const B = new Frame(room, (a + b) / 2, PH * 0.45, PZ + SR * 0.55, 0.3);
+        B.box(2.1, 0.8, 0.9, MAT.velvetRed, 0, 0.4, 0, 1.2, 0, 0.2); B.box(0.5, 0.9, 0.5, MAT.darkWood, 0.6, 1.0, -0.4, 0.6, 0.4, 0.9);
+        room.addCollider(a, b, -0.5, PH + 1.8, PZ + SR * 0.3, PZ + SR * 0.8, 'furn');
+      }
+      // closet in the nook at the foot of the stair, against the platform front
+      const nx = k ? hw - SW - 1.0 : -hw + SW + 1.0; addWardrobe(room, nx, PZ + 0.5, (k ? -1 : 1) * 0.5);
     });
-    room.meta.figureSpawn = new THREE.Vector3(0, 0, -21);
+    // ---- the central walkway: red runner under timber arches on square pillars ----
+    addRunner(room, 0, -0.3, BZ - 0.2, 5.2);
+    const pz = [-4.2, -8.6, -13, -17.4, -21.8];
+    for (const z of pz) {
+      for (const sx of [-1, 1]) {
+        const x = sx * 3.8;
+        F.box(0.6, 0.3, 0.6, MAT.darkWood, x, 0.15, z); F.box(0.46, 4.4, 0.46, MAT.wood, x, 2.35, z); F.box(0.62, 0.22, 0.62, MAT.darkWood, x, 4.55, z);
+        room.addCollider(x - 0.3, x + 0.3, 0, 4.6, z - 0.3, z + 0.3, 'furn');
+        const T = new Frame(room, x - sx * 0.23, 0, z, sx < 0 ? Math.PI / 2 : -Math.PI / 2);
+        T.box(0.3, 0.1, 0.05, MAT.brass, 0, 2.2, 0.025);
+        const bm = emissiveMat(0xffd59a, 3.5, 0xffffff);
+        for (const e of [-0.11, 0.11]) { T.cyl(0.012, 0.012, 0.12, MAT.brass, e, 2.25, 0.08, 5); const bl = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), bm); T.dyn(bl, e, 2.32, 0.1); }
+        const gl = glowSprite(0xffb060, 0.8, 0.35); T.dyn(gl, 0, 2.32, 0.12);
+        room.addFixture({ local: T.pt(0, 2.35, 0.5), color: 0xffb36a, intensity: 2.4, range: 7, mats: [{ mat: bm, base: 3.5 }], glow: gl, kind: 'sconce', shadow: false });
+        if (r.chance(0.5)) addTopiary(room, x + sx * 0.6, 0, z + 0.7, 0.9);
+      }
+      F.geo(new THREE.TorusGeometry(3.8, 0.17, 6, 24, Math.PI), MAT.wood, 0, 4.66, z, 0, 0, 0, [1, 0.6, 1]);
+    }
+    // high timber ceiling: tie beams and X-bracing
+    for (let z = -2.5; z > -D + 1; z -= 4.4) F.box(W, 0.4, 0.32, MAT.darkWood, 0, H - 1.2, z);
+    for (let z = -2.5; z > -D + 5.4; z -= 4.4) for (const sgn of [-1, 1]) F.box(Math.hypot(W * 0.5, 4.4), 0.18, 0.18, MAT.darkWood, sgn * W / 4, H - 0.5, z - 2.2, 0, sgn * Math.atan2(4.4, W * 0.5), 0);
+    for (const z of [-6.4, -15.2, -24]) addChandelier(room, 0, H, z, 1.25, { intensity: 9, range: 16 });
+    addChandelier(room, -8.5, H, -16, 1.0, { intensity: 6, range: 12 }); addChandelier(room, 0, H, -D + 4, 1.1, { intensity: 7, range: 13 });
+    // ---- left (player's left) side: shelf stacks, then the librarian's desk by the windows ----
+    for (const sx of [-1, 1]) {
+      shelf(sx * (hw - 0.25), -0.3, Math.PI, 2.6); shelf(sx * (hw - 2.9), -0.3, Math.PI, 2.6);
+      for (const z of [-5.8, -10.2]) { shelf(sx * (hw - 2.2), z, 0, 3.2, 3.8, true); shelf(sx * (hw - 5.5), z, 0, 3.2, 3.8, true); }
+    }
+    const dx = -hw + 2.6, dz = -16;
+    const DK = new Frame(room, dx, 0, dz, Math.PI / 2);
+    DK.box(4.2, 1.0, 0.8, MAT.darkWood, 0, 0.5, 0); DK.box(4.4, 0.06, 1.0, MAT.wood, 0, 1.03, 0.05);
+    for (const e of [-1, 1]) { DK.box(0.8, 1.0, 1.8, MAT.darkWood, e * 1.7, 0.5, -0.9); DK.box(1.0, 0.06, 2.0, MAT.wood, e * 1.7, 1.03, -0.9); }
+    DK.collide(-2.2, 2.2, 0, 1.1, -1.9, 0.5);
+    DK.box(0.4, 0.22, 0.3, MAT.iron, 0.9, 1.17, 0.1); DK.box(0.36, 0.05, 0.1, MAT.paper, 0.9, 1.3, 0.0);
+    DK.sph(0.13, std({ color: 0x3a5a7a, roughness: 0.6 }), -1.4, 1.25, 0.15); DK.cyl(0.02, 0.06, 0.12, MAT.brass, -1.4, 1.1, 0.15, 6);
+    addTableLamp(room, DK, -1.7, 1.06, -1.2, { intensity: 2 });
+    addRug(room, dx + 1.5, dz, 5, 6, Math.PI / 2, 3);
+    const paperPos = DK.pt(0.1, 1.065, 0.15);
+    const paper = makeItemMesh('paper'); paper.position.copy(paperPos); paper.rotation.y = 0.3; room.group.add(paper);
+    room.addInteract(paper, { dist: 2.4, prompt: () => (GAME.hasItem('hint') ? null : 'ヒントの紙を拾う'), use: () => { GAME.giveItem('hint'); room.group.remove(paper); SFX.paper(); GAME.showHint('紙を手に入れた。本を集めて、紙に描かれた記号の順に数字を並べよう。'); } });
+    for (const z of [-12.5, -19.5]) addGothicWindow(room, 'W', -z, 2.2, 1.6, 3.6);
+    for (const tz of [-14.4, -17.6]) { const t = addTable(room, -6.4, tz, 0, 2.2, 1.1, 0.78, MAT.darkWood); addTableLamp(room, t.top.F, 0, 0.8, 0, { intensity: 1.6 }); for (const e of [-0.6, 0.6]) { addChair(room, -6.4 + e, tz + 0.8, Math.PI, MAT.velvetGreen); addChair(room, -6.4 + e, tz - 0.8, 0, MAT.velvetGreen); } }
+    addWardrobe(room, -hw + 0.45, -20.4, Math.PI / 2);
+    addWardrobe(room, -hw + 1.3, -2.6, Math.PI / 2 + 0.5);
+    // ---- right side: long shelves parallel to the walkway ----
+    for (const x of [5.4, 9.2]) shelf(x, -16.2, Math.PI / 2, 5.2, 3.8, true);
+    shelf(hw - 0.25, -16.2, -Math.PI / 2, 5.2);
+    addWardrobe(room, 9.2, -12.7, 0);
+    addWardrobe(room, 4.6, -19.4, -Math.PI / 2);
+    // floor lamp left of the entrance
+    { const L = new Frame(room, -2.9, 0, -1.6, 0); L.cyl(0.18, 0.2, 0.04, MAT.brass, 0, 0.02, 0, 10); L.cyl(0.02, 0.02, 1.6, MAT.brass, 0, 0.8, 0, 6);
+      const m = emissiveMat(0xffb060, 1.6, 0xf2dcb0); m.side = THREE.DoubleSide; const shd = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.26, 0.32, 14, 1, true), m); L.dyn(shd, 0, 1.62, 0);
+      room.addFixture({ local: L.pt(0, 1.6, 0), color: 0xffa95a, intensity: 2.2, range: 6, mats: [{ mat: m, base: 1.6 }], kind: 'table', shadow: false }); L.collide(-0.2, 0.2, 0, 1.8, -0.2, 0.2); }
+    for (const [side, t] of [['W', 6], ['W', 23.3], ['E', D - 6.5], ['E', D - 10.5], ['E', D - 23.3], ['S', 4.5], ['S', W - 4.5]]) {
+      const w = room.walls[side], p = w.F.pt(t, 0, 0); addSconce(room, p.x, side === 'S' ? 4.4 : 2.9 + (t > D - 25 && side === 'W' || (side === 'E' && t < 12) ? PH : 0), p.z, w.F.ry, { intensity: 2.6 });
+    }
+    // ---- on the platform: couch and dressers at the bulge, shelves, closets, the exit's surround ----
+    room.fy = PH;
+    addSofa(room, 0, PZ + 0.55, Math.PI, MAT.velvetRed, 2.4);
+    for (const e of [-1, 1]) addDresser(room, e * 2.2, PZ + 0.45, Math.PI, { w: 1.1, rows: 3 });
+    addBookshelf(room, -6.5, -D + 0.25, 0, 3.0, 3.6); addBookshelf(room, 6.5, -D + 0.25, 0, 3.0, 3.6);
+    shelf(-hw + 6.5, -D + 4.2, Math.PI / 2, 3.0, 3.6, true);
+    addWardrobe(room, -2.9, -D + 0.45, 0); addWardrobe(room, hw - 1.1, -D + 1.1, -0.6); addWardrobe(room, -hw + SW + 1.1, PZ - 0.6, Math.PI / 2);
+    for (const e of [-1, 1]) { addTopiary(room, e * 1.6, PH, -D + 0.7, 1.0); addSconce(room, e * 1.5, PH + 2.6, -D, 0, { intensity: 2.6 }); addSconce(room, e * 9.5, PH + 2.6, -D, 0, { intensity: 2.2 }); }
+    addPainting(room, 0, PH + DOOR_H + 1.2, -D, 0, 1.6, 1.0, r.int(0, 999));
+    F.geo(new THREE.TorusGeometry(1.25, 0.12, 6, 20, Math.PI), MAT.trim, 0, PH + DOOR_H - 0.2, -D + 0.12, 0, 0, 0, [1, 0.5, 1]);
+    for (const e of [-1, 1]) F.box(0.22, DOOR_H + 0.3, 0.16, MAT.trim, e * 1.35, PH + (DOOR_H + 0.3) / 2, -D + 0.1);
+    room.fy = 0;
+    // ---- the code: 8 books with unique shapes; the paper lists 5 of them as I..V ----
+    const shapes = r.shuffle(LIB_SHAPES.slice());
+    const code = shapes.slice(0, 5), digits = shapes.map(() => r.int(0, 9));
+    // books handed out mostly useless first; the shape for V always comes last
+    const useless = shapes.slice(5), need = code.slice(0, 4);
+    const order = r.shuffle(useless.map(s => [s, r.range(0, 0.6)]).concat(need.map(s => [s, r.range(0.3, 1)]))).sort((x, y) => x[1] - y[1]).map(x => x[0]).concat([code[4]]);
+    room.meta.library = { code, digitOf: Object.fromEntries(shapes.map((s, i) => [s, digits[i]])), order, found: [], digits: code.map(s => digits[shapes.indexOf(s)]) };
+    GAME.library = room.meta.library;
+    const picks = r.shuffle(shelves.filter(s => s.w >= 2.4).slice()).slice(0, 8);
+    const spine = [0x2a3f7a, 0x4a2a6a, 0x2f5a35, 0x8a6a3a, 0x7a2a2a];
+    picks.forEach(s => {
+      const lx = r.range(-s.w / 2 + 0.3, s.w / 2 - 0.3), ly = 0.08 + s.sh * r.int(0, 2) + 0.02;
+      const book = makeItemMesh('book', { color: r.pick(spine) });
+      book.position.copy(s.F.pt(lx, ly, 0.13)); book.rotation.set(0, s.ry + Math.PI / 2, r.range(-0.25, 0.25));
+      room.group.add(book);
+      const gl = glowSprite(0x6aa8ff, 0.35, 0.2); gl.position.set(0, 0.14, 0); book.add(gl);
+      room.addInteract(book, { dist: 2.6, prompt: () => '本を取る', use: () => { room.group.remove(book); GAME.foundBook(); } });
+    });
+    room.meta.figureSpawn = new THREE.Vector3(hw - 3.8, 0, -8.0);
     room.meta.navRoom = true;
-    room.path = [[0, 1.55, 0.6], [0, 1.55, -12], [0, 1.55, -25]];
+    room.path = [[0, 1.55, 0.6], [0, 1.55, -12], [-hw + SW / 2, 1.55, PZ + SR + 0.6], [-hw + SW / 2, 1.55 + PH, PZ - 0.8], [0, 1.55 + PH, -D + 0.8]];
   },
 };
 
@@ -3626,74 +3726,184 @@ TPL.haltHall = {
       }
     }
     room.path = [[0, 1.55, 0.6], [0, 1.55, -STAGE + 1], [0, y0 + 1.55, zA - 1], [0, y0 + 1.55, zp], [0, y0 + 1.55, zZ + 1], [0, 1.55, -D + STAGE - 1], [0, 1.55, -D + 0.6]];
-    room.meta.halt = true; room.meta.noRush = true; room.meta.stageZ = -D + STAGE;
+    room.meta.halt = true; room.meta.noRush = true; room.meta.stageZ = -D + STAGE; room.meta.rain = true;
   },
 };
-TPL.seekHall = {
+/* ---- Seek chase rooms (Hotel+). Chase 1: Grand Hallway (Seek rises) -> hallway of toppled furniture with
+   crawlspaces -> three-door intersection -> small room with one crawlspace -> intersection -> corrupted
+   Grand Hallway (arms through the windows, falling chandeliers). Chase 2: hallway -> 5 intersections -> corrupted hallway. */
+function addGuideSparkles(room, x, y, z, spread = 0.9) {
+  const g = new THREE.Group(), sp = [];
+  for (let i = 0; i < 10; i++) { const s = glowSprite(0x8fe6ff, 0.16, 0.9); g.add(s); sp.push({ s, p: Math.random() * TAU, k: 0.6 + Math.random() * 0.8 }); }
+  g.position.set(x, y, z); room.group.add(g);
+  room.updaters.push((dt, t) => { for (const o of sp) { const a = t * o.k + o.p; o.s.position.set(Math.sin(a * 1.3) * spread, Math.sin(a * 0.9) * 0.7, Math.cos(a * 1.1) * spread * 0.5); o.s.material.opacity = 0.5 + 0.5 * Math.sin(a * 3); } });
+  return g;
+}
+/* a bookshelf fallen across the hall, resting on debris at both walls: crouch to get under it */
+function addCrawlspace(room, z, W, r) {
+  const F = new Frame(room, 0, room.fy, z, 0), GAP = 1.22, hw = W / 2;
+  F.box(W, 0.55, 0.62, MAT.darkWood, 0, GAP + 0.28, 0, 0.05, 0, r.range(-0.03, 0.03));
+  F.box(W - 0.3, 0.42, 0.04, MAT.books, 0, GAP + 0.28, 0.32, 0.05, 0, 0);
+  for (const sx of [-1, 1]) {
+    F.box(0.9, GAP, 0.9, MAT.crateWood, sx * (hw - 0.45), GAP / 2, 0.05, 0, r.range(-0.2, 0.2), 0);
+    F.box(0.7, 0.5, 0.5, MAT.wood, sx * (hw - 0.4), GAP + 0.75, -0.1, 0, 0.3, 0.2 * sx);
+    F.collide(sx > 0 ? hw - 1.0 : -hw, sx > 0 ? hw : -hw + 1.0, 0, 3.5, -0.5, 0.5);
+  }
+  F.collide(-hw, hw, GAP, 3.5, -0.35, 0.35);
+  for (let i = 0; i < 9; i++) F.box(0.2, 0.05, 0.28, r.pick([MAT.velvetRed, MAT.velvetGreen, MAT.velvetBlue, MAT.paper]), r.range(-hw + 1.2, hw - 1.2), 0.03, r.range(-1.4, 1.4), 0, r.range(0, TAU), 0);
+  const gl = glowSprite(0x7fd8ff, 1.4, 0.3); F.dyn(gl, 0, 0.6, 0.4);
+  room.addFixture({ local: F.pt(0, 0.8, 0.9), color: 0x6fc8ff, intensity: 1.6, range: 5, kind: 'guide', shadow: false, priority: 1 });
+  let told = false;
+  room.updaters.push(() => {
+    if (told || !PLAYER.alive) return;
+    const lp = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
+    if (lp.z > z && lp.z - z < 4.5) { told = true; if (!PLAYER.crouch) GAME.showHint(IS_TOUCH ? 'しゃがむボタンで下をくぐれ！' : 'Cキーでしゃがんで下をくぐれ！'); }
+  });
+}
+function addSeekArms(room, side, z, W) {
+  const g = new THREE.Group(), arms = [];
+  for (let i = 0; i < 3; i++) {
+    const arm = new THREE.Group();
+    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 1, 7), MAT.goo); a.rotation.x = Math.PI / 2; a.position.z = 0.5; arm.add(a);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), MAT.goo); hand.scale.set(1.2, 0.5, 1.3); hand.position.z = 1.02; arm.add(hand);
+    for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.014, 0.28, 5), MAT.goo); fg.rotation.x = Math.PI / 2; fg.position.set(-0.09 + f * 0.06, 0, 1.2); arm.add(fg); }
+    arm.position.set(0, 1.0 + i * 0.55, (i - 1) * 0.5); arm.scale.set(1, 1, 0.01); arm.userData.ph = Math.random() * TAU;
+    g.add(arm); arms.push(arm);
+  }
+  const wx = side * (W / 2);
+  g.position.set(wx, room.fy, z); g.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2; room.group.add(g);
+  const st = { side, z, reach: 0, burst: false, t: 0, arms, g, max: W / 2 + 0.9 };
+  room.meta.arms = (room.meta.arms || []).concat([st]);
+  room.updaters.push((dt, t) => {
+    if (!st.burst) return;
+    st.t += dt; st.reach = Math.min(st.max, st.reach + dt * 9);
+    arms.forEach((a, i) => { const L = st.reach * (0.8 + 0.2 * Math.sin(t * 2 + i)); a.scale.set(1, 1, Math.max(0.01, L)); a.rotation.y = Math.sin(t * 2.5 + a.userData.ph) * 0.25; a.rotation.x = Math.sin(t * 1.7 + a.userData.ph) * 0.15; });
+  });
+  return st;
+}
+TPL.grandHall = {
   plan(c) {
-    const r = c.rng, P = { W: r.range(3.9, 4.5), D: c.seekRole === 'start' ? 26 : r.range(14, 20), H: 3.6, exits: [] };
-    P.exits.push(chooseExit(c, P, { wN: 3, wSide: 0.5, zMin: P.D * 0.75, center: c.seekRole === 'start' }));
-    return P;
+    const role = c.seekRole;
+    return { W: 7.6, D: role === 'start' ? 50 : role === 'final' ? 46 : 38, H: 7, exits: [{ wall: 'N', at: 0, yb: 0 }] };
   },
   build(room, P, c) {
-    const r = c.rng;
-    shell(room, P, c, { runner: true });
-    sconcesAlong(room, 'W', 3.2); sconcesAlong(room, 'E', 3.2);
-    paintingsOn(room, r.int(1, 3), r, { sides: ['W', 'E'] });
-    room.meta.noRush = true; room.meta.seek = c.seekRole;
-    if (c.seekRole !== 'start') {
-      // obstacles: toppled furniture alternating sides
+    const r = c.rng, role = c.seekRole, W = P.W, D = P.D, H = P.H, hw = W / 2;
+    shell(room, P, c, { style: { pal: r.pick(['red', 'green', 'teal', 'brown']), style: r.pick(['damask', 'harlequin', 'damask']) } });
+    addRunner(room, 0, -0.3, -D + 0.3, 2.6);
+    const F = new Frame(room, 0, 0, 0, 0);
+    // large windows (rain behind) on one, both or neither side; the corrupted hallway always has both
+    const sides = role === 'final' ? ['W', 'E'] : r.weighted([[['W', 'E'], 3], [['W'], 1], [['E'], 1], [[], 0.6]]);
+    const winZ = [];
+    for (let z = -6; z > -D + 4; z -= 7) winZ.push(z);
+    for (const side of sides) for (const z of winZ) addGothicWindow(room, side, side === 'W' ? -z : z + D, 1.4, 1.7, 3.0);
+    for (let z = -4; z > -D + 2; z -= 8) addChandelier(room, 0, H, z, 1.25, { intensity: 7, range: 13 });
+    sconcesAlong(room, 'W', 3.5, 2.9); sconcesAlong(room, 'E', 3.5, 2.9);
+    room.meta.noRush = true; room.meta.seek = role;
+    room.meta.rain = sides.length > 0;
+    if (role === 'start') {
+      for (let i = 0; i < 4; i++) { const p = anyWall(room, 1.2, 0.5, 'low', ['W', 'E'], { rng: r }); if (p) { const d = addDresser(room, p.x, p.z, p.ry, { w: 1.2, rows: 2 }); if (r.chance(0.5)) addVase(d.F, 0, d.H + 0.02, 0, 1.1); } }
+      decorPlants(room, r, 3);
+      room.meta.seekTrigger = -D * 0.42;
+    } else if (role === 'crawl1') {
+      // toppled wardrobes and shelves to weave around, and two crawlspaces
+      const cz = [-D * 0.3, -D * 0.72];
+      for (const z of cz) addCrawlspace(room, z, W, r);
       let side = r.sign();
-      for (let z = -3.5; z > -P.D + 3; z -= r.range(4, 5.5)) {
-        const w = P.W * 0.52, x = side * (P.W / 2 - w / 2);
-        const F = new Frame(room, x, 0, z, 0);
-        if (r.chance(0.5)) { F.box(w, 0.42, 1.5, MAT.darkWood, 0, 0.21, 0, 0, 0, 0); F.box(w, 1.2, 0.05, MAT.books, 0, 0.6, -0.4, -1.1, 0, 0); }
-        else { F.box(w, 0.8, 0.9, MAT.wood, 0, 0.4, 0, 0, 0.2 * side, 0); F.box(0.8, 0.06, 0.6, MAT.darkWood, -side * 0.2, 0.83, 0.1, 0.4, 0, 0); }
-        F.collide(-w / 2, w / 2, 0, 1.3, -0.75, 0.75);
-        if (c.chase === 2 && r.chance(0.6)) room.meta.fires = (room.meta.fires || []).concat([{ x: -side * (P.W / 2 - 0.5), z: z - 1.8 }]);
+      for (let z = -4.5; z > -D + 3; z -= r.range(3.6, 4.6)) {
+        if (cz.some(q => Math.abs(q - z) < 2.4)) continue;
+        const w = W * 0.56, x = side * (hw - w / 2);
+        const T = new Frame(room, x, 0, z, r.range(-0.12, 0.12));
+        if (r.chance(0.5)) { T.box(w, 0.75, 1.5, MAT.darkWood, 0, 0.375, 0); T.box(w - 0.1, 0.05, 1.3, MAT.wood, 0, 0.77, 0); T.box(0.6, 0.6, 0.05, MAT.wood, -side * w * 0.3, 0.4, 0.78); }
+        else { T.box(w, 0.45, 1.0, MAT.darkWood, 0, 0.225, 0); T.box(w, 1.3, 0.06, MAT.books, 0, 0.6, -0.3, -1.1, 0, 0); }
+        T.collide(-w / 2, w / 2, 0, 1.6, -0.8, 0.8);
         side = -side;
       }
-      if (c.chase === 2) {
-        room.meta.chandeliers = [];
-        for (let z = -5; z > -P.D + 3; z -= 7) { const ch = addChandelierDyn(room, 0, P.H, z, 0.8, { intensity: 5 }); room.meta.chandeliers.push({ z, x: 0, fixture: ch.fixture, group: ch.group }); }
+    } else if (role === 'final') {
+      // the corrupted Grand Hallway: arms burst through the windows, chandeliers fall and burn
+      room.meta.chandeliers = [];
+      const secs = [{ z: -11, side: r.sign() }]; secs.push({ z: -22, side: -secs[0].side }); secs.push({ z: -33, side: secs[0].side });
+      for (const sc of secs) {
+        for (const dz of [-2.2, 2.2]) addSeekArms(room, sc.side, sc.z + dz, W);
+        const ch = addChandelierDyn(room, 0, H, sc.z, 1.0, { intensity: 6 });
+        room.meta.chandeliers.push({ z: sc.z, x: r.range(-0.4, 0.4), fixture: ch.fixture, group: ch.group, fire: true });
       }
+      for (let i = 0; i < 6; i++) { const z = r.range(-D + 4, -4), sx = r.sign(); if (secs.some(q => Math.abs(q.z - z) < 4)) continue; const T = new Frame(room, sx * (hw - 0.5), 0, z, r.range(0, TAU)); T.box(0.8, 0.5, 0.6, MAT.darkWood, 0, 0.25, 0, 0, 0, 0.3); T.collide(-0.4, 0.4, 0, 0.6, -0.3, 0.3); }
+      for (let i = 0; i < 18; i++) F.box(r.range(0.3, 1), 0.04, r.range(0.1, 0.2), MAT.crateWood, r.range(-hw + 0.4, hw - 0.4), 0.03, r.range(-D + 2, -2), 0, r.range(0, TAU), 0);
     }
+  },
+};
+TPL.seekCrawl = {
+  plan(c) { const P = { W: 9.5, D: 13, H: 5, exits: [] }; P.exits.push(chooseExit(c, P, { wN: 2, zMin: 9 })); return P; },
+  build(room, P, c) {
+    const r = c.rng;
+    shell(room, P, c);
+    addCrawlspace(room, -6.4, P.W, r);
+    for (let i = 0; i < 2; i++) { const p = anyWall(room, 1.2, 0.5, 'low', ['S'], { rng: r }); if (p) addDresser(room, p.x, p.z, p.ry, { w: 1.2, rows: 2 }); }
+    addCeilingLamp(room, 0, P.H, -3, { intensity: 4 }); addCeilingLamp(room, 0, P.H, -10, { intensity: 4 });
+    room.meta.noRush = true; room.meta.seek = 'crawl2';
   },
 };
 TPL.seekBranch = {
   plan(c) {
-    const r = c.rng, P = { W: 9, D: 9, H: 3.6, exits: [], fakes: [] };
+    const r = c.rng, P = { W: 15, D: 15, H: 5.6, exits: [], fakes: [] };
     const walls = ['N'];
     if (c.allowW) walls.push('W'); if (c.allowE) walls.push('E');
     const real = r.pick(walls);
-    const fakeWall = r.pick(['N', 'W', 'E'].filter(w => w !== real));
-    const mk = (wall) => wall === 'N' ? { wall, at: r.range(-2, 2), yb: 0 } : { wall, at: -r.range(4.5, 7), yb: 0 };
-    c.forceWall = real; P.exits.push(mk(real)); c.forceWall = null;
-    P.fakes.push(mk(fakeWall));
+    const mk = wall => (wall === 'N' ? { wall, at: 0, yb: 0 } : { wall, at: -P.D / 2, yb: 0 });
+    P.exits.push(mk(real));
+    for (const w of ['N', 'W', 'E']) if (w !== real) P.fakes.push(mk(w));
+    P.middle = r.pick(['wall', 'furniture']);
     return P;
   },
   build(room, P, c) {
-    const r = c.rng;
-    shell(room, P, c);
+    const r = c.rng, W = P.W, D = P.D, hw = W / 2;
+    shell(room, P, c, { style: { pal: r.pick(['red', 'green', 'teal', 'mustard']), style: r.pick(['damask', 'harlequin', 'stripes']) } });
     room.meta.noRush = true; room.meta.seek = 'branch';
-    const real = exitLocal(P, P.exits[0]), fake = exitLocal(P, P.fakes[0]);
-    // light the right path, darken the wrong one
-    const rp = real.door.clone(), fp = fake.door.clone();
-    const inward = (el) => new THREE.Vector3(Math.sin(el.dry), 0, Math.cos(el.dry));
-    const ri = inward(real), fi = inward(fake);
-    const rw = room.walls[P.exits[0].wall], rt = wallT(room, P.exits[0].wall, P.exits[0].at);
-    for (const s of [-1.35, 1.35]) { const q = rw.F.pt(rt + s, 0, 0); addSconce(room, q.x, 2.2, q.z, rw.F.ry, { intensity: 4 }); }
-    const guide = glowSprite(0x4aa0ff, 1.6, 0.3); guide.position.copy(rp).addScaledVector(ri, 0.8); guide.position.y = 1.4; room.group.add(guide);
-    room.addFixture({ local: rp.clone().addScaledVector(ri, 1.2).setY(1.6), color: 0x5aa8ff, intensity: 3, range: 6, kind: 'guide', shadow: false, priority: 1 });
-    // fake doorway: black void with grasping hands
-    const VF = new Frame(room, fp.x, 0, fp.z, fake.dry);
-    VF.box(DOOR_GAP, DOOR_H + 0.2, 0.05, MAT.void, 0, (DOOR_H + 0.2) / 2, -0.35);
-    VF.box(0.15, DOOR_H + 0.16, 0.34, MAT.trim, -DOOR_W / 2 - 0.075, (DOOR_H + 0.16) / 2, 0); VF.box(0.15, DOOR_H + 0.16, 0.34, MAT.trim, DOOR_W / 2 + 0.075, (DOOR_H + 0.16) / 2, 0); VF.box(DOOR_W + 0.3, 0.18, 0.34, MAT.trim, 0, DOOR_H + 0.09, 0);
-    VF.collide(-0.9, 0.9, 0, 3, -0.45, -0.25);
-    const hands = makeSeekHands(9, 1.2);
-    VF.dyn(hands, 0, 0, 0.2); room.meta.hands = { g: hands, pos: fp.clone().addScaledVector(fi, 0.4), wpos: null };
-    room.updaters.push((dt, t) => { hands.children.forEach((h, i) => { h.rotation.x = h.userData.bx + Math.sin(t * 3 + i) * 0.25; h.rotation.z = h.userData.bz + Math.sin(t * 2.3 + i * 2) * 0.2; }); });
-    placeDressers(room, 1, r, SIDES);
+    const F = new Frame(room, 0, 0, 0, 0), wm = wallMat_(room.style), CH = 3.4;
+    // octagon: cut the four corners
+    for (const [cx, cz, a] of [[-hw, 0, -1], [hw, 0, 1], [-hw, -D, 1], [hw, -D, -1]]) {
+      const L = CH * Math.SQRT2;
+      F.box(L, P.H, 0.3, wm, cx + Math.sign(-cx) * CH / 2, P.H / 2, cz + (cz === 0 ? -CH / 2 : CH / 2), 0, a * Math.PI / 4, 0);
+      F.box(L, WAIN_H, 0.36, MAT.wainscot, cx + Math.sign(-cx) * CH / 2, WAIN_H / 2, cz + (cz === 0 ? -CH / 2 : CH / 2), 0, a * Math.PI / 4, 0);
+      for (let k = 0; k <= 6; k++) { const t = k / 6, x = cx + Math.sign(-cx) * CH * (1 - t), z = cz + (cz === 0 ? -1 : 1) * CH * t; room.addCollider(Math.min(x, cx), Math.max(x, cx), 0, P.H, Math.min(z, cz), Math.max(z, cz), 'wall'); }
+    }
+    for (const side of SIDES) { const w = room.walls[side]; if (w) { w.block.push([0, CH + 0.4], [w.L - CH - 0.4, w.L]); w.high.push([0, CH + 0.4], [w.L - CH - 0.4, w.L]); } }
+    // the middle: a solid block or a heap of furniture to run around
+    if (P.middle === 'wall') {
+      F.box(4.2, P.H, 4.2, wm, 0, P.H / 2, -D / 2); F.box(4.3, WAIN_H, 4.3, MAT.wainscot, 0, WAIN_H / 2, -D / 2);
+      F.box(4.4, 0.16, 4.4, MAT.trim, 0, 0.08, -D / 2);
+      for (const [x, z, ry] of [[0, -D / 2 + 2.12, 0], [0, -D / 2 - 2.12, Math.PI], [2.12, -D / 2, Math.PI / 2], [-2.12, -D / 2, -Math.PI / 2]]) addSconce(room, x, 2.6, z, ry, { intensity: 2.2 });
+    } else {
+      for (let i = 0; i < 7; i++) addCrate(room, r.range(-1.4, 1.4), -D / 2 + r.range(-1.4, 1.4), r.range(0.8, 1.1), r.range(0, TAU), i > 3 ? 0.9 : 0);
+      const T = new Frame(room, 0, 0, -D / 2, r.range(0, TAU)); T.box(2.4, 0.9, 1.4, MAT.darkWood, 0, 1.6, 0, 0.5, 0, 0.3); T.box(1.5, 2.6, 0.7, MAT.darkWood, 0.6, 1.0, 0.8, 0.2, 0.4, -1.1);
+      addChandelier(room, 0, P.H, -D / 2, 1.0, { intensity: 6 });
+    }
+    room.addCollider(-2.1, 2.1, 0, P.H, -D / 2 - 2.1, -D / 2 + 2.1, 'wall');
+    // fake doors: barricaded, broken, or with no knob — and never with a number plate
+    for (const fk of P.fakes) {
+      const el = exitLocal(P, fk), VF = new Frame(room, el.door.x, 0, el.door.z, el.dry);
+      VF.box(DOOR_GAP, DOOR_H + 0.2, 0.06, MAT.void, 0, (DOOR_H + 0.2) / 2, -0.32);
+      VF.box(0.15, DOOR_H + 0.16, 0.34, MAT.trim, -DOOR_W / 2 - 0.075, (DOOR_H + 0.16) / 2, 0); VF.box(0.15, DOOR_H + 0.16, 0.34, MAT.trim, DOOR_W / 2 + 0.075, (DOOR_H + 0.16) / 2, 0); VF.box(DOOR_W + 0.3, 0.18, 0.34, MAT.trim, 0, DOOR_H + 0.09, 0);
+      const style = r.pick(['barricade', 'broken', 'noknob']);
+      if (style === 'broken') {
+        VF.box(DOOR_W * 0.55, DOOR_H * 0.8, 0.08, MAT.doorFront, -DOOR_W * 0.2, DOOR_H * 0.4, 0.2, 0, 0.5, 0.18);
+        for (const [y, a] of [[0.9, 0.2], [1.8, -0.15]]) VF.box(DOOR_W + 0.2, 0.16, 0.05, MAT.crateWood, 0, y, -0.1, 0, 0, a);
+      } else {
+        VF.box(DOOR_W - 0.02, DOOR_H - 0.02, 0.09, MAT.doorFront, 0, DOOR_H / 2, 0);
+        if (style === 'barricade') for (const [y, a] of [[0.7, 0.25], [1.5, -0.2], [2.3, 0.12]]) VF.box(DOOR_W + 0.35, 0.18, 0.06, MAT.crateWood, 0, y, 0.09, 0, 0, a);
+      }
+      VF.collide(-DOOR_W / 2, DOOR_W / 2, 0, DOOR_H, -0.35, 0.1);
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W, DOOR_H, 0.2), new THREE.MeshBasicMaterial({ visible: false })); VF.dyn(hit, 0, DOOR_H / 2, 0.1);
+      room.addInteract(hit, { dist: 2.6, prompt: () => '開ける', use: () => { SFX.locked(room.toWorld(el.door.x, 1.2, el.door.z)); GAME.showHint(style === 'barricade' ? '板でふさがれている…' : 'このドアは開かない！'); } });
+    }
+    // Guiding Light marks the real door with blue light and sparkles
+    const real = exitLocal(P, P.exits[0]), inward = new THREE.Vector3(Math.sin(real.dry), 0, Math.cos(real.dry));
+    const gp = real.door.clone().addScaledVector(inward, 0.7);
+    addGuideSparkles(room, gp.x, 1.5, gp.z);
+    const guide = glowSprite(0x4aa0ff, 2.2, 0.3); guide.position.set(gp.x, 1.6, gp.z); room.group.add(guide);
+    room.addFixture({ local: real.door.clone().addScaledVector(inward, 1.3).setY(1.8), color: 0x5aa8ff, intensity: 3.4, range: 7, kind: 'guide', shadow: false, priority: 1 });
+    for (const side of ['N', 'W', 'E']) sconcesAlong(room, side, 3.8, 2.6);
+    room.path = [[0, 1.55, 0.6], [r.chance(0.5) ? -4 : 4, 1.55, -D / 2], gp.toArray().map((v, i) => (i === 1 ? 1.55 : v))];
   },
 };
 function addChandelierDyn(room, x, ceilY, z, scale, opt) {
@@ -3702,19 +3912,6 @@ function addChandelierDyn(room, x, ceilY, z, scale, opt) {
   proxy.batch.build(proxy.group, false);
   room.group.add(proxy.group);
   return { group: proxy.group, fixture };
-}
-function makeSeekHands(n, spread) {
-  const g = new THREE.Group();
-  for (let i = 0; i < n; i++) {
-    const arm = new THREE.Group();
-    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 1.4, 7), MAT.goo); a.position.y = 0.7; arm.add(a);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), MAT.goo); hand.position.y = 1.45; hand.scale.set(1, 1.3, 0.6); arm.add(hand);
-    for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.22, 5), MAT.goo); fg.position.set(-0.06 + f * 0.04, 1.6, 0); fg.rotation.z = (f - 1.5) * 0.15; arm.add(fg); }
-    arm.position.set((Math.random() - 0.5) * spread * 1.4, Math.random() * 0.6, (Math.random() - 0.5) * 0.4 - 0.1);
-    arm.userData.bx = (Math.random() - 0.5) * 0.6 + 0.3; arm.userData.bz = (Math.random() - 0.5) * 1.2;
-    g.add(arm);
-  }
-  return g;
 }
 
 /* =========================================================================
@@ -4519,8 +4716,8 @@ const DIRECTOR = {
   P: {}, lastRush: 0, lastAmbush: -99, lastEyes: -99, lastTpl: null, prevTpl: null,
   newRun(seed) {
     const r = this.r = new RNG(seed ^ 0x5bd1e995), P = this.P = {};
-    P.seek1 = r.int(31, 40); P.seek1Len = 6;
-    P.seek2 = r.int(70, 76); P.seek2Len = 7;
+    P.seek1 = r.int(29, 40); P.seek1Len = 6;
+    P.seek2 = r.int(69, 75); P.seek2Len = 7;
     P.courtyard = r.int(P.seek2 + P.seek2Len + 2, 88);
     P.infirmary = r.chance(0.75) ? r.int(61, 67) : -1;
     P.jeff = 52;
@@ -4550,12 +4747,13 @@ const DIRECTOR = {
     const ch = this.chaseOf(n);
     if (ch) {
       const i = n - ch.S;
-      const role = i === 0 ? 'start' : (i === 2 || (ch.k === 2 && i === 4)) ? 'branch' : (i === ch.L - 1 ? 'end' : 'mid');
-      return { tpl: role === 'branch' ? 'seekBranch' : 'seekHall', fallback: 'seekHall', flags: { seekRole: role, chase: ch.k, chaseIdx: i, seekEyes: role === 'start' ? 34 : 0 } };
+      const role = i === 0 ? 'start' : i === ch.L - 1 ? 'final' : ch.k === 1 ? (i === 1 ? 'crawl1' : i === 3 ? 'crawl2' : 'branch') : 'branch';
+      const tpl = role === 'branch' ? 'seekBranch' : role === 'crawl2' ? 'seekCrawl' : 'grandHall';
+      return { tpl, fallback: tpl, flags: { seekRole: role, chase: ch.k, chaseIdx: i } };
     }
     if (P.halts.includes(n)) return { tpl: 'haltHall', fallback: 'hallway', flags: {} };
     const flags = {};
-    for (const S of [P.seek1, P.seek2]) if (n >= S - 6 && n < S) flags.seekEyes = (n - (S - 7)) * 5;
+    for (const S of [P.seek1, P.seek2]) if (n >= S - 4 && n < S) { flags.seekEyes = (n - (S - 5)) * 7; flags.crescendo = n === S - 1 ? 2 : 1; }
     const pre = n === 49 || n === 99 || n === P.jeff - 1;
     let tpl = r.weighted([
       ['hallway', 17], ['bedroom', 13], ['living', 9], ['dining', 6], ['office', 8], ['storage', 6],
@@ -4597,6 +4795,7 @@ const DIRECTOR = {
     const n = room.index;
     if (n === 50 || n === 100) ENT.startFigureRoom(room);
     if (room.meta.halt) ENT.startHalt(room);
+    if (room.spec && room.spec.flags.crescendo) flickerRoom(room, room.spec.flags.crescendo > 1 ? 2.8 : 0.9);
     if (room.meta.seek === 'start') ENT.armSeek(room);
     const ch = this.chaseOf(n - 1);
     if (ch && n - 1 === ch.S + ch.L - 1) ENT.endSeek(room);
@@ -4999,7 +5198,7 @@ const ENT = {
     const e = {
       kind: 'seekArm', room, update() {
         const lp = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
-        if (lp.z < -7) { ENT.remove(this); ENT.startSeek(room, lp); }
+        if (lp.z < (room.meta.seekTrigger ?? -7)) { ENT.remove(this); ENT.startSeek(room, lp); }
       },
     };
     this.add(e);
@@ -5007,7 +5206,9 @@ const ENT = {
   startSeek(room, lp) {
     const model = makeSeekModel();
     const puddle = new THREE.Mesh(new THREE.CircleGeometry(1.2, 24), MAT.goo); puddle.rotation.x = -Math.PI / 2;
-    const start = room.toWorld(lp.x * 0.3, room.y0 + 0.02, lp.z + 6.5);
+    // Seek pulls itself out of a black puddle at the start of the hallway, behind you; you run faster for the chase
+    const start = room.toWorld(lp.x * 0.3, room.y0 + 0.02, Math.min(lp.z + 10, -1.5));
+    GAME.speedMul = 1.45;
     puddle.position.copy(start); puddle.scale.setScalar(0.01); scene.add(puddle);
     model.position.copy(start); model.position.y -= 2.6; scene.add(model);
     SFX.goo(start); SFX.sting();
@@ -5030,7 +5231,7 @@ const ENT = {
           return;
         }
         const gap = total - this.s;
-        const sp = gap > 11 ? 7.2 : gap > 5.5 ? 5.35 : 4.45;
+        const sp = gap > 15 ? 8.2 : gap > 8 ? 6.8 : 6.0;   // slower than you when close, catches up when you fall behind
         this.s += sp * dt;
         // position along trail
         let s = this.s, i = 1;
@@ -5046,7 +5247,7 @@ const ENT = {
         while (this.trail.length > 2 && this.s > this.trail[1].distanceTo(this.trail[0])) { this.s -= this.trail[1].distanceTo(this.trail[0]); this.trail.shift(); }
         if (gap < 0.9 && PLAYER.alive) GAME.kill('seek');
       },
-      dispose() { scene.remove(this.model); scene.remove(this.puddle); MUSIC.stop(1.5); },
+      dispose() { scene.remove(this.model); scene.remove(this.puddle); MUSIC.stop(1.5); GAME.speedMul = 1; },
     };
     this.add(e);
   },
@@ -5055,10 +5256,12 @@ const ENT = {
     if (!this.has('seek')) return;
     if (prev && prev.door) { const d = prev.door; d.open = false; d.collider.on = true; d.locked = true; d.lockType = 'elevator'; SFX.slam(d.center.clone().applyMatrix4(prev.group.matrixWorld)); }
     this.despawn('seek');
-    POST.shake = 0.8;
+    POST.shake = 0.8; POST.flash = 0.4;
     GAME.showHint('…逃げ切った。');
+    // Guiding Light seals the door; Seek bangs on it three times and gives up
+    if (prev && prev.door) { const dp = prev.door.center.clone().applyMatrix4(prev.group.matrixWorld); for (let i = 1; i <= 3; i++) setTimeout(() => { SFX.slam(dp); POST.shake = Math.max(POST.shake, 0.5); }, 600 + i * 650); }
   },
-  makeFire(room, x, z) {
+  makeFire(room, x, z, rad = 0.85) {
     const g = new THREE.Group(); const flames = [];
     for (let i = 0; i < 6; i++) { const s = glowSprite(i % 2 ? 0xff6a10 : 0xffa030, 0.9, 0.85); s.position.set((Math.random() - 0.5) * 0.7, 0.4, (Math.random() - 0.5) * 0.7); g.add(s); flames.push(s); }
     g.position.set(x, room.fy, z); room.group.add(g);
@@ -5066,7 +5269,7 @@ const ENT = {
     room.toWorld(x, 0.8, z, fx.pos);
     const loop = LOOPS.fire(fx.pos); loop.setVol(0.9, 0.5);
     room.disposables.push(() => loop.stop(0.3));
-    room.meta.fireZones = (room.meta.fireZones || []).concat([{ p: room.toWorld(x, 0, z), cd: 0 }]);
+    room.meta.fireZones = (room.meta.fireZones || []).concat([{ p: room.toWorld(x, 0, z), cd: 0, rad }]);
     room.updaters.push((dt, t) => { flames.forEach((s, i) => { const k = 0.6 + 0.4 * Math.sin(t * (8 + i) + i); s.scale.set(0.6 + k * 0.4, 0.9 + k * 0.9, 1); s.position.y = 0.3 + k * 0.4; }); fx.flick = 0.7 + Math.random() * 0.3; });
   },
   updateHazards(dt) {
@@ -5081,7 +5284,14 @@ const ENT = {
     }
     if (r.meta.fireZones) for (const f of r.meta.fireZones) {
       f.cd -= dt;
-      if (f.cd <= 0 && Math.hypot(PLAYER.pos.x - f.p.x, PLAYER.pos.z - f.p.z) < 0.85) { f.cd = 0.6; GAME.damage(15, 'fire'); }
+      if (f.cd <= 0 && Math.hypot(PLAYER.pos.x - f.p.x, PLAYER.pos.z - f.p.z) < (f.rad || 0.85)) { f.cd = 0.6; GAME.damage(15, 'fire'); }
+    }
+    if (r.meta.arms) {
+      const lp = r.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
+      for (const a of r.meta.arms) {
+        if (!a.burst && lp.z < a.z + 9 && lp.z > a.z - 3 && this.has('seek')) { a.burst = true; SFX.glass(r.toWorld(a.side * r.W / 2, 1.8, a.z)); POST.shake = Math.max(POST.shake, 0.4); }
+        if (a.burst && Math.abs(lp.z - a.z) < 0.9 && a.side * lp.x > r.W / 2 - a.reach) GAME.kill('hands');
+      }
     }
     if (r.meta.hands && !PLAYER.hidden) {
       const h = r.meta.hands; if (!h.wpos) h.wpos = r.toWorld(h.pos.x, 0, h.pos.z);
@@ -5100,6 +5310,7 @@ const ENT = {
         if (c.y < -2.2) {
           c.done = true; SFX.crash(c.wp); PARTICLES.sparks(tmpV.copy(c.wp).setY(c.wp.y + 0.5)); breakFixture(c.fixture); POST.shake = 0.8;
           if (Math.hypot(PLAYER.pos.x - c.wp.x, PLAYER.pos.z - c.wp.z) < 1.3) GAME.damage(40, 'chandelier');
+          if (c.fire) this.makeFire(r, c.x, c.z, 1.2);
         }
       }
     }
@@ -5153,6 +5364,7 @@ const ENT = {
             const ty = Math.atan2(dx, dz); this.yaw += angDiff(this.yaw, ty) * Math.min(1, dt * 6);
           }
         }
+        { const g = WORLD.groundAt(this.pos.x, this.pos.z, this.pos.y + 0.3); if (g !== null) this.pos.y = g; }   // up and down the stairs
         this.model.position.copy(this.pos); this.model.rotation.y = this.yaw;
         animateFigure(this.model, this.t, moving);
         this.stepAcc += moving * dt; if (this.stepAcc > 1.3) { this.stepAcc = 0; SFX.figureStep(this.pos, this.state === 'chase' ? 1 : 0.75); POST.shake = Math.max(POST.shake, clamp(1 - d / 12, 0, 0.4)); }
@@ -5297,7 +5509,7 @@ const GUIDING = {
   eyes: ['あなたは「Eyes」に殺されてしまったようです…', '見つめると、どんどん傷ついてしまう。', '紫の光が見えたら、目をそらして進んで。'],
   halt: ['あなたは「Halt」にやられてしまったようです…', '画面の指示をよく見て。', '青い「↻」と「TURN AROUND」が光ったら、すぐ振り返って逆へ歩こう！'],
   seek: ['あなたは「Seek」に捕まってしまったようです…', '壁の目が増えてきたら、追跡が近いサイン。', '立ち止まらず、障害物をよけながら走り続けて！'],
-  hands: ['あなたは「Seek」の手に捕まってしまったようです…', '暗い道へ進んではいけません。', '明かりのついた方へ進んで！'],
+  hands: ['あなたは「Seek」の手に捕まってしまったようです…', '窓から伸びる黒い手に近づかないで。', '手が出ていない側の窓沿いを走ろう！'],
   figure: ['あなたは「Figure」に殺されてしまったようです…', '目は見えないけれど、音にはとても敏感。', 'しゃがんで静かに動き、近づいてきたら隠れて。', '隠れている時は、鼓動のリズムに合わせて！'],
   hide: ['あなたは「Hide」にやられてしまったようです…', '同じ場所に長く隠れすぎないで。', '「出ていけ」と聞こえたら、すぐに外へ！'],
   snare: ['あなたは「Snare」にやられてしまったようです…', '足元に注意して。', '光で照らせば、罠が見えるはず。'],
@@ -5339,8 +5551,9 @@ const UI = {
   shapeSvg(name, color = '#2a2216') { return `<svg viewBox="0 0 40 40" fill="${color}">${SHAPE_SVG[name]}</svg>`; },
   paper() {
     const lib = GAME.library; if (!lib) return;
-    const cells = lib.shapes.map((s, i) => `<div class="s">${UI.shapeSvg(s)}<b>${lib.found[i] ? lib.digits[i] : '?'}</b></div>`).join('');
-    UI.openModal(`<div class="paper"><button class="close" data-close>×</button><h3>— 南京錠のコード —</h3><div class="msgline" style="color:#5a4a30">本に描かれた記号と数字を、この順番に並べよ。</div><div class="shapes">${cells}</div><div class="msgline" style="color:#5a4a30">見つけた本：${lib.found.filter(Boolean).length} / 5</div></div>`);
+    const R = ['I', 'II', 'III', 'IV', 'V'];
+    const cells = lib.code.map((s, i) => `<div class="s"><i>${R[i]}</i>${UI.shapeSvg(s, '#4a3a6a')}<b>${lib.found.includes(s) ? lib.digitOf[s] : '?'}</b></div>`).join('');
+    UI.openModal(`<div class="paper"><button class="close" data-close>×</button><h3>— 南京錠のコード —</h3><div class="msgline" style="color:#5a4a30">本を開くと記号と数字が書いてある。I〜V の記号の数字を順に並べると南京錠が開く。</div><div class="shapes zig">${cells}</div><div class="msgline" style="color:#5a4a30">見つけた本：${lib.found.length} / 8（関係ない本もある）</div></div>`);
     SFX.paper();
   },
   padlock(door) {
@@ -5351,7 +5564,7 @@ const UI = {
     UI._pi = 0;
     m.querySelectorAll('.wheel button').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.i; v[i] = (v[i] + +b.dataset.d + 10) % 10; SFX.click(); draw(); }));
     $('pdGo').addEventListener('click', () => {
-      if (v.every((d, i) => d === lib.digits[i])) { UI.closeModal(); door.locked = false; SFX.unlock(); if (door.padlock) door.pivot.remove(door.padlock); setTimeout(() => openDoor(door), 400); GAME.showHint('南京錠が開いた！'); }
+      if (v.every((d, i) => d === lib.digits[i])) { UI.closeModal(); UI.libList(true); door.locked = false; SFX.unlock(); if (door.padlock) door.pivot.remove(door.padlock); setTimeout(() => openDoor(door), 400); GAME.showHint('南京錠が開いた！'); }
       else { SFX.padlockFail(); NOISE.emit(PLAYER.pos, 6); const box = m.querySelector('.lock'); box.animate([{ transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'none' }], { duration: 250 }); }
     });
   },
@@ -5494,7 +5707,7 @@ GAME.startRun = async function () {
   rng = new RNG(RUN.seed);
   DIRECTOR.newRun(RUN.seed);
   ENT.reset(); WORLD.reset(); PARTICLES.clear(); NOISE.events = []; MUSIC.stop(0.3);
-  GAME.library = null; GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
+  GAME.library = null; UI.libList(true); GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
   GAME.heartKey = () => {};
   POST.hurt = 0; POST.shake = 0; POST.flash = 0; POST.halt = 0; POST.eyes = 0; POST.aberr = 0;
   LIGHTS.init();
@@ -5553,11 +5766,20 @@ GAME.kill = function (cause) {
     UI.death(cause);
   }, 2200);
 };
-GAME.foundBook = function (i) {
-  const lib = GAME.library; lib.found[i] = true;
-  SFX.book(PLAYER.pos); NOISE.emit(PLAYER.pos, 5);
-  const k = lib.found.filter(Boolean).length;
-  UI.openModal(`<div class="paper" style="text-align:center"><button class="close" data-close>×</button><h3>本を見つけた（${k}/5）</h3><div class="shapes"><div class="s">${UI.shapeSvg(lib.shapes[i])}<b>${lib.digits[i]}</b></div></div><div class="msgline" style="color:#5a4a30">${GAME.hasItem('hint') ? 'ヒントの紙に書き込まれた。' : '中央の机にあるヒントの紙も探そう。'}</div></div>`);
+// a book shows one shape and one digit; reading it is silent. The shape/digit list stays at the bottom left.
+UI.libList = function (clear = false) {
+  const el = $('libList'), lib = GAME.library;
+  if (clear || !lib || !lib.found.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.innerHTML = lib.found.map(s => `<div>${UI.shapeSvg(s, '#efe3c4')}<span>= ${lib.digitOf[s]}</span></div>`).join('');
+  el.style.display = 'flex';
+};
+GAME.foundBook = function () {
+  const lib = GAME.library, sh = lib && lib.order[lib.found.length]; if (!sh) return;
+  lib.found.push(sh);
+  SFX.book(PLAYER.pos);
+  UI.libList();
+  const k = lib.found.length;
+  UI.openModal(`<div class="paper" style="text-align:center"><button class="close" data-close>×</button><h3>本を見つけた（${k}/8）</h3><div class="book2"><div>${UI.shapeSvg(sh, '#5a3a1a')}</div><div><b>${lib.digitOf[sh]}</b></div></div><div class="msgline" style="color:#5a4a30">${GAME.hasItem('hint') ? 'ヒントの紙に載っている記号なら、その数字がコードの一部。' : '左手の司書の机にあるヒントの紙も探そう。'}</div></div>`);
   const mine = GAME.modal;
   setTimeout(() => { if (GAME.modal === mine) UI.closeModal(); }, 2600);
 };
@@ -5637,7 +5859,8 @@ function update(dt) {
       lightningT -= dt;
       if (lightningT <= 0) { lightningT = rng.range(9, 22); POST.flash = 0.9; setTimeout(() => (POST.flash = 0.6), 120); SFX.thunder(); }
       if (!GAME.rain) { GAME.rain = LOOPS.rain(); GAME.rain.setVol(gh ? 0.9 : 0.5, 1); }
-    } else if (GAME.rain) { GAME.rain.stop(1.5); GAME.rain = null; }
+    } else if (rm && rm.meta.rain) { if (!GAME.rain) { GAME.rain = LOOPS.rain(); GAME.rain.setVol(0.28, 1); } }
+    else if (GAME.rain) { GAME.rain.stop(1.5); GAME.rain = null; }
   }
   // post effects
   POST.hurt = Math.max(0, POST.hurt - dt * 0.9);
