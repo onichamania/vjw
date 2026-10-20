@@ -99,6 +99,17 @@ textarea{width:100%;height:96px;border-radius:12px;border:2px solid #b8a8ff;padd
 .cost{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}.cst{display:flex;align-items:center;font-size:12px;font-weight:800}.cst.lack{color:#d0303a}
 .room{background:#fff;border-radius:12px;padding:10px;margin:6px 0;cursor:pointer;text-align:left;border:2px solid #d8d0ff}.room b{display:block}.room small{color:#6a6080}.empty{color:#8a80a0;padding:12px}
 #nRooms{max-height:40vh;overflow:auto}
+/* 放置モード */
+.ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;max-height:42vh;overflow:auto;padding:2px}
+.ai{position:relative;background:#fff;border:3px solid #d8d0ff;border-radius:14px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-weight:800;font-size:12px;line-height:1.2}
+.ai .ic{width:34px;height:34px}.ai small{font-size:10px;color:#8a80a0;font-weight:500}.ai.on{border-color:#2faa2a;background:#eaffe4}.ai.on::after{content:'✓';position:absolute;right:6px;top:2px;color:#2faa2a;font-size:16px}
+.ai.en{background:#fff4f4}.ai.en.on{background:#ffe8e0;border-color:#e0603a}.ai.en.on::after{color:#e0603a}
+.row2{display:flex;gap:8px}.row2 .btn{padding:8px;font-size:13px}
+#autoBar{position:absolute;left:50%;bottom:calc(var(--sab) + 12px);transform:translateX(-50%);display:none;align-items:center;gap:6px;background:rgba(20,16,50,.78);border:2px solid #7ae0ff;border-radius:16px;padding:6px 8px 6px 12px;max-width:min(94vw,520px);font-size:13px}
+body.auto #autoBar{display:flex}body.auto #padui{bottom:calc(var(--sab) + 78px)}
+#autoBar .at{display:flex;flex-direction:column;min-width:0}#autoBar b{color:#7ae0ff;font-size:13px}#autoBar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#autoBar small{font-size:11px;color:#c8d0ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
+#autoBar button{border:0;border-radius:10px;padding:7px 10px;font:800 13px 'M PLUS Rounded 1c',sans-serif;color:#fff;background:#5a6aff;flex:none}#autoOff{background:#e0503a!important}
+body.mapv #autoBar{opacity:.4}
 </style>
 </head>
 <body>
@@ -108,7 +119,8 @@ textarea{width:100%;height:96px;border-radius:12px;border:2px solid #b8a8ff;padd
 <div id="stick"><div id="knob"></div></div>
 <div id="res" class="ui"></div>
 <div id="topbar" class="ui"><div class="pill">🌍 ガイア <div class="bar"><i id="pBar"></i></div><span id="pPct">0%</span></div><div class="pill">❤️ <div class="bar"><i id="hpBar"></i></div><span id="hpTxt" style="font-size:12px"></span></div><div class="pill" id="tools"></div></div>
-<div id="btns" class="ui"><button class="rb" id="bMenu" title="メニュー">☰</button><button class="rb" id="bMap" title="星の地図">🌍</button></div>
+<div id="btns" class="ui"><button class="rb" id="bMenu" title="メニュー">☰</button><button class="rb" id="bMap" title="星の地図">🌍</button><button class="rb" id="bAuto" title="放置モード">🤖</button></div>
+<div id="autoBar" class="ui"><div class="at"><b>🤖 放置中</b><span id="autoTxt"></span><small id="autoGot"></small></div><button id="autoSet" title="取るもの">⚙</button><button id="autoOff">やめる</button></div>
 <div id="netbox"></div>
 <div id="padui"></div>
 <div id="mapInfo"></div>
@@ -123,6 +135,9 @@ textarea{width:100%;height:96px;border-radius:12px;border:2px solid #b8a8ff;padd
 <div id="online" class="scr panel"><div class="box"><h2>オンライン</h2><div class="msg" id="nState"></div><div id="nRooms"></div><button class="btn y" id="nHost">自分の星で部屋を開く</button><div class="msg">同じ星でいっしょにタイルを開けます。持ち物と道具はそれぞれのもの。部屋に入ると、ホストの星で遊びます（自分の星はそのまま残ります）。</div><button class="btn gr" id="nBack">もどる</button></div></div>
 <div id="codeScr" class="scr panel"><div class="box"><h2>セーブコード</h2><textarea id="codeTa" spellcheck="false"></textarea><div class="msg" id="codeMsg"></div><button class="btn" id="codeCopy">コピー</button><button class="btn y" id="codeCloud">ずっと使えるコードを作る</button><button class="btn g" id="codeLoad">このコードを読みこむ</button><button class="btn gr" id="codeBack">もどる</button></div></div>
 <div id="dlg" class="scr panel"><div class="box"><h2 id="dlgT"></h2><div class="msg" id="dlgM"></div><input id="dlgIn" maxlength="14" style="width:100%;font:800 16px 'M PLUS Rounded 1c',sans-serif;padding:10px;border-radius:12px;border:2px solid #b8a8ff;-webkit-user-select:text;user-select:text"><button class="btn g" id="dlgOk">OK</button><button class="btn gr" id="dlgNo">やめる</button></div></div>
+<div id="autoScr" class="scr panel"><div class="box"><h2>放置モード</h2><div class="msg">えらんだものを、自動で歩いて切ったり掘ったりします。えらべるのは、いま見つけていて、いまの道具で取れるものだけです。スティックを動かすと少しのあいだ手で動かせます。</div>
+ <div class="ag" id="autoList"></div><div class="row2"><button class="btn gr" id="autoAll">全部えらぶ</button><button class="btn gr" id="autoNone">全部はずす</button></div>
+ <div class="msg" id="autoNote"></div><button class="btn g" id="autoGo">放置をはじめる</button><button class="btn gr" id="autoBack">もどる</button></div></div>
 <div id="loading" class="scr"><div id="loadTxt">読みこみ中…</div></div>
 <div id="ending" class="scr panel"><div class="box"><h2>ガイアをクリア！</h2><div class="msg">ポータルが動いて、光の向こうに次の星が見えた！<br>（次の星「トロルヘイム」はまだ準備中です）</div><div class="msg" id="endStat"></div><button class="btn g" id="endBack">ガイアにもどる</button></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>

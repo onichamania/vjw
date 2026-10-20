@@ -56,9 +56,11 @@ function updatePlayer(dt){
   if(PL.dead>0){PL.dead-=dt;if(PL.dead<=0)respawn();return}
   tangent(CAM.f,PL.u,CAM.f);_rt.crossVectors(CAM.f,PL.u).normalize();
   const [ix,iy]=CAM.map?[0,0]:moveInput();const m=Math.hypot(ix,iy);
+  // 放置モード：スティックを動かしたら少しのあいだ手動、そうでなければ自動の向きへ
+  if(m>.05&&AUTO.on)AUTO.manualT=1.5;const autoMv=autoActive()&&AUTO.moving&&m<=.05;
   const c0=CELLS[PL.cell],k0=groundKind(c0);PL.inWater=k0==='water';
-  const spd=(PL.inWater?2.7:4.6)*(m>0?m:0);
-  if(m>.05){_mv.copy(CAM.f).multiplyScalar(iy).addScaledVector(_rt,ix).normalize();PL.face.lerp(_mv,1-Math.exp(-dt*14));tangent(PL.face,PL.u,PL.face);
+  const spd=(PL.inWater?2.7:4.6)*(autoMv?1:m>0?m:0);
+  if(m>.05||autoMv){if(autoMv)_mv.copy(AUTO.dir);else _mv.copy(CAM.f).multiplyScalar(iy).addScaledVector(_rt,ix).normalize();PL.face.lerp(_mv,1-Math.exp(-dt*14));tangent(PL.face,PL.u,PL.face);
     const nu=PL.u.clone().addScaledVector(_mv,spd*dt/PL.r).normalize();const nc=cellAt(nu,PL.cell),nk=groundKind(CELLS[nc]);
     // 高すぎる段は登れない（海から陸へは上がれる）
     const tr=groundR(nu,CELLS[nc],nk);if(nk!=='water'&&tr-PL.r>1.6&&!PL.inWater){}else{PL.u.copy(nu);PL.cell=nc}}
@@ -77,7 +79,8 @@ function toolLv(t){return PL.tools[t]||1}
 function findTarget(){let best=null,bd=1e9,lock=null,ld=1e9;
   for(const e of ENEMIES){if(!e.alive||!e.vis)continue;const d=arcDist(PL.u,e.u,SEA)-e.r;if(d<1.25&&d<bd){bd=d;best={type:'enemy',o:e}}}
   if(best)return{t:best,lock:null};
-  for(const o of nearList(PL.cell)){if(!o.k||!NODE[o.k]||!o.alive||o.hidden||!isLand(CELLS[o.cell]))continue;const N=NODE[o.k];const d=arcDist(PL.u,_t1.copy(o.pos).normalize(),SEA)-N.r;
+  const only=autoActive()?AUTO.sel:null;
+  for(const o of nearList(PL.cell)){if(!o.k||!NODE[o.k]||!o.alive||o.hidden||!isLand(CELLS[o.cell]))continue;if(only&&!only.has('n:'+o.k))continue;const N=NODE[o.k];const d=arcDist(PL.u,_t1.copy(o.pos).normalize(),SEA)-N.r;
     if(d>.75)continue;if(toolLv(N.tool)<N.lv){if(d<ld){ld=d;lock=o}continue}if(d<bd){bd=d;best={type:'node',o}}}
   return{t:best,lock}}
 let LOCK_SHOW=null;

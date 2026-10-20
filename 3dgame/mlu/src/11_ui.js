@@ -133,7 +133,7 @@ $('nBack').onclick=()=>{SFX.click();showScr(STATE==='play'?'menu':'title')};
 // ---- 地図 ----
 function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.display=CAM.map?'block':'none';if(CAM.map){const pct=Math.floor((W.open.size-1)/NTILE*100);$('mapInfo').innerHTML=`<b>ガイア</b><span>${pct}% ・ タイル ${W.open.size-1}/${NTILE}</span><small>ドラッグで回す・もう一度🌍でもどる</small>`}}
 // ---- タイトル ----
-function toTitle(){if(NET.on)netLeave();STATE='title';document.body.classList.remove('playing');CAM.map=true;document.body.classList.add('mapv');showScr('title');const s=loadSave();$('tCont').style.display=s?'':'none';$('tNew').textContent=s?'はじめから':'はじめる'}
+function toTitle(){if(NET.on)netLeave();autoStop();STATE='title';document.body.classList.remove('playing');CAM.map=true;document.body.classList.add('mapv');showScr('title');const s=loadSave();$('tCont').style.display=s?'':'none';$('tNew').textContent=s?'はじめから':'はじめる'}
 function startPlay(keepScr){STATE='play';MUSIC.on=true;document.body.classList.add('playing');CAM.map=false;document.body.classList.remove('mapv');CAM.ready=0;if(!keepScr)showScr('');uiMap();HUD_DIRTY=true;resKey='';topKey=''}
 $('tCont').onclick=async()=>{SFX.click();ac();let s=loadSave();
   if(s&&s.cloud){let h=null;try{h=await Promise.race([clHead(s.cloud),new Promise(r=>setTimeout(()=>r(undefined),4000))])}catch(e){h=undefined}
@@ -146,3 +146,22 @@ $('tCode').onclick=()=>{SFX.click();codeMode='';$('codeCloud').style.display='no
 // ---- エンディング ----
 function goPortal(){SFX.portal();W.clear=1;saveGame();const t=Math.round(W.play||0);$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;showScr('ending');STATE='ending';document.body.classList.remove('playing')}
 $('endBack').onclick=()=>{SFX.click();const B=portalB();if(B)B.went=0;respawn();startPlay()};
+
+// ---- 放置モードの画面 ----
+function openAuto(){inputReset();const L=autoKinds();if(AUTO.first){AUTO.first=false;L.filter(x=>x.type==='node').forEach(x=>AUTO.sel.add(x.id));autoSaveSel()}
+  const el=$('autoList');el.innerHTML='';
+  for(const x of L){const d=document.createElement('div');d.className='ai'+(x.type==='enemy'?' en':'')+(AUTO.sel.has(x.id)?' on':'');
+    const N=x.type==='node'?NODE[x.k]:null;d.innerHTML=x.type==='node'?`${iconImg(N.res)}<span>${N.n}</span><small>${RES[N.res].n}・${x.n}こ</small>`:`${iconImg('weap')}<span>${ENEMY[x.k].n}</span><small>たおす・${x.n}ひき</small>`;
+    d.onclick=()=>{SFX.click();if(AUTO.sel.has(x.id))AUTO.sel.delete(x.id);else AUTO.sel.add(x.id);d.classList.toggle('on',AUTO.sel.has(x.id));autoSaveSel();autoNote(L)};el.appendChild(d)}
+  if(!L.length)el.innerHTML='<div class="empty">まだ取れるものがありません</div>';autoNote(L);$('autoGo').textContent=AUTO.on?'この内容で続ける':'放置をはじめる';showScr('autoScr')}
+function autoNote(L){const n=L.filter(x=>AUTO.sel.has(x.id)).length;$('autoNote').textContent=n?n+'つえらんでいます'+(L.some(x=>x.type==='enemy'&&AUTO.sel.has(x.id))?'（敵もたおしに行きます。体力が少なくなったら、はじめの島で休みます）':''):'取るものを1つ以上えらんでください'}
+function autoSaveSel(){LSset('lu-auto',JSON.stringify([...AUTO.sel]))}
+$('bAuto').onclick=()=>{SFX.click();openAuto()};
+$('autoSet').onclick=()=>{SFX.click();openAuto()};
+$('autoOff').onclick=()=>{SFX.click();autoStop()};
+$('autoAll').onclick=()=>{SFX.click();autoKinds().forEach(x=>AUTO.sel.add(x.id));autoSaveSel();openAuto()};
+$('autoNone').onclick=()=>{SFX.click();autoKinds().forEach(x=>AUTO.sel.delete(x.id));autoSaveSel();openAuto()};
+$('autoGo').onclick=()=>{SFX.click();if(!autoKinds().some(x=>AUTO.sel.has(x.id))){toast('取るものをえらんでください');return}if(!AUTO.on&&!autoStart())return;AUTO.tgt=null;showScr('')};
+$('autoBack').onclick=()=>{SFX.click();showScr('')};
+function uiAuto(){$('bAuto').classList.toggle('act',AUTO.on)}
+let autoKey='';function drawAutoBar(){if(!AUTO.on)return;const g=Object.keys(AUTO.got).filter(k=>AUTO.got[k]>0).map(k=>RES[k].n+'+'+fmt(AUTO.got[k])).join(' ');const k=AUTO.st+'|'+g;if(k===autoKey)return;autoKey=k;$('autoTxt').textContent=AUTO.st||'さがしています…';$('autoGot').textContent=g?'集めたもの：'+g:''}

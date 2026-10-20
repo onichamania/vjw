@@ -2,7 +2,7 @@
 const OPT={yield:+LSget('lu-yield','1')||1};
 // ---- 資源 ----
 let HUD_DIRTY=true;const GAIN={};
-function addRes(k,n){if(!n)return;PL.inv[k]=(PL.inv[k]||0)+n;HUD_DIRTY=true;if(n>0)GAIN[k]=(GAIN[k]||0)+n}
+function addRes(k,n){if(!n)return;PL.inv[k]=(PL.inv[k]||0)+n;HUD_DIRTY=true;if(n>0){GAIN[k]=(GAIN[k]||0)+n;if(AUTO.on)AUTO.got[k]=(AUTO.got[k]||0)+n}}
 const has=(k,n)=>(PL.inv[k]||0)>=n;
 function bonus(k){const b=skinOf().bonus;return b&&b[k]||1}
 // ---- 飛ぶかけら ----
@@ -86,7 +86,8 @@ function killEnemy(e,who){e.alive=false;e.t=ENEMY[e.k].rsp;e.dying=.4;SFX.fell()
   else if(who&&NET.on)NET.giveDrop(who,e.k)}
 // ---- タイルを買う ----
 const GH_ON=new Set();let PAY={n:-1,t:0,cnt:0};
-function payTick(dt){PAY.t-=dt;let on=-1;
+function payTick(dt){PAY.t-=dt;let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
+
   for(const n of GH_ON){const c=CELLS[TILES[n].cell];if(arcDist(PL.u,c.c,SEA)<1.55&&PL.dead<=0){on=n;break}}
   if(on!==PAY.n){PAY.n=on;PAY.cnt=0;PAY.t=.25}
   if(on<0||PAY.t>0)return;PAY.t=.055;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let any=false,done=true;
@@ -122,7 +123,7 @@ function placeToll(tt,ph){const c=tt.c;const r=tt.ghost?SEA+.1:topR(c);const pos
 function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco')return;const up=B.up;
   B.pads.push(...padMesh(B.pIn,up,.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
   if(B.pOut)B.pads.push(...padMesh(B.pOut,up,.95,'#8aff8a'));B.st=B.st||{}}
-const ON_PAD=(B,p)=>p&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<.95&&PL.dead<=0;
+const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<.95&&PL.dead<=0;   // 放置中は台の上でも何もしない
 let PADUI=null;
 function updateBuildings(dt,rdt){let ui=null;rdt=rdt||dt;
   for(const B of BLDS){if(!W.open.has(B.n))continue;const D=BLD[B.k],S=B.st||(B.st={});
