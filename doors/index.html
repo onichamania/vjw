@@ -680,6 +680,12 @@ function genWallpaper(size, pal, style, seed = 7) {
     }
     g.fillStyle = shade(pal.b, 0.8);
     for (let i = 0; i < n; i += 2) for (let j = 0; j < 4; j++) { g.beginPath(); g.ellipse((i + 0.5) * w / n, (j + 0.5) * h / 4, w * 0.02, h * 0.045, 0, 0, TAU); g.fill(); }
+  } else if (style === 'harlequin') { // big diamonds in two tones (the Dining Hall)
+    g.fillStyle = shade(pal.b, 0.85);
+    g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w, h / 2); g.lineTo(w / 2, h); g.lineTo(0, h / 2); g.closePath(); g.fill();
+    g.strokeStyle = shade(pal.line, 0.45); g.lineWidth = w * 0.012; g.globalAlpha = 0.6;
+    g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w, h / 2); g.lineTo(w / 2, h); g.lineTo(0, h / 2); g.closePath(); g.stroke();
+    g.globalAlpha = 1;
   } else if (style === 'lattice') {
     g.strokeStyle = shade(pal.b, 0.9); g.lineWidth = w * 0.03;
     g.beginPath();
@@ -798,15 +804,15 @@ function genTilesColor(size, c1, c2, n = 4, checker = true) {
   g.putImageData(img, 0, 0);
   return { map: toTex(c), normalMap: normalTex(H, w, h, 2.5) };
 }
-function genStoneBlocks(size, base = 0x6e6a62) {
-  const w = size / 2, h = size / 2, rows = 4;
+function genStoneBlocks(size, base = 0x6e6a62, rows = 4, cols = 2) {
+  const w = size / 2, h = size / 2;
   const c = newCanvas(w, h), g = c.getContext('2d'), img = g.createImageData(w, h), d = img.data;
   const H = new Float32Array(w * h);
   const [br, bg, bb] = hexRGB(base);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const v = y / h * rows, row = Math.floor(v), fy = v - row;
-    const u = x / w * 2 + (row % 2) * 0.5, col = Math.floor(u), fx = u - col;
-    const mort = fy < 0.05 || fx < 0.025;
+    const u = x / w * cols + (row % 2) * 0.5, col = Math.floor(u), fx = u - col;
+    const mort = fy < 0.012 * rows || fx < 0.0125 * cols;
     const n = fbm(NZ, x / w * 10, y / h * 10, 4);
     const t = 0.85 + ((col * 31 + row * 17) % 13) / 13 * 0.25;
     const k = mort ? 0.45 : t * (0.75 + n * 0.4);
@@ -992,6 +998,9 @@ async function buildMaterials(progress) {
   step(() => { const t = genTilesColor(S / 2, 0xdfe6e2, 0xdfe6e2, 5, false); MAT.tileWhite = std({ ...t, roughness: 0.2 }, 1.2); });
   step(() => { const t = genTilesColor(S / 2, 0x8fa89a, 0x8fa89a, 6, false); MAT.tileGreen = std({ ...t, roughness: 0.3 }, 1.2); });
   step(() => { const t = genStoneBlocks(S, 0x77726a); MAT.stone = std({ ...t, roughness: 0.9 }, 2.4); });
+  step(() => { const t = genStoneBlocks(S, 0x8a5a44, 10, 4); MAT.brick = std({ ...t, roughness: 0.92 }, 1.6); });
+  step(() => { const t = genStoneBlocks(S, 0x9a8f80, 5, 2); MAT.cellarStone = std({ ...t, roughness: 0.9 }, 1.8); });
+  step(() => { const t = genTilesColor(S / 2, 0xcfb090, 0xa3826a, 4, true); MAT.tileDining = std({ ...t, roughness: 0.45 }, 1.6); });
   step(() => { const t = genNoiseSurface(S / 2, 0x6d6a66, 0.2, 7, 0.8); MAT.concrete = std({ ...t, roughness: 0.92 }, 3); });
   step(() => { const t = genNoiseSurface(S / 2, 0x334a22, 0.35, 10, 1.6); MAT.grass = std({ ...t, roughness: 1 }, 2.5); });
   step(() => { const t = genNoiseSurface(S / 2, 0x3a2a1c, 0.3, 9, 1.2); MAT.dirt = std({ ...t, roughness: 1 }, 2); });
@@ -1013,6 +1022,11 @@ async function buildMaterials(progress) {
     MAT.glass = new THREE.MeshStandardMaterial({ color: 0x9fb7c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, envMap: ENV, envMapIntensity: 1, depthWrite: false });
     MAT.water = new THREE.MeshStandardMaterial({ color: 0x0d1a22, roughness: 0.05, metalness: 0.6, envMap: ENV, envMapIntensity: 1.2 });
     MAT.paper = std({ color: 0xe8dcc0, roughness: 0.9 });
+    MAT.potRed = std({ color: 0x8e2f22, roughness: 0.7 });
+    MAT.ivory = std({ color: 0xece6d6, roughness: 0.35 });
+    MAT.piano = std({ color: 0x0b0b0e, roughness: 0.16, metalness: 0.15, envMap: ENV, envMapIntensity: 0.9 });
+    MAT.nightGlass = std({ color: 0x0a1424, emissive: 0x13284a, emissiveIntensity: 0.45, roughness: 0.08, metalness: 0.4, envMap: ENV, envMapIntensity: 0.8 });
+    MAT.barrel = std({ ...genWoodGrain(S / 4, 0x7a4a26, 31, 0.6), roughness: 0.7 }, 0.7);
     MAT.leaf = std({ color: 0x2d4a22, roughness: 0.85, side: THREE.DoubleSide });
     MAT.leafDark = std({ color: 0x1b2d15, roughness: 0.9, side: THREE.DoubleSide });
     MAT.pot = std({ color: 0x7a3d24, roughness: 0.8 });
@@ -1216,13 +1230,24 @@ const SFX = {
     AU.burst({ dur: 0.8, f: 1800, q: 0.4, vol: 0.7, rev: 0.4 });
   },
   heartbeat(vol = 0.6) { if (!AU.ok) return; AU.tone({ type: 'sine', f: 62, f2: 40, dur: 0.12, vol }); AU.tone({ t0: AU.t + 0.2, type: 'sine', f: 55, f2: 38, dur: 0.14, vol: vol * 0.8 }); },
-  lever(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.18, f: 900, q: 3, vol: 0.4, sweepTo: 400 }); AU.burst({ pos, t0: AU.t + 0.2, dur: 0.06, f: 1800, q: 4, vol: 0.5 }); },
+  // lever pulled down: a sharp metallic clack over a low thump, gone by ~0.6 s
+  lever(pos) {
+    if (!AU.ok) return;
+    const t = AU.t + 0.08;
+    AU.burst({ pos, t0: t, dur: 0.22, a: 0.001, f: 4500, q: 0.9, vol: 0.55, rev: 0.25 });
+    AU.burst({ pos, t0: t, dur: 0.08, a: 0.001, f: 2400, q: 6, vol: 0.35, rev: 0.2 });
+    AU.tone({ pos, t0: t, type: 'sine', f: 175, f2: 95, dur: 0.35, vol: 0.5, rev: 0.2 });
+    AU.burst({ pos, t0: AU.t, dur: 0.07, f: 900, q: 2, vol: 0.18, sweepTo: 500 });
+  },
+  // gate: a low rattle, a sharp clank at ~1.3 s, then a ~1.8 kHz ring; quieter than the lever
   gate(pos) {
     if (!AU.ok) return;
-    const t = AU.t, o = AU.osc('sawtooth', 60), fl = AU.filt('bandpass', 400, 3), g = AU.gain(0), out = AU.out(pos, 0.5);
-    o.connect(fl); fl.connect(g); g.connect(out); AU.env(g, t, 0.1, 1.6, 0.4, 0.25); o.start(t); o.stop(t + 2.2);
-    AU.burst({ pos, dur: 2, f: 1600, q: 6, vol: 0.12, sweepTo: 1100 });
-    AU.burst({ pos, t0: t + 2, dur: 0.3, f: 300, q: 0.7, vol: 0.5, type: 'lowpass' });
+    const t = AU.t;
+    for (let i = 0; i < 6; i++) AU.burst({ pos, t0: t + 0.9 + i * 0.06, dur: 0.05, f: 380 + Math.random() * 200, q: 3, vol: 0.12, rev: 0.3 });
+    AU.burst({ pos, t0: t + 1.3, dur: 0.18, a: 0.001, f: 6000, q: 0.8, vol: 0.4, rev: 0.45 });
+    AU.tone({ pos, t0: t + 1.3, type: 'triangle', f: 120, f2: 70, dur: 0.3, vol: 0.25, rev: 0.3 });
+    AU.tone({ pos, t0: t + 1.8, type: 'sine', f: 1800, dur: 0.45, a: 0.01, vol: 0.08, rev: 0.6 });
+    AU.tone({ pos, t0: t + 1.8, type: 'sine', f: 2710, dur: 0.3, a: 0.01, vol: 0.03, rev: 0.6 });
   },
   paper() { if (!AU.ok) return; AU.burst({ dur: 0.25, f: 3500, q: 0.6, vol: 0.18, sweepTo: 1800 }); },
   book(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.12, f: 900, q: 0.7, vol: 0.3 }); AU.burst({ pos, t0: AU.t + 0.1, dur: 0.2, f: 2500, q: 0.5, vol: 0.12 }); },
@@ -1257,6 +1282,21 @@ const SFX = {
     if (!AU.ok) return;
     const t = AU.t;
     for (let i = 0; i < 3; i++) AU.burst({ t0: t + i * 0.22, a: 0.03, dur: 0.2, f: [900, 2400, 1400][i], q: 4, vol, rev: 0.6 });
+  },
+  // the "Turn" cue: a short glitchy sweep with stuttering clicks (~1 s)
+  haltTurn() {
+    if (!AU.ok) return;
+    const t = AU.t;
+    AU.burst({ dur: 0.9, a: 0.01, f: 3400, q: 0.9, vol: 0.5, rev: 0.45, sweepTo: 350 });
+    AU.tone({ type: 'square', f: 1320, f2: 260, dur: 0.55, vol: 0.09, rev: 0.5, filter: 2600 });
+    AU.tone({ type: 'sawtooth', f: 74, f2: 41, dur: 0.95, vol: 0.28, rev: 0.3, filter: 500 });
+    for (let i = 0; i < 7; i++) AU.burst({ t0: t + 0.04 + i * 0.07, dur: 0.025, f: 1200 + Math.random() * 3800, q: 3, vol: 0.28, rev: 0.1 });
+  },
+  haltRun() {
+    if (!AU.ok) return;
+    AU.burst({ dur: 0.6, a: 0.005, f: 900, q: 0.7, type: 'highpass', vol: 0.45, rev: 0.4 });
+    AU.tone({ type: 'sawtooth', f: 220, f2: 110, dur: 0.6, vol: 0.18, rev: 0.4, filter: 1800 });
+    AU.tone({ type: 'square', f: 233, f2: 116, dur: 0.6, vol: 0.1, rev: 0.4, filter: 1500 });
   },
   haltWhoosh() { if (!AU.ok) return; AU.burst({ dur: 1.4, a: 0.3, f: 300, q: 2, vol: 0.5, sweepTo: 3000, rev: 0.6 }); AU.tone({ type: 'sine', f: 200, f2: 700, dur: 1.2, vol: 0.15, rev: 0.6 }); },
   rushPass(pos, ambush = false) {
@@ -1349,15 +1389,20 @@ const LOOPS = {
       return { nodes };
     }, null, 0.6);
   },
+  /* Halt: constant monotone static in your head, a low drone and a thin whine that creep up in pitch */
   halt() {
     return makeLoop(out => {
-      const o = AU.osc('sine', 110), o2 = AU.osc('triangle', 164.8), g = AU.gain(0.25), g2 = AU.gain(0.12);
-      const tr = AU.osc('sine', 5), tg = AU.gain(0.12); tr.connect(tg); tg.connect(g.gain);
-      o.connect(g); o2.connect(g2); g.connect(out); g2.connect(out);
-      const n = AU.noiseSrc(), b = AU.filt('bandpass', 1800, 8), ng = AU.gain(0.15); n.connect(b); b.connect(ng); ng.connect(out);
-      const sl = AU.osc('sine', 0.3), slg = AU.gain(1000); sl.connect(slg); slg.connect(b.frequency);
-      return { nodes: [o, o2, tr, n, sl] };
-    }, null, 0.7);
+      const n = AU.noiseSrc(), hp = AU.filt('highpass', 1600, 0.5), ng = AU.gain(0.14); n.connect(hp); hp.connect(ng); ng.connect(out);
+      const n2 = AU.noiseSrc(), bp = AU.filt('bandpass', 700, 2.5), cg = AU.gain(0), cr = AU.osc('square', 7.3), crg = AU.gain(0.08);
+      cr.connect(crg); crg.connect(cg.gain); n2.connect(bp); bp.connect(cg); cg.connect(out);
+      const d1 = AU.osc('sawtooth', 55), d2 = AU.osc('sawtooth', 55.7), lp = AU.filt('lowpass', 380, 1.4), dg = AU.gain(0.2);
+      d1.connect(lp); d2.connect(lp); lp.connect(dg); dg.connect(out);
+      const w = AU.osc('sine', 880), wg = AU.gain(0.025), wl = AU.osc('sine', 0.35), wlg = AU.gain(30); wl.connect(wlg); wlg.connect(w.frequency); w.connect(wg); wg.connect(out);
+      return {
+        nodes: [n, n2, cr, d1, d2, w, wl],
+        rate(r) { const t = AU.t; d1.frequency.setTargetAtTime(55 * r, t, 0.4); d2.frequency.setTargetAtTime(55.7 * r, t, 0.4); w.frequency.setTargetAtTime(880 * r, t, 0.4); lp.frequency.setTargetAtTime(380 * r, t, 0.4); },
+      };
+    }, false, 0.5);
   },
   fire(pos) {
     return makeLoop(out => {
@@ -1832,9 +1877,10 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
   const leaf = new THREE.Mesh(_doorLeafGeo, [_doorEdge, _doorEdge, _doorEdge, _doorEdge, MAT.doorFront, MAT.doorFront]);
   leaf.position.set(DOOR_W / 2, DOOR_H / 2, 0); leaf.castShadow = true; leaf.receiveShadow = true;
   pivot.add(leaf);
-  for (const s of [1, -1]) {
-    const kb = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), MAT.brass); kb.position.set(DOOR_W - 0.16, 1.05, 0.08 * s); pivot.add(kb);
-    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.012), MAT.brass); pl.position.set(DOOR_W - 0.16, 1.05, 0.05 * s); pivot.add(pl);
+  for (const s of [1, -1]) { // lever handle on a backplate
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.24, 0.012), MAT.brass); pl.position.set(DOOR_W - 0.16, 1.4, 0.05 * s); pivot.add(pl);
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 8), MAT.brass); st.rotation.x = Math.PI / 2; st.position.set(DOOR_W - 0.16, 1.44, 0.08 * s); pivot.add(st);
+    const lv = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.03, 0.03), MAT.brass); lv.position.set(DOOR_W - 0.23, 1.44, 0.11 * s); pivot.add(lv);
   }
   let plaqueTex = null;
   if (number != null) {
@@ -1849,10 +1895,12 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
     collider, padlock: null, swing: opt.swing || 1.75, center: F.pt(0, 1.2, 0), slam: false, auto: !!opt.auto, onOpen: null,
   };
   if (door.locked) {
+    // padlock hanging from the handle: silver shackle, dark body with a big keyhole
     const lock = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.1, 0.04), MAT.brass); lock.add(body);
-    const sh = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.009, 6, 12, Math.PI), MAT.steel); sh.position.y = 0.05; lock.add(sh);
-    lock.position.set(DOOR_W - 0.16, 0.86, 0.1); pivot.add(lock); door.padlock = lock;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.13, 0.05), MAT.iron); lock.add(body);
+    const hole = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.05, 0.01), MAT.black); hole.position.set(0, -0.01, 0.027); lock.add(hole);
+    const sh = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.011, 6, 14, Math.PI), MAT.steel); sh.position.y = 0.065; lock.add(sh);
+    lock.position.set(DOOR_W - 0.2, 1.3, 0.12); pivot.add(lock); door.padlock = lock;
   }
   room.door = door;
   room.addInteract(leaf, {
@@ -2059,8 +2107,8 @@ function addRunner(room, x, z0, z1, w = 1.4, alongX = false) {
   const F = new Frame(room, alongX ? (z0 + z1) / 2 : x, 0.007, alongX ? x : (z0 + z1) / 2, alongX ? Math.PI / 2 : 0);
   F.geo(g, MAT.runner, 0, 0, 0);
 }
-function addPlant(room, x, z, scale = 1) {
-  const F = new Frame(room, x, room.fy, z, Math.random() * TAU);
+function addPlant(room, x, z, scale = 1, y = room.fy) {
+  const F = new Frame(room, x, y, z, Math.random() * TAU);
   F.cyl(0.2 * scale, 0.15 * scale, 0.42 * scale, MAT.pot, 0, 0.21 * scale, 0, 12);
   F.cyl(0.19 * scale, 0.19 * scale, 0.02, MAT.dirt, 0, 0.41 * scale, 0, 12);
   for (let i = 0; i < 7; i++) {
@@ -2203,7 +2251,7 @@ function footOf(P) {
   const ox = P.ox || 0, y0 = P.y0 || 0;
   let y1 = y0 + P.H;
   for (const e of P.exits) y1 = Math.max(y1, e.yb + 3);
-  return { x0: ox - P.W / 2, x1: ox + P.W / 2, z0: -P.D, z1: 0, y0: Math.min(0, y0), y1 };
+  return { x0: ox - P.W / 2, x1: ox + P.W / 2, z0: -P.D, z1: 0, y0: Math.min(0, y0) - (P.yDown || 0), y1 };
 }
 
 /* Build one wall: frame F has local +x along the wall and +z into the room. */
@@ -2257,7 +2305,7 @@ function shell(room, P, c, o = {}) {
   room.surface = o.surface || 'wood';
   const F = new Frame(room, 0, 0, 0, 0);
   if (o.floorMesh !== false) F.box(W + 0.02, 0.1, D + 0.02, floorMat, ox, y0 - 0.05, -D / 2);
-  room.addFloor(x0 - 0.35, x1 + 0.35, -D - 0.35, 0.35, y0);
+  if (o.floorQuery !== false) room.addFloor(x0 - 0.35, x1 + 0.35, -D - 0.35, 0.35, y0);
   if (!o.noCeiling) F.box(W + 2 * WT, 0.12, D + 2 * WT, o.ceil || MAT.ceiling, ox, y0 + H + 0.06, -D / 2);
   const entryYb = o.entryYb ?? 0;
   const openings = { S: [], N: [], W: [], E: [] };
@@ -2684,35 +2732,266 @@ function spawnPickup(room, type, localPos, ry = 0, extra = null, parent = null) 
   });
   return m;
 }
-function addGateAndLever(room, r) {
-  const el = room.exit, F = new Frame(room, el.door.x, el.door.y, el.door.z, el.dry);
-  const gate = new THREE.Group();
-  const bars = new THREE.Group();
-  for (let i = 0; i < 9; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, DOOR_H + 0.1, 6), MAT.iron); b.position.set(-0.8 + i * 0.2, (DOOR_H + 0.1) / 2, 0); bars.add(b); }
-  for (const y of [0.15, 1.4, DOOR_H - 0.05]) { const h = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.07, 0.06), MAT.iron); h.position.set(0, y, 0); bars.add(h); }
-  gate.add(bars);
-  F.dyn(gate, 0, 0, 0.32);
-  const col = F.collide(-0.9, 0.9, 0, DOOR_H, 0.25, 0.4, 'gate');
-  const st = { open: false, t: 0 };
-  room.updaters.push(dt => { if (st.open && st.t < 1) { st.t = Math.min(1, st.t + dt * 0.45); gate.position.y = el.door.y + st.t * (DOOR_H + 0.05); } });
-  // lever on a wall
-  const p = anyWall(room, 0.6, 0.2, 'low', ['W', 'E', 'S', 'N'], { rng: r }) || { x: room.ox, z: -1, ry: 0 };
-  const LF = new Frame(room, p.x, room.fy, p.z, p.ry);
-  LF.box(0.3, 0.45, 0.06, MAT.iron, 0, 1.25, -0.06);
-  const piv = new THREE.Group(); LF.dyn(piv, 0, 1.25, 0);
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.38, 8), MAT.steel); handle.position.y = 0.17; handle.rotation.z = 0; piv.add(handle);
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), std({ color: 0x8a1010, roughness: 0.4 })); knob.position.y = 0.36; piv.add(knob);
-  piv.rotation.x = 0.7;
-  room.addInteract(piv, {
-    dist: 2.3, prompt: () => (st.open ? null : 'レバーを引く'),
+/* ---- Gate rooms (Hotel+ "small basement"): a lattice gate closes the arched recess in front of the
+   exit; the lever that opens it is on a wall of the wine cellar below, reached by a side stairwell ---- */
+let _latticeTex = null;
+function latticeTex() {
+  if (_latticeTex) return _latticeTex;
+  const s = 128, c = newCanvas(s, s), g = c.getContext('2d');
+  g.clearRect(0, 0, s, s);
+  g.strokeStyle = '#fff'; g.lineWidth = 11; g.lineCap = 'square';
+  g.beginPath();
+  for (const k of [-1, 0, 1]) { g.moveTo(k * s, 0); g.lineTo(k * s + s, s); g.moveTo(k * s + s, 0); g.lineTo(k * s, s); }
+  g.stroke();
+  _latticeTex = new THREE.CanvasTexture(c); _latticeTex.wrapS = _latticeTex.wrapT = THREE.RepeatWrapping;
+  return _latticeTex;
+}
+let _latticeMat = null;
+function latticeMat() {
+  return _latticeMat || (_latticeMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1f, metalness: 0.75, roughness: 0.5, alphaMap: latticeTex(), alphaTest: 0.5, transparent: false, side: THREE.DoubleSide, envMap: ENV, envMapIntensity: 0.5 }));
+}
+function latticePanel(w, h, cell = 0.44) {
+  const g = new THREE.PlaneGeometry(w, h);
+  scaleUV(g, w / cell, h / cell);
+  return new THREE.Mesh(g, latticeMat());
+}
+/* the wall lever: a dark plate with two slots; the wooden grip sticks out to the LEFT from a pivot at
+   the upper right, and swings DOWN along the slot when pulled */
+function addWallLever(room, F, lx, ly, lz, onPull) {
+  F.box(0.36, 0.52, 0.035, MAT.iron, lx, ly, lz + 0.018);
+  F.box(0.3, 0.46, 0.03, MAT.black, lx, ly, lz + 0.045);
+  for (const sx of [-1, 1]) F.box(0.05, 0.36, 0.012, MAT.void, lx + sx * 0.08, ly - 0.02, lz + 0.062);
+  const piv = new THREE.Group(); F.dyn(piv, lx + 0.08, ly + 0.15, lz + 0.09);
+  const br = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.08, 0.06), MAT.iron); piv.add(br);
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 8), MAT.barrel); grip.rotation.z = Math.PI / 2; grip.position.set(-0.2, 0, 0.02); piv.add(grip);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.033, 0.033, 0.04, 8), MAT.black); cap.rotation.z = Math.PI / 2; cap.position.set(-0.36, 0, 0.02); piv.add(cap);
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.2), new THREE.MeshBasicMaterial({ visible: false })); F.dyn(hit, lx - 0.05, ly, lz + 0.1);
+  const st = { pulled: false };
+  room.addInteract(hit, {
+    dist: 2.4, prompt: () => (st.pulled ? null : 'レバーを引く'),
     use: () => {
-      if (st.open) return; st.open = true; col.on = false;
-      SFX.lever(room.toWorld(p.x, 1.25, p.z)); setTimeout(() => SFX.gate(room.toWorld(el.door.x, 1.5, el.door.z)), 300);
-      const t0 = performance.now(); animate(() => { const k = Math.min(1, (performance.now() - t0) / 250); piv.rotation.x = 0.7 - 1.4 * k; return k < 1; });
+      if (st.pulled) return; st.pulled = true;
+      const lp = F.pt(lx, ly, lz); SFX.lever(room.toWorld(lp.x, lp.y, lp.z));
+      const t0 = performance.now(); animate(() => { const k = Math.min(1, (performance.now() - t0) / 220); piv.rotation.z = (Math.PI / 2) * k * k; return k < 1; });
+      onPull();
     },
   });
-  room.meta.gate = st;
+  return st;
 }
+/* a plain interior door that swings open when used */
+function addSideDoor(room, F, lx, ly, lz, opt = {}) {
+  const w = opt.w || 1.5, h = opt.h || 2.7;
+  F.box(0.12, h + 0.12, 0.3, MAT.trim, lx - w / 2 - 0.06, ly + (h + 0.12) / 2, lz); F.box(0.12, h + 0.12, 0.3, MAT.trim, lx + w / 2 + 0.06, ly + (h + 0.12) / 2, lz);
+  F.box(w + 0.24, 0.14, 0.3, MAT.trim, lx, ly + h + 0.07, lz);
+  const piv = new THREE.Group(); F.dyn(piv, lx - w / 2, ly, lz);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(w - 0.02, h - 0.02, 0.07), [_doorEdge || MAT.darkWood, _doorEdge || MAT.darkWood, _doorEdge || MAT.darkWood, _doorEdge || MAT.darkWood, MAT.doorFront, MAT.doorFront]);
+  leaf.position.set(w / 2, h / 2, 0); piv.add(leaf);
+  for (const s of [1, -1]) { const kb = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), MAT.brass); kb.position.set(w - 0.13, 1.0, 0.06 * s); piv.add(kb); }
+  const col = F.collide(lx - w / 2, lx + w / 2, ly, ly + h, lz - 0.06, lz + 0.06, 'door');
+  const st = { open: false, t: 0 }, dir = opt.dir || 1;
+  room.addInteract(leaf, {
+    dist: 2.5, prompt: () => (st.open ? null : '開ける'),
+    use: () => {
+      if (st.open) return; st.open = true; col.on = false;
+      const dp = F.pt(lx, ly + 1.2, lz); SFX.door(room.toWorld(dp.x, dp.y, dp.z));
+      const base = piv.rotation.y, t0 = performance.now();
+      animate(() => { const k = Math.min(1, (performance.now() - t0) / 900); piv.rotation.y = base + dir * 1.7 * smoothstep(0, 1, k); return k < 1; });
+    },
+  });
+  return st;
+}
+function addBarrel(F, lx, ly, lz, ry = 0, s = 1) {
+  const prof = [[0.3, -0.45], [0.36, -0.25], [0.38, 0], [0.36, 0.25], [0.3, 0.45]].map(([r, y]) => new THREE.Vector2(r * s, y * s));
+  F.geo(new THREE.LatheGeometry(prof, 12), MAT.barrel, lx, ly, lz, 0, ry, Math.PI / 2);
+  for (const t of [-0.3, 0.3]) F.geo(new THREE.TorusGeometry(0.363 * s, 0.014, 4, 14), MAT.iron, lx + Math.cos(ry) * t * s, ly, lz - Math.sin(ry) * t * s, 0, ry + Math.PI / 2, 0);
+  for (const sx of [-1, 1]) F.cyl(0.3 * s, 0.3 * s, 0.02, MAT.crateWood, lx + Math.cos(ry) * sx * 0.45 * s, ly, lz - Math.sin(ry) * sx * 0.45 * s, 12, 0, ry, Math.PI / 2);
+}
+/* a pyramid of barrels lying on their sides along a wall (local +x along the wall, +z into the room) */
+function addBarrelStack(room, F, lx, lz, n = 3) {
+  for (let row = 0; row < n; row++) for (let i = 0; i < n - row; i++) {
+    const x = lx + (i - (n - row - 1) / 2) * 0.78;
+    addBarrel(F, x, 0.4 + row * 0.66, lz, Math.PI / 2);
+  }
+  F.box(n * 0.78, 0.12, 0.8, MAT.crateWood, lx, 0.06, lz);
+  F.collide(lx - n * 0.39, lx + n * 0.39, 0, 0.8 * n, lz - 0.48, lz + 0.48);
+}
+TPL.gateRoom = {
+  plan(c) {
+    const r = c.rng, side = r.sign(), HW = 6, SD = 2.6;
+    return { W: HW * 2 + SD, D: r.range(20, 23), H: 5.6, ox: side * SD / 2, side, HW, SD, yDown: 4, exits: [{ wall: 'N', at: 0, yb: 0.3 }] };
+  },
+  build(room, P, c) {
+    const r = c.rng, s = P.side, HW = P.HW, D = P.D, H = P.H, BY = -3.7, R0 = -D + 2.5;
+    const X = u => s * u, span = (a, b) => [Math.min(X(a), X(b)), Math.max(X(a), X(b))];
+    shell(room, P, c, { floorMesh: false, floorQuery: false, noPath: true });
+    const F = new Frame(room, 0, 0, 0, 0);
+    const wm = wallMat_(room.style);
+    // ---- top floor ----
+    F.box(HW * 2, 0.1, D, MAT.floor, 0, -0.05, -D / 2);
+    room.addFloor(...span(-HW - 0.3, HW), -D - 0.35, 0.35, 0);
+    // partition between the hall and the side stairwell (u = HW..HW+0.25); doorway up top, door at the bottom
+    const PU = HW + 0.125, dTop = -6.2, dBot = -15.0;
+    const part = (z0, z1, y0, y1, m = wm) => { const [a, b] = span(HW, HW + 0.25); F.box(b - a, y1 - y0, z1 - z0, m, (a + b) / 2, (y0 + y1) / 2, (z0 + z1) / 2); room.addCollider(a, b, y0, y1, z0, z1, 'wall'); };
+    part(dTop + 0.95, 0, 0, H); part(-D, dTop - 0.95, 0, H);
+    { const [a, b] = span(HW, HW + 0.25); F.box(b - a, H - 2.75, 1.9, wm, (a + b) / 2, (2.75 + H) / 2, dTop); }
+    part(dBot + 0.95, 0, BY - 0.3, 0, MAT.cellarStone); part(-D, dBot - 0.95, BY - 0.3, 0, MAT.cellarStone);
+    room.addFloor(...span(HW - 0.4, HW + 0.6), dTop - 0.95, dTop + 0.95, 0);
+    room.addFloor(...span(HW - 0.4, HW + 0.6), dBot - 0.95, dBot + 0.95, BY);
+    F.box(0.5, 0.1, 1.8, MAT.floor, X(HW + 0.125), BY - 0.05, dBot);
+    { const [a, b] = span(HW, HW + 0.25); F.box(b - a, -BY - 2.75, 1.9, MAT.brick, (a + b) / 2, BY + 2.75 + (-BY - 2.75) / 2, dBot); }
+    const PF = new Frame(room, X(HW), 0, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2);   // +z faces into the hall
+    const toPF = z => (s > 0 ? z : -z);                                            // hall z -> partition frame x
+    addSideDoor(room, PF, toPF(dTop), 0, -0.125, { dir: 1, w: 1.62 });
+    // ---- the side stairwell: brick walls, wooden ceiling, steps down to the cellar door ----
+    const LT0 = -4.6, LT1 = -7.8, RB = -13.6, LB = -16.4, SU0 = HW + 0.25, SU1 = HW + P.SD;
+    { const [a, b] = span(SU0, SU1); F.box(b - a, 0.1, LT0 - LT1, MAT.floor, (a + b) / 2, -0.05, (LT0 + LT1) / 2); room.addFloor(a, b, LT1, LT0, 0);
+      F.box(b - a, 0.1, LB - RB, MAT.floor, (a + b) / 2, BY - 0.05, (RB + LB) / 2); room.addFloor(a, b, LB, RB, BY);
+      room.addFloor(a, b, RB, LT1, 0, BY, 'z', LT1, RB);
+      const n = 16;
+      for (let i = 0; i < n; i++) { const top = -(i + 1) * (-BY) / (n + 1), za = LT1 + (RB - LT1) * i / n, zb = LT1 + (RB - LT1) * (i + 1) / n; F.box(b - a, top - BY + 0.2, Math.abs(zb - za) + 0.01, MAT.floor, (a + b) / 2, (top + BY - 0.2) / 2, (za + zb) / 2); }
+      for (const z of [LT0, LB]) { F.box(b - a, H - BY, 0.25, MAT.brick, (a + b) / 2, (H + BY) / 2, z + (z === LT0 ? 0.125 : -0.125)); room.addCollider(a, b, BY - 0.3, H, z - 0.15, z + 0.15, 'wall'); }
+      // brick faces on both long walls
+      F.box(0.04, H - BY, LT0 - LB, MAT.brick, X(SU1 - 0.1), (H + BY) / 2, (LT0 + LB) / 2);
+      // partition side: brick around the two doorways
+      const bf = (z0, z1, y0, y1) => F.box(0.04, y1 - y0, z1 - z0, MAT.brick, X(SU0 + 0.02), (y0 + y1) / 2, (z0 + z1) / 2);
+      bf(dTop + 0.95, LT0, 0, H); bf(LB, dTop - 0.95, 0, H); bf(dTop - 0.95, dTop + 0.95, 2.75, H);
+      bf(dBot + 0.95, LT0, BY, 0); bf(LB, dBot - 0.95, BY, 0); bf(dBot - 0.95, dBot + 0.95, BY + 2.75, 0);
+      // wooden ceiling: flat over the landing, sloping with the steps, flat over the bottom landing
+      const cy = 3.3;
+      F.box(b - a, 0.12, LT0 - LT1, MAT.darkWood, (a + b) / 2, cy, (LT0 + LT1) / 2);
+      const sl = Math.hypot(RB - LT1, BY), ang = Math.atan2(-BY, LT1 - RB);
+      F.box(b - a, 0.12, sl, MAT.darkWood, (a + b) / 2, cy + BY / 2, (LT1 + RB) / 2, -ang, 0, 0);
+      F.box(b - a, 0.12, RB - LB, MAT.darkWood, (a + b) / 2, cy + BY, (RB + LB) / 2);
+      for (let i = 0; i <= 6; i++) { const z = LT1 + (RB - LT1) * i / 6; F.box(b - a, 0.16, 0.14, MAT.wood, (a + b) / 2, cy + BY * i / 6 - 0.12, z); }
+      room.addCollider(...span(SU1 - 0.02, SU1 + 0.3), BY - 0.3, H, -D, 0, 'wall');
+      const lamp = new Frame(room, X(SU1 - 0.12), 0, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2);
+      addSconce(room, lamp.x, 2.3, (LT0 + LT1) / 2, lamp.ry, { intensity: 1.6, range: 6 });
+      addSconce(room, lamp.x, BY + 2.2, (RB + LB) / 2 + 0.6, lamp.ry, { intensity: 1.4, range: 6 }).zone = -1;
+    }
+    // ---- the gate recess at the far end: raised step, wooden pillars, arched opening, lattice gate ----
+    const GW = 3.0, GH = 4.2, GZ = R0 - 0.15;
+    for (const [a, b] of [[-HW, -GW], [GW, HW]]) {
+      F.box(b - a, H, 0.3, wm, (a + b) / 2, H / 2, R0 - 0.15); room.addCollider(a, b, 0, H, R0 - 0.3, R0, 'wall');
+      F.box(b - a, WAIN_H, 0.03, MAT.wainscot, (a + b) / 2, WAIN_H / 2, R0 + 0.015); F.box(b - a, 0.06, 0.05, MAT.trim, (a + b) / 2, WAIN_H + 0.02, R0 + 0.025);
+      F.box(b - a, 0.16, 0.045, MAT.trim, (a + b) / 2, 0.08, R0 + 0.022);
+    }
+    F.box(GW * 2, H - GH, 0.3, wm, 0, (GH + H) / 2, R0 - 0.15);
+    F.geo(new THREE.TorusGeometry(GW - 0.05, 0.12, 6, 24, Math.PI), MAT.trim, 0, GH - 1.1, R0 + 0.02, 0, 0, 0, [1, 0.4, 1]);
+    for (const sx of [-1, 1]) { F.box(0.2, H, D + R0, wm, sx * (GW + 0.1), H / 2, (R0 - D) / 2); room.addCollider(sx * GW, sx * (GW + 0.2), 0, H, -D, R0, 'wall'); }
+    F.box(GW * 2, 0.3, D + R0 + 0.4, MAT.floor, 0, 0.15, (R0 + 0.4 - D) / 2);
+    F.box(GW * 2, 0.06, 0.1, MAT.trim, 0, 0.3, R0 + 0.4);
+    room.addFloor(-GW, GW, -D - 0.35, R0 + 0.4, 0.3);
+    F.box(GW * 2, 0.12, D + R0, MAT.darkWood, 0, GH + 0.06, (R0 - D) / 2);
+    for (const sx of [-1, 1]) {
+      F.box(0.55, 0.3, 0.55, MAT.darkWood, sx * (GW + 0.25), 0.15, R0 + 0.3); F.box(0.4, H - 0.6, 0.4, MAT.wood, sx * (GW + 0.25), H / 2, R0 + 0.3); F.box(0.55, 0.3, 0.55, MAT.darkWood, sx * (GW + 0.25), H - 0.15, R0 + 0.3);
+      room.addCollider(sx * (GW + 0.25) - 0.3, sx * (GW + 0.25) + 0.3, 0, H, R0, R0 + 0.6, 'wall');
+    }
+    // the gate itself: fixed side panels and transom, a framed door panel in the middle with two leaves
+    const DWg = 1.9, DHg = 2.8, gy = 0.3;
+    const gate = new THREE.Group(); F.dyn(gate, 0, gy, GZ);
+    const sideW = GW - DWg / 2;
+    for (const sx of [-1, 1]) { const p = latticePanel(sideW, GH - gy); p.position.set(sx * (DWg / 2 + sideW / 2), (GH - gy) / 2, 0); gate.add(p); }
+    { const p = latticePanel(DWg, GH - gy - DHg); p.position.set(0, DHg + (GH - gy - DHg) / 2, 0); gate.add(p); }
+    const bar = (w, h, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.06), MAT.iron); m.position.set(x, y, 0); gate.add(m); };
+    bar(GW * 2, 0.08, 0, GH - gy - 0.04); bar(GW * 2, 0.08, 0, 0.04);
+    for (const sx of [-1, 1]) { bar(0.08, GH - gy, sx * (GW - 0.04), (GH - gy) / 2); bar(0.1, GH - gy, sx * DWg / 2, (GH - gy) / 2); }
+    bar(DWg, 0.1, 0, DHg);
+    const leaves = [];
+    for (const sx of [-1, 1]) {
+      const hinge = new THREE.Group(); hinge.position.set(sx * DWg / 2, 0, 0); gate.add(hinge);
+      const lw = DWg / 2 - 0.03, p = latticePanel(lw, DHg - 0.06, 0.32); p.position.set(-sx * (lw / 2 + 0.015), DHg / 2, 0); hinge.add(p);
+      for (const [w, h, x, y] of [[lw, 0.07, 0, DHg - 0.06], [lw, 0.07, 0, 0.05], [0.07, DHg - 0.06, -lw / 2 + 0.035, DHg / 2], [0.07, DHg - 0.06, lw / 2 - 0.035, DHg / 2]]) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.07), MAT.iron); m.position.set(-sx * (lw / 2 + 0.015) + x, y, 0); hinge.add(m);
+      }
+      leaves.push({ hinge, sx });
+    }
+    const colL = room.addCollider(-GW, -DWg / 2, 0, GH, GZ - 0.1, GZ + 0.1, 'gate'), colR = room.addCollider(DWg / 2, GW, 0, GH, GZ - 0.1, GZ + 0.1, 'gate');
+    const colM = room.addCollider(-DWg / 2, DWg / 2, 0, GH, GZ - 0.1, GZ + 0.1, 'gate');
+    void colL; void colR;
+    const gst = { open: false, t: 0 };
+    room.meta.gate = gst;
+    const openGate = () => { if (!gst.open) { gst.open = true; SFX.gate(room.toWorld(0, 1.5, GZ)); } };
+    room.updaters.push(dt => {   // rattle, clank at ~1.3 s, then the middle leaves swing away towards the exit door
+      if (!gst.open || gst.t >= 3) return;
+      gst.t += dt;
+      const k = clamp((gst.t - 1.3) / 1.3, 0, 1), e = smoothstep(0, 1, k);
+      for (const l of leaves) l.hinge.rotation.y = -l.sx * e * 1.75;
+      if (k > 0.35) colM.on = false;
+    });
+    // ---- the hall: the barricaded door opposite the stairwell, furniture and lights ----
+    const OF = new Frame(room, X(-HW), 0, 0, s > 0 ? Math.PI / 2 : -Math.PI / 2);
+    const toOF = z => (s > 0 ? -z : z);
+    { const lx = toOF(dTop);
+      OF.box(0.12, 2.82, 0.3, MAT.trim, lx - 0.81, 1.41, 0.02); OF.box(0.12, 2.82, 0.3, MAT.trim, lx + 0.81, 1.41, 0.02); OF.box(1.74, 0.14, 0.3, MAT.trim, lx, 2.82, 0.02);
+      OF.box(1.5, 2.7, 0.06, MAT.doorFront, lx, 1.35, 0.03);
+      for (const [y, a] of [[0.7, 0.25], [1.5, -0.18], [2.2, 0.12]]) OF.box(1.9, 0.18, 0.05, MAT.crateWood, lx, y, 0.1, 0, 0, a);
+    }
+    const walls = room.walls;
+    const pw = { F: PF, L: D, block: [], high: [], y0: 0 };
+    walls[s > 0 ? 'E' : 'W'] = pw;
+    pw.F = new Frame(room, X(HW), 0, s > 0 ? -D : 0, s > 0 ? -Math.PI / 2 : Math.PI / 2);
+    const tDoor = s > 0 ? dTop + D : -dTop;
+    pw.block.push([tDoor - 1.5, tDoor + 1.5]); pw.high.push([tDoor - 1.3, tDoor + 1.3]);
+    pw.block.push(s > 0 ? [0, D + R0 + 0.8] : [-R0 - 0.8, D]); pw.high.push(s > 0 ? [0, D + R0 + 0.8] : [-R0 - 0.8, D]);
+    const ow = walls[s > 0 ? 'W' : 'E'], oDoor = s > 0 ? -dTop : dTop + D;
+    ow.block.push([oDoor - 1.4, oDoor + 1.4]); ow.high.push([oDoor - 1.2, oDoor + 1.2]);
+    ow.block.push(s > 0 ? [-R0 - 0.8, D] : [0, D + R0 + 0.8]); ow.high.push(s > 0 ? [-R0 - 0.8, D] : [0, D + R0 + 0.8]);
+    walls.N = { F: new Frame(room, -HW, 0, R0, 0), L: HW * 2, block: [[HW - GW - 0.9, HW + GW + 0.9]], high: [[HW - GW - 0.6, HW + GW + 0.6]], y0: 0 };
+    const sw = walls.S, sx0 = s > 0 ? 0 : HW * 2, sx1 = s > 0 ? P.SD + 0.3 : HW * 2 + P.SD;
+    sw.block.push([Math.min(sx0, sx1), Math.max(sx0, sx1)]); sw.high.push([Math.min(sx0, sx1), Math.max(sx0, sx1)]);
+    sconcesAlong(room, 'W', 4.6); sconcesAlong(room, 'E', 4.6);
+    addChandelier(room, 0, H, -D * 0.38, 1.2, { intensity: 8, range: 14 });
+    for (const sx of [-1, 1]) addSconce(room, sx * (GW + 0.25), 2.9, R0 + 0.52, 0, { intensity: 2.2 });
+    placeWardrobes(room, r.int(1, 2), r, [s > 0 ? 'W' : 'E', 'S']);
+    placeDressers(room, r.int(1, 3), r, SIDES);
+    for (let i = 0; i < r.int(1, 2); i++) { const p = anyWall(room, 1.8, 0.42, 'tall', SIDES, { rng: r }); if (p) addBookshelf(room, p.x, p.z, p.ry, 1.8, 3.2); }
+    paintingsOn(room, r.int(1, 3), r);
+    centerRug(room, r);
+    // ---- the cellar under the hall: plank floor, stone walls, brick vaults on square pillars ----
+    const CZ0 = -0.6, CZ1 = -D + 0.6, CW = HW - 0.05, CY = -0.35;
+    F.box(CW * 2, 0.1, CZ0 - CZ1, MAT.floor, 0, BY - 0.05, (CZ0 + CZ1) / 2);
+    room.addFloor(-CW, CW, CZ1, CZ0, BY);
+    F.box(CW * 2, 0.2, CZ0 - CZ1, MAT.brick, 0, CY - 0.1 + 0.2, (CZ0 + CZ1) / 2);
+    const cw = (a, b, z0, z1) => { F.box(b - a, CY - BY, z1 - z0, MAT.cellarStone, (a + b) / 2, (BY + CY) / 2, (z0 + z1) / 2); room.addCollider(a, b, BY - 0.3, 0, z0, z1, 'wall'); };
+    cw(-CW - 0.3, CW + 0.3, CZ0, CZ0 + 0.3); cw(-CW - 0.3, CW + 0.3, CZ1 - 0.3, CZ1);
+    if (s > 0) cw(-CW - 0.3, -CW, CZ1, CZ0); else cw(CW, CW + 0.3, CZ1, CZ0);
+    addSideDoor(room, new Frame(room, X(HW + 0.125), BY, 0, s > 0 ? Math.PI / 2 : -Math.PI / 2), (s > 0 ? -1 : 1) * dBot, 0, 0.0, { dir: 1, w: 1.62 });
+    const pxs = [-2.1, 2.1], pzs = [];
+    for (let z = CZ0 - 4; z > CZ1 + 2.5; z -= 4.1) pzs.push(z);
+    for (const x of pxs) for (const z of pzs) {
+      F.box(0.7, CY - BY, 0.7, MAT.cellarStone, x, (BY + CY) / 2, z); F.box(0.9, 0.25, 0.9, MAT.cellarStone, x, BY + 1.95, z);
+      room.addCollider(x - 0.36, x + 0.36, BY - 0.3, 0, z - 0.36, z + 0.36, 'wall');
+    }
+    const arch = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(-(z1 - z0), x1 - x0); F.geo(new THREE.TorusGeometry(L / 2, 0.16, 5, 16, Math.PI), MAT.brick, (x0 + x1) / 2, BY + 2.05, (z0 + z1) / 2, 0, a, 0, [1, (CY - BY - 2.05) / (L / 2), 1]); };
+    for (const z of pzs) { arch(-CW, z, pxs[0], z); arch(pxs[0], z, pxs[1], z); arch(pxs[1], z, CW, z); }
+    for (const x of pxs.concat([-CW + 0.02, CW - 0.02])) { const zz = [CZ0].concat(pzs, [CZ1]); for (let i = 0; i < zz.length - 1; i++) arch(x, zz[i], x, zz[i + 1]); }
+    // stacked wine barrels, topiaries, benches, dim double-bulb lamps
+    const cellarWalls = [
+      { F: new Frame(room, -CW, BY, CZ0, Math.PI / 2), L: CZ0 - CZ1, side: -1 },
+      { F: new Frame(room, CW, BY, CZ1, -Math.PI / 2), L: CZ0 - CZ1, side: 1 },
+      { F: new Frame(room, -CW, BY, CZ1, 0), L: CW * 2, side: 0 },
+    ];
+    const used = [];
+    const freeSpot = (w, wl) => { for (let k = 0; k < 20; k++) { const t = r.range(w / 2 + 0.6, wl.L - w / 2 - 0.6); if (wl.side === s && Math.abs(t - (s > 0 ? dBot - CZ1 : CZ0 - dBot)) < 2.2) continue; if (used.some(u => u.wl === wl && Math.abs(u.t - t) < (u.w + w) / 2 + 0.3)) continue; used.push({ wl, t, w }); return t; } return null; };
+    for (let i = 0; i < 5; i++) { const wl = r.pick(cellarWalls), t = freeSpot(2.5, wl); if (t != null) addBarrelStack(room, wl.F, t, 0.5, r.int(2, 3)); }
+    for (let i = 0; i < 3; i++) { const wl = r.pick(cellarWalls), t = freeSpot(0.8, wl); if (t != null) { const p = wl.F.pt(t, 0, 0.45); addTopiary(room, p.x, BY, p.z, 0.9); } }
+    for (let i = 0; i < 2; i++) { const wl = r.pick(cellarWalls), t = freeSpot(1.8, wl); if (t != null) { wl.F.box(1.6, 0.08, 0.42, MAT.wood, t, 0.48, 0.35); for (const e of [-0.65, 0.65]) wl.F.box(0.08, 0.46, 0.36, MAT.darkWood, t + e, 0.23, 0.35); wl.F.collide(t - 0.8, t + 0.8, 0, 0.55, 0.12, 0.58); } }
+    for (const wl of cellarWalls) for (let t = 2.2; t < wl.L - 1; t += 5.2) {
+      const p = wl.F.pt(t, 0, 0);
+      const Fl = new Frame(room, p.x, BY, p.z, wl.F.ry);
+      Fl.box(0.34, 0.1, 0.05, MAT.brass, 0, 2.15, 0.025);
+      const bm = emissiveMat(0xffd59a, 3.5, 0xffffff);
+      for (const e of [-0.12, 0.12]) { Fl.cyl(0.012, 0.012, 0.12, MAT.brass, e, 2.2, 0.08, 5); const b = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), bm); Fl.dyn(b, e, 2.27, 0.1); }
+      const gl = glowSprite(0xffb060, 0.8, 0.35); Fl.dyn(gl, 0, 2.27, 0.12);
+      room.addFixture({ local: Fl.pt(0, 2.3, 0.45), color: 0xffb36a, intensity: 2.6, range: 8, mats: [{ mat: bm, base: 3.5 }], glow: gl, kind: 'sconce', shadow: false, zone: -1 });
+    }
+    // the lever: on a cellar wall, away from the stairwell door
+    { const wl = r.pick(cellarWalls), t = freeSpot(1.0, wl) ?? wl.L / 2; addWallLever(room, wl.F, t, 1.45, 0.02, openGate); }
+    room.foot.y0 = BY - 0.3;
+    room.path = [[0, 1.55, 0.6], [0, 1.55, -D * 0.5], [0, 1.85, R0 + 0.8], [0, 1.85, -D + 0.6]];
+    room.meta.gateRoom = true;
+  },
+};
 let _eyeTex = null;
 function eyeTexture() {
   if (_eyeTex) return _eyeTex;
@@ -3156,14 +3435,198 @@ TPL.electrical = {
   },
 };
 
+/* ---- The Dining Hall (Halt's room): a long banquet hall with a stage and a grand piano at each end ---- */
+function addTopiary(room, x, y, z, s = 1) {
+  const F = new Frame(room, x, y, z, 0);
+  F.cyl(0.25 * s, 0.19 * s, 0.48 * s, MAT.potRed, 0, 0.24 * s, 0, 6);
+  F.cyl(0.27 * s, 0.27 * s, 0.05 * s, MAT.potRed, 0, 0.47 * s, 0, 6);
+  F.cyl(0.23 * s, 0.23 * s, 0.02, MAT.dirt, 0, 0.5 * s, 0, 6);
+  for (let i = 0; i < 7; i++) { const k = 1 - i / 7; F.geo(new THREE.IcosahedronGeometry(0.14 + 0.24 * s * k, 1), i % 2 ? MAT.leaf : MAT.leafDark, 0, (0.72 + i * 0.24) * s, 0, i, i * 0.9, 0, [1, 0.85, 1]); }
+  F.collide(-0.28 * s, 0.28 * s, 0, 2.1 * s, -0.28 * s, 0.28 * s);
+}
+function addGrandPiano(room, x, y, z, ry) {
+  const F = new Frame(room, x, y, z, ry);
+  F.box(1.5, 0.3, 0.9, MAT.piano, 0, 0.86, 0.15);
+  F.cyl(0.75, 0.75, 0.3, MAT.piano, 0, 0.86, -0.3, 18);
+  F.box(1.52, 0.1, 0.3, MAT.piano, 0, 0.74, 0.72);
+  F.box(1.36, 0.025, 0.17, MAT.ivory, 0, 0.8, 0.73);
+  for (let i = 0; i < 18; i++) if (i % 7 !== 2 && i % 7 !== 6) F.box(0.03, 0.03, 0.1, MAT.piano, -0.64 + i * 0.075, 0.82, 0.7);
+  F.box(1.4, 0.03, 1.45, MAT.piano, -0.02, 1.35, -0.2, 0, 0, 0.42);
+  F.cyl(0.012, 0.012, 0.62, MAT.brass, 0.55, 1.2, -0.2, 6, 0, 0, 0.42);
+  for (const [lx, lz] of [[-0.62, 0.5], [0.62, 0.5], [0, -0.85]]) F.cyl(0.05, 0.04, 0.72, MAT.piano, lx, 0.36, lz, 8);
+  F.box(0.8, 0.06, 0.36, MAT.piano, 0, 0.48, 1.2); F.box(0.7, 0.42, 0.3, MAT.piano, 0, 0.23, 1.2);
+  F.collide(-0.8, 0.8, 0, 1.3, -1.1, 1.4);
+}
+function addBalusters(F, x0, x1, y, z, h = 1.0) {
+  const len = x1 - x0, mid = (x0 + x1) / 2;
+  F.box(len, 0.08, 0.15, MAT.darkWood, mid, y + h, z);
+  F.box(len, 0.1, 0.13, MAT.darkWood, mid, y + 0.05, z);
+  const prof = [[0.05, 0], [0.05, 0.08], [0.035, 0.12], [0.06, 0.3], [0.07, 0.45], [0.04, 0.62], [0.03, 0.72], [0.045, 0.8], [0.045, 0.84]];
+  const n = Math.max(2, Math.round(len / 0.3));
+  for (let i = 0; i <= n; i++) {
+    const lx = x0 + i * len / n;
+    F.geo(new THREE.LatheGeometry(prof.map(([r, yy]) => new THREE.Vector2(r, yy * (h - 0.1) / 0.84)), 7), MAT.darkWood, lx, y + 0.1, z);
+  }
+  for (const lx of [x0, x1]) F.box(0.2, h + 0.15, 0.2, MAT.darkWood, lx, y + (h + 0.15) / 2, z);
+}
+function addRoundTable(room, x, z, r, gold) {
+  const y = room.fy, F = new Frame(room, x, y, z, r.range(0, TAU)), R = 0.78, h = 0.8;
+  F.cyl(R + 0.06, R + 0.14, 0.4, MAT.sheet, 0, h - 0.2, 0, 14);
+  F.cyl(R + 0.06, R + 0.06, 0.02, MAT.sheet, 0, h + 0.005, 0, 14);
+  F.cyl(0.06, 0.08, h - 0.4, MAT.darkWood, 0, (h - 0.4) / 2, 0, 8);
+  F.cyl(0.3, 0.34, 0.04, MAT.darkWood, 0, 0.02, 0, 10);
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * TAU + 0.4;
+    F.cyl(0.12, 0.09, 0.015, MAT.ivory, Math.cos(a) * 0.5, h + 0.02, Math.sin(a) * 0.5, 12);
+    if (r.chance(0.65)) F.cyl(0.03, 0.022, 0.13, MAT.glass, Math.cos(a + 0.4) * 0.56, h + 0.075, Math.sin(a + 0.4) * 0.56, 8);
+  }
+  if (r.chance(0.4)) F.cyl(0.04, 0.05, 0.3, MAT.brass, 0.05, h + 0.15, -0.05, 8);
+  F.collide(-R, R, 0, h + 0.1, -R, R);
+  const n = r.int(2, 4);
+  for (let i = 0; i < n; i++) {
+    const a = i / n * TAU + r.range(-0.4, 0.4), d = R + 0.42, cx = x + Math.cos(a) * d, cz = z + Math.sin(a) * d;
+    if (r.chance(0.18)) { // knocked over
+      const C = new Frame(room, cx, y, cz, r.range(0, TAU));
+      C.box(0.46, 0.46, 0.06, MAT.darkWood, 0, 0.24, 0, Math.PI / 2, 0, 0); C.box(0.46, 0.06, 0.55, MAT.darkWood, 0, 0.03, -0.5);
+      for (const sx of [-1, 1]) C.box(0.04, 0.04, 0.46, MAT.darkWood, sx * 0.2, 0.43, -0.25);
+      continue;
+    }
+    addChair(room, cx, cz, Math.atan2(-Math.cos(a), -Math.sin(a)), MAT.wood);
+  }
+  if (gold) spawnPickup(room, 'gold', F.pt(r.range(-0.25, 0.25), h + 0.03, r.range(-0.25, 0.25)), r.range(0, TAU), gold);
+}
+function addGothicWindow(room, side, t, yb, w = 1.2, h = 2.4) {
+  const wl = room.walls[side]; if (!wl) return;
+  const p = wl.F.pt(t, 0, 0), F = new Frame(room, p.x, 0, p.z, wl.F.ry);
+  const sh = new THREE.Shape();
+  sh.moveTo(-w / 2, 0); sh.lineTo(-w / 2, h); sh.quadraticCurveTo(-w / 2, h + w * 0.55, 0, h + w * 0.95); sh.quadraticCurveTo(w / 2, h + w * 0.55, w / 2, h); sh.lineTo(w / 2, 0); sh.closePath();
+  F.geo(new THREE.ShapeGeometry(sh, 6), MAT.nightGlass, 0, yb, 0.012);
+  for (const sx of [-1, 1]) F.box(0.12, h, 0.1, MAT.trim, sx * (w / 2 + 0.03), yb + h / 2, 0.04);
+  F.box(w + 0.3, 0.14, 0.18, MAT.trim, 0, yb - 0.05, 0.07);
+  F.box(0.06, h + w * 0.9, 0.06, MAT.trim, 0, yb + (h + w * 0.9) / 2, 0.04);
+  F.box(w, 0.06, 0.06, MAT.trim, 0, yb + h * 0.55, 0.04);
+  const arch = Math.hypot(w / 2, w * 0.95), ang = Math.atan2(w * 0.95, w / 2);
+  for (const sx of [-1, 1]) F.box(arch, 0.12, 0.1, MAT.trim, sx * w / 4, yb + h + w * 0.47, 0.04, 0, 0, sx * ang);
+  wl.high.push([t - w / 2 - 0.3, t + w / 2 + 0.3]);
+}
+function addWallClock(F, lx, ly, lz, R = 0.45) {
+  F.cyl(R, R, 0.1, MAT.darkWood, lx, ly, lz + 0.05, 24, Math.PI / 2, 0, 0);
+  F.cyl(R * 0.85, R * 0.85, 0.02, MAT.paper, lx, ly, lz + 0.105, 24, Math.PI / 2, 0, 0);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; F.box(0.025, 0.07, 0.01, MAT.black, lx + Math.sin(a) * R * 0.72, ly + Math.cos(a) * R * 0.72, lz + 0.12, 0, 0, -a); }
+  F.box(0.03, R * 0.5, 0.01, MAT.black, lx, ly + R * 0.22, lz + 0.125); F.box(R * 0.6, 0.03, 0.01, MAT.black, lx + R * 0.27, ly, lz + 0.13, 0, 0, 0.3);
+}
+/* a band of wainscot on a wall above a raised floor (t0..t1 along the wall, skipping openings) */
+function wainscotBand(room, side, t0, t1, y, skip = []) {
+  const w = room.walls[side]; if (!w) return;
+  let segs = [[t0, t1]];
+  for (const [a, b] of skip) segs = segs.flatMap(([s, e]) => (b <= s || a >= e) ? [[s, e]] : [[s, a], [b, e]].filter(([u, v]) => v - u > 0.05));
+  for (const [a, b] of segs) {
+    w.F.room.batch.add(boxGeo(b - a, WAIN_H, 0.03, MAT.wainscot, a, 0), MAT.wainscot, w.F._m((a + b) / 2, y + WAIN_H / 2, 0.02));
+    w.F.box(b - a, 0.06, 0.05, MAT.trim, (a + b) / 2, y + WAIN_H + 0.02, 0.03);
+    w.F.box(b - a, 0.16, 0.045, MAT.trim, (a + b) / 2, y + 0.08, 0.03);
+  }
+}
 TPL.haltHall = {
-  plan(c) { return { W: 3.8, D: 56, H: 3.6, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
+  plan(c) { return { W: 15, D: 64, H: 9, y0: -1.1, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
   build(room, P, c) {
-    const r = c.rng;
-    shell(room, P, c, { runner: true, style: { pal: 'teal', style: r.pick(['damask', 'stripes']) } });
-    sconcesAlong(room, 'W', 5); sconcesAlong(room, 'E', 5);
-    paintingsOn(room, 4, r, { sides: ['W', 'E'] });
-    room.meta.halt = true; room.meta.noRush = true;
+    const r = c.rng, W = P.W, D = P.D, H = P.H, y0 = P.y0, hx = W / 2;
+    shell(room, P, c, { entryYb: 0, noPath: true, style: { pal: 'red', style: 'harlequin' }, ceil: MAT.floor });
+    room.fy = y0;
+    const F = new Frame(room, 0, 0, 0, 0);
+    const STAGE = 6, SW = 2.4, RUN = 2.2, NST = 4;
+    const doorSkip = [[hx - DOOR_GAP / 2 - 0.05, hx + DOOR_GAP / 2 + 0.05]];
+    // ---- the two stages (entrance and exit) with stone steps down to the dining floor ----
+    for (const [z0, z1, front, dir] of [[-STAGE, 0, -STAGE, -1], [-D, -D + STAGE, -D + STAGE, 1]]) {
+      F.box(W, -y0, z1 - z0, MAT.floor, 0, y0 / 2, (z0 + z1) / 2);
+      room.addFloor(-hx - 0.35, hx + 0.35, dir < 0 ? z0 : z0 - 0.35, dir < 0 ? z1 + 0.35 : z1, 0);
+      F.box(W, 0.12, 0.14, MAT.trim, 0, -0.06, front + dir * 0.07);
+      for (const [a, b] of [[-hx, -SW], [SW, hx]]) room.addCollider(a, b, y0 - 0.5, 0, Math.min(front, front + dir * 0.1), Math.max(front, front + dir * 0.1), 'wall');
+      const zB = front + dir * RUN;
+      room.addFloor(-SW, SW, Math.min(front, zB), Math.max(front, zB), 0, y0, 'z', front, zB);
+      for (let i = 0; i < NST; i++) {
+        const top = -(i + 1) * (-y0) / (NST + 1), za = front + dir * i * RUN / NST, zb = front + dir * (i + 1) * RUN / NST;
+        F.box(SW * 2, top - y0, Math.abs(zb - za) + 0.01, MAT.stone, 0, (top + y0) / 2, (za + zb) / 2);
+      }
+      // balustrades along the stage edge and down both sides of the steps
+      const bz = front - dir * 0.12;
+      addBalusters(F, -hx + 0.25, -SW, 0, bz); addBalusters(F, SW, hx - 0.25, 0, bz);
+      for (const [a, b] of [[-hx, -SW + 0.1], [SW - 0.1, hx]]) room.addCollider(a, b, y0, 1.3, Math.min(bz - 0.1, bz + 0.1), Math.max(bz - 0.1, bz + 0.1), 'rail');
+      for (const sx of [-1, 1]) {
+        const x = sx * (SW + 0.1), slope = Math.atan2(-y0, RUN), len = Math.hypot(RUN, y0);
+        F.box(0.14, 0.08, len, MAT.darkWood, x, y0 / 2 + 1.0, front + dir * RUN / 2, dir * slope, 0, 0);
+        for (let i = 0; i <= 6; i++) { const zz = front + dir * i * RUN / 6, yy = y0 * i / 6; F.box(0.05, 1.0, 0.05, MAT.darkWood, x, yy + 0.5, zz); }
+        F.box(0.2, 1.25, 0.2, MAT.darkWood, x, y0 + 0.62, zB);
+        room.addCollider(x - 0.1, x + 0.1, y0, 1.3, Math.min(front, zB), Math.max(front, zB), 'rail');
+        addTopiary(room, sx * (SW + 0.55), 0, front - dir * 0.6, 1.0);
+        addTopiary(room, sx * (SW + 0.65), y0, zB + dir * 0.5, 1.05);
+      }
+    }
+    // wainscot at stage height
+    wainscotBand(room, 'S', 0, W, 0, doorSkip); wainscotBand(room, 'N', 0, W, 0, doorSkip);
+    wainscotBand(room, 'W', 0, STAGE, 0); wainscotBand(room, 'W', D - STAGE, D, 0);
+    wainscotBand(room, 'E', 0, STAGE, 0); wainscotBand(room, 'E', D - STAGE, D, 0);
+    addGrandPiano(room, -hx + 2.1, 0, -2.9, 0.35);
+    addGrandPiano(room, hx - 2.1, 0, -D + 2.9, Math.PI + 0.35);
+    // ---- checkered aisle with debris ----
+    const zA = -STAGE - RUN, zZ = -D + STAGE + RUN;
+    F.box(5.6, 0.02, zA - zZ, MAT.tileDining, 0, y0 + 0.01, (zA + zZ) / 2);
+    for (let i = 0; i < 16; i++) F.box(r.range(0.7, 1.5), 0.04, r.range(0.14, 0.22), MAT.crateWood, r.range(-2.3, 2.3), y0 + 0.04, r.range(zZ + 1, zA - 1), 0, r.range(0, TAU), r.range(-0.08, 0.08));
+    for (let i = 0; i < 40; i++) { const s = r.range(0.06, 0.16); F.box(s, 0.03, s * r.range(0.6, 1), MAT.stone, r.range(-2.4, 2.4), y0 + 0.03, r.range(zZ + 0.5, zA - 0.5), 0, r.range(0, TAU), 0); }
+    // ---- partition wall halfway, with a wide wooden doorway and a clock above it ----
+    const zp = -D / 2, PT = 0.5, DW = 2.9, DH = 5.4, wm = wallMat_(room.style);
+    for (const [a, b] of [[-hx, -DW], [DW, hx]]) {
+      F.box(b - a, H, PT, wm, (a + b) / 2, y0 + H / 2, zp);
+      room.addCollider(a, b, y0 - 0.5, y0 + H, zp - PT / 2, zp + PT / 2, 'wall');
+      for (const sz of [-1, 1]) {
+        F.box(b - a, WAIN_H, 0.03, MAT.wainscot, (a + b) / 2, y0 + WAIN_H / 2, zp + sz * (PT / 2 + 0.015));
+        F.box(b - a, 0.06, 0.05, MAT.trim, (a + b) / 2, y0 + WAIN_H + 0.02, zp + sz * (PT / 2 + 0.025));
+      }
+    }
+    F.box(DW * 2, H - DH, PT, wm, 0, y0 + DH + (H - DH) / 2, zp);
+    for (const sx of [-1, 1]) F.box(0.36, DH, PT + 0.16, MAT.wood, sx * (DW - 0.18), y0 + DH / 2, zp);
+    F.box(DW * 2 + 0.3, 0.5, PT + 0.2, MAT.wood, 0, y0 + DH + 0.2, zp);
+    addWallClock(F, 0, y0 + DH + 1.3, zp + PT / 2, 0.5);
+    const back = new Frame(room, 0, 0, zp - PT / 2, Math.PI); addWallClock(back, 0, y0 + DH + 1.3, 0, 0.5);
+    addWallClock(new Frame(room, 0, 0, -D, 0), 0, DOOR_H + 1.1, 0, 0.42);
+    // ---- wooden pillars, beams and X-trusses ----
+    const pz = [-11, -17, -23, -29, -35, -41, -47, -53], BY = y0 + H - 1.3;
+    for (const z of pz) for (const sx of [-1, 1]) {
+      const x = sx * 2.95;
+      F.box(0.75, 0.35, 0.75, MAT.darkWood, x, y0 + 0.175, z);
+      F.box(0.5, BY - y0, 0.5, MAT.wood, x, (BY + y0) / 2, z);
+      F.box(0.7, 0.25, 0.7, MAT.darkWood, x, BY - 0.3, z);
+      room.addCollider(x - 0.38, x + 0.38, y0 - 0.5, BY, z - 0.38, z + 0.38, 'wall');
+      F.box(0.14, 2.2, 0.14, MAT.wood, x + sx * 0.75, BY - 0.6, z, 0, 0, sx * 0.75);
+    }
+    for (const sx of [-1, 1]) F.box(0.4, 0.5, zA - zZ, MAT.wood, sx * 2.95, BY + 0.2, (zA + zZ) / 2);
+    for (const z of pz.concat([zA - 0.5, zZ + 0.5])) F.box(W, 0.42, 0.34, MAT.wood, 0, BY + 0.2, z);
+    for (let i = 0; i < pz.length - 1; i++) {
+      if (pz[i] > zp && pz[i + 1] < zp) continue;
+      const za = pz[i], zb = pz[i + 1], len = Math.hypot(5.9, za - zb), ang = Math.atan2(za - zb, 5.9);
+      for (const s of [-1, 1]) F.box(len, 0.2, 0.2, MAT.wood, 0, y0 + H - 0.2, (za + zb) / 2, 0, s * ang, 0);
+    }
+    // ---- gothic windows, sconces and chandeliers ----
+    for (const side of ['W', 'E']) for (const z of [-14, -20, -26, -38, -44, -50]) addGothicWindow(room, side, side === 'W' ? -z : z + D, y0 + 3.6, 1.15, 2.3);
+    for (const side of ['W', 'E']) for (const z of pz) {
+      const w = room.walls[side], t = side === 'W' ? -z : z + D, p = w.F.pt(t, 0, 0);
+      addSconce(room, p.x, y0 + 2.9, p.z, w.F.ry, { intensity: 2.6 });
+    }
+    for (const z of [-12.5, -20, -27, -37, -44.5, -52]) addChandelier(room, 0, y0 + H, z, 1.35, { intensity: 8, range: 15 });
+    // ---- round tables with white cloths, chairs, crates and plants ----
+    for (const [za, zb] of [[zA - 1.6, zp + 1.8], [zp - 2, zZ + 1.6]]) {
+      for (const sx of [-1, 1]) {
+        let z = za - r.range(0, 0.8);
+        while (z > zb) {
+          const x = sx * r.range(4.8, 5.6);
+          addRoundTable(room, x, z, r, r.chance(0.22) ? r.pick([5, 10, 15]) : 0);
+          if (r.chance(0.3)) addCrate(room, sx * (hx - 0.55), z - 2.1, r.range(0.7, 0.9), r.range(-0.3, 0.3));
+          z -= r.range(3.9, 4.6);
+        }
+        addTopiary(room, sx * 3.6, y0, r.range(zb + 2, za - 2), 0.95);
+      }
+    }
+    room.path = [[0, 1.55, 0.6], [0, 1.55, -STAGE + 1], [0, y0 + 1.55, zA - 1], [0, y0 + 1.55, zp], [0, y0 + 1.55, zZ + 1], [0, 1.55, -D + STAGE - 1], [0, 1.55, -D + 0.6]];
+    room.meta.halt = true; room.meta.noRush = true; room.meta.stageZ = -D + STAGE;
   },
 };
 TPL.seekHall = {
@@ -3308,7 +3771,6 @@ const WORLD = {
   post(room, c) {
     const r = c.rng;
     if (c.locked && (c.lockType || 'key') === 'key') placeKey(room, r);
-    if (c.lever) addGateAndLever(room, r);
     if (c.seekEyes) addSeekEyes(room, c.seekEyes, r);
     if (c.dark || room.meta.greenhouse) { room.dark = true; for (const f of room.fixtures) if (f.kind !== 'moon') f.state = 'off'; }
     if (room.index > 4 && !room.meta.safe && r.chance(0.02)) room.meta.jackDoor = true;
@@ -3426,7 +3888,11 @@ const LIGHTS = {
       for (const f of r.fixtures) { fixtureTick(f, t, dt); if (f.level > 0.01) cand.push(f); }
     }
     for (const f of WORLD.dyn) { if (f.level == null) f.level = 1; if (f.level * f.intensity > 0.01) cand.push(f); }
-    for (const f of cand) f._d = f.pos.distanceTo(cp) - (f.priority || 0) * 50;
+    for (const f of cand) {
+      f._d = f.pos.distanceTo(cp) - (f.priority || 0) * 50;
+      // a gate room's cellar lamps don't light the hall above it, and the other way round
+      if (f.room && f.room.meta.gateRoom && (f.zone === -1) !== (cp.y < f.room.wpos.y - 1.2)) f._d += 25;
+    }
     cand.sort((a, b) => a._d - b._d);
     const n = this.n;
     const cut = cand.length > n ? cand[n]._d : Infinity;
@@ -3976,14 +4442,22 @@ function genEntityTextures() {
     for (let i = 0; i < 16; i++) { const t = i / 15, x = s * (0.25 + t * 0.5); const top = s * 0.55 - Math.sin(t * Math.PI) * s * 0.19, bot = s * 0.55 + Math.sin(t * Math.PI) * s * 0.19; g.beginPath(); g.moveTo(x - 9, top); g.lineTo(x + 9, top); g.lineTo(x, top + 34); g.fill(); g.beginPath(); g.moveTo(x - 9, bot); g.lineTo(x + 9, bot); g.lineTo(x, bot - 30); g.fill(); }
     ETEX.screech = toTex(c, true, false);
   }
-  // Halt: ghostly cyan figure
+  // Halt: translucent sheet-ghost skin, cyan at the top fading to deep blue, with watery caustics
   {
-    const s = 512, c = newCanvas(s, s), g = c.getContext('2d');
-    const gr = g.createRadialGradient(s / 2, s * 0.4, 10, s / 2, s * 0.45, s * 0.45); gr.addColorStop(0, 'rgba(220,255,255,.95)'); gr.addColorStop(0.35, 'rgba(80,220,255,.7)'); gr.addColorStop(1, 'rgba(0,80,255,0)');
-    g.fillStyle = gr; g.beginPath(); g.moveTo(s * 0.3, s * 0.95); g.quadraticCurveTo(s * 0.2, s * 0.4, s / 2, s * 0.12); g.quadraticCurveTo(s * 0.8, s * 0.4, s * 0.7, s * 0.95); g.closePath(); g.fill();
-    g.fillStyle = 'rgba(0,30,60,.85)'; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(s / 2 + sx * s * 0.07, s * 0.33, s * 0.035, s * 0.055, 0, 0, TAU); g.fill(); }
-    g.beginPath(); g.ellipse(s / 2, s * 0.45, s * 0.04, s * 0.07, 0, 0, TAU); g.fill();
-    ETEX.halt = toTex(c, true, false);
+    const w = 256, h = 512, c = newCanvas(w, h), g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, '#4ff4ff'); gr.addColorStop(0.35, '#1a8cff'); gr.addColorStop(0.75, '#0b3fa8'); gr.addColorStop(1, '#03203a');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    const rr = new RNG(4242);
+    g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+    for (let i = 0; i < 70; i++) {
+      const x = rr.range(0, w), y = rr.range(0, h), L = rr.range(30, 90);
+      g.strokeStyle = `rgba(${rr.int(60, 140)},${rr.int(200, 255)},255,${rr.range(0.08, 0.22)})`; g.lineWidth = rr.range(2, 7);
+      g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + rr.range(-L, L), y + rr.range(-L, L), x + rr.range(-L, L), y + rr.range(-L, L), x + rr.range(-L, L), y + rr.range(-L, L)); g.stroke();
+    }
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(0,10,40,${rr.range(0.05, 0.2)})`; g.fillRect(rr.range(0, w), rr.range(0, h), 2, 2); }
+    ETEX.halt = toTex(c, true, true);
   }
   // Jack: pale face with void eyes
   {
@@ -4051,9 +4525,11 @@ const DIRECTOR = {
     P.infirmary = r.chance(0.75) ? r.int(61, 67) : -1;
     P.jeff = 52;
     P.halts = [];
-    const bad = n => n < 16 || (n >= P.seek1 - 7 && n < P.seek1 + P.seek1Len + 1) || (n >= P.seek2 - 7 && n < P.seek2 + P.seek2Len + 1) || (n >= 48 && n <= 54) || n >= 86 || n === P.infirmary;
-    const nh = r.weighted([[1, 6], [2, 4]]);
-    for (let k = 0; k < 40 && P.halts.length < nh; k++) { const n = r.int(16, 85); if (!bad(n) && P.halts.every(h => Math.abs(h - n) > 18)) P.halts.push(n); }
+    const bad = n => n < 16 || (n >= P.seek1 - 7 && n < P.seek1 + P.seek1Len + 1) || (n >= P.seek2 - 7 && n < P.seek2 + P.seek2Len + 1) || (n >= 48 && n <= 54) || n >= 88 || n === P.infirmary || n === P.courtyard;
+    // Halt's Dining Hall: almost always once per run, most often just after the second Seek chase
+    const after = P.seek2 + P.seek2Len + r.int(1, 3);
+    if (r.chance(0.65) && !bad(after)) P.halts.push(after);
+    for (let k = 0; k < 40 && !P.halts.length; k++) { const n = r.int(16, 87); if (!bad(n)) P.halts.push(n); }
     this.lastRush = 0; this.lastAmbush = -99; this.lastEyes = -99; this.lastTpl = null; this.prevTpl = null;
   },
   chaseOf(n) {
@@ -4089,7 +4565,7 @@ const DIRECTOR = {
     this.prevTpl = this.lastTpl; this.lastTpl = tpl;
     if (n >= 8 && !pre && r.chance(0.08 + n * 0.0012)) flags.dark = true;
     if (n >= 2 && !pre && r.chance(0.17)) { flags.locked = true; flags.lockType = 'key'; }
-    else if (n >= 8 && !pre && r.chance(0.07)) flags.lever = true;
+    else if (n >= 5 && !pre && r.chance(0.075)) { tpl = 'gateRoom'; this.lastTpl = tpl; }
     if (pre) flags.forceWall = 'N';
     return { tpl, flags, fallback: 'hallway' };
   },
@@ -4097,7 +4573,8 @@ const DIRECTOR = {
     const cur = door.room, n = cur.index + 1, room = WORLD.room(n);
     if (!room) return;
     if (room.meta.jackDoor && !ENT.active.length) { ENT.jackDoor(room); return; }
-    if (cur.meta.halt || room.meta.halt) return;
+    if (room.meta.halt) { flickerRoom(cur, 3); return; }
+    if (cur.meta.halt) return;
     const busy = ENT.active.some(e => ['rush', 'ambush', 'seek', 'figure', 'halt'].includes(e.kind));
     const special = cur.meta.noRush || room.meta.noRush || room.meta.safe || cur.meta.safe || cur.meta.navRoom || room.meta.navRoom || room.type === 'lobby';
     const prev = WORLD.room(cur.index - 1);
@@ -4127,6 +4604,101 @@ const DIRECTOR = {
     if (room.type === 'courtyard') { GAME.showHint('中庭に出た…'); }
     if (n === 90) GAME.showHint('温室 — 暗闇に注意');
     if (room.type === 'jeff') GAME.showHint('ジェフの店へようこそ。金貨でアイテムを買える。');
+  },
+};
+
+/* =========================================================================
+   Halt's body and its full-screen "↻ TURN AROUND" / "RUN AWAY" flashes
+   ========================================================================= */
+function makeHaltBody() {
+  const g = new THREE.Group(), skin = new THREE.Group(), eyes = new THREE.Group();
+  const prof = [[0.78, 0], [0.8, 0.5], [0.76, 1.3], [0.7, 1.9], [0.56, 2.4], [0.36, 2.75], [0.14, 2.92], [0.001, 2.96]].map(([r, y]) => new THREE.Vector2(r, y));
+  const geo = new THREE.LatheGeometry(prof, 11);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) if (pos.getY(i) < 0.01) { const a = Math.atan2(pos.getZ(i), pos.getX(i)); pos.setY(i, 0.12 + Math.sin(a * 11) * 0.22 + Math.sin(a * 5 + 1) * 0.08); }
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshBasicMaterial({ map: ETEX.halt, transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false, fog: false });
+  const m = new THREE.Mesh(geo, mat); skin.add(m);
+  const inner = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 10), new THREE.MeshBasicMaterial({ color: 0x0a4a7a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  inner.scale.set(1, 2.2, 1); inner.position.y = 1.5; skin.add(inner);
+  for (const sx of [-1, 1]) {
+    const core = glowSprite(0xe8ffff, 0.22, 1); core.position.set(sx * 0.21, 2.0, 0.62); eyes.add(core);
+    const halo = glowSprite(0x37e8ff, 0.9, 0.85); halo.position.set(sx * 0.21, 2.0, 0.6); eyes.add(halo);
+    const streak = glowSprite(0x6ff2ff, 0.5, 0.6); streak.scale.set(1.3, 0.12, 1); streak.position.set(sx * 0.21, 2.0, 0.63); eyes.add(streak);
+  }
+  g.add(skin, eyes);
+  return { g, skin, eyes, mat, dispose() { geo.dispose(); mat.dispose(); inner.geometry.dispose(); inner.material.dispose(); eyes.children.forEach(o => o.material.dispose()); } };
+}
+const HALTFX = {
+  cv: null, g: null, kind: null, t0: 0, dur: 0, rows: {},
+  init() {
+    if (this.cv) return;
+    const cv = this.cv = document.createElement('canvas'); cv.className = 'fx';
+    cv.style.cssText = 'opacity:0;image-rendering:pixelated;image-rendering:crisp-edges;width:100%;height:100%;z-index:2';
+    $('rot').insertBefore(cv, $('hud'));
+    this.g = cv.getContext('2d');
+  },
+  // one row of hand-drawn looking cyan lettering, drawn once and tiled
+  row(word) {
+    if (this.rows[word]) return this.rows[word];
+    const rr = new RNG(word.length * 77), c = newCanvas(170, 22), g = c.getContext('2d');
+    g.font = '700 17px "Oswald", Impact, sans-serif'; g.textBaseline = 'middle';
+    let x = 4;
+    for (const ch of word + '  ') {
+      const cw = g.measureText(ch).width;
+      g.save(); g.translate(x + cw / 2, 11 + rr.range(-1.5, 1.5)); g.rotate(rr.range(-0.18, 0.18)); g.scale(rr.range(0.85, 1.15), rr.range(0.8, 1.2));
+      g.fillStyle = 'rgba(255,40,80,.55)'; g.fillText(ch, -cw / 2 - 1, 0);
+      g.fillStyle = 'rgba(60,255,90,.45)'; g.fillText(ch, -cw / 2 + 1, 0);
+      g.fillStyle = '#00ffff'; g.fillText(ch, -cw / 2, 0);
+      g.restore(); x += cw * 0.98;
+    }
+    return (this.rows[word] = { c, w: Math.ceil(x) });
+  },
+  show(kind) { this.init(); this.kind = kind; this.t0 = performance.now(); this.dur = kind === 'turn' ? 1000 : 750; this.cv.style.opacity = 1; },
+  hide() { if (this.cv) this.cv.style.opacity = 0; this.kind = null; },
+  update() {
+    if (!this.kind) return;
+    const k = (performance.now() - this.t0) / this.dur;
+    if (k >= 1) { this.hide(); return; }
+    const cv = this.cv, W = 240, H = Math.max(120, Math.round(240 * VH() / VW()));
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const g = this.g, turn = this.kind === 'turn';
+    g.clearRect(0, 0, W, H);
+    g.globalAlpha = 0.86; g.fillStyle = '#060a0c'; g.fillRect(0, 0, W, H);
+    // rows of TURN AROUND / RUN AWAY, alternately sliding left and right
+    const row = this.row(turn ? 'TURN AROUND' : 'RUN AWAY'), rh = 22, n = Math.ceil(H / rh) + 1;
+    g.globalAlpha = turn ? 0.55 : 0.8;
+    for (let i = 0; i < n; i++) {
+      const off = ((i % 2 ? 1 : -1) * k * 60 + i * 37) % row.w;
+      for (let x = -row.w + off; x < W; x += row.w) g.drawImage(row.c, Math.round(x), i * rh - 4);
+    }
+    g.globalAlpha = 1;
+    const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.24;
+    if (turn) { // the clockwise arrow
+      const a0 = -1.25, a1 = 0.75, lw = R * 0.42;
+      const arrow = (col, wid) => {
+        g.strokeStyle = col; g.lineWidth = wid; g.lineCap = 'butt';
+        g.beginPath(); g.arc(cx, cy, R, a0, a1, true); g.stroke();
+        const tx = -Math.sin(a0), ty = Math.cos(a0), px = Math.cos(a0), py = Math.sin(a0), ex = cx + px * R, ey = cy + py * R, hw = wid * 0.95 + (col === '#000' ? 0 : -4);
+        g.fillStyle = col; g.beginPath();
+        g.moveTo(ex - px * hw, ey - py * hw); g.lineTo(ex + px * hw, ey + py * hw); g.lineTo(ex + tx * hw * 1.25, ey + ty * hw * 1.25); g.closePath(); g.fill();
+      };
+      arrow('#000', lw + 6); arrow('#00ffff', lw);
+    } else { // Halt's eyes
+      for (const sx of [-1, 1]) {
+        const ex = cx + sx * R * 0.55, gr = g.createRadialGradient(ex, cy, 0, ex, cy, R * 0.55);
+        gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.18, '#9ffcff'); gr.addColorStop(0.5, 'rgba(0,220,255,.45)'); gr.addColorStop(1, 'rgba(0,120,255,0)');
+        g.fillStyle = gr; g.fillRect(ex - R, cy - R, R * 2, R * 2);
+      }
+    }
+    // glitch: torn horizontal slices and stray RGB pixels
+    for (let i = 0; i < 7; i++) {
+      const y = Math.floor(Math.random() * H), h = 1 + Math.floor(Math.random() * 4), dx = Math.round((Math.random() - 0.5) * 18);
+      g.drawImage(cv, 0, y, W, h, dx, y, W, h);
+    }
+    for (let i = 0; i < 90; i++) { g.fillStyle = ['#ff2050', '#20ff70', '#3060ff', '#00ffff'][i % 4]; g.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1 + (Math.random() * 4 | 0), 1); }
+    const env = k < 0.06 ? k / 0.06 : k > 0.72 ? (1 - k) / 0.28 : 1;
+    cv.style.opacity = (env * (Math.random() < 0.12 ? 0.55 : 1)).toFixed(3);
   },
 };
 
@@ -4359,52 +4931,64 @@ const ENT = {
     setTimeout(() => { scene.remove(spr); spr.material.dispose(); WORLD.dyn.splice(WORLD.dyn.indexOf(light), 1); room.fixtures.forEach((f, i) => (f.state = saved[i] === 'broken' ? 'broken' : saved[i])); }, 650);
   },
 
-  /* ---------------- Halt ---------------- */
+  /* ---------------- Halt ----------------
+     Lights die and Halt glides after you. About 6 s in, it jumps IN FRONT of you with the
+     "↻ TURN AROUND" flash: walk back. ~3 s later it jumps BEHIND you (same flash): walk on.
+     Behind lasts 4-6 s, then in front again, until you reach the far stage. Getting close
+     flashes "RUN AWAY"; touching it costs 60 HP. Both sides speed up the longer it lasts
+     and the nearer you are to the exit. */
   startHalt(room) {
     if (this.has('halt')) return;
     const prev = WORLD.room(room.index - 1);
     if (prev && prev.door) { const d = prev.door; setTimeout(() => { d.open = false; d.collider.on = true; d.locked = true; d.lockType = 'elevator'; SFX.slam(d.center.clone().applyMatrix4(prev.group.matrixWorld)); }, 900); }
     room.fixtures.forEach(f => (f.state = 'off'));
-    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: ETEX.halt, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-    spr.scale.set(1.8, 2.6, 1); scene.add(spr);
-    const light = { pos: new THREE.Vector3(), color: new THREE.Color(0x30c8ff), intensity: 14, range: 16, level: 1, priority: 2 };
+    const body = makeHaltBody(); scene.add(body.g);
+    const light = { pos: new THREE.Vector3(), color: new THREE.Color(0x2fe2ff), intensity: 13, range: 19, level: 1, priority: 2 };
     WORLD.dyn.push(light);
-    const loop = LOOPS.halt(); loop.setVol(1, 1);
-    const flips = [-12, -21, -30, -39].map(z => z + rng.range(-2, 2));
+    const loop = LOOPS.halt(); loop.setVol(0.8, 1.5);
+    const lp0 = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
     const e = {
-      kind: 'halt', room, spr, light, loop, z: 6, phase: 'behind', flipAt: 0, flipZ: 0, idx: 0, hitCd: 0, t: 0,
+      kind: 'halt', room, body, light, loop, x: lp0.x, z: lp0.z + 11, phase: 'behind', phaseT: 0, next: 6, hitCd: 0, warnCd: 0, t: 0, spin: 0,
       update(dt) {
-        this.t += dt;
-        const lp = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
+        this.t += dt; this.phaseT += dt; this.hitCd -= dt; this.warnCd -= dt;
         POST.halt = 1;
-        if (lp.z < -room.D + 4 || !GAME.room || GAME.room.index > room.index) { ENT.remove(this); return; }
-        if (this.phase === 'behind') {
-          if (this.z < lp.z + 4) this.z = lp.z + 9;
-          this.z -= 2.2 * dt;
-          if (this.idx < flips.length && lp.z < flips[this.idx]) { this.flip('ahead', lp.z - 10); this.flipZ = lp.z; }
-        } else if (this.phase === 'ahead') {
-          this.z += 2.6 * dt;
-          if (lp.z > this.flipZ + 7 || this.t - this.flipAt > 6.5) { this.flip('behind', lp.z + 9); }
-        }
-        const x = Math.sin(this.t * 1.7) * 0.6;
-        this.spr.position.copy(room.toWorld(x, room.y0 + 1.5, this.z));
-        this.spr.material.opacity = 0.75 + Math.sin(this.t * 13) * 0.2;
-        this.light.pos.copy(this.spr.position); this.loop.setPos(this.spr.position);
-        this.hitCd -= dt;
-        if (Math.abs(this.z - lp.z) < 0.9 && this.hitCd <= 0 && PLAYER.alive) {
-          this.hitCd = 1.5;
+        const lp = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
+        if (lp.z < room.meta.stageZ - 0.3 || !GAME.room || GAME.room.index > room.index) { ENT.remove(this); return; }
+        if (this.phaseT >= this.next) this.jump(this.phase === 'behind' ? 'ahead' : 'behind', lp);
+        const prog = clamp(-lp.z / room.D, 0, 1);
+        const v = Math.min(3.9, 2.3 + this.t * 0.012 + prog * 1.1);
+        GAME.speedMul = 1 + Math.min(0.12, this.t * 0.002);
+        const dx = lp.x - this.x, dz = lp.z - this.z, d = Math.hypot(dx, dz) || 1;
+        this.x += dx / d * v * dt; this.z += dz / d * v * dt;
+        this.x = clamp(this.x, -room.W / 2 + 0.8, room.W / 2 - 0.8);
+        // visuals: hovering, slowly spinning anticlockwise, eyes always on you
+        this.spin += dt * 0.9;
+        const wp = room.toWorld(this.x, room.fy + 0.25 + Math.sin(this.t * 1.6) * 0.12, this.z);
+        body.g.position.copy(wp); body.skin.rotation.y = this.spin;
+        body.eyes.rotation.y = Math.atan2(GAME.camPos.x - wp.x, GAME.camPos.z - wp.z);
+        body.mat.opacity = 0.62 + Math.sin(this.t * 9) * 0.06;
+        this.light.pos.copy(wp).setY(wp.y + 2); this.light.intensity = 11 + Math.sin(this.t * 6) * 2;
+        this.loop.setVol(0.75 + clamp(1 - d / 12, 0, 1) * 0.6); this.loop.setRate(1 + Math.min(0.6, this.t * 0.008));
+        HALTFX.update();
+        if (d < 3.4 && this.warnCd <= 0 && this.hitCd <= 0) { this.warnCd = 1.6; HALTFX.show('run'); SFX.haltRun(); }
+        if (d < 0.95 && this.hitCd <= 0 && PLAYER.alive) {
+          this.hitCd = 1.6;
           if (ENT.tryCrucifix(this)) return;
-          SFX.haltWhoosh(); GAME.damage(60, 'halt');
-          this.z = this.phase === 'behind' ? lp.z + 10 : lp.z - 12;
+          SFX.haltWhoosh(); POST.flash = 0.25;
+          if (!(room.door && room.door.open)) GAME.damage(60, 'halt');
+          if (PLAYER.alive) this.jump(this.phase === 'behind' ? 'ahead' : 'behind', lp);
         }
       },
-      flip(phase, z) {
-        this.phase = phase; this.z = z; this.flipAt = this.t; if (phase === 'ahead') this.idx++;
-        SFX.haltWhoosh(); POST.flash = 0.35;
-        const bm = $('bigmsg'); bm.className = 'halt'; bm.textContent = 'TURN AROUND'; bm.style.transform = 'none'; bm.style.opacity = 1;
-        clearTimeout(bm._t); bm._t = setTimeout(() => (bm.style.opacity = 0), 1600);
+      jump(phase, lp) {
+        this.phase = phase; this.phaseT = 0; this.next = phase === 'ahead' ? 3 : rng.range(4, 6);
+        this.x = lp.x * 0.6;
+        this.z = phase === 'ahead' ? Math.max(lp.z - 11, -room.D + 1.2) : Math.min(lp.z + 11, 6);
+        HALTFX.show('turn'); SFX.haltTurn();
       },
-      dispose() { scene.remove(this.spr); this.spr.material.dispose(); WORLD.dyn.splice(WORLD.dyn.indexOf(this.light), 1); this.loop.stop(1); POST.halt = 0; $('bigmsg').style.opacity = 0; },
+      dispose() {
+        scene.remove(body.g); body.dispose(); WORLD.dyn.splice(WORLD.dyn.indexOf(this.light), 1);
+        this.loop.stop(1); POST.halt = 0; GAME.speedMul = 1; HALTFX.hide();
+      },
     };
     this.add(e);
   },
@@ -4711,7 +5295,7 @@ const GUIDING = {
   ambush: ['あなたは「Ambush」と呼ばれる存在に殺されてしまったようです…', 'とてもしつこくて、何度も行ったり来たりするみたい。', '照明がちらついて緑の光が見えたら、すぐ隠れて。', '完全に去るまで、外に出てはいけません。'],
   screech: ['あなたは「Screech」にやられてしまったようです…', '暗い部屋に潜んでいるみたい。', '「プスッ」という音が聞こえたら、すぐに見回して見つめ返して！'],
   eyes: ['あなたは「Eyes」に殺されてしまったようです…', '見つめると、どんどん傷ついてしまう。', '紫の光が見えたら、目をそらして進んで。'],
-  halt: ['あなたは「Halt」にやられてしまったようです…', '画面の指示をよく見て。', '「TURN AROUND」が見えたら、すぐに引き返して！'],
+  halt: ['あなたは「Halt」にやられてしまったようです…', '画面の指示をよく見て。', '青い「↻」と「TURN AROUND」が光ったら、すぐ振り返って逆へ歩こう！'],
   seek: ['あなたは「Seek」に捕まってしまったようです…', '壁の目が増えてきたら、追跡が近いサイン。', '立ち止まらず、障害物をよけながら走り続けて！'],
   hands: ['あなたは「Seek」の手に捕まってしまったようです…', '暗い道へ進んではいけません。', '明かりのついた方へ進んで！'],
   figure: ['あなたは「Figure」に殺されてしまったようです…', '目は見えないけれど、音にはとても敏感。', 'しゃがんで静かに動き、近づいてきたら隠れて。', '隠れている時は、鼓動のリズムに合わせて！'],
@@ -5062,14 +5646,14 @@ function update(dt) {
   POST.eyes = Math.max(0, (POST.eyes || 0) - dt * 1.5);
   $('fxHurt').style.opacity = Math.max(POST.hurt, PLAYER.alive && PLAYER.hp < 35 ? 0.35 + Math.sin(GAME.time * 4) * 0.1 : 0);
   const tint = $('fxTint');
-  if (POST.halt) { tint.style.background = '#66c6ff'; tint.style.opacity = 0.55; }
+  if (POST.halt) { tint.style.background = '#2fd6cf'; tint.style.opacity = 0.62; }
   else if (POST.tintFlash && GAME.time < POST.tintFlash.until) { tint.style.background = '#7dff7d'; tint.style.opacity = 0.6; }
   else if (POST.eyes > 0.05) { tint.style.background = '#c48aff'; tint.style.opacity = POST.eyes * 0.45; }
   else tint.style.opacity = 0;
   renderer.toneMappingExposure = SETTINGS.bright * (1 + POST.flash * 2.5);
   if (gradePass) {
     const u = gradePass.uniforms;
-    u.time.value = GAME.time; u.aberr.value = POST.aberr + POST.hurt * 0.006; u.warp.value = (PLAYER.hidden && ENT.hideState) ? 1 : 0;
+    u.time.value = GAME.time; u.grain.value = POST.halt ? 0.2 : 0.045; u.aberr.value = POST.aberr + POST.hurt * 0.006 + (POST.halt ? 0.004 : 0); u.warp.value = (PLAYER.hidden && ENT.hideState) ? 1 : 0;
     u.desat.value = PLAYER.alive ? clamp((35 - PLAYER.hp) / 60, 0, 0.5) : 0.6;
   }
   // audio listener
