@@ -972,7 +972,7 @@ async function buildMaterials(progress) {
   step(() => { ENV = genEnvMap(); });
   step(() => { const t = genWoodFloor(S, 0x5b3a22, 7, 1); MAT.floor = std({ ...t, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(0.8, 0.8) }, 2.2); });
   step(() => { const t = genWoodFloor(S, 0x6b4a2c, 9, 4); MAT.floorLight = std({ ...t, roughness: 1, normalScale: new THREE.Vector2(0.7, 0.7) }, 2.2); });
-  step(() => { const t = genPanel(S, 0x3b2314); MAT.wainscot = std({ ...t, roughness: 0.55, normalScale: new THREE.Vector2(1, 1) }, 0.9); MAT.wainscot.userData.tileV = 1.1; });
+  step(() => { const t = genPanel(S, 0x3b2314); MAT.wainscot = std({ ...t, roughness: 0.55, normalScale: new THREE.Vector2(1, 1) }, 0.9); MAT.wainscot.userData.tileV = 1.4; });
   step(() => { const t = genWoodGrain(S / 2, 0x3c2213, 3); MAT.darkWood = std({ ...t, roughness: 0.5, normalScale: new THREE.Vector2(0.5, 0.5) }, 1.2); });
   step(() => { const t = genWoodGrain(S / 2, 0x5c3418, 9, 1.4); MAT.wood = std({ ...t, roughness: 0.55, normalScale: new THREE.Vector2(0.5, 0.5) }, 1.2); });
   step(() => { const t = genWoodGrain(S / 2, 0x6e4a2c, 17, 0.8); MAT.trim = std({ ...t, roughness: 0.6 }, 1); });
@@ -1814,7 +1814,7 @@ function makeItemMesh(type, extra) {
 /* =========================================================================
    Doors
    ========================================================================= */
-const DOOR_W = 1.5, DOOR_H = 2.75, DOOR_GAP = DOOR_W + 0.3;
+const DOOR_W = 1.8, DOOR_H = 3.05, DOOR_GAP = DOOR_W + 0.3;
 let _doorLeafGeo = null, _doorEdge = null;
 function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
   const F = new Frame(room, x, y, z, ry);
@@ -1841,7 +1841,7 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
     plaqueTex = genPlaque(typeof number === 'number' ? pad4(number) : number); room.textures.push(plaqueTex);
     const pm = new THREE.MeshStandardMaterial({ map: plaqueTex, metalness: 0.6, roughness: 0.35, envMap: ENV, envMapIntensity: 1, emissive: 0xffd28a, emissiveMap: plaqueTex, emissiveIntensity: 0.22 });
     const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.17), pm); plaque.userData.ownMat = true;
-    plaque.position.set(DOOR_W / 2, 2.2, 0.047); pivot.add(plaque);
+    plaque.position.set(DOOR_W / 2, DOOR_H * 0.8, 0.047); plaque.scale.setScalar(1.15); pivot.add(plaque);
   }
   const collider = F.collide(-DOOR_W / 2, DOOR_W / 2, 0, DOOR_H, -0.07, 0.07, 'door');
   const door = {
@@ -1895,7 +1895,7 @@ function updateDoor(door, dt) {
    ========================================================================= */
 function addWardrobe(room, x, z, ry, opt = {}) {
   const F = new Frame(room, x, room.fy, z, ry);
-  const W = opt.w || 1.3, H = 2.35, D = 0.74, wood = opt.mat || MAT.darkWood;
+  const W = opt.w || 1.5, H = 2.75, D = 0.86, wood = opt.mat || MAT.darkWood;
   F.box(W, H - 0.1, 0.04, wood, 0, (H - 0.1) / 2 + 0.08, -D / 2 + 0.02);
   F.box(0.05, H - 0.1, D, wood, -W / 2 + 0.025, (H - 0.1) / 2 + 0.08, 0);
   F.box(0.05, H - 0.1, D, wood, W / 2 - 0.025, (H - 0.1) / 2 + 0.08, 0);
@@ -1927,7 +1927,7 @@ function addWardrobe(room, x, z, ry, opt = {}) {
 }
 function addBed(room, x, z, ry, opt = {}) {
   const F = new Frame(room, x, room.fy, z, ry);
-  const W = opt.double ? 1.7 : 1.15, L = 2.15, wood = MAT.darkWood;
+  const W = opt.double ? 1.9 : 1.3, L = 2.4, wood = MAT.darkWood;
   F.box(W + 0.1, 1.35, 0.1, wood, 0, 0.68, -L / 2);
   F.box(W + 0.14, 0.06, 0.14, MAT.trim, 0, 1.37, -L / 2);
   F.box(W + 0.1, 0.55, 0.08, wood, 0, 0.64, L / 2);
@@ -1948,7 +1948,7 @@ function addBed(room, x, z, ry, opt = {}) {
 }
 function addDresser(room, x, z, ry, opt = {}) {
   const F = new Frame(room, x, room.fy, z, ry);
-  const W = opt.w || 1.3, H = opt.h || 0.95, D = opt.d || 0.5, rows = opt.rows || 3, cols = opt.cols || (W > 1.1 ? 2 : 1);
+  const W = opt.w || 1.3, H = opt.h || 1.05, D = opt.d || 0.55, rows = opt.rows || 3, cols = opt.cols || (W > 1.1 ? 2 : 1);
   const wood = opt.mat || MAT.wood;
   F.box(W, H - 0.1, 0.03, wood, 0, (H - 0.1) / 2 + 0.08, -D / 2 + 0.015);
   F.box(0.04, H - 0.08, D, wood, -W / 2 + 0.02, (H - 0.08) / 2 + 0.06, 0);
@@ -2173,6 +2173,8 @@ function addTallGrass(room, x, z, w, d, n = 30) {
    Room shell (floor / walls / trims / exit door) and placement helpers
    ========================================================================= */
 const WT = 0.2;
+const ROOM_SCALE = 1.45;   // the Hotel's rooms are big next to the player
+const WAIN_H = 1.4;
 const PAL_KEYS = Object.keys(WALLPAPERS);
 function pickStyle(r) {
   return { pal: r.weighted([['green', 3], ['mustard', 3], ['red', 2.5], ['teal', 2], ['brown', 2.5], ['cream', 1.5], ['plum', 1]]), style: r.weighted([['damask', 4], ['stripes', 2.5], ['lattice', 1.5], ['floral', 1.5]]) };
@@ -2228,8 +2230,8 @@ function buildWall(room, side, F, L, ext, openings, H, o) {
   for (const [a, b] of inner) {
     const len = b - a, mid = (a + b) / 2;
     if (o.wainscot) {
-      F.room.batch.add(boxGeo(len, 1.1, 0.03, MAT.wainscot, a, 0), MAT.wainscot, F._m(mid, y0 + 0.55, 0.015 + zf));
-      F.box(len, 0.06, 0.05, MAT.trim, mid, y0 + 1.12, 0.025 + zf);
+      F.room.batch.add(boxGeo(len, WAIN_H, 0.03, MAT.wainscot, a, 0), MAT.wainscot, F._m(mid, y0 + WAIN_H / 2, 0.015 + zf));
+      F.box(len, 0.06, 0.05, MAT.trim, mid, y0 + WAIN_H + 0.02, 0.025 + zf);
     }
     if (o.baseboard !== false) F.box(len, 0.16, 0.045, o.baseMat || MAT.trim, mid, y0 + 0.08, 0.022 + zf);
   }
@@ -2322,7 +2324,7 @@ function anyWall(room, width, depth, level = 'low', sides = SIDES, opt = {}) {
   return null;
 }
 /* Decor passes */
-function sconcesAlong(room, side, spacing = 3.2, y = 2.15, opt = {}) {
+function sconcesAlong(room, side, spacing = 4.4, y = 2.75, opt = {}) {
   const w = room.walls[side]; if (!w) return;
   const n = Math.max(1, Math.floor(w.L / spacing));
   for (let i = 0; i < n; i++) {
@@ -2339,12 +2341,12 @@ function paintingsOn(room, n, r, opt = {}) {
     const s = wallSlot(room, r.pick(opt.sides || SIDES), pw + 0.3, 'high', { rng: r });
     if (!s) continue;
     const p = s.F.pt(s.t, 0, 0);
-    addPainting(room, p.x, s.y0 + (opt.y || 1.85), p.z, s.ry, pw, ph, r.int(0, 999));
+    addPainting(room, p.x, s.y0 + (opt.y || 2.35), p.z, s.ry, pw * 1.2, ph * 1.2, r.int(0, 999));
   }
 }
 function placeWardrobes(room, n, r, sides = SIDES) {
   let k = 0;
-  for (let i = 0; i < n * 3 && k < n; i++) { const p = anyWall(room, 1.35, 0.74, 'tall', sides, { rng: r }); if (!p) break; addWardrobe(room, p.x, p.z, p.ry); k++; }
+  for (let i = 0; i < n * 3 && k < n; i++) { const p = anyWall(room, 1.55, 0.86, 'tall', sides, { rng: r }); if (!p) break; addWardrobe(room, p.x, p.z, p.ry); k++; }
   return k;
 }
 function placeDressers(room, n, r, sides = SIDES, opt = {}) {
@@ -2367,8 +2369,9 @@ function decorPlants(room, r, n) { for (let i = 0; i < n; i++) { const p = anyWa
    ========================================================================= */
 const TPL = {};
 TPL.hallway = {
+  roomScale: ROOM_SCALE,
   plan(c) {
-    const r = c.rng, P = { W: r.range(3.6, 4.6), D: r.range(10, 18), H: 3.4, exits: [] };
+    const r = c.rng, P = { W: r.range(3.8, 4.6), D: r.range(10, 18), H: 4.6, exits: [] };
     P.exits.push(chooseExit(c, P, { wSide: 0.9, zMin: P.D * 0.6 }));
     return P;
   },
@@ -2384,20 +2387,21 @@ TPL.hallway = {
   },
 };
 TPL.bedroom = {
-  plan(c) { const r = c.rng, P = { W: r.range(8, 10.5), D: r.range(8, 10.5), H: 3.6, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(8, 10.5), D: r.range(8, 10.5), H: 4.9, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
-    addChandelier(room, room.ox, P.H, -P.D / 2, 1);
+    addChandelier(room, room.ox, P.H, -P.D / 2, 1.2);
     centerRug(room, r);
     const nb = r.weighted([[1, 2], [2, 3]]);
     for (let i = 0; i < nb; i++) {
-      const dbl = r.chance(0.5), bw = dbl ? 1.8 : 1.25;
-      const p = anyWall(room, bw + 1.3, 2.2, 'tall', ['N', 'W', 'E'], { rng: r });
+      const dbl = r.chance(0.5), bw = dbl ? 2.0 : 1.4;
+      const p = anyWall(room, bw + 1.3, 2.45, 'tall', ['N', 'W', 'E'], { rng: r });
       if (!p) continue;
       addBed(room, p.x, p.z, p.ry, { double: dbl, blanket: r.pick([MAT.blanket, MAT.velvetGreen, MAT.velvetBlue]) });
       const bf = new Frame(room, p.x, 0, p.z, p.ry);
-      for (const s of [-1, 1]) { const q = bf.pt((bw / 2 + 0.38) * s, 0, -0.85); addNightstand(room, q.x, q.z, p.ry, r.chance(0.8)); }
+      for (const s of [-1, 1]) { const q = bf.pt((bw / 2 + 0.38) * s, 0, -0.97); addNightstand(room, q.x, q.z, p.ry, r.chance(0.8)); }
     }
     placeWardrobes(room, r.int(1, 3), r);
     placeDressers(room, r.int(1, 2), r);
@@ -2407,7 +2411,8 @@ TPL.bedroom = {
   },
 };
 TPL.living = {
-  plan(c) { const r = c.rng, P = { W: r.range(9, 12), D: r.range(9, 12), H: 3.9, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(9, 12), D: r.range(9, 12), H: 5.3, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
@@ -2435,7 +2440,8 @@ TPL.living = {
   },
 };
 TPL.dining = {
-  plan(c) { const r = c.rng, P = { W: r.range(7.6, 9), D: r.range(13, 17), H: 4.2, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(7.6, 9), D: r.range(13, 17), H: 5.6, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: r.chance(0.5) ? MAT.floorLight : MAT.floor });
@@ -2456,7 +2462,8 @@ TPL.dining = {
   },
 };
 TPL.office = {
-  plan(c) { const r = c.rng, P = { W: r.range(7, 9), D: r.range(7, 9), H: 3.4, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(7, 9), D: r.range(7, 9), H: 4.6, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: MAT.floorLight });
@@ -2475,7 +2482,8 @@ TPL.office = {
   },
 };
 TPL.storage = {
-  plan(c) { const r = c.rng, P = { W: r.range(6.5, 9), D: r.range(8, 11), H: 3.2, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(6.5, 9), D: r.range(8, 11), H: 4.3, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: MAT.floorLight, wallMat: MAT.plaster, style: { pal: 'cream', style: 'stripes' }, crown: false });
@@ -2490,7 +2498,8 @@ TPL.storage = {
   },
 };
 TPL.closets = {
-  plan(c) { const r = c.rng, P = { W: r.range(4.6, 5.4), D: r.range(12, 16), H: 3.4, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.7 })); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(4.6, 5.4), D: r.range(12, 16), H: 4.6, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.7 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { runner: true });
@@ -2500,7 +2509,8 @@ TPL.closets = {
   },
 };
 TPL.gallery = {
-  plan(c) { const r = c.rng, P = { W: r.range(5.2, 6.4), D: r.range(14, 18), H: 4.0, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(5.2, 6.4), D: r.range(14, 18), H: 5.4, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { runner: true, floor: MAT.floorLight });
@@ -2515,7 +2525,8 @@ TPL.gallery = {
   },
 };
 TPL.kitchen = {
-  plan(c) { const r = c.rng, P = { W: r.range(8, 10), D: r.range(8, 10), H: 3.4, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(8, 10), D: r.range(8, 10), H: 4.6, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: MAT.tileCheck, surface: 'tile', style: { pal: r.pick(['cream', 'teal']), style: 'lattice' } });
@@ -2530,7 +2541,8 @@ TPL.kitchen = {
   },
 };
 TPL.bighall = {
-  plan(c) { const r = c.rng, P = { W: r.range(12, 15), D: r.range(12, 15), H: 5.2, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  roomScale: ROOM_SCALE,
+  plan(c) { const r = c.rng, P = { W: r.range(12, 15), D: r.range(12, 15), H: 6.8, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
@@ -3266,6 +3278,7 @@ const WORLD = {
       if (attempt === 7 && spec.fallback) tplName = spec.fallback;
       c = Object.assign({ rng: new RNG(RUN.seed + n * 7919 + attempt * 104729), n, allowW: heading < 1, allowE: heading > -1, heading }, spec.flags);
       P = TPL[tplName].plan(c);
+      if (TPL[tplName].roomScale) scalePlan(P, TPL[tplName].roomScale);
       const box = this.footBox(footOf(P), basePos, baseYaw, 0.32);
       if (!this.rooms.some(r => r.index < n - 1 && r.bounds.intersectsBox(box))) { ok = true; break; }
     }
@@ -3373,6 +3386,10 @@ const WORLD = {
     return false;
   },
 };
+function scalePlan(P, k) {
+  P.W *= k; P.D *= k; if (P.ox) P.ox *= k;
+  for (const e of P.exits.concat(P.fakes || [])) e.at *= k;
+}
 function segBox(x0, z0, x1, z1, bx0, bz0, bx1, bz1) {
   let t0 = 0, t1 = 1; const dx = x1 - x0, dz = z1 - z0;
   const p = [-dx, dx, -dz, dz], q = [x0 - bx0, bx1 - x0, z0 - bz0, bz1 - z0];
@@ -3384,7 +3401,7 @@ function segBox(x0, z0, x1, z1, bx0, bz0, bx1, bz1) {
 }
 
 /* ---- lights ---- */
-const LIGHT_SCALE = 1.0;
+const LIGHT_SCALE = 1.75, RANGE_SCALE = 1.45;   // rooms were scaled up, so lamps reach further
 const LIGHTS = {
   pool: [], lighter: null, flash: null, n: 0,
   init() {
@@ -3417,7 +3434,7 @@ const LIGHTS = {
       const l = this.pool[i], f = cand[i];
       if (!f) { l.intensity = 0; continue; }
       const w = cut === Infinity ? 1 : clamp((cut - f._d) / 3, 0, 1);
-      l.position.copy(f.pos); l.color.copy(f.color); l.distance = f.range;
+      l.position.copy(f.pos); l.color.copy(f.color); l.distance = f.range * RANGE_SCALE;
       l.intensity = f.intensity * f.level * (f.flick || 1) * w * GAME.lightMul * LIGHT_SCALE;
     }
     if (Q().shadows) { this.shadowFrame++; if (this.shadowFrame % 2 === 0) renderer.shadowMap.needsUpdate = true; }
@@ -3610,7 +3627,7 @@ const PLAYER = {
     if (INPUT.joy.id !== null) { ix += INPUT.joy.x; iz += INPUT.joy.y; }
     const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
     this.crouchT = damp(this.crouchT, this.crouch ? 1 : 0, 10, dt);
-    let sp = 4.35 * (this.crouch ? 0.5 : 1) * (GAME.time < this.boostUntil ? 1.4 : 1) * GAME.speedMul;
+    let sp = 4.9 * (this.crouch ? 0.5 : 1) * (GAME.time < this.boostUntil ? 1.4 : 1) * GAME.speedMul;
     if (GAME.time < this.stuckUntil) sp = 0;
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
     const tx = (ix * c + iz * s) * sp, tz = (-ix * s + iz * c) * sp;
@@ -4429,7 +4446,7 @@ const ENT = {
           return;
         }
         const gap = total - this.s;
-        const sp = gap > 10 ? 6.4 : gap > 5 ? 4.75 : 3.95;
+        const sp = gap > 11 ? 7.2 : gap > 5.5 ? 5.35 : 4.45;
         this.s += sp * dt;
         // position along trail
         let s = this.s, i = 1;
@@ -4541,7 +4558,7 @@ const ENT = {
         if (!this.target || (this.state === 'wander' && this.pos.distanceTo(this.target) < 1)) { this.target = randomNavPoint(room); this.path = []; }
         this.repath -= dt;
         if (this.repath <= 0) { this.repath = this.state === 'chase' ? 0.3 : 0.8; this.path = navPath(room, this.pos, this.target); }
-        const speed = this.hunt ? 3.7 : this.state === 'chase' ? 3.2 : this.state === 'investigate' ? 2.5 : 1.5;
+        const speed = this.hunt ? 4.2 : this.state === 'chase' ? 3.6 : this.state === 'investigate' ? 2.8 : 1.7;
         let moving = 0;
         if (this.path.length) {
           const nx = this.path[0], dx = nx.x - this.pos.x, dz = nx.z - this.pos.z, l = Math.hypot(dx, dz);
@@ -5028,7 +5045,7 @@ function update(dt) {
     // ambience per room
     const rm = GAME.room;
     const dark = rm && rm.dark, out = rm && rm.outdoor, gh = rm && rm.meta.greenhouse;
-    hemi.intensity = damp(hemi.intensity, out ? 0.4 : gh ? 0.07 : dark ? 0.05 : rm.index === 100 && !rm.meta.powered ? 0.12 : 0.38, 2, dt);
+    hemi.intensity = damp(hemi.intensity, out ? 0.4 : gh ? 0.07 : dark ? 0.05 : rm.index === 100 && !rm.meta.powered ? 0.12 : 0.46, 2, dt);
     hemi.color.setHex(out || gh ? 0x8ea4d8 : 0xc4a27e);
     scene.fog.color.lerp(out ? FOG_OUT : gh ? FOG_GH : FOG_DEFAULT, Math.min(1, dt * 2));
     scene.fog.density = damp(scene.fog.density, out ? 0.02 : 0.034, 2, dt);
