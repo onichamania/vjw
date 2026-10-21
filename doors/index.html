@@ -4716,9 +4716,20 @@ GAME.tapAt = function (x, y) {
 
 /* ---------- inventory ---------- */
 const STACKABLE = { key: 1, lockpick: 1, vitamins: 1, bandage: 1, battery: 1, crucifix: 1, breaker: 1 };
+// another lighter tops up the one you carry: each is 100 fuel, up to three lighters' worth
+const LIGHTER_MAX = 300;
+const lighterUnits = c => Math.max(1, Math.ceil(c / 100 - 1e-6));
+const lighterBar = c => (c <= 0 ? 0 : c - (lighterUnits(c) - 1) * 100);
 GAME.hasItem = t => GAME.inv.some(i => i.type === t && (i.count || 1) > 0);
 GAME.giveItem = function (type, n = 1) {
   if (type === 'breaker') { const r = GAME.room; if (r && r.meta.breakers != null) { r.meta.breakers++; GAME.showHint(`ブレーカースイッチ ${r.meta.breakers}/10`); } return true; }
+  if (type === 'lighter') {
+    const lt = GAME.inv.find(i => i.type === 'lighter');
+    if (lt) {
+      if (lt.charge >= LIGHTER_MAX - 1) { GAME.showHint('ライターの燃料はもう満タンだ'); return false; }
+      lt.charge = Math.min(LIGHTER_MAX, lt.charge + 100 * n); GAME.showHint('ライターの燃料を補給した'); UI.hotbar(); return true;
+    }
+  }
   let it = STACKABLE[type] ? GAME.inv.find(i => i.type === type) : null;
   if (it) it.count = (it.count || 1) + n;
   else {
@@ -4773,7 +4784,7 @@ GAME.lightSource = function () {
 GAME.updateItems = function (dt) {
   const ls = GAME.lightSource();
   for (const it of GAME.inv) {
-    if (it.type === 'lighter') { if (ls === 'lighter' && GAME.selItem() === it) it.charge = Math.max(0, it.charge - dt * 1.4); else it.charge = Math.min(100, it.charge + dt * 0.5); }
+    if (it.type === 'lighter') { if (ls === 'lighter' && GAME.selItem() === it) it.charge = Math.max(0, it.charge - dt * 1.4); else if (it.charge < 100) it.charge = Math.min(100, it.charge + dt * 0.5); }
     if (it.type === 'flashlight' && ls === 'flashlight' && GAME.selItem() === it) { it.charge = Math.max(0, it.charge - dt * 0.9); if (it.charge <= 0 && GAME.hasItem('battery')) { GAME.takeItem('battery'); it.charge = 100; GAME.showHint('電池を交換した'); } }
   }
   const t = GAME.time;
@@ -6258,7 +6269,8 @@ const UI = {
     const hb = $('hotbar'); hb.innerHTML = '';
     GAME.inv.forEach((it, i) => {
       const d = document.createElement('div'); d.className = 'slot' + (i === GAME.sel ? ' sel' : '');
-      d.innerHTML = `<span class="n">${i + 1}</span>${ICONS[it.type] || ''}` + ((it.count || 1) > 1 ? `<span class="c">${it.count}</span>` : '') + (['lighter', 'flashlight', 'skeleton'].includes(it.type) ? `<span class="bar"><i style="width:${it.charge}%"></i></span>` : '');
+      const lit = it.type === 'lighter', cnt = lit ? lighterUnits(it.charge) : it.count || 1; if (lit) it._u = cnt;   // a lighter shows how many lighters' worth of fuel it holds
+      d.innerHTML = `<span class="n">${i + 1}</span>${ICONS[it.type] || ''}` + (cnt > 1 ? `<span class="c">${cnt}</span>` : '') + (['lighter', 'flashlight', 'skeleton'].includes(it.type) ? `<span class="bar"><i style="width:${lit ? lighterBar(it.charge) : it.charge}%"></i></span>` : '');
       const pick = e => { e.preventDefault(); e.stopPropagation(); AU.resume(); GAME.select(i); };
       d.addEventListener('touchstart', pick, { passive: false }); d.addEventListener('mousedown', pick);
       hb.appendChild(d);
@@ -6269,7 +6281,8 @@ const UI = {
   },
   hotbarCharge() {
     const bars = $('hotbar').querySelectorAll('.slot');
-    GAME.inv.forEach((it, i) => { const b = bars[i] && bars[i].querySelector('.bar i'); if (b) b.style.width = it.charge + '%'; });
+    if (GAME.inv.some(it => it.type === 'lighter' && it._u !== lighterUnits(it.charge))) { UI.hotbar(); return; }
+    GAME.inv.forEach((it, i) => { const b = bars[i] && bars[i].querySelector('.bar i'); if (b) b.style.width = (it.type === 'lighter' ? lighterBar(it.charge) : it.charge) + '%'; });
   },
   closeModal() { $('modal').classList.add('hidden'); $('modal').innerHTML = ''; const m = GAME.modal; GAME.modal = null; if (m && m.onClose) m.onClose(); if (!IS_TOUCH && GAME.state === 'play' && PLAYER.alive) requestLock(); },
   openModal(html, opts = {}) {
@@ -6446,7 +6459,7 @@ const UI = {
     const draw = () => {
       $('psKnobs').textContent = SAVE.knobs;
       $('psGrid').innerHTML = items.map(([t, p]) => { const own = SAVE.preItems.filter(x => x === t).length; return `<div class="sitem${SAVE.knobs < p ? ' dis' : ''}${own ? ' own' : ''}" data-t="${t}" data-p="${p}">${ICONS[t]}<div class="nm">${ITEM_DEF[t].name}${own ? ` ×${own}` : ''}</div><div class="pr"><span class="knob"></span> ${p}</div></div>`; }).join('');
-      $('psGrid').querySelectorAll('.sitem').forEach(el => el.onclick = () => { const p = +el.dataset.p; if (SAVE.knobs < p || SAVE.preItems.length >= 5) return; SAVE.knobs -= p; SAVE.preItems.push(el.dataset.t); saveGame(); AU.init(); SFX.buy(); draw(); });
+      $('psGrid').querySelectorAll('.sitem').forEach(el => el.onclick = () => { const p = +el.dataset.p; if (SAVE.knobs < p || SAVE.preItems.length >= 5) return; if (el.dataset.t === 'lighter' && SAVE.preItems.filter(x => x === 'lighter').length >= 3) return; SAVE.knobs -= p; SAVE.preItems.push(el.dataset.t); saveGame(); AU.init(); SFX.buy(); draw(); });
     };
     draw();
     $('psBack').onclick = () => { UI.show('preshop', false); $('knobN').textContent = SAVE.knobs; };
