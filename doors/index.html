@@ -5545,31 +5545,33 @@ const ENT = {
   },
   startSeek(room, lp) {
     const model = makeSeekModel();
-    const puddle = new THREE.Mesh(new THREE.CircleGeometry(1.2, 24), MAT.goo); puddle.rotation.x = -Math.PI / 2;
-    // Seek pulls itself out of a black puddle at the start of the hallway, behind you; you run faster for the chase
+    // Seek drags itself out of a heap of black goo at the start of the hallway, behind you; you run faster for the chase
     const start = room.toWorld(lp.x * 0.3, room.y0 + 0.02, Math.min(lp.z + 10, -1.5));
     GAME.speedMul = 1.45;
-    puddle.position.copy(start); puddle.scale.setScalar(0.01); scene.add(puddle);
-    model.position.copy(start); model.position.y -= 2.6; scene.add(model);
+    const face = Math.atan2(PLAYER.pos.x - start.x, PLAYER.pos.z - start.z), puddle = makeGooHeap();
+    puddle.position.set(start.x - Math.sin(face) * 0.4, start.y, start.z - Math.cos(face) * 0.4); puddle.scale.setScalar(0.01); scene.add(puddle);
+    model.position.copy(start); model.rotation.y = face; scene.add(model);
+    const strands = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), MAT.goo); m.visible = false; scene.add(m); return m; });
     SFX.goo(start); SFX.sting();
     MUSIC.play('chase');
     const trail = [start.clone(), PLAYER.pos.clone()];
     const e = {
-      kind: 'seek', model, puddle, trail, s: 0, t: 0, rise: 2.4, stepAcc: 0, pos: start.clone(),
+      kind: 'seek', model, puddle, strands, trail, s: 0, t: 0, rise: SEEK_RISE, stepAcc: 0, pos: start.clone(), anim: { mode: 'emerge', t: 0, sp: 0 },
       update(dt) {
-        this.t += dt;
+        this.t += dt; this.anim.t = this.t;
         const last = this.trail[this.trail.length - 1];
         if (PLAYER.pos.distanceTo(last) > 0.4) this.trail.push(PLAYER.pos.clone());
         let total = 0; for (let i = 1; i < this.trail.length; i++) total += this.trail[i].distanceTo(this.trail[i - 1]);
         total += PLAYER.pos.distanceTo(this.trail[this.trail.length - 1]);
         if (this.t < this.rise) {
-          const k = this.t / this.rise;
-          this.puddle.scale.setScalar(Math.min(1, k * 3));
-          this.model.position.y = this.trail[0].y - 2.6 * (1 - smoothstep(0.2, 1, k));
-          this.model.rotation.set(0, Math.atan2(PLAYER.pos.x - this.model.position.x, PLAYER.pos.z - this.model.position.z), 0);
-          animateSeek(this.model, this.t, 0);
+          this.puddle.scale.setScalar(Math.min(1, 0.05 + this.t * 1.6));
+          this.model.rotation.y += angDiff(this.model.rotation.y, Math.atan2(PLAYER.pos.x - this.model.position.x, PLAYER.pos.z - this.model.position.z)) * Math.min(1, dt * 3);
+          animateSeek(this.model, this.anim, dt);
+          seekStrands(this);
           return;
         }
+        if (this.anim.mode === 'emerge') { this.anim.mode = 'run'; seekStrands(this); }
+        this.puddle.scale.y = Math.max(0.2, 1 - (this.t - this.rise) * 0.35);
         const gap = total - this.s;
         const sp = gap > 15 ? 8.2 : gap > 8 ? 6.8 : 6.0;   // slower than you when close, catches up when you fall behind
         this.s += sp * dt;
@@ -5581,13 +5583,13 @@ const ENT = {
         this.pos.lerpVectors(a, b, clamp(s / l, 0, 1));
         this.model.position.copy(this.pos);
         tmpV.subVectors(b, a); if (tmpV.lengthSq() > 1e-4) this.model.rotation.y = Math.atan2(tmpV.x, tmpV.z);
-        animateSeek(this.model, this.t, sp);
+        this.anim.sp = sp; animateSeek(this.model, this.anim, dt);
         this.stepAcc += sp * dt; if (this.stepAcc > 1.1) { this.stepAcc = 0; SFX.figureStep(this.pos, 0.35); }
         POST.shake = Math.max(POST.shake, clamp(1 - gap / 10, 0, 0.5));
         while (this.trail.length > 2 && this.s > this.trail[1].distanceTo(this.trail[0])) { this.s -= this.trail[1].distanceTo(this.trail[0]); this.trail.shift(); }
-        if (gap < 0.9 && PLAYER.alive) GAME.kill('seek');
+        if (gap < 0.9 && PLAYER.alive) { this.anim.mode = 'grab'; GAME.kill('seek'); }
       },
-      dispose() { scene.remove(this.model); scene.remove(this.puddle); MUSIC.stop(1.5); GAME.speedMul = 1; },
+      dispose() { scene.remove(this.model); scene.remove(this.puddle); this.strands.forEach(m => scene.remove(m)); MUSIC.stop(1.5); GAME.speedMul = 1; },
     };
     this.add(e);
   },
@@ -5793,38 +5795,180 @@ function randomNavPoint(room) {
   }
   return room.toWorld(room.ox, room.y0, -room.D / 2);
 }
-
-/* ---- entity models ---- */
-function makeSeekModel() {
-  const g = new THREE.Group(), m = MAT.goo;
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.75, 6, 12), m); torso.position.y = 1.45; g.add(torso);
-  const head = new THREE.Group(); head.position.y = 2.15; g.add(head);
-  const hs = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), m); hs.scale.set(1, 1.15, 1); head.add(hs);
-  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.21, 18, 14), new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.2, emissive: 0x777777, emissiveIntensity: 0.8 })); eye.position.set(0, 0.03, 0.24); eye.scale.set(1, 0.9, 0.7); head.add(eye);
-  const pup = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: 0x000000 })); pup.position.set(0, 0.03, 0.385); head.add(pup);
-  const limb = (r0, r1, l) => { const gg = new THREE.Group(); const mm = new THREE.Mesh(new THREE.CapsuleGeometry((r0 + r1) / 2, l, 4, 8), m); mm.position.y = -l / 2; gg.add(mm); return gg; };
-  g.userData.limbs = {};
-  for (const s of [-1, 1]) {
-    const sh = limb(0.08, 0.06, 0.6); sh.position.set(s * 0.38, 1.85, 0); g.add(sh);
-    const fa = limb(0.06, 0.05, 0.55); fa.position.y = -0.65; sh.add(fa);
-    const th = limb(0.11, 0.09, 0.55); th.position.set(s * 0.16, 1.05, 0); g.add(th);
-    const sn = limb(0.09, 0.07, 0.55); sn.position.y = -0.6; th.add(sn);
-    g.userData.limbs[s] = { sh, fa, th, sn };
+/* =========================================================================
+   Seek & Figure rigs and procedural animation
+   ========================================================================= */
+const D2R = Math.PI / 180;
+// a box segment hanging down (dir -1) or standing up (dir 1) from its pivot, narrowing to `taper` at the far end
+function segGeo(w, l, d, taper = 1, dir = -1) {
+  const geo = new THREE.BoxGeometry(w, l, d, 1, 2, 1); geo.translate(0, dir * l / 2, 0);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const k = 1 + (taper - 1) * (dir * p.getY(i) / l); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); }
+  geo.computeVertexNormals(); return geo;
+}
+// rig builder: named pivots in g.userData.j
+function rigBuilder(g, mat) {
+  const J = g.userData.j = {};
+  return {
+    J,
+    joint(parent, name, x, y, z) { const o = new THREE.Group(); o.position.set(x, y, z); (parent === g ? g : J[parent] || parent).add(o); J[name] = o; return o; },
+    mesh(parent, geo, x = 0, y = 0, z = 0, m = mat) { const me = new THREE.Mesh(geo, m); me.position.set(x, y, z); me.castShadow = true; (J[parent] || parent).add(me); return me; },
+  };
+}
+// Poses are plain objects (degrees; sh/el/hip/kn/an = [left, right]); forward-positive for shoulders and hips, flexion-positive for elbows and knees.
+// pelvis pitches the whole body (legs too, for crawling); lean/hunch only bend the upper body, so leg angles stay relative to the ground.
+const POSE_KEYS = ['pelvis', 'lean', 'roll', 'hipY', 'hipZ', 'hunch', 'twist', 'chest', 'headP', 'headY', 'headR', 'jaw', 'neck'];
+const POSE_PAIRS = ['sh', 'shZ', 'shY', 'el', 'wr', 'hip', 'hipA', 'kn', 'an'];
+function poseMix(list) { // [[weight, pose], ...] -> blended pose
+  const out = {}; for (const k of POSE_PAIRS) out[k] = [0, 0];
+  let tw = 0; for (const [w] of list) tw += w; if (tw <= 0) return list[0][1];
+  for (const [w0, P] of list) {
+    const w = w0 / tw;
+    for (const k of POSE_KEYS) out[k] = (out[k] || 0) + (P[k] || 0) * w;
+    for (const k of POSE_PAIRS) { const v = P[k] || [0, 0]; out[k][0] += v[0] * w; out[k][1] += v[1] * w; }
   }
-  g.userData.head = head;
-  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return out;
+}
+function poseLerp(a, b, k) { return poseMix([[1 - k, a], [k, b]]); }
+// timeline of [t, pose] keys, eased between keys
+function poseKeys(keys, t) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) if (t < keys[i][0]) { const [t0, a] = keys[i - 1], [t1, b] = keys[i]; return poseLerp(a, b, smoothstep(0, 1, (t - t0) / (t1 - t0))); }
+  return keys[keys.length - 1][1];
+}
+function poseApply(g, P) {
+  const J = g.userData.j, R = (o, x, y, z) => o && o.rotation.set(x * D2R, y * D2R, z * D2R);
+  J.body.position.y = P.hipY; J.body.position.z = P.hipZ || 0;
+  R(J.body, P.pelvis || 0, 0, P.roll || 0); R(J.spine, P.lean || 0, P.twist || 0, 0); R(J.chest, (P.hunch || 0) + (P.chest || 0), -(P.twist || 0) * 0.5, 0);
+  if (J.neck) R(J.neck, P.neck || 0, 0, 0);
+  R(J.head, P.headP || 0, P.headY || 0, P.headR || 0);
+  if (J.jaw && g.userData.setJaw) g.userData.setJaw(P.jaw || 0);
+  for (const s of [-1, 1]) {
+    const i = s < 0 ? 0 : 1, A = (k, d = 0) => (P[k] ? P[k][i] : d);
+    R(J['sh' + s], -A('sh'), s * A('shY'), s * A('shZ'));
+    R(J['el' + s], -A('el'), 0, 0);
+    if (J['wr' + s]) R(J['wr' + s], -A('wr'), 0, 0);
+    R(J['hip' + s], -A('hip'), 0, s * A('hipA'));
+    R(J['kn' + s], A('kn'), 0, 0);
+    if (J['an' + s]) R(J['an' + s], A('an'), 0, 0);
+  }
+}
+// drive a rig: each mode has a pose function (st, modeTime); modes cross-fade by weight
+function rigDrive(g, st, dt, poses, fade = 6) {
+  const U = g.userData, W = U.w || (U.w = {}), M0 = U.m0 || (U.m0 = {});
+  if (!(st.mode in W) || W[st.mode] <= 0) M0[st.mode] = st.t;
+  if (!Object.keys(W).some(m => W[m] > 0)) W[st.mode] = 1;
+  for (const m in W) W[m] = m === st.mode ? Math.min(1, W[m] + dt * fade) : Math.max(0, W[m] - dt * fade);
+  if (!W[st.mode]) W[st.mode] = 1e-3;
+  const list = []; for (const m in W) if (W[m] > 0 && poses[m]) list.push([W[m], poses[m](st, st.t - M0[m])]);
+  poseApply(g, list.length === 1 ? list[0][1] : poseMix(list));
+}
+
+/* ---------------- Seek: a thin, angular figure of glossy black goo with one eye ---------------- */
+const SEEK_S = 1.07, SEEK_HIP = 1.15 * SEEK_S;
+function makeSeekModel() {
+  const g = new THREE.Group(), S = SEEK_S, B = rigBuilder(g, MAT.goo);
+  B.joint(g, 'body', 0, SEEK_HIP, 0);
+  B.mesh('body', segGeo(0.3 * S, 0.16 * S, 0.19 * S, 0.85, -1), 0, 0.05 * S, 0);           // pelvis
+  B.joint('body', 'spine', 0, 0.02 * S, 0);
+  B.mesh('spine', segGeo(0.27 * S, 0.34 * S, 0.18 * S, 1.12, 1));                            // waist
+  B.joint('spine', 'chest', 0, 0.32 * S, 0);
+  B.mesh('chest', segGeo(0.4 * S, 0.34 * S, 0.22 * S, 1.05, 1), 0, 0, -0.01);               // ribcage, broad at the shoulders
+  B.joint('chest', 'neck', 0, 0.33 * S, 0.01);
+  B.mesh('neck', segGeo(0.1 * S, 0.1 * S, 0.1 * S, 0.9, 1));
+  B.joint('neck', 'head', 0, 0.09 * S, 0.02 * S);
+  B.mesh('head', segGeo(0.29 * S, 0.4 * S, 0.31 * S, 0.72, 1));                             // tall skull tapering to a rounded crown
+  const eyeM = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.15, emissive: 0x6a6a6a, emissiveIntensity: 0.9 });
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1 * S, 18, 14), eyeM); eye.scale.set(1, 0.92, 0.55); eye.position.set(0.04 * S, 0.23 * S, 0.145 * S); g.userData.j.head.add(eye);
+  const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.036 * S, 12, 10), new THREE.MeshBasicMaterial({ color: 0x000000 })); pupil.position.set(0.04 * S, 0.23 * S, 0.197 * S); g.userData.j.head.add(pupil);
+  for (const s of [-1, 1]) {
+    B.joint('chest', 'sh' + s, s * 0.23 * S, 0.29 * S, 0);
+    B.mesh('sh' + s, segGeo(0.1 * S, 0.5 * S, 0.1 * S, 0.8));
+    B.joint('sh' + s, 'el' + s, 0, -0.5 * S, 0);
+    B.mesh('el' + s, segGeo(0.08 * S, 0.48 * S, 0.08 * S, 0.75));
+    B.joint('el' + s, 'wr' + s, 0, -0.48 * S, 0);
+    B.mesh('wr' + s, segGeo(0.1 * S, 0.1 * S, 0.04 * S, 0.9));                                 // palm
+    for (let f = 0; f < 3; f++) B.mesh('wr' + s, segGeo(0.02 * S, 0.13 * S, 0.02 * S, 0.6), (f - 1) * 0.033 * S, -0.09 * S, 0);
+    B.joint('body', 'hip' + s, s * 0.1 * S, 0, 0);
+    B.mesh('hip' + s, segGeo(0.14 * S, 0.56 * S, 0.14 * S, 0.78));
+    B.joint('hip' + s, 'kn' + s, 0, -0.56 * S, 0);
+    B.mesh('kn' + s, segGeo(0.11 * S, 0.52 * S, 0.11 * S, 0.7));
+    B.joint('kn' + s, 'an' + s, 0, -0.52 * S, 0);
+    B.mesh('an' + s, new THREE.BoxGeometry(0.1 * S, 0.06 * S, 0.24 * S), 0, -0.035 * S, 0.06 * S);
+  }
+  // goo drips hanging off the arms and jaw
+  const dripG = new THREE.ConeGeometry(0.018 * S, 0.12 * S, 5); dripG.rotateX(Math.PI); dripG.translate(0, -0.06 * S, 0);
+  for (const [n, x, y, z] of [['el-1', 0.03, -0.3, 0.02], ['el1', -0.02, -0.22, -0.03], ['head', 0.08, 0.02, 0.1], ['head', -0.09, 0.01, 0.06], ['chest', 0.12, 0.02, 0.1], ['sh1', 0.03, -0.35, 0]]) B.mesh(n, dripG, x * S, y * S, z * S);
+  g.userData.eye = eye;
   return g;
 }
-function animateSeek(g, t, sp) {
-  const L = g.userData.limbs, k = Math.min(1, sp / 4), f = t * 11;
-  for (const s of [-1, 1]) {
-    const ph = s * Math.sin(f);
-    L[s].sh.rotation.x = ph * 1.1 * k - 0.3 * k; L[s].fa.rotation.x = -0.6 - Math.max(0, ph) * 0.6 * k;
-    L[s].th.rotation.x = -ph * 0.9 * k; L[s].sn.rotation.x = 0.3 + Math.max(0, -ph) * 1.2 * k;
+const SEEK_POSES = {
+  idle(st, mt) {
+    const t = st.t;
+    return { hipY: SEEK_HIP * 0.99, lean: 6, roll: 2 * Math.sin(t * 1.3), hunch: 14, chest: 6, headP: -16, headR: 5 * Math.sin(t * 0.9), headY: 6 * Math.sin(t * 0.6),
+      sh: [6, 4], shZ: [9, 9], el: [18, 22], wr: [10, 10], hip: [2, -2], hipA: [3, 3], kn: [6, 6], an: [-2, 2] };
+  },
+  // bounding sprint: deep forward lean, thighs swing ~-35..80 deg, back shin kicks up, bent elbows pump opposite
+  run(st) {
+    const sp = st.sp || 6, k = clamp(sp / 5, 0.35, 1), ph = TAU * (1.2 + 0.03 * sp) * st.t;
+    const P = { lean: 24 * k + 4, hunch: 10, chest: 4, roll: 4 * Math.sin(ph) * k, twist: 12 * Math.sin(ph) * k, headR: 3 * Math.sin(ph),
+      sh: [0, 0], shZ: [12, 12], el: [0, 0], wr: [15, 15], hip: [0, 0], hipA: [4, 4], kn: [0, 0], an: [0, 0] };
+    P.headP = -(P.lean + P.hunch + P.chest) + 14;
+    P.hipY = SEEK_HIP - 0.16 * k + 0.09 * k * Math.abs(Math.sin(ph));
+    for (const i of [0, 1]) {
+      const ps = ph + (i ? 0 : Math.PI), c = Math.sin(ps), sw = Math.max(0, Math.cos(ps + 0.5));
+      P.hip[i] = 22 * k + 58 * k * c;
+      P.kn[i] = 12 + 100 * k * Math.pow(sw, 1.3) + 15 * k * Math.max(0, -Math.cos(ps));
+      P.an[i] = -12 + 38 * sw * k;
+      P.sh[i] = 12 - 60 * k * c;
+      P.el[i] = 78 - 16 * c;
+    }
+    return P;
+  },
+  // pulled out of the goo: an arm pokes up, slaps the floor, drags the body out, kneels, stands, then springs forward
+  emerge(st, mt) { return poseKeys(SEEK_EMERGE, mt); },
+  grab(st, mt) {
+    const r = Math.min(1, mt / 0.2);
+    return { hipY: SEEK_HIP - 0.12, hipZ: 0.25 * r, lean: 22, hunch: 10, headP: -30, sh: [95, 88], shZ: [10, 10], el: [8, 14], wr: [-10, -10], hip: [40, -15], kn: [25, 45], an: [0, 10] };
+  },
+};
+const SEEK_EMERGE = [
+  [0.0, { hipY: -1.95, pelvis: 6, headP: -20, sh: [0, 176], shZ: [10, 4], el: [10, 4], hip: [40, 40], kn: [100, 100] }],
+  [0.55, { hipY: -1.15, pelvis: 6, roll: -6, headP: -20, sh: [0, 168], shZ: [10, -6], el: [12, 18], wr: [0, 20], hip: [40, 40], kn: [100, 100] }],
+  [0.95, { hipY: -0.36, pelvis: 62, headP: -48, sh: [20, 100], shZ: [10, 12], el: [40, 6], wr: [0, -30], hip: [50, 50], kn: [110, 110] }],
+  [1.45, { hipY: 0.05, pelvis: 64, lean: 4, hunch: 8, headP: -66, sh: [78, 72], shZ: [16, 16], el: [40, 46], wr: [-40, -30], hip: [70, 70], kn: [120, 120] }],
+  [2.0, { hipY: 0.64, lean: 34, hunch: 14, headP: -40, sh: [42, 28], shZ: [14, 14], el: [34, 30], wr: [-10, -10], hip: [85, 0], kn: [92, 90], an: [10, 30] }],
+  [2.55, { hipY: SEEK_HIP * 0.98, lean: 8, hunch: 14, chest: 4, headP: -18, headR: 8, sh: [8, 12], shZ: [10, 10], el: [22, 18], hip: [4, 0], kn: [8, 6] }],
+  [2.95, { hipY: SEEK_HIP - 0.27, lean: 28, hunch: 12, headP: -32, sh: [-45, -40], shZ: [14, 14], el: [30, 30], hip: [44, 14], kn: [82, 52], an: [0, 10] }],
+  [3.25, { hipY: SEEK_HIP - 0.1, lean: 36, hunch: 10, headP: -40, sh: [-70, 62], shZ: [14, 14], el: [24, 70], hip: [72, -30], kn: [22, 92], an: [-10, 30] }],
+];
+const SEEK_RISE = 3.2;
+// the heap Seek climbs out of: a flat spill plus a few swollen blobs
+function makeGooHeap() {
+  const g = new THREE.Group(), flat = new THREE.Mesh(new THREE.CircleGeometry(1.3, 28), MAT.goo);
+  flat.rotation.x = -Math.PI / 2; flat.position.y = 0.012; g.add(flat);
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * TAU + Math.random() * 0.5, r = i ? 0.3 + Math.random() * 0.45 : 0;
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.42 + Math.random() * 0.25, 12, 8), MAT.goo);
+    b.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); b.scale.set(1, 0.32 + Math.random() * 0.28, 1); g.add(b);
   }
-  g.userData.head.rotation.z = Math.sin(t * 3) * 0.08;
-  g.rotation.x = 0.18 * k;
+  return g;
 }
+// goo strands stretched between the heap and Seek's hands/chest while it pulls free; they snap as it stands
+const _sA = new THREE.Vector3(), _sB = new THREE.Vector3();
+function seekStrands(e) {
+  const on = e.anim.mode === 'emerge' && e.t > 1.0 && e.t < 2.75, J = e.model.userData.j;
+  ['wr1', 'chest', 'wr-1'].forEach((n, i) => {
+    const m = e.strands[i];
+    if (!on) { m.visible = false; return; }
+    J[n].getWorldPosition(_sB); _sA.copy(e.puddle.position); _sA.y += 0.28 * e.puddle.scale.y; _sA.x += (i - 1) * 0.22;
+    const L = _sA.distanceTo(_sB); if (L < 0.08) { m.visible = false; return; }
+    const th = clamp(0.13 - L * 0.045, 0.018, 0.12);
+    m.visible = true; m.position.copy(_sA).lerp(_sB, 0.5); m.lookAt(_sB); m.scale.set(th, th, L);
+  });
+}   // emerge length (s) before Seek starts running
+function animateSeek(g, st, dt) { rigDrive(g, st, dt, SEEK_POSES, st.mode === 'run' ? 5 : 8); }
+
 function makeFigureModel() {
   const g = new THREE.Group(), flesh = std({ color: 0x8d3424, roughness: 0.5, emissive: 0x2a0500, emissiveIntensity: 0.6 }), bone = std({ color: 0xe8dcc0, roughness: 0.4 });
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 1.0, 6, 12), flesh); torso.position.y = 2.0; torso.scale.set(1, 1, 0.75); g.add(torso);
@@ -5859,6 +6003,10 @@ function animateFigure(g, t, sp) {
   g.userData.head.rotation.x = Math.sin(t * 1.7) * 0.12;
   g.position.y += Math.abs(Math.sin(f)) * 0.06 * k;
 }
+const ANIM = {
+  make(kind) { return kind === 'seek' ? makeSeekModel() : makeFigureModel(); },
+  step(kind, g, st, dt) { if (kind === 'seek') animateSeek(g, st, dt); else { g.position.y = 0; animateFigure(g, st.t, st.sp); } },
+};
 
 /* =========================================================================
    UI
@@ -6403,7 +6551,7 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
-window.__DOORS = { AU, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
+window.__DOORS = { AU, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, THREE, ANIM, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
 </script>
 </body>
 </html>
