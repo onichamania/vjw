@@ -37,6 +37,7 @@
       linear-gradient(180deg, #000 0%, #000 22%, rgba(0,0,0,.5) 34%, rgba(0,0,0,0) 44%, rgba(0,0,0,0) 86%, rgba(0,0,0,.7) 94%, #000 100%);
   }
   #fxBlack { background:#000; opacity:0; transition:opacity .6s; z-index:3; }
+  #fxScreech { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; display:none; }
   #jumpscare { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; display:none; z-index:3; }
   #fxGetOut { opacity:0; background:radial-gradient(ellipse at center, rgba(80,0,0,.2) 20%, rgba(70,0,0,.85) 100%); }
 
@@ -229,6 +230,7 @@
 <div id="fxHurt" class="fx"></div>
 <div id="fxGetOut" class="fx"></div>
 <div id="fxHide" class="fx"></div>
+<canvas id="fxScreech"></canvas>
 <canvas id="jumpscare"></canvas>
 <div id="fxBlack" class="fx"></div>
 
@@ -295,7 +297,7 @@
       <li><b>PC</b>：クリックで視点固定 / WASD 移動 / マウス 視点 / E・クリック 調べる / 1〜6 アイテム / C しゃがむ / Esc 一時停止</li>
       <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、✋ で調べる・隠れる。物を直接タップしても調べられます。</li>
       <li>照明がちらついたら <b>Rush / Ambush</b>。クローゼットかベッドの下へ。</li>
-      <li>暗い部屋で「プスッ」→ <b>Screech</b>。すぐに振り向いて見つめる。</li>
+      <li>暗い部屋で「プスッ」と鳴り、画面のふちに黒いもじゃもじゃが出たら <b>Screech</b>。すぐに振り向いて見つめる。</li>
       <li>紫の光 → <b>Eyes</b>。見つめるとダメージ。</li>
       <li>壁に目が増えたら <b>Seek</b> の追跡が近い。明かりの方へ走れ。</li>
       <li>ドア50の図書館とドア100では <b>Figure</b>。しゃがんで静かに。</li>
@@ -1172,22 +1174,22 @@ const AU = {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + a + hold + rel);
   },
   // one-shot noise burst through a filter
-  burst({ pos = null, t0 = 0, dur = 0.1, a = 0.002, f = 1000, q = 1, type = 'bandpass', vol = 0.5, rev = 0.2, brown = false, sweepTo = null, bus = null }) {
+  burst({ pos = null, t0 = 0, dur = 0.1, a = 0.002, hold = 0, f = 1000, q = 1, type = 'bandpass', vol = 0.5, rev = 0.2, brown = false, sweepTo = null, bus = null }) {
     if (!this.ok) return;
     const t = (t0 || this.t), s = this.noiseSrc(brown, true), fl = this.filt(type, f, q), g = this.gain(0), o = this.out(pos, rev, bus);
-    if (sweepTo) fl.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
+    if (sweepTo) fl.frequency.exponentialRampToValueAtTime(sweepTo, t + a + hold + dur);
     s.connect(fl); fl.connect(g); g.connect(o);
-    this.env(g, t, a, 0, dur, vol);
-    s.start(t, Math.random()); s.stop(t + a + dur + 0.05);
+    this.env(g, t, a, hold, dur, vol);
+    s.start(t, Math.random()); s.stop(t + a + hold + dur + 0.05);
   },
-  tone({ pos = null, t0 = 0, type = 'sine', f = 440, f2 = null, dur = 0.2, a = 0.005, vol = 0.3, rev = 0.2, bus = null, filter = null }) {
+  tone({ pos = null, t0 = 0, type = 'sine', f = 440, f2 = null, dur = 0.2, a = 0.005, hold = 0, vol = 0.3, rev = 0.2, bus = null, filter = null }) {
     if (!this.ok) return;
     const t = (t0 || this.t), o = this.osc(type, f), g = this.gain(0), out = this.out(pos, rev, bus);
-    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + a + hold + dur);
     if (filter) { const fl = this.filt('lowpass', filter, 0.7); o.connect(fl); fl.connect(g); } else o.connect(g);
     g.connect(out);
-    this.env(g, t, a, 0, dur, vol);
-    o.start(t); o.stop(t + a + dur + 0.05);
+    this.env(g, t, a, hold, dur, vol);
+    o.start(t); o.stop(t + a + hold + dur + 0.05);
   },
 };
 
@@ -1201,29 +1203,60 @@ const SFX = {
     else if (surface === 'concrete' || surface === 'tile') { AU.burst({ dur: 0.05, f: 1400 * r * pitch, q: 1.4, vol: vol * 0.55, rev: 0.25 }); AU.tone({ f: 90, f2: 50, dur: 0.06, vol: vol * 0.3 }); }
     else { AU.burst({ dur: 0.06, f: 520 * r * pitch, q: 1.2, vol: vol * 0.7, rev: 0.18 }); AU.tone({ f: 85 * r, f2: 45, dur: 0.08, vol: vol * 0.55, rev: 0.05 }); if (Math.random() < 0.08) this.creak(null, 0.08); }
   },
-  creak(pos = null, vol = 0.18) {
+  // sawtooth through a resonant band with a wobbling pitch: wood groan by default, hinge squeak with a high band
+  creak(pos = null, vol = 0.18, { t0 = 0, dur = 0.6, f = 160 + Math.random() * 120, bp = 900, q = 6 } = {}) {
     if (!AU.ok) return;
-    const t = AU.t, o = AU.osc('sawtooth', 160 + Math.random() * 120), fl = AU.filt('bandpass', 900, 6), g = AU.gain(0), out = AU.out(pos, 0.4);
-    const lfo = AU.osc('sine', 18 + Math.random() * 20), lg = AU.gain(30); lfo.connect(lg); lg.connect(o.frequency);
-    o.frequency.linearRampToValueAtTime(o.frequency.value * (0.7 + Math.random() * 0.6), t + 0.5);
+    const t = t0 || AU.t, o = AU.osc('sawtooth', f), fl = AU.filt('bandpass', bp, q), g = AU.gain(0), out = AU.out(pos, 0.4);
+    const lfo = AU.osc('sine', 18 + Math.random() * 20), lg = AU.gain(f * 0.15); lfo.connect(lg); lg.connect(o.frequency);
+    o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * (0.7 + Math.random() * 0.6), t + dur * 0.8);
     o.connect(fl); fl.connect(g); g.connect(out);
-    AU.env(g, t, 0.05, 0.25, 0.3, vol);
-    o.start(t); lfo.start(t); o.stop(t + 0.7); lfo.stop(t + 0.7);
+    AU.env(g, t, Math.min(0.05, dur * 0.15), dur * 0.4, dur * 0.45, vol);
+    o.start(t); lfo.start(t); o.stop(t + dur + 0.1); lfo.stop(t + dur + 0.1);
   },
-  door(pos) {
+  door(pos, swing = 1.1) {
     if (!AU.ok) return;
-    AU.tone({ pos, type: 'square', f: 1800, f2: 900, dur: 0.03, vol: 0.12, filter: 3000 });
-    this.creak(pos, 0.22);
     const t = AU.t;
-    AU.burst({ pos, t0: t + 0.05, dur: 0.6, f: 300, q: 0.7, type: 'lowpass', vol: 0.25, sweepTo: 120, rev: 0.4 });
+    AU.burst({ pos, t0: t, dur: 0.03, f: 3200, q: 3, vol: 0.5, rev: 0.1 }); // handle turns
+    AU.burst({ pos, t0: t + 0.06, dur: 0.05, f: 1700, q: 2, vol: 0.6, rev: 0.25 }); // latch springs back
+    AU.tone({ pos, t0: t + 0.06, type: 'triangle', f: 2300, f2: 1900, dur: 0.07, vol: 0.14 });
+    AU.burst({ pos, t0: t + 0.07, dur: 0.14, f: 240, q: 0.7, type: 'lowpass', vol: 0.6, brown: true, rev: 0.3 }); // leaf knocks free of the frame
+    AU.tone({ pos, t0: t + 0.07, f: 110, f2: 60, dur: 0.13, vol: 0.32 });
+    AU.burst({ pos, t0: t + 0.12, a: swing * 0.3, hold: swing * 0.12, dur: swing * 0.45, f: 900, q: 0.6, type: 'lowpass', vol: 0.32, sweepTo: 350, rev: 0.35 }); // air pushed by the leaf
+    this.creak(pos, 0.24, { t0: t + 0.16, dur: swing * 0.7, f: 340 + Math.random() * 80, bp: 2600, q: 4 }); // hinge squeak
+    const st = t + swing * 0.92;
+    AU.burst({ pos, t0: st, dur: 0.2, f: 180, q: 0.7, type: 'lowpass', vol: 0.55, brown: true, rev: 0.4 }); // settles against the stop
+    AU.burst({ pos, t0: st, dur: 0.05, f: 1200, q: 1.5, vol: 0.22, rev: 0.3 });
   },
   slam(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.45, f: 260, q: 0.5, type: 'lowpass', vol: 1, rev: 0.7, brown: true }); AU.tone({ pos, f: 70, f2: 35, dur: 0.4, vol: 0.8 }); AU.burst({ pos, dur: 0.08, f: 2400, q: 1, vol: 0.4 }); },
-  locked(pos) { if (!AU.ok) return; for (let i = 0; i < 3; i++) AU.burst({ pos, t0: AU.t + i * 0.09, dur: 0.04, f: 2200 + i * 200, q: 3, vol: 0.35 }); },
-  unlock(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.05, f: 3200, q: 4, vol: 0.4 }); AU.burst({ pos, t0: AU.t + 0.12, dur: 0.07, f: 1800, q: 3, vol: 0.5 }); AU.tone({ pos, t0: AU.t + 0.12, type: 'triangle', f: 1300, dur: 0.15, vol: 0.12 }); },
+  // handle jiggled twice against the bolt; the leaf rattles in its frame
+  locked(pos) {
+    if (!AU.ok) return;
+    for (let i = 0; i < 2; i++) {
+      const k = AU.t + i * 0.17;
+      AU.burst({ pos, t0: k, dur: 0.035, f: 2600, q: 2.5, vol: 0.7, rev: 0.15 });
+      AU.burst({ pos, t0: k + 0.01, dur: 0.09, f: 260, q: 0.8, type: 'lowpass', vol: 0.75, brown: true, rev: 0.2 });
+      AU.tone({ pos, t0: k + 0.01, f: 140, f2: 80, dur: 0.07, vol: 0.3 });
+      AU.burst({ pos, t0: k + 0.07, dur: 0.03, f: 3400, q: 3, vol: 0.4, rev: 0.1 });
+    }
+  },
+  // key slides in, tumblers tick, the bolt throws
+  unlock(pos) {
+    if (!AU.ok) return;
+    const t = AU.t;
+    AU.burst({ pos, t0: t, dur: 0.14, f: 4200, q: 1.2, vol: 0.35, sweepTo: 2600, rev: 0.1 });
+    AU.burst({ pos, t0: t + 0.16, dur: 0.03, f: 3000, q: 3, vol: 0.6, rev: 0.1 });
+    AU.burst({ pos, t0: t + 0.26, dur: 0.05, f: 1600, q: 2, vol: 0.9, rev: 0.2 });
+    AU.burst({ pos, t0: t + 0.26, dur: 0.1, f: 240, q: 0.8, type: 'lowpass', vol: 0.6, brown: true, rev: 0.2 });
+    AU.tone({ pos, t0: t + 0.26, type: 'triangle', f: 1350, dur: 0.18, vol: 0.14 });
+  },
   drawer(pos, open = true) {
     if (!AU.ok) return;
-    AU.burst({ pos, dur: 0.32, f: open ? 700 : 900, q: 1.4, vol: 0.28, sweepTo: open ? 400 : 1300, rev: 0.15 });
-    AU.burst({ pos, t0: AU.t + (open ? 0.3 : 0.25), dur: 0.06, f: 300, q: 1, vol: 0.35, rev: 0.1 });
+    const t = AU.t;
+    AU.burst({ pos, t0: t, a: 0.03, dur: 0.3, f: open ? 700 : 900, q: 1.2, vol: 0.45, sweepTo: open ? 400 : 1300, rev: 0.15 }); // wood runners
+    AU.burst({ pos, t0: t + 0.02, a: 0.03, dur: 0.25, f: 2600, q: 0.8, vol: 0.12, rev: 0.1 });
+    const k = t + (open ? 0.3 : 0.25);
+    AU.burst({ pos, t0: k, dur: 0.08, f: 320, q: 0.9, vol: 0.6, rev: 0.15 }); // hits its stop
+    AU.tone({ pos, t0: k, f: 120, f2: 70, dur: 0.08, vol: 0.3 });
   },
   coins() {
     if (!AU.ok) return;
@@ -1234,8 +1267,50 @@ const SFX = {
     }
   },
   pickup() { if (!AU.ok) return; AU.burst({ dur: 0.12, f: 1500, q: 0.8, vol: 0.18, sweepTo: 3000 }); AU.tone({ type: 'triangle', f: 880, dur: 0.12, vol: 0.08 }); AU.tone({ t0: AU.t + 0.07, type: 'triangle', f: 1320, dur: 0.18, vol: 0.07 }); },
-  closet(pos, enter = true) { if (!AU.ok) return; this.creak(pos, 0.2); AU.burst({ pos, t0: AU.t + 0.25, dur: 0.12, f: 220, q: 0.8, type: 'lowpass', vol: 0.5, rev: 0.15 }); },
-  bed() { if (!AU.ok) return; AU.burst({ dur: 0.35, f: 500, q: 0.6, vol: 0.2, sweepTo: 250 }); },
+  // short wooden knock: a low sine body plus a band of noise (tc = decay seconds)
+  knock(pos, t0, f, nf, vol, tc = 0.04) {
+    AU.tone({ pos, t0, f, f2: f * 0.8, dur: tc * 2.5, vol, rev: 0.15 });
+    AU.burst({ pos, t0, dur: tc * 2, f: nf, q: 1.5, vol: vol * 0.7, rev: 0.15 });
+  },
+  // wardrobe, timed to animateClosetDoors (open by 0.3 s, shut by 0.6 s).
+  // enter: doors rattle as they are pulled open, then are eased shut and latched; exit: doors are shoved open and bang
+  closet(pos, enter = true) {
+    if (!AU.ok) return;
+    const t = AU.t;
+    if (enter) {
+      this.knock(pos, t + 0.03, 400, 2000, 0.189, 0.025);
+      AU.burst({ pos, t0: t + 0.05, a: 0.02, hold: 0.15, dur: 0.08, f: 1200, q: 0.7, vol: 0.189, rev: 0.15 });
+      for (const d of [0.065, 0.105, 0.145, 0.17, 0.22]) AU.burst({ pos, t0: t + d, dur: 0.045, f: 1100, q: 0.9, vol: 0.378, rev: 0.15 });
+      for (const d of [0.105, 0.145, 0.175, 0.22]) AU.tone({ pos, t0: t + d, f: 70, f2: 45, dur: 0.08, vol: 0.347 });
+      for (const d of [0.065, 0.1, 0.165]) AU.burst({ pos, t0: t + d, dur: 0.012, f: 6000, q: 0.8, vol: 0.126, rev: 0 });
+      AU.tone({ pos, t0: t + 0.41, f: 55, f2: 42, dur: 0.12, vol: 0.202 });
+      AU.burst({ pos, t0: t + 0.41, dur: 0.12, f: 180, q: 0.7, type: 'lowpass', vol: 0.189, brown: true });
+      [0.515, 0.545, 0.59, 0.64].forEach((d, i) => this.knock(pos, t + d, 75, 330, i < 3 ? 0.189 : 0.082, 0.025));
+      AU.burst({ pos, t0: t + 0.56, dur: 0.025, f: 1100, q: 3, vol: 0.126 });
+      for (const d of [0.685, 0.715]) AU.burst({ pos, t0: t + d, dur: 0.02, f: 1400, q: 2.5, vol: 0.139, rev: 0.05 });
+    } else {
+      AU.tone({ pos, t0: t + 0.05, f: 6250, dur: 0.18, vol: 0.004, rev: 0 }); // strained hinge whine
+      AU.burst({ pos, t0: t + 0.25, a: 0.005, hold: 0.025, dur: 0.03, f: 950, q: 0.9, vol: 0.198, rev: 0.2 }); // crack
+      const s = t + 0.29;
+      AU.tone({ pos, t0: s, f: 62, f2: 45, a: 0.003, hold: 0.03, dur: 0.12, vol: 0.324 });
+      AU.burst({ pos, t0: s, hold: 0.03, dur: 0.3, f: 120, q: 0.7, type: 'lowpass', vol: 0.432, brown: true, rev: 0.35 });
+      AU.burst({ pos, t0: s, dur: 0.07, f: 420, q: 1.5, vol: 0.126, rev: 0.3 });
+      AU.burst({ pos, t0: s, dur: 0.02, f: 4500, q: 0.7, type: 'highpass', vol: 0.043 });
+      for (const d of [0.46, 0.49]) this.knock(pos, t + d, 64, 2100, 0.09, 0.03); // rebound
+      for (const d of [0.62, 0.65]) { AU.tone({ pos, t0: t + d, f: 47, dur: 0.04, vol: 0.054 }); AU.burst({ pos, t0: t + d, dur: 0.015, f: 3000, q: 2, vol: 0.036 }); } // latch
+    }
+  },
+  // crawling under / out from a bed: a knock on the frame, a slow creak, body thump, cloth dragging, knees and elbows
+  bed(pos = null, enter = true) {
+    if (!AU.ok) return;
+    const t = AU.t, k = 0.1;
+    this.knock(pos, t + (enter ? 0.05 : 0.07), enter ? 140 : 200, enter ? 1500 : 630, k, 0.02);
+    this.creak(pos, k * 0.45, { t0: t + (enter ? 0.15 : 0.2), dur: enter ? 0.25 : 0.33, f: enter ? 56 : 40, bp: 1050, q: 0.8 });
+    this.knock(pos, t + (enter ? 0.46 : 0.66), enter ? 170 : 135, 300, k * 0.9, 0.05);
+    const c0 = enter ? 0.56 : 0.74, c1 = enter ? 1.12 : 1.7;
+    for (let d = c0; d < c1; d += 0.2 + Math.random() * 0.13) AU.burst({ pos, t0: t + d, a: 0.04, dur: 0.16, f: 400, q: 0.6, vol: k * (0.3 + Math.random() * 0.4), brown: true, rev: 0.05 });
+    (enter ? [0.72, 0.78, 0.915, 0.965, 1.285] : [1.025, 1.11, 1.16, 1.31, 1.37, 1.535, 1.835]).forEach(d => this.knock(pos, t + d, 115 + Math.random() * 25, 330 + Math.random() * 140, k * (0.55 + Math.random() * 0.3), 0.04));
+  },
   click() { if (!AU.ok) return; AU.burst({ dur: 0.02, f: 3500, q: 2, vol: 0.25, rev: 0 }); },
   lighter() { if (!AU.ok) return; AU.burst({ dur: 0.03, f: 4000, q: 2, vol: 0.3, rev: 0 }); AU.burst({ t0: AU.t + 0.06, dur: 0.25, f: 1200, q: 0.5, vol: 0.12, rev: 0 }); },
   flick(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.04, f: 5000, q: 1, type: 'highpass', vol: 0.25 }); AU.tone({ pos, type: 'sawtooth', f: 120, dur: 0.06, vol: 0.06, filter: 900 }); },
@@ -1243,19 +1318,47 @@ const SFX = {
   hurt() { if (!AU.ok) return; AU.tone({ type: 'sawtooth', f: 180, f2: 70, dur: 0.25, vol: 0.18, filter: 800 }); AU.burst({ dur: 0.18, f: 400, q: 0.6, vol: 0.4, brown: true, type: 'lowpass' }); },
   heal() { if (!AU.ok) return; [523, 659, 784].forEach((f, i) => AU.tone({ t0: AU.t + i * 0.08, type: 'sine', f, dur: 0.4, vol: 0.08, rev: 0.5 })); },
   gulp() { if (!AU.ok) return; for (let i = 0; i < 3; i++) AU.tone({ t0: AU.t + i * 0.16, type: 'sine', f: 180, f2: 90, dur: 0.1, vol: 0.18 }); },
+  // Screech's whispered "pssst": lip click + puff, then a bright sibilant around 10-11 kHz held ~0.13 s
   psst(pos) {
     if (!AU.ok) return;
     const t = AU.t;
-    AU.burst({ pos, t0: t, dur: 0.03, f: 1200, q: 1, vol: 0.5, rev: 0.1 });
-    AU.burst({ pos, t0: t + 0.06, a: 0.04, dur: 0.38, f: 5200, q: 1.5, vol: 0.45, rev: 0.25 });
-    AU.burst({ pos, t0: t + 0.5, dur: 0.03, f: 2400, q: 2, vol: 0.45, rev: 0.1 });
+    AU.burst({ pos, t0: t, dur: 0.015, f: 2500, q: 1, vol: 0.5, rev: 0.1 }); // "p" click
+    AU.burst({ pos, t0: t, a: 0.012, dur: 0.03, f: 300, q: 0.7, type: 'lowpass', vol: 0.9, rev: 0.05 }); // puff
+    AU.burst({ pos, t0: t + 0.01, a: 0.01, hold: 0.13, dur: 0.05, f: 10800, q: 1.2, vol: 1.7, sweepTo: 9000, rev: 0.3 }); // "sss"
+    AU.burst({ pos, t0: t + 0.01, a: 0.01, hold: 0.1, dur: 0.05, f: 6000, q: 1.4, vol: 0.45, rev: 0.3 });
   },
-  screechFlee(pos) { if (!AU.ok) return; AU.tone({ pos, type: 'square', f: 900, f2: 2600, dur: 0.25, vol: 0.12, filter: 3000 }); AU.burst({ pos, dur: 0.25, f: 4000, q: 1, vol: 0.2 }); },
+  // formant shriek: a stepped sawtooth, roughened by a 38 Hz detune wobble, saturated, then through narrow vocal-tract bands
+  scream({ pos = null, t0 = 0, steps, formants, hold, vol = 1, rev = 0.25 }) {
+    const t = t0 || AU.t, o = AU.osc('sawtooth', steps[0][1]), ws = AU.shaper(3), g = AU.gain(0), out = AU.out(pos, rev);
+    steps.forEach(([d, f], i) => { if (i) { o.frequency.setValueAtTime(steps[i - 1][1], t + d - 0.01); o.frequency.linearRampToValueAtTime(f, t + d); } });
+    const lfo = AU.osc('sine', 38), lg = AU.gain(40); lfo.connect(lg); lg.connect(o.detune);
+    o.connect(ws);
+    for (const [f, q, v] of formants) { const b = AU.filt('bandpass', f, q), bg = AU.gain(v); ws.connect(b); b.connect(bg); bg.connect(g); }
+    g.connect(out);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.015); g.gain.setValueAtTime(vol, t + hold); g.gain.setTargetAtTime(0.0001, t + hold, 0.03);
+    o.start(t); lfo.start(t); o.stop(t + hold + 0.25); lfo.stop(t + hold + 0.25);
+    AU.burst({ pos, t0: t, a: 0.015, hold, dur: 0.08, f: 3000, q: 1.5, vol: vol * 0.1, rev }); // breath
+  },
+  // looked at in time: a 0.6 s rising-then-falling shriek as it retreats
+  screechFlee(pos) {
+    if (!AU.ok) return;
+    this.scream({ pos, steps: [[0, 935], [0.31, 1400], [0.49, 605], [0.66, 320]], formants: [[2800, 6, 6], [1870, 6, 3], [5500, 4, 1.5]], hold: 0.6, vol: 0.5 });
+  },
+  // the bite: stepped shriek + a growling chomp from 0.27 s + wet crunch grains, layered with the (lower) jumpscare scream
   screechAttack() {
     if (!AU.ok) return;
-    AU.tone({ type: 'sawtooth', f: 800, f2: 250, dur: 0.7, vol: 0.4, filter: 4000 });
-    AU.tone({ type: 'square', f: 1250, f2: 400, dur: 0.6, vol: 0.2, filter: 5000 });
-    AU.burst({ dur: 0.7, f: 3000, q: 0.6, vol: 0.6 });
+    const t = AU.t;
+    this.scream({ steps: [[0, 1310], [0.11, 920], [0.2, 620], [0.31, 915], [0.36, 1330]], formants: [[2700, 6, 6], [3100, 5, 3.8]], hold: 0.44, vol: 0.25, rev: 0.15 });
+    this.scream({ steps: [[0, 870], [0.33, 1300], [0.53, 565], [0.71, 290]], formants: [[2610, 6, 6], [1745, 6, 3], [5100, 4, 1.5]], hold: 0.645, vol: 0.18, rev: 0.3 });
+    const c = AU.osc('sawtooth', 96), c2 = AU.osc('sine', 60), lp = AU.filt('lowpass', 220, 2), am = AU.gain(0.5), mod = AU.osc('square', 25), mg = AU.gain(0.5), cg = AU.gain(0), out = AU.out(null, 0.15);
+    mod.connect(mg); mg.connect(am.gain); c.connect(lp); c2.connect(lp); lp.connect(am); am.connect(cg); cg.connect(out);
+    c.frequency.setValueAtTime(96, t + 0.28); c.frequency.exponentialRampToValueAtTime(60, t + 0.33);
+    const G = cg.gain;
+    G.setValueAtTime(0.0001, t); G.linearRampToValueAtTime(0.4, t + 0.075); G.setTargetAtTime(0.0001, t + 0.075, 0.03);
+    G.setValueAtTime(0.0001, t + 0.27); G.linearRampToValueAtTime(0.6, t + 0.29); G.setValueAtTime(0.6, t + 0.45); G.exponentialRampToValueAtTime(0.12, t + 0.55); G.exponentialRampToValueAtTime(0.0001, t + 0.75);
+    for (const o of [c, c2, mod]) { o.start(t); o.stop(t + 0.8); }
+    for (let i = 0; i < 4; i++) AU.burst({ t0: t + 0.45 + Math.random() * 0.2, dur: 0.02, f: 4000, q: 0.8, vol: 0.25 * (1 - i * 0.2), rev: 0.1 });
+    AU.burst({ dur: 0.05, f: 300, q: 0.7, type: 'lowpass', vol: 0.5, brown: true, rev: 0 }); // the hit
   },
   jumpscare(kind = 'generic') {
     if (!AU.ok) return;
@@ -1940,7 +2043,7 @@ function makeItemMesh(type, extra) {
 /* =========================================================================
    Doors
    ========================================================================= */
-const DOOR_W = 1.8, DOOR_H = 3.05, DOOR_GAP = DOOR_W + 0.3;
+const DOOR_W = 1.68, DOOR_H = 2.65, DOOR_GAP = DOOR_W + 0.3;
 let _doorLeafGeo = null, _doorEdge = null;
 function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
   const F = new Frame(room, x, y, z, ry);
@@ -1960,9 +2063,9 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
   leaf.position.set(-DOOR_W / 2, DOOR_H / 2, 0); leaf.castShadow = true; leaf.receiveShadow = true;
   pivot.add(leaf);
   for (const s of [1, -1]) { // lever handle on a backplate
-    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.24, 0.012), MAT.brass); pl.position.set(-(DOOR_W - 0.16), 1.4, 0.05 * s); pivot.add(pl);
-    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 8), MAT.brass); st.rotation.x = Math.PI / 2; st.position.set(-(DOOR_W - 0.16), 1.44, 0.08 * s); pivot.add(st);
-    const lv = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.03, 0.03), MAT.brass); lv.position.set(-(DOOR_W - 0.23), 1.44, 0.11 * s); pivot.add(lv);
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.24, 0.012), MAT.brass); pl.position.set(-(DOOR_W - 0.16), 1.12, 0.05 * s); pivot.add(pl);
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 8), MAT.brass); st.rotation.x = Math.PI / 2; st.position.set(-(DOOR_W - 0.16), 1.16, 0.08 * s); pivot.add(st);
+    const lv = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.03, 0.03), MAT.brass); lv.position.set(-(DOOR_W - 0.23), 1.16, 0.11 * s); pivot.add(lv);
   }
   let plaqueTex = null;
   if (number != null) {
@@ -1982,7 +2085,7 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
     const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.13, 0.05), MAT.iron); lock.add(body);
     const hole = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.05, 0.01), MAT.black); hole.position.set(0, -0.01, 0.027); lock.add(hole);
     const sh = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.011, 6, 14, Math.PI), MAT.steel); sh.position.y = 0.065; lock.add(sh);
-    lock.position.set(-(DOOR_W - 0.2), 1.3, 0.12); pivot.add(lock); door.padlock = lock;
+    lock.position.set(-(DOOR_W - 0.2), 1.02, 0.12); pivot.add(lock); door.padlock = lock;
   }
   room.door = door;
   room.addInteract(leaf, {
@@ -2006,7 +2109,7 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
 function openDoor(door, silent = false) {
   if (door.open) return;
   door.open = true; door.collider.on = false;
-  if (!silent) SFX.door(door.center.clone().applyMatrix4(door.room.group.matrixWorld));
+  if (!silent) SFX.door(door.center.clone().applyMatrix4(door.room.group.matrixWorld), door.auto ? 0.65 : 1.15);
   if (door.onOpen) door.onOpen();
   if (GAME) GAME.onDoorOpened(door);
 }
@@ -2304,7 +2407,7 @@ function addTallGrass(room, x, z, w, d, n = 30) {
    ========================================================================= */
 const WT = 0.2;
 const ROOM_SCALE = 1.45;   // the Hotel's rooms are big next to the player
-const WAIN_H = 1.4;
+const WAIN_H = 1.15;
 const PAL_KEYS = Object.keys(WALLPAPERS);
 function pickStyle(r) {
   return { pal: r.weighted([['green', 3], ['mustard', 3], ['red', 2.5], ['teal', 2], ['brown', 2.5], ['cream', 1.5], ['plum', 1]]), style: r.weighted([['damask', 4], ['stripes', 2.5], ['lattice', 1.5], ['floral', 1.5]]) };
@@ -2454,7 +2557,7 @@ function anyWall(room, width, depth, level = 'low', sides = SIDES, opt = {}) {
   return null;
 }
 /* Decor passes */
-function sconcesAlong(room, side, spacing = 4.4, y = 2.75, opt = {}) {
+function sconcesAlong(room, side, spacing = 4.4, y = 2.3, opt = {}) {
   const w = room.walls[side]; if (!w) return;
   const n = Math.max(1, Math.floor(w.L / spacing));
   for (let i = 0; i < n; i++) {
@@ -2501,7 +2604,7 @@ const TPL = {};
 TPL.hallway = {
   roomScale: ROOM_SCALE,
   plan(c) {
-    const r = c.rng, P = { W: r.range(5.6, 7.4), D: r.range(12, 18), H: 4.8, exits: [] };
+    const r = c.rng, P = { W: r.range(5.6, 7.4), D: r.range(12, 18), H: 3.9, exits: [] };
     P.exits.push(chooseExit(c, P, { wSide: 0.9, zMin: P.D * 0.6 }));
     return P;
   },
@@ -2518,11 +2621,11 @@ TPL.hallway = {
 };
 TPL.bedroom = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(8, 10.5), D: r.range(8, 10.5), H: 4.9, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(8, 10.5), D: r.range(8, 10.5), H: 3.5, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
-    addChandelier(room, room.ox, P.H, -P.D / 2, 1.2);
+    addChandelier(room, room.ox, P.H, -P.D / 2, 1);
     centerRug(room, r);
     const nb = r.weighted([[1, 2], [2, 3]]);
     for (let i = 0; i < nb; i++) {
@@ -2542,7 +2645,7 @@ TPL.bedroom = {
 };
 TPL.living = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(9, 12), D: r.range(9, 12), H: 5.3, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(9, 12), D: r.range(9, 12), H: 4.1, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
@@ -2571,7 +2674,7 @@ TPL.living = {
 };
 TPL.dining = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(7.6, 9), D: r.range(13, 17), H: 5.6, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(7.6, 9), D: r.range(13, 17), H: 4.3, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: r.chance(0.5) ? MAT.floorLight : MAT.floor });
@@ -2593,7 +2696,7 @@ TPL.dining = {
 };
 TPL.office = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(7, 9), D: r.range(7, 9), H: 4.6, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(7, 9), D: r.range(7, 9), H: 3.5, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: MAT.floorLight });
@@ -2613,7 +2716,7 @@ TPL.office = {
 };
 TPL.storage = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(6.5, 9), D: r.range(8, 11), H: 4.3, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(6.5, 9), D: r.range(8, 11), H: 3.4, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: MAT.floorLight, wallMat: MAT.plaster, style: { pal: 'cream', style: 'stripes' }, crown: false });
@@ -2629,7 +2732,7 @@ TPL.storage = {
 };
 TPL.closets = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(4.6, 5.4), D: r.range(12, 16), H: 4.6, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.7 })); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(4.6, 5.4), D: r.range(12, 16), H: 3.5, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.7 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { runner: true });
@@ -2640,7 +2743,7 @@ TPL.closets = {
 };
 TPL.gallery = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(5.2, 6.4), D: r.range(14, 18), H: 5.4, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(5.2, 6.4), D: r.range(14, 18), H: 4.2, exits: [] }; P.exits.push(chooseExit(c, P, { zMin: P.D * 0.65 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { runner: true, floor: MAT.floorLight });
@@ -2656,7 +2759,7 @@ TPL.gallery = {
 };
 TPL.kitchen = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(8, 10), D: r.range(8, 10), H: 4.6, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(8, 10), D: r.range(8, 10), H: 3.5, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { floor: MAT.tileCheck, surface: 'tile', style: { pal: r.pick(['cream', 'teal']), style: 'lattice' } });
@@ -2672,7 +2775,7 @@ TPL.kitchen = {
 };
 TPL.bighall = {
   roomScale: ROOM_SCALE,
-  plan(c) { const r = c.rng, P = { W: r.range(12, 15), D: r.range(12, 15), H: 6.8, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
+  plan(c) { const r = c.rng, P = { W: r.range(12, 15), D: r.range(12, 15), H: 5.2, exits: [] }; P.exits.push(chooseExit(c, P)); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
@@ -2875,7 +2978,7 @@ function addSideDoor(room, F, lx, ly, lz, opt = {}) {
     dist: 2.5, prompt: () => (st.open ? null : '開ける'),
     use: () => {
       if (st.open) return; st.open = true; col.on = false;
-      const dp = F.pt(lx, ly + 1.2, lz); SFX.door(room.toWorld(dp.x, dp.y, dp.z));
+      const dp = F.pt(lx, ly + 1.2, lz); SFX.door(room.toWorld(dp.x, dp.y, dp.z), 0.9);
       const base = piv.rotation.y, t0 = performance.now();
       animate(() => { const k = Math.min(1, (performance.now() - t0) / 900); piv.rotation.y = base + dir * 1.7 * smoothstep(0, 1, k); return k < 1; });
     },
@@ -2900,7 +3003,7 @@ function addBarrelStack(room, F, lx, lz, n = 3) {
 TPL.gateRoom = {
   plan(c) {
     const r = c.rng, side = r.sign(), HW = 6, SD = 2.6;
-    return { W: HW * 2 + SD, D: r.range(20, 23), H: 5.6, ox: side * SD / 2, side, HW, SD, yDown: 4, exits: [{ wall: 'N', at: 0, yb: 0.3 }] };
+    return { W: HW * 2 + SD, D: r.range(20, 23), H: 4.6, ox: side * SD / 2, side, HW, SD, yDown: 4, exits: [{ wall: 'N', at: 0, yb: 0.3 }] };
   },
   build(room, P, c) {
     const r = c.rng, s = P.side, HW = P.HW, D = P.D, H = P.H, BY = -3.7, R0 = -D + 2.5;
@@ -3132,7 +3235,7 @@ function addSnare(room, x, z) {
    Special rooms
    ========================================================================= */
 TPL.lobby = {
-  plan(c) { return { W: 13, D: 14, H: 5.2, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
+  plan(c) { return { W: 13, D: 14, H: 4.4, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c, { style: { pal: 'red', style: 'damask' } });
@@ -3838,7 +3941,7 @@ function wainscotBand(room, side, t0, t1, y, skip = []) {
   }
 }
 TPL.haltHall = {
-  plan(c) { return { W: 15, D: 64, H: 9, y0: -1.1, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
+  plan(c) { return { W: 15, D: 64, H: 6.4, y0: -1.1, exits: [{ wall: 'N', at: 0, yb: 0 }] }; },
   build(room, P, c) {
     const r = c.rng, W = P.W, D = P.D, H = P.H, y0 = P.y0, hx = W / 2;
     shell(room, P, c, { entryYb: 0, noPath: true, style: { pal: 'red', style: 'harlequin' }, ceil: MAT.floor });
@@ -4004,7 +4107,7 @@ function addSeekArms(room, side, z, W) {
 TPL.grandHall = {
   plan(c) {
     const role = c.seekRole;
-    return { W: 10.4, D: role === 'start' ? 52 : role === 'final' ? 46 : 40, H: 7.5, exits: [{ wall: 'N', at: 0, yb: 0 }] };
+    return { W: 10.4, D: role === 'start' ? 52 : role === 'final' ? 46 : 40, H: 5.8, exits: [{ wall: 'N', at: 0, yb: 0 }] };
   },
   build(room, P, c) {
     const r = c.rng, role = c.seekRole, W = P.W, D = P.D, H = P.H, hw = W / 2;
@@ -4057,7 +4160,7 @@ TPL.grandHall = {
   },
 };
 TPL.seekCrawl = {
-  plan(c) { const P = { W: 9.5, D: 13, H: 5, exits: [] }; P.exits.push(chooseExit(c, P, { wN: 2, zMin: 9 })); return P; },
+  plan(c) { const P = { W: 9.5, D: 13, H: 4, exits: [] }; P.exits.push(chooseExit(c, P, { wN: 2, zMin: 9 })); return P; },
   build(room, P, c) {
     const r = c.rng;
     shell(room, P, c);
@@ -4069,7 +4172,7 @@ TPL.seekCrawl = {
 };
 TPL.seekBranch = {
   plan(c) {
-    const r = c.rng, P = { W: 15, D: 15, H: 5.6, exits: [], fakes: [] };
+    const r = c.rng, P = { W: 15, D: 15, H: 4.5, exits: [], fakes: [] };
     const walls = ['N'];
     if (c.allowW) walls.push('W'); if (c.allowE) walls.push('E');
     const real = r.pick(walls);
@@ -4766,7 +4869,7 @@ GAME.enterHide = function (h) {
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z); PLAYER.vel.set(0, 0, 0);
   const fx = $('fxHide'); fx.className = 'fx ' + (h.type === 'bed' ? 'bed' : 'closet'); setTimeout(() => { if (PLAYER.hidden === h) fx.style.opacity = 1; }, 250);
-  if (h.type === 'closet') { SFX.closet(h.cam); animateClosetDoors(h); setTimeout(() => { if (PLAYER.hidden === h) h.doors.forEach(d => (d.visible = false)); }, 420); } else SFX.bed();
+  if (h.type === 'closet') { SFX.closet(h.cam, true); animateClosetDoors(h); setTimeout(() => { if (PLAYER.hidden === h) h.doors.forEach(d => (d.visible = false)); }, 420); } else SFX.bed(h.cam, true);
   NOISE.emit(PLAYER.pos, 3);
 };
 GAME.exitHide = function (force = false) {
@@ -4776,7 +4879,7 @@ GAME.exitHide = function (force = false) {
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z);
   PLAYER.camY = h.exitP.y + 1.62;
   $('fxHide').style.opacity = 0;
-  if (h.type === 'closet') { h.doors.forEach(d => (d.visible = true)); SFX.closet(h.cam); animateClosetDoors(h); } else SFX.bed();
+  if (h.type === 'closet') { h.doors.forEach(d => (d.visible = true)); SFX.closet(h.cam, false); animateClosetDoors(h); } else SFX.bed(h.cam, false);
   ENT.onExitHide();
 };
 function animateClosetDoors(h) {
@@ -5311,16 +5414,17 @@ const ENT = {
         if (this.state === 'flee') { this.off.multiplyScalar(1 + dt * 4); this.spr.material.opacity = Math.max(0, 1 - this.t * 3); this.spr.position.copy(p); if (this.t > 0.4) ENT.remove(this); return; }
         this.spr.position.copy(p);
         this.spr.material.opacity = Math.min(1, this.t * 2);
-        if (this.t > 0.15 && !this.ps) { this.ps = true; SFX.psst(p); }
+        if (this.t > 0.15 && !this.ps) { this.ps = true; SFX.psst(p); UI.screechFx('in'); POST.shake = Math.max(POST.shake, 0.5); }
+        if (this.ps) POST.shake = Math.max(POST.shake, 0.12); // a faint tremble while it lurks
         if (PLAYER.hidden) { ENT.remove(this); return; }
         const dir = tmpV2.copy(p).sub(GAME.camPos).normalize();
         if (dir.dot(GAME.camDir) > 0.9 && this.t > 0.2) {
           if (ENT.tryCrucifix(this)) return;
-          this.state = 'flee'; this.t = 0; SFX.screechFlee(p); return;
+          this.state = 'flee'; this.t = 0; SFX.screechFlee(p); UI.screechFx('flee'); return;
         }
         if (this.t > 3.0) { ENT.remove(this); SFX.screechAttack(); UI.jumpscare('screech', 0.7); GAME.damage(40, 'screech'); }
       },
-      dispose() { scene.remove(this.spr); this.spr.material.dispose(); },
+      dispose() { scene.remove(this.spr); this.spr.material.dispose(); UI.screechFx('off'); },
     };
     this.add(e);
   },
@@ -5567,7 +5671,7 @@ const ENT = {
     }, 2500);
   },
   spawnFigure(room) {
-    const model = makeFigureModel();
+    const model = makeFigureModel(); model.scale.setScalar(0.9); // ~1.15 door heights tall, as in the original
     const fs = room.meta.figureSpawn, sp = room.toWorld(fs.x, room.y0 + (fs.y || 0), fs.z);
     model.position.copy(sp); scene.add(model);
     SFX.figureRoar(sp);
@@ -5775,6 +5879,44 @@ const GUIDING = {
   timothy: ['あなたは引き出しに潜んでいた何かに…', '…運が悪かったみたい。'],
   generic: ['あなたは死んでしまったようです…', '次はきっと、もっと先へ。'],
 };
+/* Screech's presence: black, hair-like tendrils creep in from the screen edges while it hovers behind the player */
+function screechStrands(w, h) {
+  const m = Math.min(w, h), out = [], n = Math.round(90 + (w + h) / 11);
+  for (let i = 0; i < n; i++) {
+    const e = (Math.random() * 4) | 0, u = Math.random();
+    const v = u < 0.5 ? Math.pow(u * 2, 1.7) / 2 : 1 - Math.pow((1 - u) * 2, 1.7) / 2; // bunch up toward the corners
+    const [x, y, a] = e === 0 ? [v * w, 0, Math.PI / 2] : e === 1 ? [w, v * h, Math.PI] : e === 2 ? [v * w, h, -Math.PI / 2] : [0, v * h, 0];
+    const fuzz = i % 2 === 0, segs = fuzz ? 9 : 12 + ((Math.random() * 6) | 0), turns = []; // fuzz = tangled scribbles hugging the edge
+    for (let j = 0; j < segs; j++) turns.push((Math.random() - 0.5) * (fuzz ? 2.6 : 0.9));
+    out.push({ x, y, a: a + (Math.random() - 0.5) * 1.2, segs, turns, len: m * (fuzz ? 0.05 + Math.random() * 0.06 : 0.08 + Math.pow(Math.random(), 1.5) * 0.22),
+      w: fuzz ? 1.6 + Math.random() * 2.2 : 2.6 + Math.random() * 4.5, ph: Math.random() * 6.28, f: 2 + Math.random() * 5, delay: Math.random() * 0.4, br: fuzz ? 0 : 1 + ((Math.random() * 2) | 0) });
+  }
+  return out;
+}
+function drawScreechStrands(g, S, t, w, h) {
+  const k = S.k, cx = w / 2, cy = h / 2;
+  const gr = g.createRadialGradient(cx, cy, Math.min(w, h) * 0.38, cx, cy, Math.hypot(w, h) / 2);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.75, `rgba(0,0,0,${0.35 * k})`); gr.addColorStop(1, `rgba(0,0,0,${0.92 * k})`);
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#000'; g.lineCap = 'round'; g.lineJoin = 'round';
+  const strand = (x, y, a, segs, turns, step, lw, s, j0) => {
+    const third = Math.ceil(segs / 3), tips = [];
+    for (let c = 0; c < 3; c++) {
+      g.lineWidth = Math.max(0.6, lw * (1 - c * 0.32)); g.beginPath(); g.moveTo(x, y);
+      for (let j = c * third; j < Math.min(segs, (c + 1) * third); j++) {
+        a += turns[j] + Math.sin(t * s.f + s.ph + (j + j0) * 0.8) * 0.14;
+        x += Math.cos(a) * step; y += Math.sin(a) * step; g.lineTo(x, y);
+      }
+      g.stroke(); tips.push([x, y, a]);
+    }
+    return tips;
+  };
+  for (const s of S.strands) {
+    const grow = clamp(k * (1.4 + 0.08 * Math.sin(t * 2.6 + s.ph)) - s.delay, 0, 1); if (grow <= 0) continue;
+    const step = (s.len * grow) / s.segs, tips = strand(s.x, s.y, s.a, s.segs, s.turns, step, s.w, s, 0);
+    for (let b = 0; b < s.br; b++) { const [bx, by, ba] = tips[b % 2]; strand(bx, by, ba + (b % 2 ? -0.9 : 0.9), 5, s.turns, step * 0.8, s.w * 0.5, s, 7 + b); }
+  }
+}
 const UI = {
   show(id, on = true) { $(id).classList.toggle('hidden', !on); },
   hint(text, ms = 2600) { const h = $('hint'); h.textContent = text; h.classList.add('on'); clearTimeout(h._t); h._t = setTimeout(() => h.classList.remove('on'), ms); },
@@ -5909,6 +6051,22 @@ const UI = {
     };
     animate(draw);
     POST.shake = 1.2;
+  },
+  // 'in' = creep in, 'flee' = pull back, 'off' = snap away
+  screechFx(mode) {
+    const c = $('fxScreech'), S = UI._sfx || (UI._sfx = { k: 0, target: 0, speed: 3, strands: null, run: false });
+    S.target = mode === 'in' ? 1 : 0; S.speed = mode === 'in' ? 2.6 : mode === 'flee' ? 5 : 9;
+    if (S.run) return;
+    S.run = true; let last = performance.now();
+    animate(() => {
+      const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000), w = VW(), h = VH(); last = now;
+      S.k += clamp(S.target - S.k, -dt * S.speed, dt * S.speed);
+      if (c.width !== w || c.height !== h || !S.strands) { c.width = w; c.height = h; S.strands = screechStrands(w, h); }
+      const g = c.getContext('2d'); g.clearRect(0, 0, w, h);
+      if (S.k <= 0.001 && S.target === 0) { c.style.display = 'none'; S.run = false; S.strands = null; return false; }
+      c.style.display = 'block'; drawScreechStrands(g, S, now / 1000, w, h);
+      return true;
+    });
   },
   pause() {
     if (GAME.state !== 'play' || GAME.paused || !PLAYER.alive || GAME.modal || GAME.won) return;
@@ -6245,7 +6403,7 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
-window.__DOORS = { GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
+window.__DOORS = { AU, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
 </script>
 </body>
 </html>
