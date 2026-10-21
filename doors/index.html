@@ -4129,7 +4129,7 @@ TPL.grandHall = {
     if (role === 'start') {
       for (let i = 0; i < 4; i++) { const p = anyWall(room, 1.2, 0.5, 'low', ['W', 'E'], { rng: r }); if (p) { const d = addDresser(room, p.x, p.z, p.ry, { w: 1.2, rows: 2 }); if (r.chance(0.5)) addVase(d.F, 0, d.H + 0.02, 0, 1.1); } }
       decorPlants(room, r, 3);
-      room.meta.seekTrigger = -D * 0.42;
+      room.meta.seekTrigger = -D * 0.62;   // near the far end, as in the original; Seek rises in the middle
     } else if (role === 'crawl1') {
       // toppled wardrobes and shelves to weave around, and two crawlspaces
       const cz = [-D * 0.3, -D * 0.72];
@@ -4486,7 +4486,7 @@ const PARTICLES = {
    ========================================================================= */
 const GAME = {
   state: 'title', time: 0, lightMul: 1, camPos: new THREE.Vector3(), camDir: new THREE.Vector3(), player: null, room: null, maxRoom: 0,
-  gold: 0, inv: [], sel: -1, paused: false, cutscene: false, speedMul: 1,
+  gold: 0, inv: [], sel: -1, paused: false, cutscene: false, cine: null, speedMul: 1,
 };
 const RUN = { seed: 1 };
 
@@ -4639,7 +4639,8 @@ const PLAYER = {
   },
   applyCamera(dt) {
     const eye = 1.62 - 0.62 * this.crouchT;
-    if (this.hidden) {
+    if (GAME.cine) { camera.position.copy(GAME.cine.pos); camera.lookAt(GAME.cine.look); }   // cutscene camera
+    else if (this.hidden) {
       const h = this.hidden;
       tmpV.copy(h.cam);
       const k = clamp((GAME.time - h.enterT) / 0.45, 0, 1);
@@ -4649,7 +4650,7 @@ const PLAYER = {
       const bb = Math.min(1, this.speed / 4) * (this.crouch ? 0.5 : 1);
       camera.position.set(this.pos.x + Math.cos(this.bob) * 0.02 * bb * Math.cos(this.yaw), this.camY + Math.abs(Math.sin(this.bob)) * 0.05 * bb, this.pos.z - Math.cos(this.bob) * 0.02 * bb * Math.sin(this.yaw));
     }
-    camera.rotation.set(this.pitch, this.yaw, 0);
+    if (!GAME.cine) camera.rotation.set(this.pitch, this.yaw, 0);
     if (POST.shake > 0) {
       const s = POST.shake * 0.06;
       camera.position.x += (Math.random() - 0.5) * s; camera.position.y += (Math.random() - 0.5) * s; camera.position.z += (Math.random() - 0.5) * s;
@@ -5538,40 +5539,62 @@ const ENT = {
     const e = {
       kind: 'seekArm', room, update() {
         const lp = room.toLocal(PLAYER.pos.x, PLAYER.pos.y, PLAYER.pos.z);
-        if (lp.z < (room.meta.seekTrigger ?? -7)) { ENT.remove(this); ENT.startSeek(room, lp); }
+        if (lp.z < (room.meta.seekTrigger ?? -7)) { ENT.remove(this); ENT.startSeek(room); }
       },
     };
     this.add(e);
   },
-  startSeek(room, lp) {
-    const model = makeSeekModel();
-    // Seek drags itself out of a heap of black goo at the start of the hallway, behind you; you run faster for the chase
-    const start = room.toWorld(lp.x * 0.3, room.y0 + 0.02, Math.min(lp.z + 10, -1.5));
-    GAME.speedMul = 1.45;
-    const face = Math.atan2(PLAYER.pos.x - start.x, PLAYER.pos.z - start.z), puddle = makeGooHeap();
-    puddle.position.set(start.x - Math.sin(face) * 0.4, start.y, start.z - Math.cos(face) * 0.4); puddle.scale.setScalar(0.01); scene.add(puddle);
+  // Seek's entrance is a cutscene, as in the original: a side camera watches it drag itself out of a goo heap in the middle
+  // of the hallway (SEEK_RISE s), then cuts to the far end as it charges the camera; control returns with you at the exit.
+  startSeek(room) {
+    const model = makeSeekModel(), D = room.D, sz = -D * 0.42;
+    const start = room.toWorld(0, room.y0 + 0.02, sz), fwd = room.toWorld(0, room.y0 + 0.02, sz - 1).sub(start).normalize();
+    const face = Math.atan2(fwd.x, fwd.z), puddle = makeGooHeap();
+    puddle.position.copy(start).addScaledVector(fwd, -0.4); puddle.scale.setScalar(0.01); scene.add(puddle);
     model.position.copy(start); model.rotation.y = face; scene.add(model);
     const strands = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), MAT.goo); m.visible = false; scene.add(m); return m; });
-    SFX.goo(start); SFX.sting();
-    MUSIC.play('chase');
-    const trail = [start.clone(), PLAYER.pos.clone()];
+    const camA0 = room.toWorld(1.8, room.y0 + 1.0, sz - 3.7), camA1 = room.toWorld(1.25, room.y0 + 0.85, sz - 2.9), lookA = room.toWorld(0, room.y0 + 0.6, sz);
+    const camB = room.toWorld(0.5, room.y0 + 1.55, sz - 13), lookB = room.toWorld(0, room.y0 + 1.3, sz), exitP = room.toWorld(0, room.y0, -D + 2.2);
+    GAME.cine = { pos: camA0.clone(), look: lookA.clone() }; GAME.cutscene = true; PLAYER.frozen = true; PLAYER.crouch = false;
+    UI.show('hud', false); UI.show('touch', false);
+    SFX.goo(start);
+    // Seek's body and eye give off a dim red light
+    const light = { pos: start.clone(), color: new THREE.Color(0xff2a18), intensity: 6, range: 7.5, level: 0, priority: 2, kind: 'entity' };
+    WORLD.dyn.push(light);
     const e = {
-      kind: 'seek', model, puddle, strands, trail, s: 0, t: 0, rise: SEEK_RISE, stepAcc: 0, pos: start.clone(), anim: { mode: 'emerge', t: 0, sp: 0 },
+      kind: 'seek', model, puddle, strands, light, trail: null, s: 0, t: 0, rise: SEEK_RISE, cine: true, stepAcc: 0, pos: start.clone(), anim: { mode: 'emerge', t: 0, sp: 0 },
+      endCine() {
+        this.cine = false; GAME.cine = null; GAME.cutscene = false; PLAYER.frozen = false;
+        PLAYER.pos.copy(exitP); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = face + Math.PI; PLAYER.pitch = 0; PLAYER.camY = exitP.y + 1.62;
+        if (GAME.state === 'play') { UI.show('hud'); UI.show('touch', IS_TOUCH); }
+        GAME.speedMul = 1.45;   // you run faster for the chase
+        this.trail = [this.pos.clone(), PLAYER.pos.clone()]; this.s = 0;
+      },
       update(dt) {
         this.t += dt; this.anim.t = this.t;
-        const last = this.trail[this.trail.length - 1];
-        if (PLAYER.pos.distanceTo(last) > 0.4) this.trail.push(PLAYER.pos.clone());
-        let total = 0; for (let i = 1; i < this.trail.length; i++) total += this.trail[i].distanceTo(this.trail[i - 1]);
-        total += PLAYER.pos.distanceTo(this.trail[this.trail.length - 1]);
-        if (this.t < this.rise) {
-          this.puddle.scale.setScalar(Math.min(1, 0.05 + this.t * 1.6));
-          this.model.rotation.y += angDiff(this.model.rotation.y, Math.atan2(PLAYER.pos.x - this.model.position.x, PLAYER.pos.z - this.model.position.z)) * Math.min(1, dt * 3);
+        this.light.level = Math.min(1, this.t / 2); this.light.pos.copy(this.model.position); this.light.pos.y += 1.3;
+        if (this.t < this.rise) {   // shot A: crawling out of the goo
+          const k = smoothstep(0, 1, this.t / this.rise);
+          GAME.cine.pos.lerpVectors(camA0, camA1, k); GAME.cine.look.copy(lookA);
+          this.puddle.scale.setScalar(Math.min(1, 0.05 + this.t * 0.9));
           animateSeek(this.model, this.anim, dt);
           seekStrands(this);
           return;
         }
-        if (this.anim.mode === 'emerge') { this.anim.mode = 'run'; seekStrands(this); }
+        if (this.anim.mode === 'emerge') { this.anim.mode = 'run'; seekStrands(this); SFX.sting(); MUSIC.play('chase'); POST.shake = Math.max(POST.shake, 0.6); }
         this.puddle.scale.y = Math.max(0.2, 1 - (this.t - this.rise) * 0.35);
+        if (this.cine) {   // shot B: it charges the camera from the far end
+          GAME.cine.pos.copy(camB); GAME.cine.look.copy(lookB);
+          this.pos.addScaledVector(fwd, 8.4 * dt); this.model.position.copy(this.pos); this.model.rotation.y = face;
+          this.anim.sp = 8.4; animateSeek(this.model, this.anim, dt);
+          POST.shake = Math.max(POST.shake, 0.25);
+          if (this.t > this.rise + 1.4) this.endCine();
+          return;
+        }
+        const last = this.trail[this.trail.length - 1];
+        if (PLAYER.pos.distanceTo(last) > 0.4) this.trail.push(PLAYER.pos.clone());
+        let total = 0; for (let i = 1; i < this.trail.length; i++) total += this.trail[i].distanceTo(this.trail[i - 1]);
+        total += PLAYER.pos.distanceTo(this.trail[this.trail.length - 1]);
         const gap = total - this.s;
         const sp = gap > 15 ? 8.2 : gap > 8 ? 6.8 : 6.0;   // slower than you when close, catches up when you fall behind
         this.s += sp * dt;
@@ -5582,14 +5605,17 @@ const ENT = {
         const l = a.distanceTo(b) || 1;
         this.pos.lerpVectors(a, b, clamp(s / l, 0, 1));
         this.model.position.copy(this.pos);
-        tmpV.subVectors(b, a); if (tmpV.lengthSq() > 1e-4) this.model.rotation.y = Math.atan2(tmpV.x, tmpV.z);
+        tmpV.subVectors(b, a); if (tmpV.lengthSq() > 1e-4) this.model.rotation.y += angDiff(this.model.rotation.y, Math.atan2(tmpV.x, tmpV.z)) * Math.min(1, dt * 10);
         this.anim.sp = sp; animateSeek(this.model, this.anim, dt);
-        this.stepAcc += sp * dt; if (this.stepAcc > 1.1) { this.stepAcc = 0; SFX.figureStep(this.pos, 0.35); }
+        this.stepAcc += sp * dt; if (this.stepAcc > 2.4) { this.stepAcc = 0; SFX.figureStep(this.pos, 0.35); }
         POST.shake = Math.max(POST.shake, clamp(1 - gap / 10, 0, 0.5));
         while (this.trail.length > 2 && this.s > this.trail[1].distanceTo(this.trail[0])) { this.s -= this.trail[1].distanceTo(this.trail[0]); this.trail.shift(); }
         if (gap < 0.9 && PLAYER.alive) { this.anim.mode = 'grab'; GAME.kill('seek'); }
       },
-      dispose() { scene.remove(this.model); scene.remove(this.puddle); this.strands.forEach(m => scene.remove(m)); MUSIC.stop(1.5); GAME.speedMul = 1; },
+      dispose() {
+        if (this.cine) { GAME.cine = null; GAME.cutscene = false; PLAYER.frozen = false; if (GAME.state === 'play' && PLAYER.alive) { UI.show('hud'); UI.show('touch', IS_TOUCH); } }
+        scene.remove(this.model); scene.remove(this.puddle); this.strands.forEach(m => scene.remove(m)); const li = WORLD.dyn.indexOf(this.light); if (li >= 0) WORLD.dyn.splice(li, 1); MUSIC.stop(1.5); GAME.speedMul = 1;
+      },
     };
     this.add(e);
   },
@@ -5673,26 +5699,69 @@ const ENT = {
     }, 2500);
   },
   spawnFigure(room) {
-    const model = makeFigureModel(); model.scale.setScalar(0.9); // ~1.15 door heights tall, as in the original
+    const model = makeFigureModel();
     const fs = room.meta.figureSpawn, sp = room.toWorld(fs.x, room.y0 + (fs.y || 0), fs.z);
     model.position.copy(sp); scene.add(model);
     SFX.figureRoar(sp);
+    const _m = new THREE.Vector3(), _n = new THREE.Vector3();
     const e = {
-      kind: 'figure', room, model, pos: sp.clone(), yaw: 0, state: 'wander', target: null, path: [], repath: 0, stepAcc: 0, t: 0, growl: 5, hbCd: 0, hunt: false, alert: 0,
+      kind: 'figure', room, model, pos: sp.clone(), yaw: Math.atan2(PLAYER.pos.x - sp.x, PLAYER.pos.z - sp.z), state: 'intro', stateT: 2.0, target: null, path: [], repath: 0, stepAcc: 0, t: 0, growl: 5, hbCd: 0, hunt: false, alert: 0,
+      anim: { mode: 'roar', t: 0, sp: 0 },
+      turnTo(p, dt, k) { if (p) this.yaw += angDiff(this.yaw, Math.atan2(p.x - this.pos.x, p.z - this.pos.z)) * Math.min(1, dt * k); },
+      pose(dt) { this.model.position.copy(this.pos); this.model.rotation.y = this.yaw; animateFigure(this.model, this.anim, dt); },
+      // the catch: it grabs you and your view is dragged up to its opening mouth before the screen goes red
+      startKill() {
+        this.state = 'kill'; this.killT = 0; PLAYER.frozen = true; GAME.cutscene = true;
+        GAME.cine = { pos: camera.position.clone(), look: camera.position.clone() };
+        UI.show('hud', false); UI.show('touch', false); SFX.figureGrowl(this.pos, 1);
+      },
+      checkCatch(d) {
+        if (!PLAYER.alive || PLAYER.hidden || d >= 1.15 || this.state === 'kill') return;
+        if (ENT.tryCrucifix(this)) return;
+        this.startKill();
+      },
       update(dt) {
-        this.t += dt;
-        if (GAME.heartbeat) { animateFigure(this.model, this.t, 0); return; }
+        this.t += dt; this.anim.t = this.t;
         const pp = PLAYER.pos, d = this.pos.distanceTo(pp);
-        // hearing
+        if (this.state === 'kill') {
+          this.killT += dt; this.turnTo(pp, dt, 10); this.anim.mode = 'grab'; this.pose(dt);
+          const J = this.model.userData.j; J.jaw.getWorldPosition(_m); _n.set(0, 0, 1).applyQuaternion(J.jaw.getWorldQuaternion(new THREE.Quaternion()));
+          GAME.cine.pos.copy(_m).addScaledVector(_n, 1.25 - 0.7 * smoothstep(0, 0.8, this.killT)); GAME.cine.look.copy(_m);
+          if (this.killT > 0.85 && PLAYER.alive) GAME.kill('figure');
+          return;
+        }
+        if (GAME.heartbeat) { this.turnTo(pp, dt, 4); this.anim.mode = 'closet'; this.pose(dt); return; }
+        // hearing: close or loud = chase; a sound from further off makes it stop and listen first
+        let heard = null;
         if (this.hunt) { this.state = 'chase'; this.target = pp.clone(); }
         else if (!PLAYER.hidden && PLAYER.alive) {
           const r = PLAYER.noise * (PLAYER.crouch ? 2.6 : 9.5);
-          if (d < r) { this.state = d < 4 ? 'chase' : 'investigate'; this.target = pp.clone(); this.alert = 3; }
-          else if (d < 2.2) { this.state = 'chase'; this.target = pp.clone(); }
+          if (d < 2.2 || (d < r && d < 4)) { this.state = 'chase'; this.target = pp.clone(); this.alert = 3; }
+          else if (d < r) heard = pp;
         }
-        for (const ev of NOISE.events) if (GAME.time - ev.t < 0.1 && ev.pos.distanceTo(this.pos) < ev.radius * 2.2) { this.state = 'investigate'; this.target = ev.pos.clone(); }
+        for (const ev of NOISE.events) if (GAME.time - ev.t < 0.1 && ev.pos.distanceTo(this.pos) < ev.radius * 2.2) heard = ev.pos;
         NOISE.events = NOISE.events.filter(ev => GAME.time - ev.t < 0.5);
-        if (this.state !== 'wander') { this.alert -= dt; if (this.alert <= 0 && !this.hunt && (!this.target || this.pos.distanceTo(this.target) < 1.2)) { this.state = 'wander'; this.target = null; } }
+        if (heard && this.state !== 'chase' && this.state !== 'intro') {
+          if (this.state === 'wander' || this.state === 'stomp') { this.state = 'listen'; this.stateT = 1.1; this.path = []; }
+          else if (this.state === 'investigate') this.repath = 0;
+          this.target = heard.clone(); this.alert = 3;
+        }
+        // timed actions: the arrival roar, listening ("ponder"), a frustrated stomp
+        if (this.state === 'intro' || this.state === 'listen' || this.state === 'stomp') {
+          this.stateT -= dt;
+          if (this.state !== 'stomp') this.turnTo(this.state === 'listen' ? this.target : pp, dt, 3);
+          this.anim.mode = this.state === 'intro' ? 'roar' : this.state; this.anim.sp = 0;
+          if (this.state === 'stomp' && !this.stamped && this.stateT < 0.85) { this.stamped = true; SFX.figureStep(this.pos, 1); POST.shake = Math.max(POST.shake, clamp(1 - d / 10, 0, 0.5)); }
+          if (this.stateT <= 0) { if (this.state === 'listen') this.state = 'investigate'; else { this.state = 'wander'; this.target = null; } this.path = []; this.repath = 0; }
+          this.pose(dt); this.checkCatch(d); return;
+        }
+        if (this.state !== 'wander') {
+          this.alert -= dt;
+          if (this.alert <= 0 && !this.hunt && (!this.target || this.pos.distanceTo(this.target) < 1.2)) {
+            if (this.state === 'investigate') { this.state = 'stomp'; this.stateT = 1.35; this.stamped = false; } else this.state = 'wander';   // found nothing
+            this.target = null; this.path = []; this.anim.mode = this.state === 'stomp' ? 'stomp' : 'idle'; this.pose(dt); return;
+          }
+        }
         if (!this.target || (this.state === 'wander' && this.pos.distanceTo(this.target) < 1)) { this.target = randomNavPoint(room); this.path = []; }
         this.repath -= dt;
         if (this.repath <= 0) { this.repath = this.state === 'chase' ? 0.3 : 0.8; this.path = navPath(room, this.pos, this.target); }
@@ -5708,18 +5777,22 @@ const ENT = {
           }
         }
         { const g = WORLD.groundAt(this.pos.x, this.pos.z, this.pos.y + 0.3); if (g !== null) this.pos.y = g; }   // up and down the stairs
-        this.model.position.copy(this.pos); this.model.rotation.y = this.yaw;
-        animateFigure(this.model, this.t, moving);
-        this.stepAcc += moving * dt; if (this.stepAcc > 1.3) { this.stepAcc = 0; SFX.figureStep(this.pos, this.state === 'chase' ? 1 : 0.75); POST.shake = Math.max(POST.shake, clamp(1 - d / 12, 0, 0.4)); }
-        this.growl -= dt; if (this.growl <= 0) { this.growl = rng.range(5, 10); SFX.figureGrowl(tmpV.copy(this.pos).setY(this.pos.y + 2.5), 0.5); }
+        this.anim.mode = moving > 3 ? 'run' : moving > 0 ? 'walk' : 'idle'; this.anim.sp = moving;
+        this.pose(dt);
+        this.stepAcc += moving * dt; if (this.stepAcc > 1.2) { this.stepAcc = 0; SFX.figureStep(this.pos, this.state === 'chase' ? 1 : 0.75); POST.shake = Math.max(POST.shake, clamp(1 - d / 12, 0, 0.4)); }
+        this.growl -= dt; if (this.growl <= 0) { this.growl = rng.range(5, 10); SFX.figureGrowl(tmpV.copy(this.pos).setY(this.pos.y + 2.6), 0.5); }
         // closet check → heartbeat minigame
         this.hbCd -= dt;
         if (PLAYER.hidden && PLAYER.hidden.type === 'closet' && d < 3.2 && this.hbCd <= 0 && (this.state !== 'wander' || d < 2.4)) {
-          this.hbCd = 12; this.path = []; UI.heartbeat(ok => { if (!ok) GAME.kill('figure'); else { this.state = 'wander'; this.target = randomNavPoint(room); this.alert = 0; } });
+          this.hbCd = 12; this.path = []; UI.heartbeat(ok => { if (!ok) { if (PLAYER.hidden) GAME.exitHide(true); this.startKill(); } else { this.state = 'wander'; this.target = randomNavPoint(room); this.alert = 0; } });
         }
-        if (PLAYER.alive && !PLAYER.hidden && d < 1.15) { if (ENT.tryCrucifix(this)) { this.state = 'wander'; return; } GAME.kill('figure'); }
+        this.checkCatch(d);
       },
-      dispose() { scene.remove(this.model); if (room.type === 'electrical') GAME.speedMul = 1; },
+      dispose() {
+        scene.remove(this.model);
+        if (this.state === 'kill') { GAME.cine = null; GAME.cutscene = false; }
+        if (room.type === 'electrical') GAME.speedMul = 1;
+      },
     };
     this.add(e);
   },
@@ -5818,7 +5891,7 @@ function rigBuilder(g, mat) {
 // Poses are plain objects (degrees; sh/el/hip/kn/an = [left, right]); forward-positive for shoulders and hips, flexion-positive for elbows and knees.
 // pelvis pitches the whole body (legs too, for crawling); lean/hunch only bend the upper body, so leg angles stay relative to the ground.
 const POSE_KEYS = ['pelvis', 'lean', 'roll', 'hipY', 'hipZ', 'hunch', 'twist', 'chest', 'headP', 'headY', 'headR', 'jaw', 'neck'];
-const POSE_PAIRS = ['sh', 'shZ', 'shY', 'el', 'wr', 'hip', 'hipA', 'kn', 'an'];
+const POSE_PAIRS = ['sh', 'shZ', 'shY', 'el', 'elZ', 'wr', 'hip', 'hipA', 'kn', 'an'];
 function poseMix(list) { // [[weight, pose], ...] -> blended pose
   const out = {}; for (const k of POSE_PAIRS) out[k] = [0, 0];
   let tw = 0; for (const [w] of list) tw += w; if (tw <= 0) return list[0][1];
@@ -5846,7 +5919,7 @@ function poseApply(g, P) {
   for (const s of [-1, 1]) {
     const i = s < 0 ? 0 : 1, A = (k, d = 0) => (P[k] ? P[k][i] : d);
     R(J['sh' + s], -A('sh'), s * A('shY'), s * A('shZ'));
-    R(J['el' + s], -A('el'), 0, 0);
+    R(J['el' + s], -A('el'), 0, -s * A('elZ'));   // elZ bends the forearm back in toward the body
     if (J['wr' + s]) R(J['wr' + s], -A('wr'), 0, 0);
     R(J['hip' + s], -A('hip'), 0, s * A('hipA'));
     R(J['kn' + s], A('kn'), 0, 0);
@@ -5867,7 +5940,14 @@ function rigDrive(g, st, dt, poses, fade = 6) {
 /* ---------------- Seek: a thin, angular figure of glossy black goo with one eye ---------------- */
 const SEEK_S = 1.07, SEEK_HIP = 1.15 * SEEK_S;
 function makeSeekModel() {
-  const g = new THREE.Group(), S = SEEK_S, B = rigBuilder(g, MAT.goo);
+  // glossy black goo with a faint red glow and a red rim along the silhouette
+  const goo = MAT.goo.clone(); goo.emissive = new THREE.Color(0x1c0202); goo.emissiveIntensity = 1;
+  goo.onBeforeCompile = sh => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      float seekRim = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 4.0);
+      totalEmissiveRadiance += vec3(0.62, 0.035, 0.025) * seekRim;`);
+  };
+  const g = new THREE.Group(), S = SEEK_S, B = rigBuilder(g, goo);
   B.joint(g, 'body', 0, SEEK_HIP, 0);
   B.mesh('body', segGeo(0.3 * S, 0.16 * S, 0.19 * S, 0.85, -1), 0, 0.05 * S, 0);           // pelvis
   B.joint('body', 'spine', 0, 0.02 * S, 0);
@@ -5878,7 +5958,7 @@ function makeSeekModel() {
   B.mesh('neck', segGeo(0.1 * S, 0.1 * S, 0.1 * S, 0.9, 1));
   B.joint('neck', 'head', 0, 0.09 * S, 0.02 * S);
   B.mesh('head', segGeo(0.29 * S, 0.4 * S, 0.31 * S, 0.72, 1));                             // tall skull tapering to a rounded crown
-  const eyeM = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.15, emissive: 0x6a6a6a, emissiveIntensity: 0.9 });
+  const eyeM = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.15, emissive: 0x8a7a76, emissiveIntensity: 1.1 });
   const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1 * S, 18, 14), eyeM); eye.scale.set(1, 0.92, 0.55); eye.position.set(0.04 * S, 0.23 * S, 0.145 * S); g.userData.j.head.add(eye);
   const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.036 * S, 12, 10), new THREE.MeshBasicMaterial({ color: 0x000000 })); pupil.position.set(0.04 * S, 0.23 * S, 0.197 * S); g.userData.j.head.add(pupil);
   for (const s of [-1, 1]) {
@@ -5910,18 +5990,18 @@ const SEEK_POSES = {
   },
   // bounding sprint: deep forward lean, thighs swing ~-35..80 deg, back shin kicks up, bent elbows pump opposite
   run(st) {
-    const sp = st.sp || 6, k = clamp(sp / 5, 0.35, 1), ph = TAU * (1.2 + 0.03 * sp) * st.t;
+    const sp = st.sp || 6, k = clamp(sp / 5, 0.35, 1), ph = TAU * (1.45 + 0.03 * sp) * st.t;
     const P = { lean: 24 * k + 4, hunch: 10, chest: 4, roll: 4 * Math.sin(ph) * k, twist: 12 * Math.sin(ph) * k, headR: 3 * Math.sin(ph),
-      sh: [0, 0], shZ: [12, 12], el: [0, 0], wr: [15, 15], hip: [0, 0], hipA: [4, 4], kn: [0, 0], an: [0, 0] };
+      sh: [0, 0], shZ: [18, 18], el: [0, 0], wr: [15, 15], hip: [0, 0], hipA: [4, 4], kn: [0, 0], an: [0, 0] };
     P.headP = -(P.lean + P.hunch + P.chest) + 14;
     P.hipY = SEEK_HIP - 0.16 * k + 0.09 * k * Math.abs(Math.sin(ph));
     for (const i of [0, 1]) {
       const ps = ph + (i ? 0 : Math.PI), c = Math.sin(ps), sw = Math.max(0, Math.cos(ps + 0.5));
       P.hip[i] = 22 * k + 58 * k * c;
-      P.kn[i] = 12 + 100 * k * Math.pow(sw, 1.3) + 15 * k * Math.max(0, -Math.cos(ps));
+      P.kn[i] = 10 + 115 * k * Math.pow(sw, 1.3) + 14 * k * Math.max(0, -Math.cos(ps));
       P.an[i] = -12 + 38 * sw * k;
-      P.sh[i] = 12 - 60 * k * c;
-      P.el[i] = 78 - 16 * c;
+      P.sh[i] = 8 - 64 * k * c;
+      P.el[i] = 85 - 10 * c;
     }
     return P;
   },
@@ -5932,17 +6012,18 @@ const SEEK_POSES = {
     return { hipY: SEEK_HIP - 0.12, hipZ: 0.25 * r, lean: 22, hunch: 10, headP: -30, sh: [95, 88], shZ: [10, 10], el: [8, 14], wr: [-10, -10], hip: [40, -15], kn: [25, 45], an: [0, 10] };
   },
 };
-const SEEK_EMERGE = [
-  [0.0, { hipY: -1.95, pelvis: 6, headP: -20, sh: [0, 176], shZ: [10, 4], el: [10, 4], hip: [40, 40], kn: [100, 100] }],
-  [0.55, { hipY: -1.15, pelvis: 6, roll: -6, headP: -20, sh: [0, 168], shZ: [10, -6], el: [12, 18], wr: [0, 20], hip: [40, 40], kn: [100, 100] }],
-  [0.95, { hipY: -0.36, pelvis: 62, headP: -48, sh: [20, 100], shZ: [10, 12], el: [40, 6], wr: [0, -30], hip: [50, 50], kn: [110, 110] }],
-  [1.45, { hipY: 0.05, pelvis: 64, lean: 4, hunch: 8, headP: -66, sh: [78, 72], shZ: [16, 16], el: [40, 46], wr: [-40, -30], hip: [70, 70], kn: [120, 120] }],
-  [2.0, { hipY: 0.64, lean: 34, hunch: 14, headP: -40, sh: [42, 28], shZ: [14, 14], el: [34, 30], wr: [-10, -10], hip: [85, 0], kn: [92, 90], an: [10, 30] }],
-  [2.55, { hipY: SEEK_HIP * 0.98, lean: 8, hunch: 14, chest: 4, headP: -18, headR: 8, sh: [8, 12], shZ: [10, 10], el: [22, 18], hip: [4, 0], kn: [8, 6] }],
-  [2.95, { hipY: SEEK_HIP - 0.27, lean: 28, hunch: 12, headP: -32, sh: [-45, -40], shZ: [14, 14], el: [30, 30], hip: [44, 14], kn: [82, 52], an: [0, 10] }],
-  [3.25, { hipY: SEEK_HIP - 0.1, lean: 36, hunch: 10, headP: -40, sh: [-70, 62], shZ: [14, 14], el: [24, 70], hip: [72, -30], kn: [22, 92], an: [-10, 30] }],
+const SEEK_EMERGE = [   // timed to the Hotel+ cutscene: arm up ~1.2-1.8 s, mound 2.6 s, pulls out 3.2-5.4 s, low lunge 5.4-5.8 s
+  [0.0, { hipY: -2.4, pelvis: 6, headP: -20, sh: [0, 176], shZ: [10, 4], el: [10, 4], hip: [40, 40], kn: [100, 100] }],
+  [0.8, { hipY: -1.75, pelvis: 6, headP: -20, sh: [0, 176], shZ: [10, 4], el: [10, 4], hip: [40, 40], kn: [100, 100] }],
+  [1.6, { hipY: -0.85, pelvis: 6, roll: -6, headP: -20, sh: [0, 168], shZ: [10, -6], el: [12, 18], wr: [0, 20], hip: [40, 40], kn: [100, 100] }],
+  [2.1, { hipY: -0.8, pelvis: 28, roll: -4, headP: -30, sh: [0, 128], shZ: [10, 8], el: [14, 34], wr: [0, -10], hip: [40, 40], kn: [100, 100] }],
+  [2.7, { hipY: -0.42, pelvis: 62, headP: -48, sh: [100, 96], shZ: [12, 12], el: [8, 18], wr: [-30, -20], hip: [50, 50], kn: [110, 110] }],
+  [3.6, { hipY: 0.05, pelvis: 64, lean: 4, hunch: 8, headP: -66, sh: [78, 72], shZ: [16, 16], el: [40, 46], wr: [-40, -30], hip: [70, 70], kn: [120, 120] }],
+  [4.5, { hipY: 0.74, lean: 40, hunch: 14, headP: -44, headR: 8, sh: [92, 26], shZ: [12, 14], el: [10, 34], wr: [-10, -10], hip: [70, 48], kn: [104, 86], an: [10, 20] }],
+  [5.2, { hipY: 0.68, lean: 46, hunch: 12, headP: -48, sh: [-40, -52], shZ: [16, 16], el: [30, 30], hip: [76, 30], kn: [112, 82], an: [0, 15] }],
+  [5.6, { hipY: 0.95, hipZ: 0.35, lean: 52, hunch: 10, headP: -52, sh: [-70, 70], shZ: [14, 14], el: [24, 70], hip: [70, -35], kn: [25, 98], an: [-10, 30] }],
 ];
-const SEEK_RISE = 3.2;
+const SEEK_RISE = 5.8;   // length of the emerge (cutscene shot A) before Seek starts running
 // the heap Seek climbs out of: a flat spill plus a few swollen blobs
 function makeGooHeap() {
   const g = new THREE.Group(), flat = new THREE.Mesh(new THREE.CircleGeometry(1.3, 28), MAT.goo);
@@ -5957,7 +6038,7 @@ function makeGooHeap() {
 // goo strands stretched between the heap and Seek's hands/chest while it pulls free; they snap as it stands
 const _sA = new THREE.Vector3(), _sB = new THREE.Vector3();
 function seekStrands(e) {
-  const on = e.anim.mode === 'emerge' && e.t > 1.0 && e.t < 2.75, J = e.model.userData.j;
+  const on = e.anim.mode === 'emerge' && e.t > 2.5 && e.t < 5.7, J = e.model.userData.j;
   ['wr1', 'chest', 'wr-1'].forEach((n, i) => {
     const m = e.strands[i];
     if (!on) { m.visible = false; return; }
@@ -5969,43 +6050,146 @@ function seekStrands(e) {
 }   // emerge length (s) before Seek starts running
 function animateSeek(g, st, dt) { rigDrive(g, st, dt, SEEK_POSES, st.mode === 'run' ? 5 : 8); }
 
+/* ---------------- Figure: ~3 m, blind, a round lamprey mouth for a face, exposed ribs, arms that reach the floor ---------------- */
+const FIG_HIP = 1.48;
+function taperGeo(r0, r1, l, dir = -1) { const g = new THREE.CylinderGeometry(r1, r0, l, 9, 1); g.translate(0, dir * l / 2, 0); return g; }
 function makeFigureModel() {
-  const g = new THREE.Group(), flesh = std({ color: 0x8d3424, roughness: 0.5, emissive: 0x2a0500, emissiveIntensity: 0.6 }), bone = std({ color: 0xe8dcc0, roughness: 0.4 });
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 1.0, 6, 12), flesh); torso.position.y = 2.0; torso.scale.set(1, 1, 0.75); g.add(torso);
-  for (let i = 0; i < 6; i++) { const rb = new THREE.Mesh(new THREE.TorusGeometry(0.3 - Math.abs(i - 2) * 0.02, 0.025, 5, 14, Math.PI * 1.2), bone); rb.position.set(0, 2.35 - i * 0.12, 0.08); rb.rotation.set(0.2, 0, Math.PI * 1.4); g.add(rb); }
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.4, 8), flesh); neck.position.y = 2.75; g.add(neck);
-  const head = new THREE.Group(); head.position.y = 3.05; g.add(head);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), flesh); skull.scale.set(0.95, 1.2, 1); head.add(skull);
-  const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), new THREE.MeshBasicMaterial({ color: 0x120000 })); mouth.position.set(0, -0.06, 0.2); mouth.scale.set(1.1, 1.2, 0.6); head.add(mouth);
-  for (let i = 0; i < 14; i++) { const a = i / 14 * TAU; const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.09, 5), bone); tooth.position.set(Math.cos(a) * 0.19, -0.06 + Math.sin(a) * 0.22, 0.27); tooth.rotation.z = a + Math.PI / 2; tooth.rotation.x = 0.3; head.add(tooth); }
-  g.userData.limbs = {};
-  const limb = (r, l, mat) => { const gg = new THREE.Group(); const mm = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, 8), mat); mm.position.y = -l / 2; gg.add(mm); return gg; };
-  for (const s of [-1, 1]) {
-    const sh = limb(0.08, 0.9, flesh); sh.position.set(s * 0.45, 2.5, 0); g.add(sh);
-    const fa = limb(0.065, 0.9, flesh); fa.position.y = -1.0; sh.add(fa);
-    for (let f = 0; f < 4; f++) { const cl = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.25, 4), bone); cl.position.set(-0.05 + f * 0.035, -1.05, 0.03); cl.rotation.x = Math.PI; fa.add(cl); }
-    const th = limb(0.13, 0.75, flesh); th.position.set(s * 0.2, 1.45, 0); g.add(th);
-    const sn = limb(0.1, 0.65, flesh); sn.position.y = -0.85; th.add(sn);
-    g.userData.limbs[s] = { sh, fa, th, sn };
+  const flesh = std({ color: 0x8a3a22, roughness: 0.62, emissive: 0x2a0700, emissiveIntensity: 0.55 });
+  const dark = std({ color: 0x5a2014, roughness: 0.7 }), bone = std({ color: 0xd9a272, roughness: 0.45 }), tooth = std({ color: 0xead9b8, roughness: 0.35 });
+  const g = new THREE.Group(), B = rigBuilder(g, flesh), J = g.userData.j;
+  B.joint(g, 'body', 0, FIG_HIP, 0);
+  B.mesh('body', new THREE.SphereGeometry(0.17, 12, 8), 0, -0.02, 0).scale.set(1.15, 0.75, 0.85);              // pelvis
+  B.joint('body', 'spine', 0, 0.02, 0);
+  B.mesh('spine', taperGeo(0.12, 0.1, 0.44, 1));                                                              // thin waist
+  B.joint('spine', 'chest', 0, 0.42, 0);
+  B.mesh('chest', taperGeo(0.15, 0.19, 0.5, 1));
+  B.mesh('chest', new THREE.CapsuleGeometry(0.08, 0.66, 4, 8), 0, 0.45, 0).rotation.z = Math.PI / 2;            // shoulder yoke
+  for (let i = 0; i < 5; i++) {                                                                              // exposed ribs across the front
+    const rib = new THREE.Mesh(new THREE.TorusGeometry(0.2 - Math.abs(i - 1.5) * 0.012, 0.03, 5, 14, Math.PI), bone);
+    rib.position.set(0, 0.1 + i * 0.075, 0.015); rib.rotation.set(Math.PI / 2 + 0.12, 0, 0); rib.castShadow = true; J.chest.add(rib);   // arc wraps the front
   }
-  g.userData.head = head;
-  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  B.mesh('chest', new THREE.BoxGeometry(0.05, 0.36, 0.05), 0, 0.27, 0.19, bone);                              // sternum
+  B.joint('chest', 'neck', 0, 0.5, 0.02);
+  B.mesh('neck', taperGeo(0.085, 0.07, 0.17, 1));
+  B.joint('neck', 'head', 0, 0.14, 0.03);
+  B.mesh('head', new THREE.SphereGeometry(0.21, 16, 12), 0, 0.17, 0).scale.set(1, 1.02, 0.92);
+  // the face is one round mouth: a lip ring, a dark throat and two rings of teeth that splay out like petals when it opens
+  const mouth = new THREE.Group(); mouth.position.set(0, 0.17, 0.17); J.head.add(mouth);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.032, 6, 22), dark); mouth.add(lip);
+  const throat = new THREE.Mesh(new THREE.CircleGeometry(0.15, 22), new THREE.MeshBasicMaterial({ color: 0x150201 })); throat.position.z = -0.012; mouth.add(throat);
+  const teeth = [];
+  for (const [n, R, len, z] of [[18, 0.135, 0.085, 0.0], [11, 0.075, 0.06, -0.005]]) for (let i = 0; i < n; i++) {
+    const a = i / n * TAU + (R < 0.1 ? 0.15 : 0), pv = new THREE.Group(), tl = new THREE.Group();
+    pv.position.set(Math.cos(a) * R, Math.sin(a) * R, z); pv.rotation.z = a - Math.PI / 2; mouth.add(pv); pv.add(tl);
+    const tm = new THREE.Mesh(new THREE.ConeGeometry(0.018, len, 5), tooth); tm.rotation.x = Math.PI; tm.position.y = -len / 2; tl.add(tm);
+    teeth.push({ tl, inner: R < 0.1 });
+  }
+  g.userData.setJaw = k => {
+    for (const t of teeth) t.tl.rotation.x = -(t.inner ? 0.2 + 1.6 * k : 0.3 + 2.1 * k) ;
+    const sc = 1 + 0.35 * k; lip.scale.setScalar(sc); throat.scale.setScalar(sc);
+  };
+  J.jaw = mouth;
+  for (const s of [-1, 1]) {
+    B.joint('chest', 'sh' + s, s * 0.4, 0.45, 0);
+    B.mesh('sh' + s, new THREE.SphereGeometry(0.095, 10, 8));
+    B.mesh('sh' + s, taperGeo(0.075, 0.06, 1.1));
+    B.joint('sh' + s, 'el' + s, 0, -1.1, 0);
+    B.mesh('el' + s, new THREE.SphereGeometry(0.07, 10, 8));
+    B.mesh('el' + s, taperGeo(0.062, 0.048, 1.0));
+    B.joint('el' + s, 'wr' + s, 0, -1.0, 0);
+    B.mesh('wr' + s, new THREE.BoxGeometry(0.13, 0.12, 0.06), 0, -0.05, 0);
+    for (let f = 0; f < 3; f++) {                                                                             // long curved claws
+      const c = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.22, 5), bone); c.rotation.x = Math.PI + 0.35; c.position.set((f - 1) * 0.045, -0.2, 0.03); c.castShadow = true; J['wr' + s].add(c);
+    }
+    B.joint('body', 'hip' + s, s * 0.13, -0.02, 0);
+    B.mesh('hip' + s, taperGeo(0.095, 0.07, 0.74));
+    B.joint('hip' + s, 'kn' + s, 0, -0.74, 0);
+    B.mesh('kn' + s, new THREE.SphereGeometry(0.075, 10, 8));
+    B.mesh('kn' + s, taperGeo(0.07, 0.055, 0.68));
+    B.joint('kn' + s, 'an' + s, 0, -0.68, 0);
+    B.mesh('an' + s, new THREE.BoxGeometry(0.17, 0.07, 0.32), 0, -0.035, 0.08);
+  }
+  g.traverse(o => { if (o.isMesh && o.material !== flesh && o.material.isMeshBasicMaterial) o.castShadow = false; });
+  g.userData.setJaw(0);
   return g;
 }
-function animateFigure(g, t, sp) {
-  const L = g.userData.limbs, k = Math.min(1, sp / 2.5), f = t * (2.6 + sp * 1.2);
-  for (const s of [-1, 1]) {
-    const ph = s * Math.sin(f);
-    L[s].sh.rotation.x = -ph * 0.4 * k + 0.1; L[s].sh.rotation.z = s * 0.12; L[s].fa.rotation.x = -0.3;
-    L[s].th.rotation.x = ph * 0.55 * k; L[s].sn.rotation.x = Math.max(0, -ph) * 0.8 * k + 0.05;
-  }
-  g.userData.head.rotation.y = Math.sin(t * 0.9) * 0.5;
-  g.userData.head.rotation.x = Math.sin(t * 1.7) * 0.12;
-  g.position.y += Math.abs(Math.sin(f)) * 0.06 * k;
-}
+// standing hip height for a support leg with these angles (keeps the foot on the floor)
+const figHipH = (hip, kn) => 0.74 * Math.cos(hip * D2R) + 0.68 * Math.cos((hip - kn) * D2R) + 0.07;
+const FIG_POSES = {
+  // tall and still, arms hanging to the floor; every few seconds the head snaps round to one side and back
+  idle(st) {
+    const t = st.t, c = t % 9, look = smoothstep(3, 3.25, c) - smoothstep(4.6, 4.85, c), side = Math.floor(t / 9) % 2 ? 1 : -1;
+    return { hipY: FIG_HIP - 0.01, lean: 4, hunch: 6, chest: 1.5 * Math.sin(t * 1.4), headP: -4 + 6 * look, headY: side * 75 * look, headR: side * 10 * look,
+      sh: [-3, -3], shZ: [20, 20], el: [8, 10], elZ: [24, 24], wr: [8, 8], hip: [0, 0], hipA: [4, 4], kn: [3, 3] };
+  },
+  // a heavy, high-stepping walk; arms bowed out like brackets, hands near the knees
+  walk(st) {
+    const sp = st.sp || 1.7, ph = TAU * (sp / 2.4) * st.t, k = clamp(sp / 1.7, 0.4, 1.3);
+    const P = { lean: 10 + 4 * k, hunch: 8, headY: 14 * Math.sin(ph / 2), roll: 3 * Math.sin(ph), twist: 5 * Math.sin(ph),
+      sh: [0, 0], shZ: [34, 34], el: [0, 0], elZ: [38, 38], wr: [20, 20], hip: [0, 0], hipA: [5, 5], kn: [0, 0], an: [0, 0] };
+    P.headP = -(P.lean + P.hunch) + 4;
+    P.hipY = FIG_HIP - 0.06 + 0.05 * Math.abs(Math.sin(ph));
+    for (const i of [0, 1]) {
+      const ps = ph + (i ? 0 : Math.PI), c = Math.sin(ps), sw = Math.pow(Math.max(0, Math.cos(ps + 0.3)), 1.5);
+      P.hip[i] = 6 + 26 * k * c + 22 * k * sw; P.kn[i] = 8 + 78 * k * sw; P.an[i] = 14 * sw;
+      P.sh[i] = -4 - 12 * k * c; P.el[i] = 18 + 8 * c;
+    }
+    return P;
+  },
+  // the chase: pitched forward, arms flung wide and swinging, knees driving high
+  run(st) {
+    const sp = st.sp || 4, ph = TAU * (sp / 2.9) * st.t;
+    const P = { lean: 26, hunch: 12, headP: -28, roll: 5 * Math.sin(ph), twist: 9 * Math.sin(ph), sh: [0, 0], shZ: [55, 55], el: [0, 0], elZ: [55, 55], wr: [25, 25], hip: [0, 0], hipA: [6, 6], kn: [0, 0], an: [0, 0] };
+    P.hipY = FIG_HIP - 0.13 + 0.08 * Math.abs(Math.sin(ph));
+    for (const i of [0, 1]) {
+      const ps = ph + (i ? 0 : Math.PI), c = Math.sin(ps), sw = Math.pow(Math.max(0, Math.cos(ps + 0.4)), 1.4);
+      P.hip[i] = 14 + 40 * c + 16 * sw; P.kn[i] = 10 + 100 * sw; P.an[i] = 24 * sw;
+      P.sh[i] = 10 - 26 * c; P.el[i] = 30 + 10 * c;
+    }
+    return P;
+  },
+  // "ponder": crouched, hands on the floor, head cocked and slowly turning toward the sound
+  listen(st, mt) {
+    const hip = 38, kn = 60, look = st.lookY || 0;
+    return { hipY: figHipH(hip, kn), lean: 28, hunch: 16, roll: 4 * Math.sin(mt * 0.9), headP: -32, headY: look + 28 * Math.sin(mt * 1.1), headR: 22 * Math.sin(mt * 0.7 + 1),
+      sh: [40, 36], shZ: [18, 20], el: [16, 20], elZ: [14, 14], wr: [30, 30], hip: [hip, hip - 6], hipA: [8, 8], kn: [kn, kn - 8], an: [-hip + kn - 22, -hip + kn - 20] };
+  },
+  // a frustrated stomp: knee high, slam, straighten up
+  stomp(st, mt) { return poseKeys(FIG_STOMP, mt); },
+  // arrival roar: chest out, head thrown back, mouth splayed open, arms wide
+  roar(st, mt) { return poseKeys(FIG_ROAR, mt); },
+  // searching a closet: leaning in, one hand on the doors, sniffing
+  closet(st, mt) {
+    return { hipY: figHipH(22, 26), lean: 30, hunch: 14, headP: -6 + 6 * Math.sin(mt * 7), headY: 10 * Math.sin(mt * 3.1), headR: 12, jaw: 0.15 + 0.1 * Math.sin(mt * 5),
+      sh: [72, 26], shZ: [18, 24], el: [28, 26], elZ: [6, 16], wr: [10, 20], hip: [22, 12], hipA: [6, 6], kn: [26, 16], an: [4, 4] };
+  },
+  // the catch: arms close round you, lift you to the mouth as it opens
+  grab(st, mt) { return poseKeys(FIG_GRAB, mt); },
+};
+const FIG_BASE = { hipY: FIG_HIP - 0.04, lean: 10, hunch: 8, headP: -14, sh: [0, 0], shZ: [30, 30], el: [14, 14], elZ: [32, 32], wr: [18, 18], hip: [0, 0], hipA: [6, 6], kn: [6, 6] };
+const FIG_STOMP = [
+  [0.0, FIG_BASE],
+  [0.32, { hipY: FIG_HIP - 0.02, lean: 4, hunch: 4, headP: -36, jaw: 0.5, sh: [20, 24], shZ: [62, 66], el: [20, 20], elZ: [30, 30], wr: [20, 20], hip: [0, 78], hipA: [6, 6], kn: [4, 92], an: [0, 20] }],
+  [0.5, { hipY: FIG_HIP - 0.14, lean: 16, hunch: 10, headP: -20, jaw: 0.25, sh: [14, 18], shZ: [54, 56], el: [22, 22], elZ: [36, 36], wr: [20, 20], hip: [14, 12], hipA: [8, 8], kn: [28, 22], an: [-10, -8] }],
+  [0.8, { hipY: FIG_HIP, lean: 0, hunch: 0, headP: -6, sh: [0, 0], shZ: [30, 30], el: [10, 10], elZ: [26, 26], wr: [10, 10], hip: [0, 0], hipA: [6, 6], kn: [2, 2] }],
+  [1.35, FIG_BASE],
+];
+const FIG_ROAR = [
+  [0.0, FIG_BASE],
+  [0.45, { hipY: FIG_HIP - 0.05, lean: -6, hunch: -6, chest: -8, headP: -48, jaw: 1, sh: [30, 30], shZ: [58, 58], el: [46, 46], elZ: [18, 18], wr: [30, 30], hip: [6, -8], hipA: [10, 10], kn: [10, 10] }],
+  [1.55, { hipY: FIG_HIP - 0.05, lean: -4, hunch: -6, chest: -8, headP: -44, headR: 8, jaw: 0.95, sh: [34, 26], shZ: [62, 56], el: [50, 44], elZ: [20, 16], wr: [30, 30], hip: [6, -8], hipA: [10, 10], kn: [10, 10] }],
+  [2.0, FIG_BASE],
+];
+const FIG_GRAB = [
+  [0.0, FIG_BASE],
+  [0.22, { hipY: FIG_HIP - 0.08, lean: 22, hunch: 8, headP: -24, jaw: 0.3, sh: [82, 82], shZ: [14, 14], el: [42, 42], wr: [10, 10], hip: [16, -6], hipA: [6, 6], kn: [18, 8] }],
+  [0.6, { hipY: FIG_HIP, lean: 4, hunch: 2, headP: -20, jaw: 1, sh: [128, 128], shZ: [10, 10], el: [48, 48], wr: [20, 20], hip: [4, -4], hipA: [6, 6], kn: [4, 4] }],
+];
+function animateFigure(g, st, dt) { rigDrive(g, st, dt, FIG_POSES, 5); }
+
 const ANIM = {
   make(kind) { return kind === 'seek' ? makeSeekModel() : makeFigureModel(); },
-  step(kind, g, st, dt) { if (kind === 'seek') animateSeek(g, st, dt); else { g.position.y = 0; animateFigure(g, st.t, st.sp); } },
+  step(kind, g, st, dt) { if (kind === 'seek') animateSeek(g, st, dt); else animateFigure(g, st, dt); },
 };
 
 /* =========================================================================
@@ -6289,7 +6473,7 @@ GAME.startRun = async function () {
   rng = new RNG(RUN.seed);
   DIRECTOR.newRun(RUN.seed);
   ENT.reset(); WORLD.reset(); PARTICLES.clear(); NOISE.events = []; MUSIC.stop(0.3);
-  GAME.library = null; UI.libList(true); GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
+  GAME.library = null; GAME.cine = null; UI.libList(true); GAME.inv = []; GAME.sel = -1; GAME.gold = 0; GAME.time = 0; WORLD.time = 0; GAME.maxRoom = 0; GAME.modal = null; GAME.heartbeat = false; GAME.paused = false; GAME.cutscene = false; GAME.won = false;
   GAME.heartKey = () => {};
   POST.hurt = 0; POST.shake = 0; POST.flash = 0; POST.halt = 0; POST.eyes = 0; POST.aberr = 0; POST.tintFlash = null;
   GAME.speedMul = 1; GAME.lightMul = 1; GAME.paused = false; UI.show('pause', false); stopRain();
@@ -6337,7 +6521,8 @@ GAME.kill = function (cause) {
   if (PLAYER.hidden) GAME.exitHide(true);
   if (GAME.modal) UI.closeModal();
   const js = { rush: 'rush', ambush: 'ambush', screech: null, halt: 'halt', seek: 'seekface', hands: 'seekface', figure: 'figureface', eyes: null, hide: null };
-  if (js[cause]) { UI.jumpscare(js[cause], 1.1); SFX.jumpscare(); }
+  if (GAME.cine && cause === 'figure') { SFX.jumpscare(); POST.hurt = 1; POST.aberr = 0.02; POST.shake = 1; }   // the close-up on its mouth is the jumpscare
+  else if (js[cause]) { UI.jumpscare(js[cause], 1.1); SFX.jumpscare(); }
   else SFX.sting();
   GAME.knobsEarned = GAME.maxRoom + (GAME.maxRoom >= 50 ? 15 : 0);
   SAVE.knobs += GAME.knobsEarned; SAVE.best = Math.max(SAVE.best, GAME.maxRoom); SAVE.runs++; saveGame();
