@@ -119,7 +119,7 @@ body.mapv #autoBar{opacity:.4}
 <div id="tags"><div id="meBar"><i></i></div><div id="swimT"></div><div id="dwBar"><i></i></div></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="res" class="ui"></div>
-<div id="topbar" class="ui"><div class="pill">🌍 ガイア <div class="bar"><i id="pBar"></i></div><span id="pPct">0%</span></div><div class="pill">❤️ <div class="bar"><i id="hpBar"></i></div><span id="hpTxt" style="font-size:12px"></span></div><div class="pill" id="tools"></div></div>
+<div id="topbar" class="ui"><div class="pill">🌍 <span id="wName">ガイア</span> <div class="bar"><i id="pBar"></i></div><span id="pPct">0%</span></div><div class="pill">❤️ <div class="bar"><i id="hpBar"></i></div><span id="hpTxt" style="font-size:12px"></span></div><div class="pill" id="tools"></div></div>
 <div id="btns" class="ui"><button class="rb" id="bMenu" title="メニュー">☰</button><button class="rb" id="bMap" title="星の地図">🌍</button><button class="rb" id="bAuto" title="放置モード">🤖</button></div>
 <div id="autoBar" class="ui"><div class="at"><b>🤖 放置中</b><span id="autoTxt"></span><small id="autoGot"></small></div><button id="autoSet" title="取るもの">⚙</button><button id="autoOff">やめる</button></div>
 <div id="netbox"></div>
@@ -140,7 +140,7 @@ body.mapv #autoBar{opacity:.4}
  <div class="ag" id="autoList"></div><div class="row2"><button class="btn gr" id="autoAll">全部えらぶ</button><button class="btn gr" id="autoNone">全部はずす</button></div>
  <div class="msg" id="autoNote"></div><button class="btn g" id="autoGo">放置をはじめる</button><button class="btn gr" id="autoBack">もどる</button></div></div>
 <div id="loading" class="scr"><div id="loadTxt">読みこみ中…</div></div>
-<div id="ending" class="scr panel"><div class="box"><h2>ガイアをクリア！</h2><div class="msg">ポータルが動いて、光の向こうに次の星が見えた！<br>（次の星「トロルヘイム」はまだ準備中です）</div><div class="msg" id="endStat"></div><button class="btn g" id="endBack">ガイアにもどる</button></div></div>
+<div id="ending" class="scr panel"><div class="box"><h2 id="endT">トロルヘイムをクリア！</h2><div class="msg">ポータルが動いて、光の向こうに、まだ見たことのない星が見えた！<br>ガイアとトロルヘイム、2つの星をひらききりました。おめでとう！</div><div class="msg" id="endStat"></div><button class="btn g" id="endBack">トロルヘイムにもどる</button></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -523,6 +523,152 @@ if(typeof module!=='undefined')module.exports={GAIA_TILES};
 // tools/layout.js が作ったガイアの配置（セル番号ごとに「タイル番号,エリア,高さ×20,親のセル」。空は海）
 const GAIA_LAYOUT={"n":8,"cells":";155,10,15,10;148,10,21,60;144,10,17,66;146,10,16,3;37,2,26,75;9,2,25,7;7,2,24,78;14,1,16,217;159,10,20,1;154,10,18,11;149,10,19,2;150,10,19,11;153,10,20,12;40,2,23,5;12,2,24,6;17,1,15,8;160,10,19,9;156,10,15,10;157,10,19,18;158,10,18,19;;;;;;;;;;;;;;;134,8,34,157;135,8,33,35;;;129,8,29,158;;;126,8,31,159;;124,8,34,252;;;;43,3,21,49;41,3,21,56;42,3,20,49;50,4,36,52;49,4,36,181;151,10,17,2;152,10,17,53;;35,3,22,57;34,3,19,64;36,3,18,57;44,4,33,58;145,10,18,3;147,10,17,60;33,3,23,63;31,3,20,68;32,3,21,63;;143,10,20,71;;28,3,17,69;27,3,19,73;47,3,20,64;38,2,25,5;39,2,25,71;26,3,18,76;29,3,22,69;10,2,22,6;11,2,24,75;30,3,19,74;6,2,26,80;8,2,28,78;5,2,25,216;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;46,3,18,50;;;54,4,33,116;;52,4,33,360;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;142,9,38,162;132,8,31,164;127,8,30,42;125,8,31,44;;;140,9,40,168;138,9,37,169;131,8,33,165;128,8,31,158;;141,9,41,162;139,9,40,163;137,8,32,170;133,8,31,164;;;;;;;;;;;45,4,34,59;;;67,4,35,623;68,5,18,184;69,5,14,185;;;;;;;70,5,16,186;71,5,14,193;;;;;;;;;;;;;;74,1,15,209;20,1,13,212;3,1,13,551;48,11,14,77;19,1,13,214;15,1,16,210;18,1,16,216;0,1,12,-1;0,1,16,-1;0,1,11,-1;0,1,13,-1;22,1,12,540;25,1,11,219;;;;;13,1,17,218;24,1,12,219;73,1,15,220;;100,7,25,236;105,7,27,237;111,7,28,578;75,1,12,226;;94,7,30,227;96,7,29,240;99,7,29,241;104,7,29,242;;;95,7,29,234;97,7,29,235;102,7,26,246;;;98,7,24,241;101,7,25,245;;;103,7,24,246;;;123,12,5,563;;;;165,7,24,560;171,7,28,559;;;;130,8,29,165;136,8,32,261;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;61,4,34,635;56,4,35,359;55,4,32,626;51,4,36,52;;;;;;;;;;;;92,6,19,379;93,6,20,372;;;;;;91,6,23,386;88,6,19,387;;83,6,21,388;81,6,18,389;;;89,6,23,380;86,6,22,393;82,6,24,394;79,6,18,543;;;;84,6,23,388;80,6,19,389;;90,6,24,397;87,6,21,398;85,6,22,393;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;170,7,26,564;;;166,7,25,432;164,7,25,569;;167,7,27,431;122,7,24,573;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;72,1,16,220;21,1,15,546;0,1,15,-1;0,1,14,-1;78,6,18,548;76,6,19,539;23,1,17,540;1,1,12,547;0,1,15,-1;77,6,23,544;;16,1,11,554;2,1,16,546;;;4,1,16,210;;;;;169,7,30,564;163,7,30,565;121,7,29,566;116,7,27,567;117,7,25,562;168,7,28,569;161,7,29,566;119,7,26,570;114,7,25,571;109,7,26,572;162,7,29,565;118,7,27,574;112,7,26,572;107,7,28,575;120,7,28,570;113,7,26,571;106,7,28,242;115,7,27,574;108,7,25,575;110,7,26,577;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;66,4,37,629;62,4,37,630;58,4,35,631;53,4,36,360;;;64,4,37,634;59,4,32,625;57,4,35,359;;;63,4,32,635;60,4,34,630;;;65,4,34,634;;;"};
 
+// ---- 03d_troll_tiles.js ----
+// ================= トロルヘイムのタイル =================
+// 1〜118 は Wiki「Trollheim Tile By Tile」の順番・費用・中身（そのあとの表は Wiki がガイアのコピーになっていて無いので、
+// 119 からは Wiki の「Trollheim」「Terrain」「Enemies」「Merchants」「Portal Overview」の資料から、沼・難破船の浜・船・火山の島・スケリルのすみか・ポータルを組み立てた）
+// 1行 = 「エリア|費用（資源:数,…）|中身」。エリア：1 秋の野原 2 秋の島 3 秋の丘 4 クモの洞くつ 5 沼 6 難破船の浜 7 火山の島 8 赤い火山
+//   9 アズライトの洞くつ 10 ストゥフルのすみか 11 スケリルのすみか（ダンジョン）12 橋 13 氷のくぼみ
+const TROLL_TILES=[
+"1|wood:200|plankR","1|wood:250|tpine","12|plank:350|bridge",
+"2|wood:250|ctroll","2|wood:350|wheat","2|wood:450|scare","2|wood:350,wheat:25|wheat","2|wood:400,wheat:40|wheat","2|wood:500,wheat:80|wheat","2|wood:500,wheat:120|wheat","2|wood:500|redoak",
+"2|plank:250,wheat:1000|mill","2|wheat:250|","2|wheat:300|","2|plank:50,wheat:350|scare","2|plank:100,wheat:400|","2|plank:175,wheat:500|","2|wheat:500|pickR","2|plank:190,wheat:500|scare",
+"2|plank:200,wheat:550|cave","2|wood:600|","2|wood:650|arock","2|wood:500|redoak","2|wood:500|redoak",
+// 25〜45 アズライトの洞くつ
+"12|plank:350|bridge","9|rock:500|crock2","9|rock:600|","9|rock:700|crock2 azr2 rockm","9|rock:700,azr:700|azr2","9|rock:700,azr:700|","9|rock:700,azr:900|azr2","9|rock:800,azr:1200|crock2 chest rockm",
+"9|rock:800|crock2","9|rock:850|crock2 azr2","9|rock:900|crock2","9|rock:950|","9|rock:950|crock2","9|rock:1000|crock2","9|rock:1000|azr2","9|rock:1000|crock2","9|rock:1000|crock2 key rockm",
+"9|rock:1000|","9|rock:1000|chest","9|rock:1000|","9|rock:1000|chest",
+// 46〜55 秋の島（つかまった農家）
+"2|rock:500,azr:500|arock","2|rock:500|","2|rock:500|redoak","2|rock:500|","2|rock:500,key:1|farmer","2|rock:500|arock","2|rock:500|mtroll arock","2|wood:700|arock","2|wood:750|arock","12|rock:1000|bridge",
+// 56〜73 秋の丘（クマ）・野原の残り
+"3|rock:500|","3|rock:750|arock","3|rock:500,plank:150|weapR","3|rock:750|bear arock","3|wood:2000|","3|rock:1000|bear","3|rock:1000|arock","3|rock:1000|arock","3|rock:1000|arock","3|rock:1000|","3|rock:1000|bear arock",
+"3|wood:2000|tpine","1|wood:500|axeR","1|wood:1000|","1|wood:250|tpine","3|rock:1000|rockT","3|rock:750,leather:20|","3|rock:750|",
+// 74〜94 クモの洞くつ（小麦トロルの通せんぼ・石炭）
+"4|leather:50|wtroll","4|wheat:350|trollgo","4|rock:1000|spider","4|rock:500|coal","4|azr:500|","4|ame:500|","4|ruby:500|","4|rock:1100|coal","4|rock:1100|coal","4|coal:10|coal","4|rock:1100,coal:25|coal",
+"4|rock:1200,coal:50|spider","4|rock:1000,coal:100|","4|rock:1200,coal:50|coal","4|rock:1500|barna","4|rock:1700|barna","4|rock:2000,coal:200|coal barna","4|rock:2000|","4|rock:2500|chest","4|rock:2500|chest","4|rock:2500|cave spider",
+// 95〜115 ストゥフルのすみか
+"10|rock:600|","10|rock:700|arock","10|rock:700|arock","10|rock:800|arock ame2","10|rock:800|ame2","10|rock:900|crim","10|rock:900|arock","10|rock:1000|arock ame2","10|rock:1000|crim","10|rock:1000|ame2",
+"10|rock:1000,ame:500|","10|rock:1000,ame:500|arock","10|rock:800,ame:1000|ame2 crim","10|rock:800,ame:1300|","10|rock:900,ame:1400|ame2","10|rock:1000,ame:1500|","10|rock:1300,ame:900|crim","10|rock:1400,ame:750|crim",
+"10|rock:1500,ame:1000|ame2","10|rock:1500,ame:1500|stufur","10|rock:1800,ame:1500|key",
+// 116〜118 クモの洞くつの奥（クモの女王）
+"4|rock:2000,coal:150|coal barna","4|rock:2000,coal:200|arock","4|ame:1000,coal:300|squeen",
+// 119〜120 氷のくぼみ（氷づけのつるはし Lv17）
+"13|rock:1500,coal:350|","13|rock:2000,coal:400|icepick",
+// 121〜141 沼（つかまった仕立て屋・ワニ・沼のトロル）
+"12|plank:800|bridge","5|wood:2500|sdead","5|wood:2500|outh","5|wood:3000|sdead croc","5|rock:2500|sdead","5|wood:3000,coal:300|croc","5|rock:3000|sdead","5|crock:30|outh sdead","5|wood:3500|croc",
+"5|rock:3000,crock:50|coalT","5|wood:3500,crock:80|sdead","5|rock:3500,key:1|tailorR","5|wood:4000|sdead croc","5|rock:4000,crock:100|","5|leather:100,crock:120|chest","5|wood:4000,coal:500|sdead",
+"5|rock:4500|croc","5|wood:4500,crock:150|stroll","5|rock:5000,coal:600|sdead","5|wood:5000|outh","5|rock:5000,crock:200|sdead",
+// 142〜156 難破船の浜（歯車・ガイコツ・つかまった船長・船着き場）
+"12|plank:1200|bridge","6|wood:3000,coal:400|scrap","6|rock:3000|skelb","6|wood:3500|scrap","6|rock:3500,coal:500|scrap skelb","6|gear:30|","6|wood:4000,gear:50|scrap","6|rock:4000|skelb chest",
+"6|bone:40,gear:80|scrap","6|wood:4500,coal:600|skelb","6|rock:4500,gear:120|scrap","6|bone:80,gear:150|","6|wood:5000,rock:5000|scrap skelb","6|gear:250,bone:120,coin:500|captain","6|plank:1500,gear:200|dockN",
+// 157〜171 火山の島（船で南へ）
+"7||dockS","7|rock:3000|cblock vrock","7|coal:1000|cblock lava","7|rock:3500|amber","7|coal:1200,gear:100|cblock vrock","7|rock:3500|lava vrock","7|coal:1500|amber cblock","7|rock:4000,amber:50|vrock",
+"7|coal:1800|ura2","7|rock:4000,amber:80|lava ura2","7|coal:2000,gear:200|cblock","7|rock:4500|ura2 amber","7|ura:150,coal:2000|lava vrock","7|rock:4500,amber:120|ura2","7|ura:200,coal:2500|cblock chest",
+// 172〜180 赤い火山（トロルヘイムのポータル・スケリルのすみかの入り口）
+"8|rock:5000|ura2 vrock","8|coal:2500,amber:150|lava","8|rock:5000,ura:250|amber vrock","8|coal:3000|portal","8|rock:5500,ura:300|ura2 lava","8|amber:200,coal:3000|vrock","8|rock:5500|ura2","8|ura:400,amber:250|lava","8|rock:6000,coal:3500|cave",
+// 181〜192 スケリルのすみか（ルビー・スケリル・ソースコア2つ）
+"11|rock:4000|barna","11|rock:4000|ruby2","11|rock:4500,ura:200|ruby2 lava","11|rock:4500|barna ruby2","11|ruby:500|lava","11|rock:5000,ruby:600|ruby2","11|rock:5000|barna chest","11|ruby:800,amber:300|ruby2",
+"11|rock:5500,ruby:900|lava key","11|rock:6000,ruby:1000|skellir","11|ruby:1200,key:1|core","11|ruby:1500,amber:400|core"];
+if(typeof module!=='undefined')module.exports={TROLL_TILES};
+
+// ---- 03e_troll_layout.js ----
+// tools/layout_troll.js が作ったトロルヘイムの配置（セル番号ごとに「タイル番号,エリア,高さ×20,親のセル」。空は海）
+const TROLL_LAYOUT={"n":8,"cells":";64,3,24,53;58,3,27,60;56,3,26,4;55,12,5,5;0,1,12,-1;0,1,17,-1;0,1,14,-1;;;65,3,27,1;60,3,27,2;61,3,27,11;70,1,14,21;0,1,13,-1;0,1,16,-1;;;66,3,25,10;;;2,1,14,22;1,1,16,15;68,1,17,22;;;;;69,1,14,21;3,12,5,22;;;;;4,2,18,29;15,2,18,157;;6,2,21,38;5,2,21,34;8,2,20,40;7,2,20,37;;9,2,18,39;10,2,19,42;14,2,22,159;72,3,24,1;73,3,25,45;82,4,32,102;84,4,33,107;91,4,29,48;121,12,5,111;122,5,11,50;133,5,14,360;62,3,27,2;63,3,25,53;90,4,33,48;93,4,35,49;;;137,5,11,181;57,3,29,3;;;;;;59,3,24,60;67,3,28,66;;;;71,3,29,67;;;;0,1,18,-1;;;0,1,14,-1;;;;;119,13,28,84;89,4,34,92;94,4,35,84;;110,10,26,88;108,10,28,95;76,4,34,96;79,4,32,89;80,4,31,90;87,4,33,98;116,4,29,85;101,10,28,95;100,10,27,325;74,4,31,46;75,4,34,96;81,4,29,91;88,4,33,92;95,10,28,99;96,10,25,100;78,4,33,103;77,4,32,97;85,4,34,98;118,4,32,109;104,10,28,340;83,4,35,102;86,4,32,104;117,4,34,108;;92,4,32,49;;;;;123,5,10,51;;;;;;;;;;;;;;;;;;;;;;120,13,27,83;;;;;;;;;;;;;;111,10,22,87;;;;19,2,22,163;12,2,18,158;11,2,19,42;13,2,20,158;;;47,2,19,168;18,2,20,164;16,2,18,157;17,2,19,164;;54,2,18,172;46,2,20,169;22,2,20,163;23,2,23,169;;53,2,18,173;50,2,23,174;49,2,23,170;;;;;;;134,5,14,52;135,5,12,181;136,5,11,182;130,5,14,624;142,12,5,184;144,6,12,193;151,6,11,194;;138,5,11,59;139,5,12,189;140,5,11,190;145,6,14,193;143,6,11,185;149,6,13,186;156,6,9,187;;;153,6,9,199;146,6,14,192;150,6,12,194;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;21,2,19,261;25,12,5,253;26,9,24,254;45,9,21,264;175,8,36,559;180,8,34,558;;;20,2,20,165;48,2,18,268;27,9,20,255;44,9,24,271;;;;24,2,22,170;52,2,19,274;28,9,24,263;43,9,21,277;;;51,2,22,174;;29,9,22,270;41,9,19,282;;;42,9,19,284;30,9,19,276;39,9,22,593;;40,9,21,287;31,9,24,281;;33,9,21,589;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;109,10,26,88;99,10,28,326;98,10,25,333;105,10,27,334;;;;;;97,10,23,101;102,10,26,326;112,10,25,327;;;;;103,10,23,334;113,10,24,335;;;;;114,10,25,341;;;;;;;;;;;141,5,13,631;124,5,12,116;125,5,11,358;132,5,12,626;;;;;;;;;;;;169,7,26,373;167,7,24,380;168,7,27,373;171,7,28,374;;;;170,7,26,372;163,7,26,381;162,7,24,388;165,7,28,381;;;;164,7,25,380;158,7,24,393;159,7,26,387;166,7,25,382;;;160,7,24,387;157,7,26,195;161,7,29,388;;;;;;;;;;;;;;;189,11,27,468;182,11,26,417;;;;;;190,11,30,409;181,11,30,558;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;191,11,29,461;186,11,26,465;;;192,11,27,460;185,11,26,468;188,11,27,469;;184,11,31,471;187,11,29,465;;183,11,28,410;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;179,8,34,564;174,8,34,565;172,8,34,256;;;;176,8,35,559;173,8,31,560;;;;177,8,36,564;178,8,36,569;;;;;;;;;;;;37,9,19,588;35,9,24,584;34,9,22,287;;;;36,9,23,583;32,9,19,285;;;;38,9,24,588;;;;;;;;;;115,10,28,604;107,10,27,605;106,10,23,325;;;;;;;;;;;;;;;;152,6,9,187;147,6,10,186;148,6,11,622;129,5,15,630;127,5,14,631;131,5,12,625;155,6,9,628;154,6,11,623;;128,5,13,625;126,5,15,359;;;;;;;;;;"};
+
+// ---- 03f_data2.js ----
+// ================= トロルヘイムのデータ（Wiki「Trollheim」「Terrain」「Enemies」「Axes」「Pickaxes」「Weapons」「Armor」「Helmets」「Merchants」「Portal Overview」）=================
+Object.assign(RES,{
+ wheat:{n:'小麦',c:'#f0c040'},coal:{n:'石炭',c:'#3a3a48'},wool:{n:'羊毛',c:'#f4f0e8'},leather:{n:'革',c:'#a8683a'},gear:{n:'歯車',c:'#b8c0cc'},
+ crock:{n:'ワニの足',c:'#7ab04a'},bone:{n:'骨',c:'#f0ead8'},amber:{n:'琥珀',c:'#ffa020'},key:{n:'金のカギ',c:'#ffd21f'}});
+RES_ORDER.splice(RES_ORDER.indexOf('coin'),0,'wheat','coal','wool','leather','gear','crock','bone','amber');RES_ORDER.splice(RES_ORDER.indexOf('core'),0,'key');
+Object.assign(NODE,{
+ tpine: {n:'秋のマツ',tool:'axe',lv:5,hp:48,res:'wood',amt:48,rsp:11,r:.5,hh:2.5},
+ wheat: {n:'小麦畑',tool:'weap',lv:1,hp:1,res:'wheat',amt:8,rsp:5,r:.45,hh:1.0},
+ redoak:{n:'大きなカシ',tool:'axe',lv:7,hp:150,res:'wood',amt:375,rsp:18,r:.75,hh:3.0},
+ crock2:{n:'洞くつの大岩',tool:'pick',lv:7,hp:40,res:'rock',amt:40,rsp:10,r:.7,hh:1.6},
+ azr2:  {n:'アズライトの結晶',tool:'pick',lv:8,hp:36,res:'azr',amt:18,rsp:12,r:.6,hh:1.7},
+ arock: {n:'秋の岩',tool:'pick',lv:8,hp:45,res:'rock',amt:45,rsp:11,r:.65,hh:1.7},
+ coal:  {n:'石炭の岩',tool:'pick',lv:9,hp:50,res:'coal',amt:25,rsp:15,r:.65,hh:1.6},
+ barna: {n:'フジツボの岩',tool:'pick',lv:9,hp:50,res:'rock',amt:50,rsp:25,r:.7,hh:1.7},
+ ame2:  {n:'アメジストの結晶',tool:'pick',lv:10,hp:36,res:'ame',amt:18,rsp:15,r:.6,hh:1.8},
+ sdead: {n:'沼の枯れ木',tool:'axe',lv:9,hp:56,res:'wood',amt:56,rsp:20,r:.5,hh:2.6},
+ outh:  {n:'沼の小屋',tool:'axe',lv:1,hp:6,res:'plank',amt:3,rsp:30,r:.6,hh:2.0},
+ scrap: {n:'がらくたの山',tool:'axe',lv:10,hp:100,res:'gear',amt:13,rsp:10,r:.7,hh:1.3},
+ cblock:{n:'石炭のかたまり',tool:'pick',lv:11,hp:100,res:'coal',amt:50,rsp:20,r:.75,hh:1.8},
+ vrock: {n:'火山の岩',tool:'pick',lv:11,hp:60,res:'rock',amt:60,rsp:11,r:.7,hh:1.7},
+ amber: {n:'琥珀の結晶',tool:'pick',lv:11,hp:80,res:'amber',amt:10,rsp:15,r:.55,hh:1.7},
+ ura2:  {n:'ウランの結晶',tool:'pick',lv:12,hp:96,res:'ura',amt:12,rsp:20,r:.6,hh:1.8},
+ ruby2: {n:'ルビーの結晶',tool:'pick',lv:12,hp:108,res:'ruby',amt:18,rsp:12,r:.6,hh:1.8},
+ key:   {n:'金のカギ',tool:'pick',lv:1,hp:10,res:'key',amt:1,rsp:0,r:.5,hh:1.8,once:1},
+ icepick:{n:'氷づけのつるはし',tool:'pick',lv:12,hp:200,res:null,amt:0,rsp:0,r:.7,hh:2.2,once:1}});
+Object.assign(NODE_PER,{tpine:3,wheat:3,redoak:1,crock2:2,azr2:2,arock:2,coal:2,barna:2,ame2:2,sdead:2,outh:1,scrap:2,cblock:2,vrock:2,amber:2,ura2:2,ruby2:2,key:1,icepick:1});
+// 道具：トロルヘイムで作れる Lv9〜16（Wiki の費用）。剣 Lv9 はガイアでは岩にささっているもの（後の星では作れる）なので、ここでは作れるようにした
+Object.assign(AXE,{9:{plank:700,steel:700},10:{plank:700,steel:700,wheat:1000},11:{plank:700,steel:700,azr:4500},12:{plank:700,steel:800,coal:2000},13:{plank:700,steel:800,ame:4500},14:{plank:700,steel:800,gear:1000},15:{plank:700,steel:800,ura:1000},16:{plank:700,steel:800,ruby:4500}});
+Object.assign(PICK,{9:{steel:700,plank:700},10:{steel:700,plank:700,wheat:1000},11:{steel:720,plank:720,azr:4500},12:{steel:740,plank:740,coal:2000},13:{steel:760,plank:760,ame:4500},14:{steel:780,plank:780,gear:1000},15:{steel:800,plank:800,ura:1000},16:{steel:900,plank:900,ruby:4500}});
+Object.assign(WEAP,{9:{plank:500,steel:600,azr:2500},10:{plank:600,steel:700,azr:4500},11:{plank:600,steel:700,coal:1500},12:{plank:600,steel:800,ame:4500},13:{plank:600,steel:800,gear:1000},14:{plank:600,steel:800,ura:1000},15:{plank:600,steel:800,ruby:4500}});
+WPOW.push(17,19,21,23,25,27);WHP.push(130,140,150,160,170,180);
+for(let l=9;l<=17;l++)CRAFT_T[l]=16+(l-8)*2;
+// かぶと・よろい（Wiki「Helmets」「Armor」：体力が増える）
+const HELM=[null,{coin:500,wool:50},{coin:500,wool:125},{coin:500,leather:250},{coin:500,leather:400},{coin:500,crock:300},{coin:500,crock:500},{coin:500,gear:500},{coin:1000,wool:500,leather:1000}];
+const ARMR=[null,{coin:500,wool:25},{coin:500,wool:100},{coin:500,leather:200},{coin:500,leather:300},{coin:500,crock:200},{coin:500,crock:400},{coin:500,gear:500},{coin:1000,wool:500,leather:1000}];
+const ARMHP=[0,15,20,25,30,35,40,45,50];
+Object.assign(TOOLN,{helm:'かぶと',arm:'よろい'});
+const TOOLCOST={axe:AXE,pick:PICK,weap:WEAP,helm:HELM,arm:ARMR};
+// 敵（体力と落とすものは Wiki「Enemies」のトロルヘイム。こうげきの強さはこのゲームの体力に合わせた）
+Object.assign(ENEMY,{
+ ctroll:{n:'石炭トロル',hp:200,atk:16,spd:2.0,r:.9,drop:{wool:25,coal:20},rsp:600,sc:1.6,boss:1},
+ scare: {n:'かかし',hp:30,atk:12,spd:2.4,r:.45,drop:{wheat:15,plank:3},rsp:40,sc:1},
+ mtroll:{n:'山のトロル',hp:400,atk:24,spd:2.1,r:1,drop:{wool:25,rock:60},rsp:600,sc:1.8,boss:1},
+ rockm: {n:'岩のモンスター',hp:45,atk:14,spd:2.0,r:.6,drop:{rock:25,azr:15},rsp:30,sc:1.1},
+ bear:  {n:'クマ',hp:60,atk:16,spd:2.6,r:.7,drop:{leather:8},rsp:40,sc:1.1},
+ spider:{n:'クモ',hp:120,atk:18,spd:2.8,r:.7,drop:{coal:7},rsp:35,sc:1},
+ crim:  {n:'紅の剣士',hp:55,atk:18,spd:2.5,r:.45,drop:{rock:20,coin:10,ame:15},rsp:35,sc:1},
+ stufur:{n:'ストゥフル',hp:600,atk:30,spd:2.2,r:1.1,drop:{wool:25,coin:150,ame:100},rsp:300,sc:1.9,boss:1},
+ squeen:{n:'クモの女王',hp:500,atk:28,spd:2.6,r:1.1,drop:{coal:200},rsp:120,sc:1.7,boss:1},
+ croc:  {n:'ワニ',hp:50,atk:18,spd:2.4,r:.7,drop:{crock:10},rsp:40,sc:1},
+ stroll:{n:'沼のトロル',hp:600,atk:32,spd:2.0,r:1.1,drop:{crock:50,wool:25},rsp:600,sc:1.9,boss:1},
+ skelb: {n:'ガイコツ',hp:75,atk:20,spd:2.6,r:.45,drop:{bone:8},rsp:30,sc:1},
+ lava:  {n:'溶岩ゴーレム',hp:90,atk:24,spd:2.2,r:.7,drop:{ruby:8,rock:15},rsp:30,sc:1.2},
+ skellir:{n:'スケリル',hp:1000,atk:40,spd:2.2,r:1.2,drop:{coin:300,ruby:200},rsp:600,sc:2.1,boss:1}});
+// 建物
+Object.assign(BLD,{
+ mill:  {n:'風車',kind:'trade',inp:{wheat:100},out:'coin',k:45},
+ barn:  {n:'羊の小屋',kind:'trade',inp:{coin:10},out:'wool',k:1},
+ coalT: {n:'石炭の商人',kind:'trade',inp:{coal:40},out:'coin',k:5},
+ tailorR:{n:'仕立て屋',kind:'eq',tools:['helm','arm']},
+ rportal:{n:'ガイアへのポータル',kind:'warp',to:'gaia'},
+ dockN: {n:'船着き場（北）',kind:'boat',pair:'dockS'},dockS:{n:'船着き場（南）',kind:'boat',pair:'dockN'},
+ farmer:{n:'農家',kind:'npc'},captain:{n:'船長',kind:'npc'}});
+// つかまっている人（タイルが買えるあいだはおりの中。開けると出てきて、ごほうび）
+const NPC_OF={farmer:'farmer',tailorR:'tailor',captain:'captain'};
+const NPC_FREE={farmer:['農家を助けた！','小麦が2倍とれるようになった'],tailorR:['仕立て屋を助けた！','かぶととよろいを作ってくれる'],captain:['船長を助けた！','船着き場から船に乗れるようになる']};
+for(const k of ['plankR','steelR','axeR','pickR','weapR','rockT','woodT','azT','diaT','meatT','mill','barn','coalT'])BLD[k].out=BLD[k].out||null;
+// トロルヘイムのエリア
+const AREA_TROLL={
+ 1:{n:'秋の野原',top:'#f0b030',top2:'#f5c24a',side:'#b06a2a',deco:'autumn'},
+ 2:{n:'秋の島',top:'#c8792a',top2:'#d68a3a',side:'#7a3e18',deco:'autumn'},
+ 3:{n:'秋の丘',top:'#b8865a',top2:'#c8966a',side:'#7a5034',deco:'hills'},
+ 4:{n:'クモの洞くつ',top:'#5c666e',top2:'#6a747c',side:'#363c42',deco:'cave'},
+ 5:{n:'沼',top:'#7a8a3a',top2:'#8a9a46',side:'#4a5222',deco:'swamp'},
+ 6:{n:'難破船の浜',top:'#f2d27a',top2:'#f7df96',side:'#c89a50',deco:'beach'},
+ 7:{n:'火山の島',top:'#5a464c',top2:'#68525a',side:'#34282c',deco:'ash'},
+ 8:{n:'赤い火山',top:'#c44a38',top2:'#d25a44',side:'#6c2a20',deco:'ash'},
+ 9:{n:'アズライトの洞くつ',top:'#465a80',top2:'#52668e',side:'#26304a',deco:'dungeon'},
+ 10:{n:'ストゥフルのすみか',top:'#5a466e',top2:'#66527a',side:'#30243e',deco:'dungeon'},
+ 11:{n:'スケリルのすみか',top:'#6a3434',top2:'#784040',side:'#3a1a1a',deco:'dungeonR'},
+ 12:{n:'橋',top:'#b9773f',top2:'#c98a4c',side:'#7a4a24',deco:'none',nob:1},
+ 13:{n:'氷のくぼみ',top:'#e6f2ff',top2:'#f4faff',side:'#a9bfe6',deco:'arctic'}};
+// ポータル（Wiki「Portal Overview」のトロルヘイム）
+const PORTAL_TROLL=[{n:'下のリング',c:{steel:60}},{n:'アズライトのかけら',c:{azr:1500}},{n:'アメジストのかけら',c:{ame:1500}},{n:'石炭のかけら',c:{coal:2500}},{n:'ウランのかけら',c:{ura:900}},{n:'ルビーのかけら',c:{ruby:2000}},{n:'ポータルを動かす',c:{core:2}}];
+// ---- 星の一覧 ----
+const WDEF={
+ gaia:{id:'gaia',n:'ガイア',tiles:GAIA_TILES,layout:GAIA_LAYOUT,area:AREA,rockBy:ROCK_BY_AREA,portal:PORTAL_STEPS,shark:4,next:'troll',water:'#22b8f2',bed:'#1371b8',shelf:'#7fe0e8',
+   maxLv:{axe:8,pick:8,weap:8,helm:0,arm:0},start:[{j:1,n:'oak',c:2},{j:2,n:'oak',c:1},{j:4,n:'oak',c:2}],portalCol:['#9aa3ad','#2f7cf0','#b25cf0','#5ff0f0','#5ce04a','#f0284a']},
+ troll:{id:'troll',n:'トロルヘイム',tiles:TROLL_TILES,layout:TROLL_LAYOUT,area:AREA_TROLL,rockBy:{},portal:PORTAL_TROLL,shark:.5,next:null,back:'gaia',water:'#2cc4d8',bed:'#12708a',shelf:'#86e6dc',
+   maxLv:{axe:16,pick:16,weap:15,helm:8,arm:8},ctrFirst:1,start:[{j:1,b:'rportal'},{j:2,b:'steelR'},{j:3,b:'barn'},{j:4,n:'tpine',c:2},{j:5,n:'tpine',c:2},{j:6,n:'tpine',c:1}],portalCol:['#9aa3ad','#2f7cf0','#b25cf0','#2a2a34','#5ce04a','#f0284a']}};
+const WORLD_ORDER=['gaia','troll'];
+AREA[11].nob=1;AREA[12].nob=1;   // ガイアの「草原（2つ目）」と橋は名前を出さない
+
 // ---- 04_icons.js ----
 // ================= アイコン（資源・道具。キャンバスで描く）=================
 const ICON={};
@@ -668,11 +814,11 @@ const BLD_BUILD={
    b.add(G.cyl(.04,.04,3.9,4),'#d9b48a',T(0,.6,.8,0,0,Math.PI/2));b.add(G.cyl(.04,.04,3.9,4),'#d9b48a',T(0,.6,-.8,0,0,Math.PI/2))},
  deco(b){b.add(G.box(.3,.3,.3),'#888',T(0,.15,0))}};
 // ポータル：石の台・2本の柱・6つのかけらでできた輪（まだのかけらはうすい影）・動くと紫のうず
-function portalModel(){const g=new THREE.Group();const base=new MB();base.add(G.cyl(2.0,2.25,.3,10),'#8a939d',T(0,.15,0));base.add(G.cyl(1.6,1.8,.22,10),'#a3acb6',T(0,.4,0));
+function portalModel(cols){const g=new THREE.Group();const base=new MB();base.add(G.cyl(2.0,2.25,.3,10),'#8a939d',T(0,.15,0));base.add(G.cyl(1.6,1.8,.22,10),'#a3acb6',T(0,.4,0));
   [[-2.15],[2.15]].forEach(([x])=>{base.add(G.box(.55,3.6,.6),'#7c8794',T(x,1.9,0));base.add(G.box(.75,.3,.8),'#9aa3ad',T(x,3.8,0));base.add(G.box(.75,.3,.8),'#9aa3ad',T(x,.35,0))});
   base.add(G.dod(.35),'#9aa3ad',T(-1.6,.5,1.2));base.add(G.dod(.28),'#8a939d',T(1.7,.45,-1.1));
   const bm=new THREE.Mesh(base.geo(),VCMAT);bm.castShadow=bm.receiveShadow=true;g.add(bm);
-  const cols=['#9aa3ad','#2f7cf0','#b25cf0','#5ff0f0','#5ce04a','#f0284a'],Y=2.25,RR=1.75;const pieces=[],ghosts=[];
+  cols=cols||['#9aa3ad','#2f7cf0','#b25cf0','#5ff0f0','#5ce04a','#f0284a'];const Y=2.25,RR=1.75;const pieces=[],ghosts=[];
   const ghostM=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.22,depthWrite:false});
   for(let i=0;i<6;i++){const a0=-Math.PI/2-Math.PI/6+i*Math.PI/3+.03;const geo=new THREE.TorusGeometry(RR,.3,6,8,Math.PI/3-.06);geo.rotateZ(a0);
     const b=new MB();b.add(geo,cols[i]);if(i){const mid=a0+Math.PI/6;b.add(G.oct(.32),cols[i],T(Math.cos(mid)*RR,Math.sin(mid)*RR,.25,0,0,0,1,1.3,.6))}
@@ -682,9 +828,9 @@ function portalModel(){const g=new THREE.Group();const base=new MB();base.add(G.
   const sw2=new THREE.Mesh(new THREE.RingGeometry(.35,1.25,5,1),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.4,side:THREE.DoubleSide}));sw2.position.set(0,Y,.03);sw2.visible=false;g.add(sw2);
   g.userData={pieces,ghosts,swirl,sw2};return g}
 // ---------------- 大きな通せんぼ（トロル・大イエティ）----------------
-function bigTroll(){const b=new MB();b.add(G.sph(1.1,8,6),'#8fd23a',T(0,1.6,0,0,0,0,1,1.1,.9));b.add(G.sph(.7,8,6),'#9ae042',T(0,2.9,.15));b.add(G.cone(.25,.9,4),'#8fd23a',T(-.85,3.05,0,0,0,1.3));b.add(G.cone(.25,.9,4),'#8fd23a',T(.85,3.05,0,0,0,-1.3));
+function bigTroll(sk,sk2,cl){sk=sk||'#8fd23a';sk2=sk2||'#9ae042';cl=cl||'#a0522d';const b=new MB();b.add(G.sph(1.1,8,6),sk,T(0,1.6,0,0,0,0,1,1.1,.9));b.add(G.sph(.7,8,6),sk2,T(0,2.9,.15));b.add(G.cone(.25,.9,4),sk,T(-.85,3.05,0,0,0,1.3));b.add(G.cone(.25,.9,4),sk,T(.85,3.05,0,0,0,-1.3));
   b.add(G.box(.5,.1,.1),'#2a3a10',T(-.25,3.05,.75));b.add(G.box(.5,.1,.1),'#2a3a10',T(.25,3.05,.75));b.add(G.cone(.16,.5,4),'#7ac030',T(0,2.85,.85,Math.PI/2,0,0));
-  b.add(G.cyl(1.05,1.15,.6,8),'#a0522d',T(0,.85,0));b.add(G.cyl(.3,.25,1.3,6),'#8fd23a',T(-1.2,1.5,.2,0,0,.4));b.add(G.cyl(.3,.25,1.3,6),'#8fd23a',T(1.2,1.5,.2,0,0,-.4));b.add(G.cyl(.32,.3,.8,6),'#8fd23a',T(-.5,.35,0));b.add(G.cyl(.32,.3,.8,6),'#8fd23a',T(.5,.35,0));
+  b.add(G.cyl(1.05,1.15,.6,8),cl,T(0,.85,0));b.add(G.cyl(.3,.25,1.3,6),sk,T(-1.2,1.5,.2,0,0,.4));b.add(G.cyl(.3,.25,1.3,6),sk,T(1.2,1.5,.2,0,0,-.4));b.add(G.cyl(.32,.3,.8,6),sk,T(-.5,.35,0));b.add(G.cyl(.32,.3,.8,6),sk,T(.5,.35,0));
   const m=new THREE.Mesh(b.geo(),VCMAT);m.castShadow=true;return m}
 function bigYeti(){const b=new MB();b.add(G.sph(1.2,8,6),'#f2f4fa',T(0,1.7,0,0,0,0,1,1.15,.95));b.add(G.sph(.75,8,6),'#f2f4fa',T(0,3.05,.1));b.add(G.sph(.55,8,6),'#f4a8c8',T(0,2.95,.45,0,0,0,1,.8,.6));
   b.add(G.sph(.2,6,5),'#ffffff',T(0,3.15,.8));b.add(G.sph(.1,5,4),'#30307a',T(0,3.15,.97));b.add(G.cone(.18,.7,5),'#4aa8f0',T(0,3.9,0));
@@ -712,17 +858,18 @@ function makeChar(skin){const S=SKINS.find(s=>s.id===skin)||SKINS[0];const g=new
 function setHeld(ch,k,lv){const U=ch.userData;const key=k?k+lv:null;if(U.cur===key)return;if(U.curMesh){U.P.hand.remove(U.curMesh)}U.cur=key;U.curMesh=null;if(!k)return;
   const m=U.tools[key]||(U.tools[key]=toolMesh(k,lv));m.rotation.set(Math.PI/2,0,0);m.position.set(0,0,0);U.P.hand.add(m);U.curMesh=m}
 // ---------------- 敵 ----------------
-function makeEnemy(k){const g=new THREE.Group(),P={};const add=(n,mesh,x,y,z)=>{const p=new THREE.Group();p.position.set(x,y,z);p.add(mesh);g.add(p);P[n]=p};
+function makeEnemy(k){if(ENEMY_EXTRA[k]){const R=ENEMY_EXTRA[k]();R.g.scale.setScalar(ENEMY[k].sc);R.g.userData={P:R.P,k};return R.g}
+  const g=new THREE.Group(),P={};const add=(n,mesh,x,y,z)=>{const p=new THREE.Group();p.position.set(x,y,z);p.add(mesh);g.add(p);P[n]=p};
   const limb=(r,h,c)=>partMesh(b=>{b.add(G.cyl(r,r*.85,h,6),c,T(0,-h/2,0))});
-  if(k==='gob'||k==='red'||k==='master'||k==='skel'){
-    const skinC={gob:'#8fd23a',red:'#e8c09a',master:'#e8c09a',skel:'#f0ead8'}[k],cloth={gob:'#a0522d',red:'#c8302a',master:'#2a2a34',skel:'#3a3a4a'}[k];
-    add('body',partMesh(b=>{b.add(G.cyl(.24,.28,.55,7),cloth,T(0,0,0));if(k==='red'||k==='master'){b.add(G.box(.55,.2,.35),'#8a8f9a',T(0,.2,0))}if(k==='skel'){for(let i=0;i<3;i++)b.add(G.box(.42,.04,.3),'#f0ead8',T(0,.15-i*.12,.02))}}),0,.72,0);
+  if(k==='gob'||k==='red'||k==='master'||k==='skel'||k==='crim'||k==='skelb'){const hum=k==='crim'?'master':k==='skelb'?'skel':k;
+    const skinC={gob:'#8fd23a',red:'#e8c09a',master:'#e8c09a',skel:'#f0ead8',crim:'#e8302a',skelb:'#f0ead8'}[k],cloth={gob:'#a0522d',red:'#c8302a',master:'#2a2a34',skel:'#3a3a4a',crim:'#2a2a34',skelb:'#5a5040'}[k];
+    add('body',partMesh(b=>{b.add(G.cyl(.24,.28,.55,7),cloth,T(0,0,0));if(hum==='red'||hum==='master'){b.add(G.box(.55,.2,.35),'#8a8f9a',T(0,.2,0))}if(hum==='skel'){for(let i=0;i<3;i++)b.add(G.box(.42,.04,.3),'#f0ead8',T(0,.15-i*.12,.02))}}),0,.72,0);
     add('head',partMesh(b=>{b.add(G.sph(.3,8,6),skinC,T(0,.3,0));b.add(G.sph(.06,5,4),k==='skel'?'#1a1a1a':'#1a1a1a',T(-.11,.35,.25));b.add(G.sph(.06,5,4),'#1a1a1a',T(.11,.35,.25));
       if(k==='gob'){b.add(G.cone(.1,.45,4),skinC,T(-.38,.38,0,0,0,1.3));b.add(G.cone(.1,.45,4),skinC,T(.38,.38,0,0,0,-1.3));b.add(G.cone(.07,.2,4),'#7ac030',T(0,.28,.32,Math.PI/2,0,0))}
-      if(k==='red'||k==='master'){const hc=k==='master'?'#1a1a22':'#3a3a44';b.add(G.hemi(.36,9),hc,T(0,.32,0));b.add(G.box(.5,.08,.1),'#1a1a1a',T(0,.32,.28));b.add(G.cone(.08,.35,4),'#e02a2a',T(-.32,.62,0,0,0,.6));b.add(G.cone(.08,.35,4),'#e02a2a',T(.32,.62,0,0,0,-.6))}
-      if(k==='skel'){b.add(G.hemi(.33,9),'#d0303a',T(0,.36,0,-.2,0,0));b.add(G.box(.18,.06,.04),'#1a1a1a',T(0,.18,.28))}}),0,1.0,0);
+      if(hum==='red'||hum==='master'){const hc=k==='crim'?'#4a1414':k==='master'?'#1a1a22':'#3a3a44';b.add(G.hemi(.36,9),hc,T(0,.32,0));b.add(G.box(.5,.08,.1),'#1a1a1a',T(0,.32,.28));b.add(G.cone(.08,.35,4),'#e02a2a',T(-.32,.62,0,0,0,.6));b.add(G.cone(.08,.35,4),'#e02a2a',T(.32,.62,0,0,0,-.6))}
+      if(hum==='skel'){if(k==='skel')b.add(G.hemi(.33,9),'#d0303a',T(0,.36,0,-.2,0,0));b.add(G.box(.18,.06,.04),'#1a1a1a',T(0,.18,.28))}}),0,1.0,0);
     add('armL',limb(.08,.42,skinC),-.33,.95,0);add('armR',limb(.08,.42,skinC),.33,.95,0);add('legL',limb(.1,.45,k==='gob'?skinC:cloth),-.12,.48,0);add('legR',limb(.1,.45,k==='gob'?skinC:cloth),.12,.48,0);
-    const w=partMesh(b=>{if(k==='gob'){b.add(G.cyl(.05,.09,.6,5),'#7a4a24',T(0,-.3,0))}else if(k==='skel'){b.add(G.box(.06,.6,.12),'#cfd6de',T(0,-.35,.05));b.add(G.tor(.08,.02,Math.PI,6),'#e0b030',T(0,-.05,.05))}else{b.add(G.box(.06,.75,.1),'#cfd6de',T(0,-.4,0));b.add(G.box(.25,.05,.08),'#e0b030',T(0,-.05,0))}});
+    const w=partMesh(b=>{if(k==='gob'){b.add(G.cyl(.05,.09,.6,5),'#7a4a24',T(0,-.3,0))}else if(hum==='skel'){b.add(G.box(.06,.6,.12),'#cfd6de',T(0,-.35,.05));b.add(G.tor(.08,.02,Math.PI,6),'#e0b030',T(0,-.05,.05))}else{b.add(G.box(.06,.75,.1),'#cfd6de',T(0,-.4,0));b.add(G.box(.25,.05,.08),'#e0b030',T(0,-.05,0))}});
     w.position.y=-.42;w.rotation.x=Math.PI/2;P.armR.add(w)}
   else if(k==='log'){add('body',partMesh(b=>{b.add(G.cyl(.4,.42,1.1,8),'#8a5a32',T(0,0,0));b.add(G.cyl(.38,.38,.02,8),'#e8b878',T(0,.56,0));b.add(G.sph(.1,5,4),'#ffffff',T(-.15,.15,.38));b.add(G.sph(.1,5,4),'#ffffff',T(.15,.15,.38));b.add(G.sph(.05,4,3),'#1a1a1a',T(-.15,.15,.46));b.add(G.sph(.05,4,3),'#1a1a1a',T(.15,.15,.46));b.add(G.box(.25,.05,.05),'#3a1a0a',T(0,-.08,.42));b.add(G.ico(.25,0),'#4cae3a',T(.2,.65,0))}),0,1.0,0);
     add('armL',limb(.07,.4,'#7a4a2a'),-.45,1.1,0);add('armR',limb(.07,.4,'#7a4a2a'),.45,1.1,0);add('legL',limb(.09,.45,'#7a4a2a'),-.18,.48,0);add('legR',limb(.09,.45,'#7a4a2a'),.18,.48,0)}
@@ -735,10 +882,130 @@ function makeEnemy(k){const g=new THREE.Group(),P={};const add=(n,mesh,x,y,z)=>{
   g.scale.setScalar(ENEMY[k].sc);g.userData={P,k};return g}
 // ---------------- 飛ぶ資源のかけら ----------------
 const PIECE_GEO={};function pieceGeo(k){if(PIECE_GEO[k])return PIECE_GEO[k];const b=new MB(),c=RES[k].c;
-  ({wood:()=>{b.add(G.cyl(.13,.13,.5,6),c,T(0,0,0,0,0,Math.PI/2));b.add(G.cyl(.12,.12,.02,6),'#e8b878',T(.26,0,0,0,0,Math.PI/2))},plank:()=>b.add(G.box(.55,.1,.22),c),rock:()=>b.add(G.dod(.2),c),steel:()=>b.add(G.box(.42,.14,.2),c),
+  (({wood:()=>{b.add(G.cyl(.13,.13,.5,6),c,T(0,0,0,0,0,Math.PI/2));b.add(G.cyl(.12,.12,.02,6),'#e8b878',T(.26,0,0,0,0,Math.PI/2))},plank:()=>b.add(G.box(.55,.1,.22),c),rock:()=>b.add(G.dod(.2),c),steel:()=>b.add(G.box(.42,.14,.2),c),
    azr:()=>b.add(G.box(.26,.26,.26),c),ame:()=>b.add(G.cyl(.1,.1,.35,6),c),shroom:()=>{b.add(G.hemi(.2,7),c);b.add(G.cyl(.07,.08,.15,5),'#f6ead6',T(0,-.07,0))},meat:()=>b.add(G.sph(.17,6,5),c,T(0,0,0,0,0,0,1.3,1,1)),
    dia:()=>b.add(G.oct(.18),c),sul:()=>b.add(G.oct(.17),c,T(0,0,0,0,0,0,1,1.6,1)),ura:()=>b.add(G.cyl(.11,.11,.3,6),c),cact:()=>b.add(G.cyl(.1,.1,.35,6),c),ruby:()=>b.add(G.oct(.18),c,T(0,0,0,0,0,0,1,1.4,1)),
-   coin:()=>b.add(G.cyl(.18,.18,.05,10),c,T(0,0,0,Math.PI/2,0,0)),core:()=>b.add(G.ico(.2,1),c)})[k]();return PIECE_GEO[k]=b.geo()}
+   coin:()=>b.add(G.cyl(.18,.18,.05,10),c,T(0,0,0,Math.PI/2,0,0)),core:()=>b.add(G.ico(.2,1),c)})[k]||PIECE_EXTRA[k]&&(()=>PIECE_EXTRA[k](b,c))||(()=>b.add(G.dod(.18),c)))();return PIECE_GEO[k]=b.geo()}
+
+// ---- 05b_models2.js ----
+// ================= トロルヘイムの形（Wiki の画像を見て）=================
+// ---- 木・岩・結晶 ----
+Object.assign(NODE_BUILD,{
+ tpine(b){treeTrunk(b,.7,'#7a4a2a',.18);[[1.2,1,1.0],[1,.82,1.6],[.8,.62,2.15],[.55,.42,2.6]].forEach(([h,r,y],i)=>b.add(G.cyl(r*.55,r,h*.7,7),i%2?'#b8b030':'#a6a228',T(0,y,0,0,i*.4,0)))},
+ redoak(b){b.add(G.cyl(.32,.48,1.6,6),'#6a3a1a',T(0,.8,0));b.add(G.cyl(.08,.14,.8,4),'#6a3a1a',T(.45,1.6,0,0,0,-.8));b.add(G.cyl(.08,.14,.8,4),'#6a3a1a',T(-.42,1.7,.1,.2,0,.8));
+   b.add(G.ico(1.05,0),'#f08a1a',T(0,2.35,0,0,0,0,1.2,.75,1.2));b.add(G.ico(.75,0),'#f5a02a',T(.75,2.1,.3,.3,.4,0,1.1,.7,1.1));b.add(G.ico(.7,0),'#e07a10',T(-.75,2.15,-.2,0,.8,.2,1.1,.7,1.1));b.add(G.ico(.55,0),'#ffb840',T(0,2.85,.1))},
+ wheat(b){for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=i?.32+(i%2)*.12:0;b.add(G.cone(.09,.9+(i%3)*.12,4),i%2?'#f0c040':'#e0a828',T(Math.cos(a)*r,.45,Math.sin(a)*r,(Math.random()-.5)*.2,0,(Math.random()-.5)*.2))}},
+ crock2(b){b.add(G.dod(.8),'#8a7a72',T(0,.55,0,.3,.2,0,1,.8,1));b.add(G.dod(.5),'#9c8c84',T(.6,.32,.3,.5,.8,0));b.add(G.dod(.38),'#76665e',T(-.55,.28,-.25,.1,.4,.3))},
+ azr2(b){b.add(G.dod(.55),'#5a6474',T(0,.28,0,0,0,0,1.2,.6,1.2));[[0,.85,0,.62,.3],[.5,.62,.25,.45,.8],[-.45,.55,-.25,.45,.2],[.15,.5,-.5,.38,1.1],[-.2,.6,.45,.35,.6]].forEach(([x,y,z,s,r])=>b.add(G.box(s,s,s),'#2f7cf0',T(x,y,z,r,r*.7,.3)))},
+ arock(b){b.add(G.dod(.85),'#c8a888',T(0,.65,0,.3,.2,.1,.9,1.05,.9));b.add(G.dod(.48),'#d8b898',T(.62,.32,.3,.5,.8,0));b.add(G.dod(.36),'#b89878',T(-.6,.26,-.25,.1,.4,.3))},
+ coal(b){b.add(G.dod(.8),'#4a5058',T(0,.6,0,.3,.2,0,1,.85,1));[[.4,.95,.2,.25],[-.35,.8,-.25,.22],[.05,1.15,-.15,.2],[.5,.5,-.3,.18]].forEach(([x,y,z,s])=>b.add(G.dod(s),'#1a1a20',T(x,y,z)));b.add(G.dod(.45),'#3a4048',T(-.6,.3,.3))},
+ barna(b){b.add(G.dod(.85),'#7a8490',T(0,.6,0,.3,.2,0,1,.85,1));for(let i=0;i<8;i++){const a=i*.8,y=.3+(i%3)*.3;b.add(G.cone(.1,.14,5),'#f0ece0',T(Math.cos(a)*.7,y,Math.sin(a)*.7,Math.sin(a)*1.4,0,-Math.cos(a)*1.4))}},
+ ame2(b){b.add(G.dod(.5),'#4a3a5a',T(0,.22,0,0,0,0,1.2,.5,1.2));[[0,.9,0,.27,1.5,0],[.38,.65,.18,.2,1.1,.45],[-.35,.6,-.12,.2,1,-.5],[.06,.55,-.42,.17,.9,.3],[-.1,.6,.4,.17,.95,-.3]].forEach(([x,y,z,r,h,t])=>{b.add(G.cyl(r,r,h*.75,6),'#b25cf0',T(x,y,z,t*.5,0,t));b.add(G.cone(r,h*.35,6),'#d08cff',T(x+Math.sin(-t)*h*.5,y+h*.52,z,t*.5,0,t))})},
+ sdead(b){b.add(G.cyl(.14,.3,2,5),'#6a6a5e',T(0,1,0,0,0,.06));b.add(G.cyl(.07,.11,.9,4),'#6a6a5e',T(.34,1.55,0,0,0,-.9));b.add(G.cyl(.06,.1,.8,4),'#6a6a5e',T(-.3,1.8,.1,.2,0,.9));
+   [[.62,1.62,0],[-.58,1.92,.12],[.1,2.1,-.3],[.3,1.2,.2]].forEach(([x,y,z])=>b.add(G.cyl(.03,.02,.5,3),'#a8c040',T(x,y-.25,z)))},
+ outh(b){b.add(G.box(1,1.7,1),'#b8a078',T(0,.85,0));b.add(G.box(1.15,.12,1.15),'#8a7454',T(0,1.76,0,0,0,.08));b.add(G.box(.55,1.2,.04),'#a08a64',T(0,.65,.51));b.add(G.box(.5,.12,1.05),'#9ac040',T(0,1.6,0))},
+ scrap(b){[[0,.2,0,0,0,.3],[.2,.3,.1,0,1.2,-.4],[-.25,.25,-.1,0,2.1,.2],[.1,.45,-.2,0,.6,.7]].forEach(([x,y,z,rx,ry,rz])=>b.add(G.box(1.5,.12,.3),'#8a5a3a',T(x,y,z,rx,ry,rz)));
+   b.add(G.cyl(.42,.42,.12,10),'#c8d0dc',T(0,.7,0,Math.PI/2.4,0,.2));for(let i=0;i<8;i++){const a=i/8*Math.PI*2;b.add(G.box(.14,.14,.12),'#c8d0dc',T(Math.cos(a)*.48,.7+Math.sin(a)*.48*.42,Math.sin(a)*.48*.9,0,0,a))}b.add(G.box(.3,.5,.06),'#4a8ab0',T(-.4,.6,.3,0,.4,.3))},
+ cblock(b){b.add(G.box(1.1,1.1,1.1),'#22222a',T(0,.6,0,.1,.3,.05));b.add(G.box(.6,.6,.6),'#2e2e38',T(.6,.3,.4,.3,.6,0));b.add(G.box(.45,.45,.45),'#1a1a22',T(-.55,.25,-.4,.2,.2,.4))},
+ vrock(b){b.add(G.dod(.82),'#6a3a34',T(0,.6,0,.3,.2,0,1,.85,1));b.add(G.dod(.5),'#7a4a40',T(.6,.32,.3,.5,.8,0));b.add(G.ico(.12,0),'#ff8a2a',T(.2,1.05,.3));b.add(G.ico(.1,0),'#ff8a2a',T(-.3,.9,-.2))},
+ amber(b){b.add(G.dod(.45),'#5a3a2a',T(0,.2,0,0,0,0,1.2,.5,1.2));[[0,.85,0,.3],[.38,.6,.2,.22],[-.35,.6,-.15,.22]].forEach(([x,y,z,s])=>b.add(G.oct(s),'#ffa020',T(x,y,z,0,.4,0,1,1.7,1)))},
+ ura2(b){NODE_BUILD.ura(b);b.add(G.cyl(.15,.15,.7,6),'#5ce04a',T(.1,.45,-.4))},
+ ruby2(b){NODE_BUILD.ruby(b);b.add(G.oct(.22),'#f0284a',T(-.1,.55,.45,.3,.5,0,1,1.5,1))},
+ key(b){b.add(G.cyl(.45,.55,.45,6),'#8a939d',T(0,.22,0));b.add(G.tor(.22,.07,Math.PI*2,12),'#ffd21f',T(0,1.25,0));b.add(G.box(.1,.6,.08),'#ffd21f',T(0,.75,0));b.add(G.box(.22,.08,.08),'#ffd21f',T(.08,.55,0));b.add(G.box(.16,.08,.08),'#ffd21f',T(.06,.7,0))},
+ icepick(b){b.add(G.box(1.1,1.2,1.1),'#bfe8ff',T(0,.6,0,0,.4,0));b.add(G.cyl(.05,.05,1.1,5),'#a8723e',T(0,1.3,0,0,0,.3));b.add(G.box(.08,.12,.8),'#5ff0f0',T(-.16,1.8,0,0,0,.3))}});
+Object.assign(STUMP_OF,{tpine:'tree',redoak:'tree',sdead:'tree',wheat:'shroom',outh:'chest',scrap:'rock',crock2:'rock',arock:'rock',coal:'rock',barna:'rock',vrock:'rock',cblock:'rock',azr2:'crystal',ame2:'crystal',amber:'crystal',ura2:'crystal',ruby2:'crystal',key:'crystal',icepick:'crystal'});
+// ---- 飾り ----
+Object.assign(DECO_BUILD,{
+ leaf(b){for(let i=0;i<4;i++)b.add(G.ico(.1,0),i%2?'#f08a1a':'#e0b030',T((i-1.5)*.12,.04,(i%2)*.1,0,0,0,1,.25,1))},
+ mushO(b){b.add(G.cyl(.04,.05,.18,5),'#f6ead6',T(0,.09,0));b.add(G.hemi(.13,6),'#f07a1a',T(0,.17,0))},
+ bushO(b){b.add(G.ico(.3,0),'#d87a20',T(0,.2,0));b.add(G.ico(.2,0),'#f0a030',T(.22,.14,.1))},
+ reed(b){for(let i=0;i<5;i++)b.add(G.cone(.04,.6,3),'#6a8a2a',T((i-2)*.06,.3,(i%2)*.05,0,0,(i-2)*.12));b.add(G.cyl(.03,.03,.12,4),'#6a4a2a',T(0,.6,0))},
+ lily(b){b.add(G.cyl(.18,.18,.02,7),'#5a9a3a',T(0,.02,0));b.add(G.ico(.05,0),'#f0a0c0',T(.05,.06,.04))},
+ shell(b){b.add(G.cone(.08,.14,6),'#f4e8e0',T(0,.05,0,Math.PI/2,0,0));b.add(G.hemi(.07,6),'#f0c0b0',T(.15,.02,.05))},
+ plank(b){b.add(G.box(.55,.05,.14),'#9a6a40',T(0,.03,0,0,.4,0))},
+ crysB(b){b.add(G.oct(.12),'#5aa0ff',T(0,.15,0,0,0,0,1,1.8,1))},
+ crysR(b){b.add(G.oct(.12),'#ff4a5a',T(0,.15,0,0,0,0,1,1.8,1))}});
+Object.assign(DECO_SETS,{autumn:['leaf','leaf','grass','mushO','bushO'],swamp:['reed','reed','lily','mush'],beach:['shell','plank','pebble','shell'],dungeon:['stal','crysB','pebble','stal'],dungeonR:['stal','ember','crysR']});
+const DECO_GLOW={glow:0x208070,ember:0x802000,crys:0x206010,crysB:0x1a3a90,crysR:0x801020};
+// ---- 建物 ----
+Object.assign(BLD_BUILD,{
+ mill(b){b.add(G.cyl(.85,1.15,2.8,8),'#e8dcc4',T(0,1.4,0));b.add(G.cone(1.15,1.1,8),'#e0b040',T(0,3.35,0));b.add(G.box(.6,1,.1),'#8a5a3a',T(0,.5,1.08));b.add(G.cyl(.15,.15,.4,6),'#8a5a3a',T(0,2.4,1.1,Math.PI/2,0,0));
+   for(let i=0;i<4;i++){const a=i*Math.PI/2+.4;b.add(G.box(.32,1.7,.06),'#f4ecd8',T(Math.cos(a)*.95,2.4+Math.sin(a)*.95,1.3,0,0,a-Math.PI/2))}b.add(G.ico(.16,0),'#7ae0ff',T(0,2.4,1.33))},
+ barn(b){b.add(G.box(2,1.4,1.5),'#c43a2a',T(0,.7,0));b.add(G.box(1.2,.12,1.7),'#8a2a1e',T(-.45,1.62,0,0,0,.6));b.add(G.box(1.2,.12,1.7),'#8a2a1e',T(.45,1.62,0,0,0,-.6));
+   b.add(G.box(.8,1,.08),'#f4ecd8',T(0,.5,.76));b.add(G.box(.6,.8,.06),'#a8281e',T(0,.5,.79));[[-1.3],[1.3]].forEach(([x])=>b.add(G.box(.08,.5,1.6),'#c89a60',T(x,.25,0)));
+   b.add(G.ico(.32,1),'#f4f0e8',T(1.35,.45,.9));b.add(G.sph(.14,6,5),'#3a3a3a',T(1.62,.55,.95))},
+ coalT(b){BLD_BUILD.trade(b,'#3a3a48')},
+ tailorR(b){b.add(G.box(2,.12,1.1),'#a8704a',T(0,.82,0));[[-.85,-.45],[.85,-.45],[-.85,.45],[.85,.45]].forEach(([x,z])=>b.add(G.box(.12,.8,.12),'#7a4a2a',T(x,.4,z)));
+   b.add(G.cyl(.32,.32,.1,10),'#8a5a3a',T(.55,1.25,0,Math.PI/2,0,0));b.add(G.box(.5,.25,.35),'#3a7ab0',T(-.4,1.0,0));
+   b.add(G.cyl(.04,.04,2.4,5),'#7a4a2a',T(-1.2,1.2,-.6));b.add(G.cyl(.04,.04,2.4,5),'#7a4a2a',T(1.2,1.2,-.6));b.add(G.cyl(.015,.015,2.4,3),'#f0f0f0',T(0,2.3,-.6,0,0,Math.PI/2));
+   b.add(G.box(.45,.5,.04),'#ffd21f',T(-.5,2.0,-.6));b.add(G.box(.35,.55,.04),'#4a8af0',T(.2,1.98,-.6));b.add(G.box(.12,.4,.04),'#4a8af0',T(.1,1.65,-.6));b.add(G.box(.12,.4,.04),'#4a8af0',T(.3,1.65,-.6));
+   b.add(G.box(.4,.25,.02),'#e04a3a',T(-1.2,2.3,-.45))},
+ dockN(b){BLD_BUILD.dock(b)},dockS(b){BLD_BUILD.dock(b)},
+ dock(b){for(let i=0;i<6;i++)b.add(G.box(.42,.1,1.6),i%2?'#c98a4c':'#b9773f',T(-1.25+i*.5,.12,0));[[-1.4,-.7],[1.4,-.7],[-1.4,.7],[1.4,.7]].forEach(([x,z])=>b.add(G.cyl(.08,.08,.8,5),'#7a4a24',T(x,0,z)));
+   // 船
+   b.add(G.box(2.4,.45,1),'#8a4a24',T(0,.55,-1.4));b.add(G.box(.9,.4,.75),'#8a4a24',T(1.45,.6,-1.4,0,Math.PI/4,0,1,1,.75));b.add(G.box(2.2,.08,.85),'#c98a4c',T(0,.8,-1.4));
+   b.add(G.cyl(.06,.06,2.4,5),'#6a3a1a',T(-.1,2,-1.4));b.add(G.box(1.2,1.3,.04),'#f4ecd8',T(.45,2.1,-1.4,0,0,0));b.add(G.box(.4,.25,.02),'#e04a3a',T(-.1,3.25,-1.4))}});
+// ---- 人（つかまった人たちとガイアへのポータル）----
+function makeNpc(k){const C={farmer:{shirt:'#e04a3a',pants:'#3a7ad0',hat:'#8a5a2a'},tailor:{shirt:'#a05ad0',pants:'#5a3a8a',hat:null,glass:1},captain:{shirt:'#2a4a8a',pants:'#2a2a34',hat:'#1a2a4a',cap:1}}[k];
+  return partMesh(b=>{b.add(G.cyl(.22,.26,.55,8),C.shirt,T(0,.85,0));b.add(G.cyl(.09,.08,.45,6),C.pants,T(-.1,.35,0));b.add(G.cyl(.09,.08,.45,6),C.pants,T(.1,.35,0));b.add(G.sph(.27,8,6),'#f4f0ec',T(0,1.38,0));
+    b.add(G.cyl(.07,.06,.42,6),C.shirt,T(-.3,.85,0,0,0,.3));b.add(G.cyl(.07,.06,.42,6),C.shirt,T(.3,.85,0,0,0,-.3));
+    if(C.hat){b.add(G.cyl(.42,.42,.04,10),C.hat,T(0,1.6,0));b.add(G.cyl(.22,.26,.25,8),C.hat,T(0,1.72,0))}if(C.cap)b.add(G.box(.5,.06,.2),'#ffd21f',T(0,1.66,.18));if(C.glass)b.add(G.box(.36,.08,.04),'#ffd21f',T(0,1.4,.26))})}
+function cageMesh(){const b=new MB();b.add(G.cyl(.85,.85,.12,10),'#5a5a62',T(0,.06,0));b.add(G.cyl(.85,.85,.12,10),'#5a5a62',T(0,2.1,0));for(let i=0;i<10;i++){const a=i/10*Math.PI*2;b.add(G.cyl(.04,.04,2.1,4),'#8a8a94',T(Math.cos(a)*.82,1.08,Math.sin(a)*.82))}b.add(G.box(.3,.3,.1),'#ffd21f',T(0,1.0,.86));const m=new THREE.Mesh(b.geo(),VCMAT);m.castShadow=true;return m}
+// ---- 敵 ----
+function rig(){const g=new THREE.Group(),P={};return{g,P,add(n,mesh,x,y,z){const p=new THREE.Group();p.position.set(x,y,z);p.add(mesh);g.add(p);P[n]=p;return p}}}
+const limbM=(r,h,c)=>partMesh(b=>{b.add(G.cyl(r,r*.85,h,6),c,T(0,-h/2,0))});
+function trollModel(sk,cl,o){o=o||{};const R=rig();
+  R.add('body',partMesh(b=>{b.add(G.sph(.55,8,6),sk,T(0,0,0,0,0,0,1,1.1,.9));b.add(G.cyl(.56,.6,.35,8),cl,T(0,-.35,0));if(o.belt)b.add(G.cyl(.57,.57,.08,8),o.belt,T(0,-.15,0))}),0,1.05,0);
+  R.add('head',partMesh(b=>{b.add(G.sph(.36,8,6),sk,T(0,.25,0));b.add(G.cone(.1,.42,4),sk,T(-.4,.35,0,0,0,1.3));b.add(G.cone(.1,.42,4),sk,T(.4,.35,0,0,0,-1.3));b.add(G.cone(.09,.25,4),sk,T(0,.2,.36,Math.PI/2,0,0));
+    b.add(G.box(.42,.07,.06),'#2a2a2a',T(0,.38,.32));b.add(G.sph(.05,4,3),'#ffffff',T(-.12,.3,.32));b.add(G.sph(.05,4,3),'#ffffff',T(.12,.3,.32));
+    if(o.hair)b.add(G.cone(.12,.4,5),o.hair,T(0,.68,0));if(o.horn){b.add(G.cone(.07,.35,5),o.horn,T(-.22,.6,0,0,0,.4));b.add(G.cone(.07,.35,5),o.horn,T(.22,.6,0,0,0,-.4))}if(o.helm)b.add(G.hemi(.4,9),o.helm,T(0,.32,0))}),0,1.65,0);
+  R.add('armL',limbM(.15,.75,sk),-.62,1.45,0);R.add('armR',limbM(.15,.75,sk),.62,1.45,0);R.add('legL',limbM(.17,.6,sk),-.25,.65,0);R.add('legR',limbM(.17,.6,sk),.25,.65,0);
+  if(o.club){const w=partMesh(b=>{b.add(G.cyl(.08,.16,.9,6),o.club,T(0,-.45,0))});w.position.y=-.75;w.rotation.x=Math.PI/2;R.P.armR.add(w)}return R}
+function quadModel(k){const R=rig();
+  if(k==='bear'){const c='#a8683a';R.add('body',partMesh(b=>{b.add(G.sph(.6,8,6),c,T(0,0,0,0,0,0,1,.85,1.35));b.add(G.sph(.36,8,6),c,T(0,.25,.78));b.add(G.sph(.17,6,5),'#d8a878',T(0,.15,1.08));b.add(G.sph(.05,4,3),'#1a1a1a',T(0,.2,1.24));
+      b.add(G.sph(.1,5,4),c,T(-.24,.55,.7));b.add(G.sph(.1,5,4),c,T(.24,.55,.7));b.add(G.sph(.04,4,3),'#1a1a1a',T(-.13,.35,1.08));b.add(G.sph(.04,4,3),'#1a1a1a',T(.13,.35,1.08))}),0,.78,0);
+    R.add('armL',limbM(.14,.55,c),-.3,.55,.5);R.add('armR',limbM(.14,.55,c),.3,.55,.5);R.add('legL',limbM(.15,.5,c),-.3,.5,-.5);R.add('legR',limbM(.15,.5,c),.3,.5,-.5)}
+  else{const c='#8ab040';R.add('body',partMesh(b=>{b.add(G.box(.7,.38,1.4),c,T(0,0,0));b.add(G.box(.55,.28,.8),c,T(0,0,.95));b.add(G.box(.5,.08,.7),'#e04a3a',T(0,-.06,1.0));b.add(G.cone(.28,1.1,5),c,T(0,0,-1.2,-Math.PI/2,0,0));
+      for(let i=0;i<4;i++)b.add(G.cone(.07,.2,4),'#6a9030',T(0,.25,.5-i*.35));b.add(G.sph(.08,4,3),'#ffe040',T(-.2,.18,.75));b.add(G.sph(.08,4,3),'#ffe040',T(.2,.18,.75))}),0,.42,0);
+    R.add('armL',limbM(.1,.3,c),-.4,.3,.45);R.add('armR',limbM(.1,.3,c),.4,.3,.45);R.add('legL',limbM(.1,.3,c),-.4,.3,-.45);R.add('legR',limbM(.1,.3,c),.4,.3,-.45)}return R}
+function spiderModel(q){const R=rig(),c=q?'#6a5a66':'#6e6668',acc=q?'#c050f0':'#40d8f0';
+  R.add('body',partMesh(b=>{b.add(G.sph(.42,8,6),c,T(0,0,.25));b.add(G.sph(.55,8,6),c,T(0,.15,-.5,0,0,0,1,.85,1.1));b.add(G.sph(.4,8,5),acc,T(0,.35,-.55,0,0,0,1,.5,1));
+    b.add(G.sph(.1,5,4),acc,T(-.15,.12,.6));b.add(G.sph(.1,5,4),acc,T(.15,.12,.6));b.add(G.cone(.07,.3,4),acc,T(-.1,-.15,.65,.6,0,0));b.add(G.cone(.07,.3,4),acc,T(.1,-.15,.65,.6,0,0));
+    for(let i=0;i<4;i++){const z=.35-i*.25;b.add(G.cyl(.05,.05,.9,4),c,T(-.7,.1,z,0,0,1.1-i*.05));b.add(G.cyl(.05,.05,.9,4),c,T(.7,.1,z,0,0,-1.1+i*.05))}}),0,.7,0);
+  R.add('armL',limbM(.06,.6,c),-.45,.55,.45);R.add('armR',limbM(.06,.6,c),.45,.55,.45);R.add('legL',limbM(.06,.6,c),-.45,.55,-.3);R.add('legR',limbM(.06,.6,c),.45,.55,-.3);return R}
+function golemModel(lava){const R=rig(),c=lava?'#6a4a3a':'#8a7a6a';
+  R.add('body',partMesh(b=>{b.add(G.dod(.55),c,T(0,0,0,0,0,0,1.1,1,.9));b.add(G.dod(.3),c,T(-.4,.25,0));b.add(G.dod(.3),c,T(.4,.25,0))}),0,1.0,0);
+  R.add('head',partMesh(b=>{b.add(G.dod(.3),c,T(0,.2,0));if(lava){b.add(G.cone(.22,.55,6),'#ffc21a',T(0,.6,0));b.add(G.cone(.12,.35,5),'#ff6a1a',T(0,.55,.08))}b.add(G.sph(.05,4,3),lava?'#ffe080':'#1a1a1a',T(-.1,.22,.26));b.add(G.sph(.05,4,3),lava?'#ffe080':'#1a1a1a',T(.1,.22,.26))}),0,1.55,0);
+  R.add('armL',limbM(.18,.7,c),-.65,1.3,0);R.add('armR',limbM(.18,.7,c),.65,1.3,0);R.add('legL',limbM(.18,.5,c),-.25,.55,0);R.add('legR',limbM(.18,.5,c),.25,.55,0);return R}
+function scareModel(){const R=rig();R.add('body',partMesh(b=>{b.add(G.cyl(.24,.28,.55,7),'#e04a3a',T(0,.05,0));b.add(G.box(.5,.25,.3),'#3a6ac0',T(0,-.15,0))}),0,.78,0);
+  R.add('head',partMesh(b=>{b.add(G.sph(.3,8,6),'#f0c030',T(0,.3,0,0,0,0,1,1.15,1));b.add(G.cone(.08,.25,5),'#f0c030',T(0,.68,0));b.add(G.box(.08,.08,.04),'#2a1a0a',T(-.12,.35,.27));b.add(G.box(.08,.08,.04),'#2a1a0a',T(.12,.35,.27));b.add(G.box(.22,.04,.04),'#2a1a0a',T(0,.18,.28))}),0,1.05,0);
+  R.add('armL',limbM(.07,.42,'#e04a3a'),-.33,1.0,0);R.add('armR',limbM(.07,.42,'#e04a3a'),.33,1.0,0);R.add('legL',limbM(.09,.45,'#3a6ac0'),-.12,.5,0);R.add('legR',limbM(.09,.45,'#3a6ac0'),.12,.5,0);
+  const w=partMesh(b=>{b.add(G.cyl(.03,.03,.8,4),'#8a5a3a',T(0,-.4,0));b.add(G.box(.05,.3,.18),'#cfd6de',T(0,-.82,.08))});w.position.y=-.42;w.rotation.x=Math.PI/2;R.P.armR.add(w);return R}
+const ENEMY_EXTRA={
+ ctroll:()=>trollModel('#8aa8c8','#3a4a6a',{hair:'#4a8af0',club:'#5a4a3a'}),mtroll:()=>trollModel('#d8a878','#e07a2a',{hair:'#e05a1a',belt:'#8a4a24',club:'#6a4a2a'}),
+ stroll:()=>trollModel('#c8c840','#6a8a30',{hair:'#8aa030',club:'#5a6a30'}),stufur:()=>trollModel('#7a6a8a','#2a2a34',{horn:'#e02a2a',helm:'#3a3a44',club:'#3a3a44'}),
+ skellir:()=>trollModel('#d88a5a','#7a2a1a',{horn:'#f0ead8',helm:'#5a2a1a',club:'#3a2a1a',belt:'#ffd21f'}),
+ bear:()=>quadModel('bear'),croc:()=>quadModel('croc'),spider:()=>spiderModel(false),squeen:()=>spiderModel(true),rockm:()=>golemModel(false),lava:()=>golemModel(true),scare:()=>scareModel()};
+// ---- アイコン（新しい資源・かぶと・よろい）----
+Object.assign(ICON_DRAW,{
+ wheat(g){for(let i=0;i<5;i++){g.save();g.translate(32,56);g.rotate((i-2)*.18);g.strokeStyle='#8a6a1a';g.lineWidth=3;g.beginPath();g.moveTo(0,0);g.lineTo(0,-34);g.stroke();g.beginPath();g.ellipse(0,-40,5,10,0,0,7);g.fillStyle='#f0c040';g.fill();g.strokeStyle='#6a4a0a';g.lineWidth=2;g.stroke();g.restore()}},
+ coal(g){poly(g,[[12,44],[10,28],[24,14],[42,12],[54,26],[54,44],[40,54],[22,54]],'#3a3a48','#0a0a10');poly(g,[[24,14],[42,12],[44,24],[28,28]],'#5a5a6a',false)},
+ wool(g){[[22,34,12],[34,26,13],[44,36,12],[32,42,13]].forEach(([x,y,r])=>{g.beginPath();g.arc(x,y,r,0,7);g.fillStyle='#f8f4ec';g.fill();g.strokeStyle='#8a8070';g.lineWidth=2.5;g.stroke()});g.beginPath();g.arc(32,36,12,0,7);g.fillStyle='#f8f4ec';g.fill()},
+ leather(g){poly(g,[[14,16],[26,10],[38,10],[50,16],[52,30],[46,50],[32,56],[18,50],[12,30]],'#a8683a','#4a2a10');g.strokeStyle='#d8a070';g.setLineDash([3,3]);g.lineWidth=2;g.beginPath();g.moveTo(20,22);g.lineTo(44,22);g.lineTo(42,44);g.lineTo(22,44);g.closePath();g.stroke();g.setLineDash([])},
+ gear(g){g.save();g.translate(32,32);g.fillStyle='#b8c0cc';g.strokeStyle='#3a4250';g.lineWidth=3;g.beginPath();for(let i=0;i<16;i++){const a=i/16*Math.PI*2,r=i%2?18:24;g.lineTo(Math.cos(a)*r,Math.sin(a)*r)}g.closePath();g.fill();g.stroke();g.beginPath();g.arc(0,0,7,0,7);g.fillStyle='#5a6270';g.fill();g.restore()},
+ crock(g){poly(g,[[20,10],[34,10],[38,34],[50,42],[50,50],[18,50],[16,40]],'#7ab04a','#2a4a10');[[22,52],[32,54],[42,54]].forEach(([x,y])=>poly(g,[[x-3,y-4],[x+3,y-4],[x,y+5]],'#f4f0e8','#2a4a10',2))},
+ bone(g){g.save();g.translate(32,32);g.rotate(-.7);g.fillStyle='#f0ead8';g.strokeStyle='#6a5a40';g.lineWidth=3;g.beginPath();g.rect(-16,-5,32,10);g.fill();g.stroke();[[-18,-6],[-18,6],[18,-6],[18,6]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,7,0,7);g.fill();g.stroke()});g.restore()},
+ amber(g){g.beginPath();g.moveTo(32,8);g.bezierCurveTo(48,28,52,40,32,56);g.bezierCurveTo(12,40,16,28,32,8);g.fillStyle='#ffa020';g.fill();g.strokeStyle='#6a3a00';g.lineWidth=3;g.stroke();g.beginPath();g.ellipse(26,36,4,8,-.3,0,7);g.fillStyle='#ffe0a0';g.fill()},
+ key(g){g.strokeStyle='#6a4a00';g.lineWidth=3;g.beginPath();g.arc(20,24,11,0,7);g.fillStyle='#ffd21f';g.fill();g.stroke();g.beginPath();g.arc(20,24,4,0,7);g.fillStyle='#6a4a00';g.fill();poly(g,[[28,30],[54,48],[50,54],[44,50],[42,54],[36,50],[24,36]],'#ffd21f','#6a4a00')},
+ helm(g){g.beginPath();g.arc(32,36,20,Math.PI,0);g.closePath();g.fillStyle='#b8c0cc';g.fill();g.strokeStyle='#2a3240';g.lineWidth=3;g.stroke();g.fillStyle='#8a94a4';g.fillRect(12,36,40,8);g.strokeRect(12,36,40,8);g.fillStyle='#e04a3a';g.fillRect(29,10,6,10)},
+ arm(g){poly(g,[[18,12],[28,16],[36,16],[46,12],[54,22],[48,28],[46,54],[18,54],[16,28],[10,22]],'#b8c0cc','#2a3240');g.fillStyle='#8a94a4';g.fillRect(22,30,20,4);g.fillRect(22,40,20,4)}});
+// ---- 新しい資源の飛ぶかけら・光る木や岩 ----
+const PIECE_EXTRA={
+ wheat(b,c){b.add(G.cone(.09,.4,4),c);b.add(G.cyl(.02,.02,.3,3),'#8a6a1a',T(0,-.3,0))},coal(b,c){b.add(G.dod(.18),c)},wool(b,c){b.add(G.ico(.2,1),c)},
+ leather(b,c){b.add(G.box(.4,.06,.3),c)},gear(b,c){b.add(G.cyl(.18,.18,.07,8),c,T(0,0,0,Math.PI/2,0,0))},crock(b,c){b.add(G.box(.2,.14,.36),c)},
+ bone(b,c){b.add(G.cyl(.05,.05,.4,5),c,T(0,0,0,0,0,Math.PI/2));b.add(G.sph(.08,5,4),c,T(.2,0,0));b.add(G.sph(.08,5,4),c,T(-.2,0,0))},
+ amber(b,c){b.add(G.oct(.18),c,T(0,0,0,0,0,0,1,1.4,1))},key(b,c){b.add(G.tor(.1,.04,Math.PI*2,8),c);b.add(G.box(.06,.3,.05),c,T(0,-.22,0))}};
+const NODE_GLOW={core:0x802070,ura:0x206010,ura2:0x206010,amber:0x4a2800,icepick:0x10304a};
 
 // ---- 06_world.js ----
 // ================= 星を組み立てる =================
@@ -755,17 +1022,22 @@ const sun=new THREE.DirectionalLight(0xfff2dc,2.1);sun.castShadow=true;sun.shado
   const neb=(col,x,y,z,s)=>{const cv=document.createElement('canvas');cv.width=cv.height=128;const q=cv.getContext('2d'),gr=q.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=gr;q.fillRect(0,0,128,128);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.55}));sp.position.set(x,y,z);sp.scale.setScalar(s);scene.add(sp)};
   neb('rgba(140,70,220,.6)',-180,90,-160,260);neb('rgba(40,120,240,.55)',200,-60,-120,240);neb('rgba(230,80,170,.45)',60,180,180,220);neb('rgba(60,200,220,.4)',-160,-150,140,240)})();
-// ---- 星（六角タイル）----
+// ---- 星（六角タイル）：どの星も同じ分け方（n=8）。タイルの配置は星ごとに入れかえる ----
 const CELLS=makeHexSphere(GAIA_LAYOUT.n).map(c=>({i:c.i,c:V3(...c.c),cs:c.corners.map(v=>V3(...v)),nb:c.nb}));
 CELLS.forEach(c=>{const [e1,e2]=tangentBasis([c.c.x,c.c.y,c.c.z]);c.e1=V3(...e1);c.e2=V3(...e2);c.t=-1;c.a=0;c.h=0;c.pc=-1});
 const TILES=[];   // TILES[n] = {n,cell,a,cost,cont,par}（0 ははじめの島）
-GAIA_LAYOUT.cells.split(';').forEach((s,i)=>{if(!s)return;const [t,a,h,p]=s.split(',').map(Number);const c=CELLS[i];c.t=t;c.a=a;c.h=h/20;c.pc=p});
-TILES[0]={n:0,cells:[],a:1,cost:{},cont:[]};
-GAIA_TILES.forEach((row,k)=>{const n=k+1,[a,cs,ct]=row.split('|');const cost={};cs.split(',').forEach(x=>{const [r,v]=x.split(':');cost[r]=+v});TILES[n]={n,a:+a,cost,cont:ct.split(' ').filter(Boolean)}});
-CELLS.forEach(c=>{if(c.t>0){TILES[c.t].cell=c.i;TILES[c.t].par=c.pc>=0?CELLS[c.pc].t:0}else if(c.t===0)TILES[0].cells.push(c.i)});
-const NTILE=GAIA_TILES.length;
+let NTILE=0,CUR=null,WD=null;   // いまいる星（WDEF の id とその中身）
+function layoutWorld(id){WD=WDEF[id];CUR=id;AREA=WD.area;ROCK_BY_AREA=WD.rockBy;PORTAL_STEPS=WD.portal;
+  CELLS.forEach(c=>{c.t=-1;c.a=0;c.h=0;c.pc=-1});TILES.length=0;
+  WD.layout.cells.split(';').forEach((s,i)=>{if(!s)return;const [t,a,h,p]=s.split(',').map(Number);const c=CELLS[i];c.t=t;c.a=a;c.h=h/20;c.pc=p});
+  TILES[0]={n:0,cells:[],a:1,cost:{},cont:[]};
+  WD.tiles.forEach((row,k)=>{const n=k+1,[a,cs,ct]=row.split('|');const cost={};(cs||'').split(',').forEach(x=>{if(!x)return;const [r,v]=x.split(':');cost[r]=+v});TILES[n]={n,a:+a,cost,cont:(ct||'').split(' ').filter(Boolean)}});
+  CELLS.forEach(c=>{if(c.t>0){TILES[c.t].cell=c.i;TILES[c.t].par=c.pc>=0?CELLS[c.pc].t:0}else if(c.t===0)TILES[0].cells.push(c.i)});
+  // はじめの島のまん中を先頭に（ガイアは今までどおりセルの番号順）
+  if(WD.ctrFirst){const S=TILES[0].cells,ctr=S.find(i=>CELLS[i].nb.every(j=>S.includes(j)));if(ctr!=null)TILES[0].cells=[ctr,...S.filter(i=>i!==ctr)]}
+  NTILE=WD.tiles.length}
 // ---- 世界の状態（セーブするもの）----
-const W={open:new Set([0]),paid:{},ts:0};
+const W={open:new Set([0]),paid:{},ts:0,once:new Set()};
 const isLand=c=>c.t>=0&&W.open.has(c.t);
 const tileOfCell=c=>c.t>=0?TILES[c.t]:null;
 // 今買えるタイル：親が開いていて、自分はまだ。Wiki の順番から先に行きすぎないよう、
@@ -780,6 +1052,7 @@ const topR=c=>SEA+c.h;
 // 地面の点：タイルの平らな上面の上（u の向きで）
 function groundAt(u,c){return topR(c)/Math.max(.2,u.dot(c.c))}
 const world=new THREE.Group();scene.add(world);
+let WG=new THREE.Group();world.add(WG);   // いまの星のもの（タイル・木や岩・建物・敵…）。星を移るとまるごと作り直す
 // 海の底と海
 const bed=new THREE.Mesh(new THREE.SphereGeometry(BED+.05,64,48),new THREE.MeshLambertMaterial({color:'#1371b8'}));bed.receiveShadow=true;world.add(bed);
 const WAVE={value:0};
@@ -798,7 +1071,7 @@ function tileGeo(c,col){const b=new MB();const top=topR(c),bev=.14,ins=.86,pos=[
     tri(outer[k],bot[k],bot[k2],cs,cd,cd);tri(outer[k],bot[k2],outer[k2],cs,cd,cs)} // 横（下ほど暗く）
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));g.computeVertexNormals();g.computeBoundingSphere();return g}
 const TILE_MESH={};   // セル番号 → メッシュ
-function buildTileMesh(c){const A=AREA[c.a]||AREA[1];const top=(c.t*7+c.i)%3===0?A.top2:A.top;const m=new THREE.Mesh(tileGeo(c,{top,side:A.side}),VCMAT);m.castShadow=true;m.receiveShadow=true;world.add(m);TILE_MESH[c.i]=m;return m}
+function buildTileMesh(c){const A=AREA[c.a]||AREA[1];const top=(c.t*7+c.i)%3===0?A.top2:A.top;const m=new THREE.Mesh(tileGeo(c,{top,side:A.side}),VCMAT);m.castShadow=true;m.receiveShadow=true;WG.add(m);TILE_MESH[c.i]=m;return m}
 // ---- 海の浅いところ（陸のとなりのタイルを水の中の砂に）と波打ち際の白い泡 ----
 let shelfMesh=null,foamMesh=null;
 const shelfMat=new THREE.MeshLambertMaterial({color:'#7fe0e8'}),foamMat=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.75,depthWrite:false});
@@ -808,7 +1081,7 @@ function rebuildShore(){const P=[],F=[];
     if(land){const n=c.cs.length;for(let k=0;k<n;k++){const a=c.cs[k],b2=c.cs[(k+1)%n];const mid=a.clone().add(b2).normalize();let nb=-1,bd=-2;for(const j of c.nb){const d=CELLS[j].c.dot(mid);if(d>bd){bd=d;nb=j}}
       if(isLand(CELLS[nb]))continue;const r=SEA+.03,out=mid.clone().sub(c.c).normalize().multiplyScalar(.28);const a1=a.clone().multiplyScalar(r/a.dot(c.c)),b1=b2.clone().multiplyScalar(r/b2.dot(c.c)),a3=a1.clone().add(out),b3=b1.clone().add(out);
       F.push(a1.x,a1.y,a1.z,a3.x,a3.y,a3.z,b3.x,b3.y,b3.z,a1.x,a1.y,a1.z,b3.x,b3.y,b3.z,b1.x,b1.y,b1.z)}}}
-  const mk=(arr,mat,old)=>{if(old){world.remove(old);old.geometry.dispose()}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));g.computeVertexNormals();const m=new THREE.Mesh(g,mat);world.add(m);return m};
+  const mk=(arr,mat,old)=>{if(old){WG.remove(old);old.geometry.dispose()}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));g.computeVertexNormals();const m=new THREE.Mesh(g,mat);WG.add(m);return m};
   shelfMesh=mk(P,shelfMat,shelfMesh);shelfMesh.receiveShadow=true;foamMesh=mk(F,foamMat,foamMesh);foamMesh.renderOrder=6}
 // ---- 置き物の位置（タイルの上の平らな面で、中心から x,z）----
 function tilePoint(c,x,z,out){out=out||new THREE.Vector3();return out.copy(c.c).multiplyScalar(topR(c)).addScaledVector(c.e1,x).addScaledVector(c.e2,z)}
@@ -818,9 +1091,10 @@ function placeMatrix(pos,up,yaw,s,out){upBasis(up,_pe1,_pe2);_pf.copy(_pe1).mult
 const NODES=[],NODE_IM={},STUMP_IM={},BLDS=[],DECO_IM={},SPAWNS=[];
 const BY_CELL={};   // セル番号 → そこの木・岩・建物
 const nodeKind=(k,a)=>k==='rock'?(ROCK_BY_AREA[a]||'rock'):k;
-function planTile(n){const T=TILES[n];if(n===0){T.cells.forEach((ci,j)=>{if(j===1||j===4)planNodes(ci,'oak',2,j);else if(j===2)planNodes(ci,'oak',1,j)});return}
+function planTile(n){const T=TILES[n];if(n===0){// はじめの島（星ごとに WDEF の start）
+    for(const s of WD.start){const ci=T.cells[s.j];if(ci==null)continue;if(s.n)planNodes(ci,s.n,s.c,s.j);else if(s.b)BLDS.push({k:s.b,n:0,cell:ci,yaw:0,key:'s'+s.j});else if(s.e)SPAWNS.push({k:s.e,n:0,cell:ci})}return}
   const c=CELLS[T.cell],r=mulberry(n*7919+3);const bk=T.cont.find(k=>BLD[k]);const nodes=T.cont.filter(k=>NODE[nodeKind(k,T.a)]),ens=T.cont.filter(k=>ENEMY[k]);
-  if(bk){BLDS.push({k:bk,n,cell:c.i,yaw:0});}
+  if(bk){BLDS.push({k:bk,n,cell:c.i,yaw:0,key:String(n)});}
   for(const k0 of nodes){const k=nodeKind(k0,T.a);let cnt=NODE_PER[k]||2;if(bk&&cnt>1)cnt=k==='chest'?1:2;if(nodes.length>1&&cnt>2)cnt=2;planNodes(c.i,k,cnt,n,bk?1.25:null,nodes.indexOf(k0))}
   for(const k of ens)SPAWNS.push({k,n,cell:c.i})}
 function planNodes(ci,k,cnt,seed,ring,slot){const c=CELLS[ci],r=mulberry(ci*131+seed*17+(slot||0)*977);const base=r()*Math.PI*2+(slot||0)*1.3;
@@ -829,8 +1103,8 @@ function planNodes(ci,k,cnt,seed,ring,slot){const c=CELLS[ci],r=mulberry(ci*131+
 function buildNodes(){for(let n=0;n<=NTILE;n++)planTile(n);
   const cnt={},scnt={};NODES.forEach(o=>{o.idx=cnt[o.k]=(cnt[o.k]||0);cnt[o.k]++;const sk=STUMP_OF[o.k];o.sidx=scnt[sk]=(scnt[sk]||0);scnt[sk]++});
   const hid=new THREE.Matrix4().makeScale(0,0,0);
-  for(const k in cnt){const im=new THREE.InstancedMesh(nodeGeo(k),k==='core'||k==='ura'?lam({emissive:k==='core'?0x802070:0x206010}):VCMAT,cnt[k]);im.castShadow=true;im.receiveShadow=true;for(let i=0;i<cnt[k];i++)im.setMatrixAt(i,hid);im.frustumCulled=false;world.add(im);NODE_IM[k]=im}
-  for(const k in scnt){const im=new THREE.InstancedMesh(stumpGeo(k),VCMAT,scnt[k]);im.receiveShadow=true;for(let i=0;i<scnt[k];i++)im.setMatrixAt(i,hid);im.frustumCulled=false;world.add(im);STUMP_IM[k]=im}
+  for(const k in cnt){const im=new THREE.InstancedMesh(nodeGeo(k),NODE_GLOW[k]?lam({emissive:NODE_GLOW[k]}):VCMAT,cnt[k]);im.castShadow=true;im.receiveShadow=true;for(let i=0;i<cnt[k];i++)im.setMatrixAt(i,hid);im.frustumCulled=false;WG.add(im);NODE_IM[k]=im}
+  for(const k in scnt){const im=new THREE.InstancedMesh(stumpGeo(k),VCMAT,scnt[k]);im.receiveShadow=true;for(let i=0;i<scnt[k];i++)im.setMatrixAt(i,hid);im.frustumCulled=false;WG.add(im);STUMP_IM[k]=im}
   NODES.forEach(o=>{const c=CELLS[o.cell];tilePoint(c,o.x,o.z,o.pos);o.up=c.c.clone()})}
 const _mx=new THREE.Matrix4(),HIDE=new THREE.Matrix4().makeScale(0,0,0);
 // 見た目を今の状態に（ゆれ・生えてくる・切り株）
@@ -846,29 +1120,45 @@ function buildDeco(){const cnt={};const r=mulberry(4242);
   for(const c of CELLS){if(c.t<0)continue;const A=AREA[c.a]||AREA[1],set=DECO_SETS[A.deco]||[];if(!set.length)continue;const used=(BY_CELL[c.i]||[]).map(o=>[o.x,o.z]);const hasB=BLDS.some(b=>b.cell===c.i);
     const m=4+Math.floor(r()*4);for(let j=0;j<m;j++){const a=r()*Math.PI*2,rad=.35+r()*1.35,x=Math.cos(a)*rad,z=Math.sin(a)*rad;if(used.some(([ux,uz])=>Math.hypot(ux-x,uz-z)<.75))continue;if(hasB&&rad<1.5)continue;
       const k=set[Math.floor(r()*set.length)];DECOS.push({k,cell:c.i,x,z,yaw:r()*6.28,s:.8+r()*.5,idx:cnt[k]=(cnt[k]||0)});cnt[k]++}}
-  for(const k in cnt){const im=new THREE.InstancedMesh(decoGeo(k),k==='glow'||k==='ember'||k==='crys'?lam({emissive:k==='ember'?0x802000:k==='crys'?0x206010:0x208070}):VCMAT,cnt[k]);for(let i=0;i<cnt[k];i++)im.setMatrixAt(i,HIDE);im.frustumCulled=false;im.receiveShadow=true;world.add(im);DECO_IM[k]=im}}
+  for(const k in cnt){const im=new THREE.InstancedMesh(decoGeo(k),DECO_GLOW[k]?lam({emissive:DECO_GLOW[k]}):VCMAT,cnt[k]);for(let i=0;i<cnt[k];i++)im.setMatrixAt(i,HIDE);im.frustumCulled=false;im.receiveShadow=true;WG.add(im);DECO_IM[k]=im}}
 function drawDecoCell(ci){const c=CELLS[ci];for(const d of DECOS){if(d.cell!==ci)continue;const im=DECO_IM[d.k];if(isLand(c))im.setMatrixAt(d.idx,placeMatrix(tilePoint(c,d.x,d.z),c.c,d.yaw,d.s,_mx));else im.setMatrixAt(d.idx,HIDE);im.instanceMatrix.needsUpdate=true}}
 // ---- 建物 ----
 function buildBuildings(){for(const B of BLDS){const c=CELLS[B.cell];
   // 前（台のある向き）は、親のタイル（来た方）へ向ける
-  const T=TILES[B.n];const pc=T.par>0?CELLS[TILES[T.par].cell]:CELLS[TILES[0].cells[0]];const f=tangent(pc.c.clone().sub(c.c),c.c);B.f=f;B.up=c.c.clone();B.pos=tilePoint(c,0,0);
-  let m;if(B.k==='portal')m=portalModel();else m=bldMesh(B.k);m.position.copy(B.pos);frameQuat(c.c,f,m.quaternion);if(B.k==='bridge'){m.position.copy(c.c).multiplyScalar(SEA+.32)}
-  m.visible=false;world.add(m);B.m=m;(BY_CELL[B.cell]||(BY_CELL[B.cell]=[])).push(B);B.isB=true;B.r=B.k==='bridge'?0:B.k==='portal'?1.6:B.k==='cave'?0:1.15;
+  // はじめの島の建物は島のまん中へ向ける
+  const T=TILES[B.n];let pc=T.par>0?CELLS[TILES[T.par].cell]:CELLS[TILES[0].cells[0]];if(pc.i===c.i)pc=CELLS[c.nb[0]];
+  // 親がとなりにない（船で着く島）ときは、となりのいちばん番号の小さいタイルへ向ける
+  if(T.par>0&&!c.nb.includes(pc.i)){const q=c.nb.map(j=>CELLS[j]).filter(q=>q.t>0).sort((a,b)=>a.t-b.t)[0];if(q)pc=q}const f=tangent(pc.c.clone().sub(c.c),c.c);B.f=f;B.up=c.c.clone();B.pos=tilePoint(c,0,0);
+  const D=BLD[B.k];let m;if(B.k==='portal')m=portalModel(WD.portalCol);else if(D.kind==='warp'){m=portalModel(WDEF[D.to].portalCol);const U=m.userData;U.pieces.forEach(p=>p.visible=true);U.ghosts.forEach(p=>p.visible=false);U.swirl.visible=U.sw2.visible=true}
+  else if(D.kind==='npc')m=makeNpc(B.k);else m=bldMesh(B.k);
+  if(B.k==='tailorR'){const nm=makeNpc('tailor');nm.position.set(1.4,0,.35);nm.rotation.y=-.5;m.add(nm)}
+  m.position.copy(B.pos);frameQuat(c.c,f,m.quaternion);if(B.k==='bridge'){m.position.copy(c.c).multiplyScalar(SEA+.32)}
+  m.visible=false;WG.add(m);B.m=m;(BY_CELL[B.cell]||(BY_CELL[B.cell]=[])).push(B);B.isB=true;B.r=({bridge:0,portal:1.6,rportal:1.6,cave:0,dockN:0,dockS:0,farmer:.4,captain:.4})[B.k];if(B.r==null)B.r=1.15;
   // 台（足をのせる丸）：精錬所・商人は前、ポータルとキャラは前
   const rt=new THREE.Vector3().crossVectors(c.c,f).normalize();B.rt=rt;const pad=(dx,dz)=>c.c.clone().multiplyScalar(topR(c)).addScaledVector(f,dz).addScaledVector(rt,dx);
   // 台は正面（来た方＝開いているタイルの側）に置く。精錬所は「入れる丸」と「受け取る緑の丸」を並べる
-  if(BLD[B.k].kind==='ref'){B.pIn=pad(-.95,1.72);B.pOut=pad(.95,1.72);B.padR=.72}else{B.pIn=pad(0,2.05);B.padR=.95}}}
+  if(D.kind==='ref'){B.pIn=pad(-.95,1.72);B.pOut=pad(.95,1.72);B.padR=.72}else if(D.tools){B.pIn=pad(-.95,1.72);B.pIn2=pad(.95,1.72);B.padR=.72}else{B.pIn=pad(0,2.05);B.padR=.95}}}
 // 足元の丸（台）
 const padMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.55,depthWrite:false});
-function padMesh(pos,up,r,col){const g=new THREE.RingGeometry(r*.78,r,28);const m=new THREE.Mesh(g,padMat.clone());m.material.color.set(col||'#ffffff');m.position.copy(pos).addScaledVector(up,.04);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),up);m.renderOrder=7;world.add(m);
-  const inner=new THREE.Mesh(new THREE.CircleGeometry(r*.78,28),new THREE.MeshBasicMaterial({color:col||'#ffffff',transparent:true,opacity:.18,depthWrite:false}));inner.position.copy(m.position);inner.quaternion.copy(m.quaternion);inner.renderOrder=7;world.add(inner);return[m,inner]}
+function padMesh(pos,up,r,col){const g=new THREE.RingGeometry(r*.78,r,28);const m=new THREE.Mesh(g,padMat.clone());m.material.color.set(col||'#ffffff');m.position.copy(pos).addScaledVector(up,.04);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),up);m.renderOrder=7;WG.add(m);
+  const inner=new THREE.Mesh(new THREE.CircleGeometry(r*.78,28),new THREE.MeshBasicMaterial({color:col||'#ffffff',transparent:true,opacity:.18,depthWrite:false}));inner.position.copy(m.position);inner.quaternion.copy(m.quaternion);inner.renderOrder=7;WG.add(inner);return[m,inner]}
 // ---- 買えるタイルの目印（水の上の光る六角）----
 const ghostMat=new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.28,depthWrite:false}),ghostLine=new THREE.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:.95});
 const GHOST={};
 function ghostOf(n){if(GHOST[n])return GHOST[n];const c=CELLS[TILES[n].cell],r=SEA+.08;const ctr=c.c.clone().multiplyScalar(r),cs=c.cs.map(v=>v.clone().multiplyScalar(r/v.dot(c.c)).sub(ctr).multiplyScalar(.9).add(ctr));
   const P=[];for(let k=0;k<cs.length;k++){const a=cs[k],b=cs[(k+1)%cs.length];P.push(ctr.x,ctr.y,ctr.z,a.x,a.y,a.z,b.x,b.y,b.z)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
   const grp=new THREE.Group();const m=new THREE.Mesh(g,ghostMat);m.renderOrder=8;grp.add(m);const lp=[];cs.forEach(v=>lp.push(v.x,v.y,v.z));lp.push(cs[0].x,cs[0].y,cs[0].z);const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));const ln=new THREE.Line(lg,ghostLine);ln.renderOrder=9;grp.add(ln);
-  world.add(grp);return GHOST[n]=grp}
+  WG.add(grp);return GHOST[n]=grp}
+// ---- 星を作り直す（星を移るとき・セーブを読むとき）----
+function clearWorld(){world.remove(WG);const keep=new Set([...Object.values(NODE_GEO),...Object.values(STUMP_GEO),...Object.values(DECO_GEO),...Object.values(PIECE_GEO)]);
+  WG.traverse(o=>{if(o.geometry&&!keep.has(o.geometry))o.geometry.dispose()});WG=new THREE.Group();world.add(WG);
+  NODES.length=BLDS.length=SPAWNS.length=DECOS.length=ENEMIES.length=TOLLS.length=RISING.length=0;
+  for(const o of [BY_CELL,TILE_MESH,GHOST,NODE_IM,STUMP_IM,DECO_IM])for(const k in o)delete o[k];GH_ON.clear();NDIRTY.clear();shelfMesh=foamMesh=null;
+  for(const o of [PTAGS,BTAG])for(const k in o){o[k].remove();delete o[k]}
+  for(const p of PIECES){world.remove(p.m);PIECE_POOL[p.k].push(p.m);if(p.val>0)addRes(p.k,p.val)}PIECES.length=0;
+  PAY.n=-1;DW.key=DW.cur=null;AUTO.tgt=null;AUTO.clear=null;AUTO.path=[];AUTO.skip.clear();PADUI=null;LOCK_SHOW=null;sharkGone()}
+function buildWorld(id){clearWorld();layoutWorld(id);waterMat.color.set(WD.water);bed.material.color.set(WD.bed);shelfMat.color.set(WD.shelf);
+  W.open=new Set([0]);W.paid={};W.once=new Set();buildNodes();buildDeco();buildBuildings();makeEnemies();makeTolls()}
 
 // ---- 07_player.js ----
 // ================= プレイヤー・カメラ・操作 =================
@@ -877,7 +1167,8 @@ const PL={u:new THREE.Vector3(0,1,0),r:SEA+1,f:new THREE.Vector3(0,0,1),face:new
 const CAM={f:new THREE.Vector3(0,0,1),dist:17,pitch:.98,map:false,mapQ:new THREE.Quaternion(),mapDist:78};
 const pTag=document.createElement('div');pTag.className='hpTag';
 function skinOf(){return SKINS.find(s=>s.id===PL.skin)||SKINS[0]}
-function maxHp(){return Math.round(WHP[PL.tools.weap]*(skinOf().hp||1))}
+// 体力：剣のレベル＋かぶと・よろい（Wiki「Helmets」「Armor」）
+function maxHp(){return Math.round((WHP[PL.tools.weap]+ARMHP[PL.tools.helm||0]+ARMHP[PL.tools.arm||0])*(skinOf().hp||1))}
 let PLAYER_MESH=makeChar('stick');scene.add(PLAYER_MESH);
 function setSkin(id){PL.skin=id;const old=PLAYER_MESH;PLAYER_MESH=makeChar(id);PLAYER_MESH.position.copy(old.position);PLAYER_MESH.quaternion.copy(old.quaternion);scene.remove(old);scene.add(PLAYER_MESH)}
 // ---- はじめの場所 ----
@@ -943,9 +1234,9 @@ function updatePlayer(dt){
   PL.cell=cellAt(PL.u,PL.cell);const c=CELLS[PL.cell],k=groundKind(c);const tr=groundR(PL.u,c,k);
   PL.r+=(tr-PL.r)*(1-Math.exp(-dt*(tr>PL.r?16:10)));
   PL.spd=spd;PL.walk+=dt*spd*2.2;
-  // 泳ぐ・サメ（Wiki: Gaia の shark delay 4 秒）
+  // 泳ぐ・サメ（Wiki の shark delay：ガイア 4 秒・トロルヘイム 0.5 秒）
   const wet=k==='water';if(wet&&!PL.inWater)SFX.splash();PL.inWater=wet;
-  if(wet){PL.swimT+=dt;if(PL.swimT>4)sharkTick(dt)}else{PL.swimT=0;sharkGone()}
+  if(wet){PL.swimT+=dt;if(PL.swimT>WD.shark)sharkTick(dt)}else{PL.swimT=0;sharkGone()}
   // 体力の回復（4 秒こうげきされなかったら）
   PL.hurtT+=dt;if(PL.hurtT>4&&PL.hp<maxHp())PL.hp=Math.min(maxHp(),PL.hp+maxHp()*.12*dt);
   autoAction(dt)}
@@ -1012,7 +1303,9 @@ const OPT={yield:+LSget('lu-yield','1')||1};
 let HUD_DIRTY=true;const GAIN={};
 function addRes(k,n){if(!n)return;PL.inv[k]=(PL.inv[k]||0)+n;HUD_DIRTY=true;if(n>0){GAIN[k]=(GAIN[k]||0)+n;if(AUTO.on)AUTO.got[k]=(AUTO.got[k]||0)+n}}
 const has=(k,n)=>(PL.inv[k]||0)>=n;
-function bonus(k){const b=skinOf().bonus;return b&&b[k]||1}
+// 助けた人がいるタイル（農家を助けると小麦が2倍）
+const freed=k=>TILES.some((T,n)=>n>0&&T.cont.includes(k)&&W.open.has(n));
+function bonus(k){const b=skinOf().bonus;let v=b&&b[k]||1;if(k==='wheat'&&freed('farmer'))v*=2;return v}
 // ---- 飛ぶかけら ----
 const PIECES=[],PIECE_POOL={};
 function pieceMesh(k){const pool=PIECE_POOL[k]||(PIECE_POOL[k]=[]);const m=pool.pop()||new THREE.Mesh(pieceGeo(k),k==='core'?lam({emissive:0x802070}):VCMAT);m.visible=true;world.add(m);return m}
@@ -1037,22 +1330,24 @@ function updateSparks(dt){for(let i=SPARKS.length-1;i>=0;i--){const s=SPARKS[i];
 const NDIRTY=new Set();
 function hitNode(o,dmg,mine){const N=NODE[o.k];if(!o.alive)return;o.hp-=dmg;o.shake=.25;NDIRTY.add(o);
   const top=_t1.copy(o.pos).addScaledVector(o.up,N.hh*.5).clone();
-  if(N.tool==='axe')SFX.chop();else SFX.mine();sparks(top,o.up,N.res?RES[N.res].c:'#cccccc',4);
+  if(N.tool==='axe')SFX.chop();else if(N.tool==='weap')SFX.slash();else SFX.mine();sparks(top,o.up,N.res?RES[N.res].c:'#cccccc',4);
   // 体力に合わせて少しずつ出す
   if(N.res){const mult=(N.res==='coin'||N.res==='core'?1:OPT.yield)*bonus(N.res);const total=Math.round(N.amt*mult),done=Math.round(total*(1-Math.max(0,o.hp)/N.hp));const give=done-(o.given||0);o.given=done;
     if(give>0)dropPieces(N.res,give,top,o.up)}
-  if(o.hp<=0){o.alive=false;o.t=N.rsp;o.given=0;SFX.fell();sparks(top,o.up,'#ffffff',6);
+  if(o.hp<=0){o.alive=false;o.t=N.rsp;o.given=0;SFX.fell();sparks(top,o.up,'#ffffff',6);if(N.once)W.once.add(o.id);
     if(o.k==='sword'){if(PL.tools.weap<9){PL.tools.weap=9;PL.hp=maxHp();SFX.level();banner('剣 Lv9 を手に入れた！','こうげき 15・体力 120')}W.sword=1}
-    if(o.k==='core'){W.core=1;banner('ソースコアを手に入れた！','ポータルを動かすのに使います')}
+    if(o.k==='core'){if(CUR==='gaia')W.core=1;banner('ソースコアを手に入れた！','ポータルを動かすのに使います')}
+    if(o.k==='key')banner('金のカギを手に入れた！','つかまっている人を助けるのに使います');
+    if(o.k==='icepick'&&PL.tools.pick<17){PL.tools.pick=17;SFX.level();banner('つるはし Lv17 を手に入れた！','氷の中から出てきた');HUD_DIRTY=true}
     if(mine&&NET.on)NET.nodeGone(o)}}
-function nodeDown(o,t){if(!o.alive&&!NODE[o.k].once)return;o.alive=false;o.hp=0;o.t=t==null?NODE[o.k].rsp:t;NDIRTY.add(o)}
+function nodeDown(o,t){if(!o.alive&&!NODE[o.k].once)return;o.alive=false;o.hp=0;o.t=t==null?NODE[o.k].rsp:t;if(NODE[o.k].once)W.once.add(o.id);NDIRTY.add(o)}
 function updateNodes(dt){for(const o of NODES){if(!o.alive&&!NODE[o.k].once){o.t-=dt;if(o.t<=0&&!o.hidden){o.alive=true;o.hp=NODE[o.k].hp;o.grow=0;NDIRTY.add(o)}}
     if(o.grow<1){o.grow=Math.min(1,o.grow+dt*2.5);NDIRTY.add(o)}if(o.shake>0){o.shake=Math.max(0,o.shake-dt);NDIRTY.add(o)}}
   for(const o of NDIRTY)drawNode(o);NDIRTY.clear()}
 // ---- 敵 ----
 const ENEMIES=[];
 function makeEnemies(){for(const s of SPAWNS){const c=CELLS[s.cell],E=ENEMY[s.k];const home=c.c.clone();const e={k:s.k,n:s.n,cell:s.cell,home,u:home.clone(),face:c.e1.clone(),hp:E.hp,alive:true,t:0,st:'idle',atk:0,wind:0,r:E.r,id:ENEMIES.length,wT:Math.random()*3,
-    wdir:c.e2.clone(),mesh:makeEnemy(s.k),vis:false,flash:0,walk:0,pos:new THREE.Vector3()};e.mesh.visible=false;world.add(e.mesh);ENEMIES.push(e)}}
+    wdir:c.e2.clone(),mesh:makeEnemy(s.k),vis:false,flash:0,walk:0,pos:new THREE.Vector3()};e.mesh.visible=false;WG.add(e.mesh);ENEMIES.push(e)}}
 function enemyGround(e){const c=CELLS[e.cell];return groundAt(e.u,c)}
 const _eu=new THREE.Vector3();
 function updateEnemies(dt){const host=!NET.on||NET.host;
@@ -1092,29 +1387,30 @@ function hitEnemy(e,dmg,mine){if(!e.alive)return;SFX.slash();SFX.hit();e.flash=.
 function killEnemy(e,who){e.alive=false;e.t=ENEMY[e.k].rsp;e.dying=.4;SFX.fell();const top=e.pos.clone().addScaledVector(e.u,1);sparks(top,e.u,'#ffd060',8);
   if(who==='me'){const D=ENEMY[e.k].drop;for(const k in D)dropPieces(k,Math.round(D[k]*(k==='coin'?1:OPT.yield)*bonus(k)),top,e.u);if(ENEMY[e.k].boss)banner(ENEMY[e.k].n+'をたおした！','')}
   else if(who&&NET.on)NET.giveDrop(who,e.k)}
-// ---- 払う：その場で1秒止まってから。0.5秒ごとに、払いはじめに持っていた量の2.5%ずつ（少なくとも1）----
+// ---- 商人・精錬所・ポータルに払う：その場で1秒止まってから。0.5秒ごとに、払いはじめに持っていた量の2.5%ずつ（少なくとも1）----
+// （タイル＝地面に払うときは待たずに、0.5秒ほどで払いきる：payTick）
 const DW={key:null,t:0,cur:null,snap:{},pt:0};
 function dwell(key){DW.cur=key;return DW.key===key&&DW.t>=1}
 function dwellStep(dt){if(DW.cur!==DW.key){DW.key=DW.cur;DW.t=0;DW.snap={};DW.pt=0}else if(DW.cur){if(PL.spd>.3){DW.t=0;DW.snap={};DW.pt=0}else DW.t+=dt}DW.cur=null}
 function payReady(dt){DW.pt-=dt;if(DW.pt>0)return false;DW.pt=.5;return true}
 function payStep(k,need){DW.snap[k]=Math.max(DW.snap[k]||0,PL.inv[k]||0);return Math.max(0,Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(DW.snap[k]*.025))))}
-// ---- タイルを買う ----
+// ---- タイルを買う：のったらすぐ、0.05秒ごとに費用の1割ずつ（0.5秒ほどで払いきる）----
 const GH_ON=new Set();let PAY={n:-1,t:0,cnt:0};
 function payTick(dt){let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
   for(const n of GH_ON){const c=CELLS[TILES[n].cell];if(arcDist(PL.u,c.c,SEA)<1.55&&PL.dead<=0){on=n;break}}
-  if(on!==PAY.n){PAY.n=on;PAY.cnt=0}
-  if(on<0||!dwell('t'+on)||!payReady(dt))return;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let done=true;
-  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const step=payStep(k,need);
-    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;PAY.cnt++;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
-    if(paid[k]<T.cost[k])done=false}
+  if(on!==PAY.n){PAY.n=on;PAY.cnt=0;PAY.t=0}
+  if(on<0)return;PAY.t-=dt;if(PAY.t>0)return;PAY.t=.05;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let done=true;
+  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const step=Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(T.cost[k]*.1)));
+    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;PAY.cnt++;if(PAY.cnt%2)sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
+    if((paid[k]||0)<T.cost[k])done=false}
   if(done&&(!NET.on||NET.host))unlockTile(on,true)}
 // ---- タイルが開く ----
 const RISING=[];let AREA_SEEN=new Set([1]);
 function unlockTile(n,anim){if(W.open.has(n))return;W.open.add(n);delete W.paid[n];const T=TILES[n],c=CELLS[T.cell];
   showTile(c.i,anim);rebuildShore();refreshGhosts();
   if(anim){SFX.unlock();SFX.rise();sparks(c.c.clone().multiplyScalar(SEA+.5),c.c,'#ffffff',14);
-    if(!AREA_SEEN.has(T.a)&&AREA[T.a]&&T.a<11){AREA_SEEN.add(T.a);banner(AREA[T.a].n,'新しい場所が見つかった！')}
-    const bk=T.cont.find(k=>BLD[k]);if(bk&&BLD[bk].kind!=='deco')setTimeout(()=>toast(BLD[bk].n+'ができた！'),700);
+    if(!AREA_SEEN.has(T.a)&&AREA[T.a]&&!AREA[T.a].nob){AREA_SEEN.add(T.a);banner(AREA[T.a].n,'新しい場所が見つかった！')}
+    const bk=T.cont.find(k=>BLD[k]);if(bk&&NPC_FREE[bk])setTimeout(()=>{SFX.level();banner(NPC_FREE[bk][0],NPC_FREE[bk][1])},700);else if(bk&&BLD[bk].kind!=='deco')setTimeout(()=>toast(BLD[bk].n+'ができた！'),700);
     if(NET.on&&NET.host)NET.unlocked(n);saveSoon()}
   HUD_DIRTY=true}
 function showTile(ci,anim){const c=CELLS[ci];if(c.a!==12){const m=TILE_MESH[ci]||buildTileMesh(c);m.visible=true;if(anim)RISING.push({m,c,t:0})}
@@ -1124,17 +1420,24 @@ function updateRising(dt){for(let i=RISING.length-1;i>=0;i--){const r=RISING[i];
   if(r.base)r.m.position.copy(r.base).addScaledVector(r.c.c,off);else r.m.position.copy(r.c.c).multiplyScalar(off);if(k>=1){if(r.base)r.m.position.copy(r.base);else r.m.position.set(0,0,0);RISING.splice(i,1)}}}
 // 買える目印を作り直す
 function refreshGhosts(){calcMinLock();for(const n in GHOST){if(!available(+n)){GHOST[n].visible=false;GH_ON.delete(+n)}}
-  for(let n=1;n<=NTILE;n++)if(available(n)){ghostOf(n).visible=true;GH_ON.add(n)}
-  for(const k of TOLLS)k.m.visible=k.show()}
+  const free=[];for(let n=1;n<=NTILE;n++)if(available(n)){ghostOf(n).visible=true;GH_ON.add(n);if(!Object.keys(TILES[n].cost).length)free.push(n)}
+  for(const k of TOLLS)k.m.visible=k.show();
+  // 費用のないタイル（船で着く南の船着き場）は、買えるようになったらすぐ開く
+  if(free.length&&(!NET.on||NET.host))setTimeout(()=>free.forEach(n=>{if(available(n))unlockTile(n,true)}),0)}
 // ---- 通せんぼ（大きなトロル・大イエティ）----
 const TOLLS=[];
 function makeTolls(){for(let n=1;n<=NTILE;n++){const T=TILES[n];const c=CELLS[T.cell];
-  if(T.cont.includes('troll')){const ch=TILES.findIndex((t,i)=>i>0&&t.par===n&&t.cont.includes('cave'));const m=bigTroll();world.add(m);const tt={n,m,show:()=>W.open.has(n)&&!(ch>0&&W.open.has(ch)),c,on:true};TOLLS.push(tt);placeToll(tt,0)}
-  if(T.cont.includes('yetiBig')){const m=bigYeti();world.add(m);const tt={n,m,show:()=>available(n),c,ghost:true};TOLLS.push(tt);placeToll(tt,0)}}}
+  if(T.cont.includes('troll')){const ch=TILES.findIndex((t,i)=>i>0&&t.par===n&&t.cont.includes('cave'));const m=bigTroll();WG.add(m);const tt={n,m,show:()=>W.open.has(n)&&!(ch>0&&W.open.has(ch)),c,on:true};TOLLS.push(tt);placeToll(tt,0)}
+  // 小麦トロル：小麦をあげる（trollgo のタイルを開ける）まで通せんぼ
+  if(T.cont.includes('wtroll')){const go=TILES.findIndex((t,i)=>i>0&&t.cont.includes('trollgo'));const m=bigTroll('#c8a85a','#d8b868','#5a7a2a');WG.add(m);const tt={n,m,show:()=>W.open.has(n)&&!(go>0&&W.open.has(go)),c,on:true};TOLLS.push(tt);placeToll(tt,0)}
+  if(T.cont.includes('yetiBig')){const m=bigYeti();WG.add(m);const tt={n,m,show:()=>available(n),c,ghost:true};TOLLS.push(tt);placeToll(tt,0)}
+  // つかまっている人：買えるあいだはおりの中
+  const np=T.cont.find(k=>NPC_OF[k]);if(np){const m=new THREE.Group();m.add(cageMesh());m.add(makeNpc(NPC_OF[np]));WG.add(m);const tt={n,m,show:()=>available(n),c,ghost:true};TOLLS.push(tt);placeToll(tt,0)}}}
 function placeToll(tt,ph){const c=tt.c;const r=tt.ghost?SEA+.1:topR(c);const pos=c.c.clone().multiplyScalar(r).addScaledVector(c.e1,tt.ghost?0:.4);tt.m.position.copy(pos);frameQuat(c.c,c.e2,tt.m.quaternion);tt.m.rotateY(Math.sin(ph)*.1);tt.m.scale.setScalar(1+Math.sin(ph*2)*.02)}
 // ---- 建物の台 ----
-function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco')return;const up=B.up;
-  B.pads.push(...padMesh(B.pIn,up,B.padR||.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
+function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco'||kind==='npc')return;const up=B.up;
+  B.pads.push(...padMesh(B.pIn,up,B.padR||.95,kind==='trade'?'#ffd84a':kind==='eq'||kind==='boat'?'#7ae0ff':kind==='portal'||kind==='skin'||kind==='warp'?'#ff8af0':'#ffffff'));
+  if(B.pIn2)B.pads.push(...padMesh(B.pIn2,up,B.padR||.95,'#7ae0ff'));
   if(B.pOut)B.pads.push(...padMesh(B.pOut,up,B.padR||.95,'#8aff8a'));B.st=B.st||{}}
 const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<(B.padR||.95)&&PL.dead<=0;   // 放置中は台の上でも何もしない
 let PADUI=null;
@@ -1143,29 +1446,41 @@ function updateBuildings(dt,rdt){let ui=null;rdt=rdt||dt;
     if(D.kind==='ref'){// 精錬所：入れたぶんを順番に（オフラインでも進む）
       const ink=Object.keys(D.inp)[0],per=D.inp[ink];S.q=S.q||0;S.out=S.out||0;S.tm=S.tm||0;
       if(S.q>=per){S.tm+=rdt;while(S.tm>=D.t&&S.q>=per){S.tm-=D.t;S.q-=per;S.out++}}else S.tm=0;
-      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};if(dwell('r'+B.n)&&payReady(dt)&&has(ink,1)&&S.q<900){const n=Math.min(PL.inv[ink],Math.max(per,payStep(ink,900-S.q)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
+      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};if(dwell('r'+B.key)&&payReady(dt)&&has(ink,1)&&S.q<900){const n=Math.min(PL.inv[ink],Math.max(per,payStep(ink,900-S.q)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
       if(ON_PAD(B,B.pOut)&&S.out>0){dropPieces(D.out,S.out,B.pOut.clone().addScaledVector(B.up,.6),B.up);S.out=0}
       drawOutPile(B,D.out,S.out)}
-    else if(D.kind==='eq'){const t=D.tool,lv=PL.tools[t],nx=lv+1,cost=(t==='axe'?AXE:t==='pick'?PICK:WEAP)[nx];
-      if(S.craft>0){S.craft-=rdt;if(S.craft<=0){S.craft=0;PL.tools[t]=Math.max(PL.tools[t],S.lv);S.paid={};SFX.level();banner(TOOLN[t]+' Lv'+S.lv+'！',t==='weap'?'こうげき '+WPOW[S.lv]+'・体力 '+WHP[S.lv]:'力 '+S.lv);if(t==='weap')PL.hp=maxHp();saveSoon()}}
-      if(ON_PAD(B,B.pIn)){ui={B,type:'eq',t,lv,cost,nx};
-        if(cost&&!(S.craft>0)&&!(t==='weap'&&lv>=8)){S.paid=S.paid||{};if(dwell('e'+B.n)&&payReady(dt)){let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=payStep(k,need);if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if(S.paid[k]<cost[k])done=false}
-          if(done){S.craft=CRAFT_T[nx]||5;S.lv=nx;S.ct=S.craft;SFX.craft()}}}}}
-    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];if(dwell('s'+B.n)&&payReady(dt)&&has(ink,per)){const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.floor(payStep(ink,PL.inv[ink])/per)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces('coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
+    else if(D.kind==='eq'){// 道具の精錬所（仕立て屋は台が2つ：左かぶと・右よろい）
+      const tools=D.tools||[D.tool];tools.forEach((t,i)=>{const r=eqTick(B,t,i?B.pIn2:B.pIn,D.tools?(S[t]||(S[t]={})):S,dt,rdt);if(r)ui=r})}
+    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];if(dwell('s'+B.key)&&payReady(dt)&&has(ink,per)){const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.floor(payStep(ink,PL.inv[ink])/per)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces(D.out||'coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
     else if(D.kind==='portal'){portalTick(B,dt);if(ON_PAD(B,B.pIn))ui={B,type:'portal'}}
-    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(dwell('k'+B.n)&&!B.was){B.was=1;openSkins()}}else B.was=0}}
+    else if(D.kind==='warp'){const U=B.m.userData;U.sw2.rotation.z+=dt*2;U.swirl.material.opacity=.7+Math.sin(performance.now()/300)*.15;
+      if(ON_PAD(B,B.pIn)){ui={B,type:'warp'};if(dwell('w'+B.key)&&!B.went){B.went=1;travelTo(D.to,'warp')}}else B.went=0}
+    else if(D.kind==='boat'){const Q=BLDS.find(b=>b.k===D.pair);const ok=Q&&W.open.has(Q.n);
+      if(ON_PAD(B,B.pIn)){ui={B,type:'boat',ok,Q};if(ok&&dwell('b'+B.key)&&!B.went){B.went=1;Q.went=1;boatTo(Q)}}else B.went=0}
+    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(dwell('k'+B.key)&&!B.was){B.was=1;openSkins()}}else B.was=0}}
   for(const tt of TOLLS)if(tt.m.visible)placeToll(tt,performance.now()/700);
   PADUI=ui}
+// 道具・かぶと・よろいを作る台（S はその道具の作りかけの状態）
+const toolNote=(t,lv)=>t==='weap'?'こうげき '+WPOW[lv]+'・体力 '+WHP[lv]:t==='helm'||t==='arm'?'体力 +'+ARMHP[lv]:'力 '+lv;
+function eqTick(B,t,pad,S,dt,rdt){const lv=PL.tools[t]||0,nx=lv+1,cost=nx<=(WD.maxLv[t]||0)?TOOLCOST[t][nx]:null;
+  if(S.craft>0){S.craft-=rdt;if(S.craft<=0){S.craft=0;PL.tools[t]=Math.max(PL.tools[t]||0,S.lv);S.paid={};SFX.level();banner(TOOLN[t]+' Lv'+S.lv+'！',toolNote(t,S.lv));if(t==='weap'||t==='helm'||t==='arm')PL.hp=maxHp();HUD_DIRTY=true;saveSoon()}}
+  if(!ON_PAD(B,pad))return null;const ui={B,type:'eq',t,lv,cost,nx,S};
+  if(cost&&!(S.craft>0)){S.paid=S.paid||{};if(dwell('e'+B.key+t)&&payReady(dt)){let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=payStep(k,need);if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if((S.paid[k]||0)<cost[k])done=false}
+    if(done){S.craft=CRAFT_T[nx]||5;S.lv=nx;S.ct=S.craft;SFX.craft()}}}
+  return ui}
+// 船：向こうの船着き場の台の先へ
+function boatTo(Q){SFX.splash();const u=Q.pIn.clone().addScaledVector(Q.f,1.35).normalize();const ci=cellAt(u,Q.cell);PL.u.copy(u);PL.cell=ci;PL.r=groundR(u,CELLS[ci]);CAM.f.copy(Q.f);tangent(CAM.f,PL.u,CAM.f);PL.face.copy(CAM.f);CAM.ready=0;
+  sparks(PL.u.clone().multiplyScalar(PL.r+.5),PL.u,'#ffffff',10);toast('船で'+BLD[Q.k].n.replace('船着き場','').replace(/[（）]/g,'')+'の島へわたった');saveSoon()}
 // 精錬所の前の、できたものの山
-function drawOutPile(B,k,n){const want=Math.min(12,n);B.pile=B.pile||[];while(B.pile.length<want){const m=new THREE.Mesh(pieceGeo(k),VCMAT);m.castShadow=true;world.add(m);B.pile.push(m)}while(B.pile.length>want){world.remove(B.pile.pop())}
+function drawOutPile(B,k,n){const want=Math.min(12,n);B.pile=B.pile||[];while(B.pile.length<want){const m=new THREE.Mesh(pieceGeo(k),VCMAT);m.castShadow=true;WG.add(m);B.pile.push(m)}while(B.pile.length>want){WG.remove(B.pile.pop())}
   B.pile.forEach((m,i)=>{m.position.copy(B.pOut).addScaledVector(B.up,.1+Math.floor(i/3)*.14).addScaledVector(B.rt,(i%3-1)*.25);frameQuat(B.up,B.f,m.quaternion)})}
 // ---- ポータル（7つの段階）----
 function portalTick(B,dt){const S=B.st;S.step=S.step||0;const U=B.m.userData;U.pieces.forEach((p,i)=>{p.visible=i<S.step;U.ghosts[i].visible=i>=S.step});U.swirl.visible=U.sw2.visible=S.step>=7;if(S.step>=7){U.sw2.rotation.z+=dt*2;U.swirl.material.opacity=.7+Math.sin(performance.now()/300)*.15}
-  if(!ON_PAD(B,B.pIn)||PL.dead>0){B.inT=0;return}
-  if(!dwell('p'+B.n))return;
-  if(S.step>=7){if(!B.went){B.went=1;goPortal()}return}
+  if(!ON_PAD(B,B.pIn)||PL.dead>0){B.inT=0;B.went=0;return}
+  if(!dwell('p'+B.key))return;
+  if(S.step>=7){if(!B.went){B.went=1;portalGo()}return}
   const st=PORTAL_STEPS[S.step];S.paid=S.paid||{};if(!payReady(dt))return;let done=true;
-  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=payStep(k,need);if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if(S.paid[k]<st.c[k])done=false}
+  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=payStep(k,need);if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if((S.paid[k]||0)<st.c[k])done=false}
   if(done&&(!NET.on||NET.host))portalStepDone(B)}
 function portalStepDone(B){const S=B.st;S.step++;S.paid={};SFX.unlock();sparks(B.pos.clone().addScaledVector(B.up,2),B.up,'#ff8af0',16);
   if(S.step>=7){SFX.portal();banner('ポータルが動いた！','光の中に入ると…')}else toast('ポータル：'+PORTAL_STEPS[S.step-1].n+' ができた（'+S.step+'/7）');if(NET.on&&NET.host)NET.enemyDirty=true;saveSoon()}
@@ -1261,50 +1576,78 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&AUTO.on)a
 // ---- 09_save.js ----
 // ================= セーブ（この端末に保存・セーブコード）=================
 const SAVE_KEY='lu-save';
-function snapshot(){const nodes=[];for(const o of NODES)if(!o.alive)nodes.push([o.id,Math.max(0,Math.round(o.t))]);
-  const b={};for(const B of BLDS)if(B.st&&Object.keys(B.st).length)b[B.n]=B.st;
-  return{v:1,w:'gaia',open:[...W.open],paid:W.paid,inv:PL.inv,tools:PL.tools,hp:Math.round(PL.hp),skin:PL.skin,owned:PL.owned,pos:[PL.u.x,PL.u.y,PL.u.z].map(v=>+v.toFixed(4)),camf:[CAM.f.x,CAM.f.y,CAM.f.z].map(v=>+v.toFixed(4)),
-    nodes,b,sword:W.sword||0,core:W.core||0,seen:[...AREA_SEEN],ts:Date.now(),clear:W.clear||0,play:Math.round(W.play||0),...(CLOUD.key?{cloud:CLOUD.key,cloudS:CLOUD.s}:{})}}
+// セーブ v2：{v:2, w:いまの星, worlds:{gaia:{…}, troll:{…}}, 持ち物・道具・キャラ・場所…}
+// v1（ガイアだけ）のセーブは読むときに v2 になおす
+let WSTATE={};   // いまいない星の状態（星の id → その星の状態）
+function worldPart(){const nodes=[];for(const o of NODES)if(!o.alive&&!NODE[o.k].once)nodes.push([o.id,Math.max(0,Math.round(o.t))]);
+  const b={};for(const B of BLDS)if(B.st&&Object.keys(B.st).length)b[B.key]=B.st;
+  return{open:[...W.open],paid:W.paid,nodes,once:[...W.once],b,sword:W.sword||0,core:W.core||0,seen:[...AREA_SEEN],clear:W.clear||0,ts:Date.now()}}
+function snapshot(){const worlds=Object.assign({},WSTATE,{[CUR]:worldPart()});
+  return{v:2,w:CUR,worlds,inv:PL.inv,tools:PL.tools,hp:Math.round(PL.hp),skin:PL.skin,owned:PL.owned,pos:[PL.u.x,PL.u.y,PL.u.z].map(v=>+v.toFixed(4)),camf:[CAM.f.x,CAM.f.y,CAM.f.z].map(v=>+v.toFixed(4)),
+    ts:Date.now(),play:Math.round(W.play||0),...(CLOUD.key?{cloud:CLOUD.key,cloudS:CLOUD.s}:{})}}
+const WKEYS=['open','paid','nodes','once','b','sword','core','seen','clear'];
+function upgradeSave(s){if(!s||typeof s!=='object')return null;if(s.v>=2&&s.worlds&&typeof s.worlds==='object')return s;
+  const w={};WKEYS.forEach(k=>{if(s[k]!==undefined)w[k]=s[k]});w.ts=s.ts;const o=Object.assign({},s,{v:2,w:'gaia',worlds:{gaia:w}});WKEYS.forEach(k=>delete o[k]);return o}
+// セーブの進み具合（いまの星の何%か）
+function savePct(s){s=upgradeSave(s);const w=s&&s.worlds[s.w],D=WDEF[s&&s.w];return w&&D?Math.floor(((w.open||[]).length-1)/D.tiles.length*100):0}
 // プレイヤーの分だけ（オンラインでほかの人の星にいるとき）
 function playerPart(){return{inv:PL.inv,tools:PL.tools,skin:PL.skin,owned:PL.owned}}
 let saveT=0;function saveSoon(){saveT=Math.min(saveT||1.5,1.5)}
 function saveGame(){if(!GAME_READY)return;try{if(NET.on&&!NET.host){const old=JSON.parse(LSget(SAVE_KEY,'null'));if(old){Object.assign(old,playerPart());LSset(SAVE_KEY,JSON.stringify(old))}clAfterSave();return}
   LSset(SAVE_KEY,JSON.stringify(snapshot()))}catch(e){}clAfterSave()}
 function loadSave(){try{return JSON.parse(LSget(SAVE_KEY,'null'))}catch(e){return null}}
-// セーブを星にあてはめる（はじめからのときは null）
-function applySave(s,opt){opt=opt||{};
-  // いったん全部しめる
-  const oldCells=[...W.open].flatMap(n=>n===0?TILES[0].cells:[TILES[n].cell]);
-  for(const n of [...W.open])if(n!==0){W.open.delete(n)}W.paid={};
-  for(const ci in TILE_MESH)TILE_MESH[ci].visible=false;for(const B of BLDS){B.m.visible=false;B.st={};if(B.pads){B.pads.forEach(m=>{world.remove(m)});B.pads=null}if(B.pile){B.pile.forEach(m=>world.remove(m));B.pile=[]}}
-  if(s){for(const n of s.open||[])if(TILES[n])W.open.add(n);W.paid=s.paid&&typeof s.paid==='object'?s.paid:{};W.sword=s.sword||0;W.core=s.core||0;W.clear=s.clear||0;W.play=s.play||0;
-    if(!opt.worldOnly){CLOUD.key=s.cloud||null;CLOUD.s=s.cloudS||null;PL.inv=Object.assign({},s.inv||{});PL.tools=Object.assign({axe:1,pick:1,weap:1},s.tools||{});PL.skin=s.skin||'stick';PL.owned=Object.assign({stick:1},s.owned||{})}
-    AREA_SEEN=new Set(s.seen||[1])}
-  else{W.sword=0;W.core=0;W.clear=0;W.play=0;if(!opt.worldOnly){CLOUD.key=null;CLOUD.s=null;PL.inv={};PL.tools={axe:1,pick:1,weap:1};PL.skin='stick';PL.owned={stick:1}}AREA_SEEN=new Set([1])}
-  oldCells.forEach(drawDecoCell);
-  for(const n of W.open){const T=TILES[n];if(n===0)T.cells.forEach(ci=>showTile(ci,false));else showTile(T.cell,false)}
-  // 木・岩
-  for(const o of NODES){o.alive=true;o.hp=NODE[o.k].hp;o.t=0;o.given=0;o.grow=1;o.hidden=false;if(o.k==='sword'&&W.sword){o.alive=false}if(o.k==='core'&&W.core){o.alive=false}}
-  if(s&&Array.isArray(s.nodes))for(const [id,t] of s.nodes){const o=NODES[id];if(o&&!NODE[o.k].once){o.alive=false;o.t=t}}
-  NODES.forEach(o=>NDIRTY.add(o));
-  // 建物（オフラインのあいだも精錬が進む：最大8時間）
-  const away=s&&s.ts&&!opt.worldOnly?clamp((Date.now()-s.ts)/1000,0,8*3600):0;
-  for(const B of BLDS){const st=s&&s.b&&s.b[B.n];B.st=st&&typeof st==='object'?JSON.parse(JSON.stringify(st)):{};B.went=0;
-    if(away>0){const D=BLD[B.k];if(D.kind==='ref'&&B.st.q){const per=Object.values(D.inp)[0];const made=Math.min(Math.floor(B.st.q/per),Math.floor(away/D.t));B.st.q-=made*per;B.st.out=(B.st.out||0)+made;B.awayMade=made}
-      if(D.kind==='eq'&&B.st.craft>0)B.st.craft=Math.max(.01,B.st.craft-away)}}
-  for(const e of ENEMIES){e.alive=true;e.hp=ENEMY[e.k].hp;e.u.copy(e.home);e.cell=cellAt(e.u,e.cell);e.st='idle';e.dying=0;e.mesh.scale.setScalar(ENEMY[e.k].sc)}
-  setSkin(PL.skin);rebuildShore();refreshGhosts();
+// セーブを星にあてはめる（はじめからのときは null）。opt.worldOnly：星のようすだけ（オンラインのゲスト）
+function applySave(s,opt){opt=opt||{};s=upgradeSave(s);const wid=s&&WDEF[s.w]?s.w:'gaia';
+  if(!opt.worldOnly){WSTATE=s?JSON.parse(JSON.stringify(s.worlds)):{};W.play=s&&s.play||0;
+    if(s){CLOUD.key=s.cloud||null;CLOUD.s=s.cloudS||null;PL.inv=Object.assign({},s.inv||{});PL.tools=Object.assign({axe:1,pick:1,weap:1},s.tools||{});PL.skin=s.skin||'stick';PL.owned=Object.assign({stick:1},s.owned||{})}
+    else{CLOUD.key=null;CLOUD.s=null;PL.inv={};PL.tools={axe:1,pick:1,weap:1};PL.skin='stick';PL.owned={stick:1}}}
+  if(CUR!==wid)buildWorld(wid);
+  const ws=s&&s.worlds[wid]||null;const made=applyWorld(ws,{away:!opt.worldOnly&&s&&s.ts?(Date.now()-s.ts)/1000:0});
+  setSkin(PL.skin);
   // 場所
   respawn();if(s&&Array.isArray(s.pos)&&!opt.worldOnly){const u=V3(...s.pos);if(u.lengthSq()>.5){u.normalize();const ci=cellAt(u,-1);if(groundKind(CELLS[ci])!=='water'){PL.u.copy(u);PL.cell=ci;PL.r=groundR(u,CELLS[ci])}}}
   if(s&&Array.isArray(s.camf))CAM.f.set(...s.camf);tangent(CAM.f,PL.u,CAM.f);PL.face.copy(CAM.f);CAM.ready=0;
-  PL.hp=s&&s.hp>0&&!opt.worldOnly?Math.min(maxHp(),s.hp):maxHp();HUD_DIRTY=true;
+  PL.hp=s&&s.hp>0&&!opt.worldOnly?Math.min(maxHp(),s.hp):maxHp();HUD_DIRTY=true;return made}
+// いまの星に、その星の状態をあてはめる（away：いなかった秒数。そのぶん精錬所が進む・最大8時間）
+function applyWorld(ws,o){o=o||{};
+  // いったん全部しめる
+  const oldCells=[...W.open].flatMap(n=>n===0?TILES[0].cells:[TILES[n].cell]);
+  for(const n of [...W.open])if(n!==0)W.open.delete(n);W.paid={};W.once=new Set();
+  for(const ci in TILE_MESH)TILE_MESH[ci].visible=false;for(const B of BLDS){B.m.visible=false;B.st={};if(B.pads){B.pads.forEach(m=>WG.remove(m));B.pads=null}if(B.pile){B.pile.forEach(m=>WG.remove(m));B.pile=[]}}
+  if(ws){for(const n of ws.open||[])if(TILES[n])W.open.add(n);W.paid=ws.paid&&typeof ws.paid==='object'?JSON.parse(JSON.stringify(ws.paid)):{};W.sword=ws.sword||0;W.core=ws.core||0;W.clear=ws.clear||0;
+    if(Array.isArray(ws.once))ws.once.forEach(id=>W.once.add(id));AREA_SEEN=new Set(ws.seen||[1])}
+  else{W.sword=0;W.core=0;W.clear=0;AREA_SEEN=new Set([1])}
+  oldCells.forEach(drawDecoCell);
+  for(const n of W.open){const T=TILES[n];if(n===0)T.cells.forEach(ci=>showTile(ci,false));else showTile(T.cell,false)}
+  // 木・岩（一度きりのもの：剣・ソースコア・カギ・氷づけのつるはし）
+  for(const o2 of NODES){o2.alive=true;o2.hp=NODE[o2.k].hp;o2.t=0;o2.given=0;o2.grow=1;o2.hidden=false;if(W.once.has(o2.id)||CUR==='gaia'&&(o2.k==='sword'&&W.sword||o2.k==='core'&&W.core)){o2.alive=false;W.once.add(o2.id)}}
+  if(ws&&Array.isArray(ws.nodes))for(const [id,t] of ws.nodes){const nd=NODES[id];if(nd&&!NODE[nd.k].once){nd.alive=false;nd.t=t}}
+  NODES.forEach(nd=>NDIRTY.add(nd));
+  const away=clamp(o.away||0,0,8*3600);
+  for(const B of BLDS){const st=ws&&ws.b&&ws.b[B.key];B.st=st&&typeof st==='object'?JSON.parse(JSON.stringify(st)):{};B.went=0;
+    if(away>0){const D=BLD[B.k];if(D.kind==='ref'&&B.st.q){const per=Object.values(D.inp)[0];const made=Math.min(Math.floor(B.st.q/per),Math.floor(away/D.t));B.st.q-=made*per;B.st.out=(B.st.out||0)+made;B.awayMade=made}
+      if(D.kind==='eq')for(const S2 of D.tools?D.tools.map(t=>B.st[t]).filter(Boolean):[B.st])if(S2.craft>0)S2.craft=Math.max(.01,S2.craft-away)}}
+  for(const e of ENEMIES){e.alive=true;e.hp=ENEMY[e.k].hp;e.u.copy(e.home);e.cell=cellAt(e.u,e.cell);e.st='idle';e.dying=0;e.mesh.scale.setScalar(ENEMY[e.k].sc)}
+  rebuildShore();refreshGhosts();
   const made=BLDS.reduce((a,B)=>a+(B.awayMade||0),0);BLDS.forEach(B=>B.awayMade=0);return made}
+// ---- 星から星へ（ポータル・ガイアへのポータル）----
+function portalGo(){if(WD.next){W.clear=1;travelTo(WD.next,'portal')}else goEnding()}
+function travelTo(id,how){if(!WDEF[id]||id===CUR||STATE!=='play')return;if(NET.on&&!NET.host){toast('星を移動できるのはホストだけです');return}
+  const first=!WSTATE[id];const was=AUTO.on;autoStop();inputReset();
+  WSTATE[CUR]=worldPart();saveGame();SFX.portal();showLoading(WDEF[id].n+'へ向かっています…');STATE='travel';
+  setTimeout(()=>{buildWorld(id);const ws=WSTATE[id]||null;const made=applyWorld(ws,{away:ws&&ws.ts?(Date.now()-ws.ts)/1000:0});delete WSTATE[id];
+    respawn();
+    // ガイアへもどるときは、ガイアのポータルの前に着く
+    if(how==='warp'){const B=portalB();if(B&&W.open.has(B.n)){const u=B.pIn.clone().addScaledVector(B.f,1.4).normalize();const ci=cellAt(u,B.cell);if(groundKind(CELLS[ci])==='land'){PL.u.copy(u);PL.cell=ci;PL.r=groundR(u,CELLS[ci]);CAM.f.copy(B.f)}}}
+    tangent(CAM.f,PL.u,CAM.f);PL.face.copy(CAM.f);CAM.ready=0;
+    STATE='play';startPlay();banner(WD.n,first?'新しい星にやってきた！':'もどってきた');if(made>0)setTimeout(()=>toast('いないあいだに精錬所が '+made+' こ作っていました'),900);
+    saveGame();if(NET.on&&NET.host){NET.send();netLobby()}},80)}
 // ---- セーブコード（JSON を縮めて文字に）----
 async function packCode(o){const txt=JSON.stringify(o);try{if(window.CompressionStream){const cs=new Blob([txt]).stream().pipeThrough(new CompressionStream('deflate-raw'));const buf=new Uint8Array(await new Response(cs).arrayBuffer());let bin='';for(const b of buf)bin+=String.fromCharCode(b);return'LU1.'+btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}}catch(e){}
   return'LU0.'+btoa(unescape(encodeURIComponent(txt))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function unpackCode(code){code=String(code||'').replace(/\s+/g,'');const m=/^LU([01])\.([A-Za-z0-9_-]+)$/.exec(code);if(!m)throw new Error('code');let b=m[2].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';const bin=atob(b);
   if(m[1]==='0')return JSON.parse(decodeURIComponent(escape(bin)));const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);const ds=new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return JSON.parse(await new Response(ds).text())}
-function validSave(o){return o&&typeof o==='object'&&o.w==='gaia'&&Array.isArray(o.open)}
+function validSave(o){return !!(o&&typeof o==='object'&&WDEF[o.w]&&(Array.isArray(o.open)||o.worlds&&typeof o.worlds==='object'&&o.worlds[o.w]))}
 
 // ---- 09b_cloud.js ----
 // ---- ずっと使えるコード（LUC-XXXX-XXXX）：セーブするたびに、同じコードの中身を最新に上書きする ----
@@ -1334,7 +1677,7 @@ async function clPut(key,save,base){const db=await clInit();if(!db)throw new Err
   const g=h&&h.g==='a'?'b':'a',ng=Object.assign({a:0,b:0},h&&h.ng),s=Date.now().toString(36)+Math.random().toString(36).slice(2,6),n=Math.max(1,Math.ceil(code.length/CL_PART));
   for(let i=0;i<n;i++)await H.collection(g).doc(String(i)).set({s,d:code.slice(i*CL_PART,(i+1)*CL_PART)});
   for(let i=n;i<(ng[g]|0);i++)try{await H.collection(g).doc(String(i)).delete()}catch(e){}   // 前より短くなった分
-  ng[g]=n;const pct=Math.floor(((save.open||[]).length-1)/NTILE*100);await H.set({v:1,g,n,s,ng,len:code.length,t:Date.now(),p:pct});return{s}}
+  ng[g]=n;const pct=savePct(save);await H.set({v:1,g,n,s,ng,len:code.length,t:Date.now(),p:pct});return{s}}
 // 書いた版をおぼえる（この端末のセーブにも）
 function clMark(s){CLOUD.s=s;try{const o=loadSave();if(o&&o.cloud===CLOUD.key&&o.cloudS!==s){o.cloudS=s;LSset(SAVE_KEY,JSON.stringify(o))}}catch(e){}}
 // 新しいコードを作って、いまのセーブをつなぐ
@@ -1364,7 +1707,7 @@ async function clLoad(key){const {code,h}=await clGet(key);const o=await unpackC
 //   ホストだけ H：開いたタイル（o）・はらい中（pd）・敵（en）・ポータル（ps）・資源の量（y）
 // ・タイルを開ける・敵を動かすのはホスト。木や岩は、なくした人が知らせる。持ち物と道具はそれぞれのもの
 const NET={on:false,host:false,room:null,game:null,code:'',st:'off',peers:[],lobby:[],seq:0,ev:[],seen:{},avs:new Map(),enemyDirty:false,id:Math.random().toString(36).slice(2,8),unsub:[],gunsub:[],ready:false,
-  targets(){const out=[];if(!this.on)return out;for(const q of this.others()){const o=q.presence,s=o.s;if(!Array.isArray(s)||s.length<3||o.wt||o.dd)continue;out.push({u:new THREE.Vector3(s[0],s[1],s[2]).normalize(),ok:true,peer:o.id})}return out},
+  targets(){const out=[];if(!this.on)return out;for(const q of this.others()){const o=q.presence,s=o.s;if(!Array.isArray(s)||s.length<3||o.wt||o.dd||o.w&&o.w!==CUR)continue;out.push({u:new THREE.Vector3(s[0],s[1],s[2]).normalize(),ok:true,peer:o.id})}return out},
   others(){return this.peers.filter(p=>!p.sameTab&&p.kind==='viewer'&&p.presence&&typeof p.presence.id==='string'&&p.presence.id!==this.id)},
   push(s){this.seq++;this.ev.push(this.seq+'|'+s);let len=this.ev.reduce((a,e)=>a+e.length+3,0);while(len>1100&&this.ev.length){len-=this.ev[0].length+3;this.ev.shift()}},
   nodeGone(o){this.push('g:'+o.id)},pay(n,k,a){if(!this.host)this.push('p:'+n+':'+k+':'+a)},portalPay(k,a){if(!this.host)this.push('q:'+k+':'+a)},
@@ -1377,9 +1720,9 @@ async function netInit(){if(NET.room)return true;if(NET.st==='wait')return false
   if(!room){NET.st='none';NET.why=await netWhy(C);uiNet();return false}NET.room=room;NET.st='ok';NET.conn=room.connected?room.connected():true;
   if(room.onConnection)NET.unsub.push(room.onConnection(c=>{NET.conn=c;uiNet()},()=>{}));
   NET.unsub.push(room.onPeers(ch=>{NET.lobby=ch.peers;uiNet()},()=>{NET.st='err';uiNet()}));netLobby();uiNet();return true}
-function netLobby(){if(!NET.room)return;const lu=NET.on&&NET.host?{n:myName(),c:NET.code,np:NET.others().length+1,p:Math.round(W.open.size/(NTILE+1)*100)}:null;NET.npSent=lu?lu.np:-1;NET.room.presence({lu}).catch(()=>{})}
+function netLobby(){if(!NET.room)return;const lu=NET.on&&NET.host?{n:myName(),c:NET.code,np:NET.others().length+1,p:Math.round(W.open.size/(NTILE+1)*100),w:CUR}:null;NET.npSent=lu?lu.np:-1;NET.room.presence({lu}).catch(()=>{})}
 function netRooms(){const out=[];for(const p of NET.lobby){if(p.sameTab||p.kind!=='viewer')continue;const b=p.presence&&p.presence.lu;if(!b||typeof b!=='object'||typeof b.c!=='string'||!/^lu-[a-z0-9]{6}$/.test(b.c))continue;
-  out.push({c:b.c,n:netClean(b.n).slice(0,14)||'???',np:clamp(b.np|0,1,8),p:clamp(b.p|0,0,100),mine:p.isMe})}return out}
+  out.push({c:b.c,n:netClean(b.n).slice(0,14)||'???',np:clamp(b.np|0,1,8),p:clamp(b.p|0,0,100),w:WDEF[b.w]?b.w:'gaia',mine:p.isMe})}return out}
 // ---- 部屋を作る・入る・出る ----
 async function netHost(){if(NET.on)return;await netInit();if(!NET.room){toast('この画面ではオンラインに入れません');return}const code='lu-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.random()*36|0]).join('');
   let g=null;try{g=await NET.room.join(code)}catch(e){toast('部屋を作れませんでした');return}Object.assign(NET,{on:true,host:true,game:g,code,ready:true,joinT:performance.now()});netStart();toast('部屋を開きました。ほかの人は「オンライン」から入れます（8人まで）');uiNet()}
@@ -1394,7 +1737,7 @@ async function netLeave(){if(!NET.on)return;const g=NET.game,guest=!NET.host;NET
 // ---- 自分の presence（毎秒10回）----
 const n3=v=>Math.round(v*1000)/1000;
 NET.send=function(){if(!this.on||!this.game)return;const sw=PL.swingK?{axe:'a',pick:'p',weap:'w'}[PL.swingK]+Math.floor(PL.swing*8):'';
-  const p={id:this.id,n:myName(),sk:PL.skin,s:[n3(PL.u.x),n3(PL.u.y),n3(PL.u.z),n3(PL.face.x),n3(PL.face.y),n3(PL.face.z)],r:Math.round(PL.r*100),sw,tl:[PL.tools.axe,PL.tools.pick,PL.tools.weap],wt:PL.inWater?1:0,dd:PL.dead>0?1:0,in:this.ready?1:0,ev:this.ev};
+  const p={id:this.id,w:CUR,n:myName(),sk:PL.skin,s:[n3(PL.u.x),n3(PL.u.y),n3(PL.u.z),n3(PL.face.x),n3(PL.face.y),n3(PL.face.z)],r:Math.round(PL.r*100),sw,tl:[PL.tools.axe,PL.tools.pick,PL.tools.weap],wt:PL.inWater?1:0,dd:PL.dead>0?1:0,in:this.ready?1:0,ev:this.ev};
   if(this.host)p.H=hostState();
   const sz=()=>new TextEncoder().encode(JSON.stringify(p)).length;while(sz()>3900&&p.H&&p.H.en&&p.H.en.length){p.H.en.pop()}while(sz()>3900&&p.ev.length>2)p.ev=p.ev.slice(1);
   this.game.presence(p).catch(()=>{})};
@@ -1406,7 +1749,7 @@ function hostState(){let bits='';for(let n=0;n<=NTILE;n+=6){let v=0;for(let k=0;
   for(const e of ENEMIES){if(!W.open.has(e.n))continue;if(!near.some(u=>arcDist(u,e.u,SEA)<25))continue;const s=[e.id.toString(36),e.alive?1:0,n3(e.u.x),n3(e.u.y),n3(e.u.z),Math.max(0,Math.round(e.hp)),e.wind>0?1:e.atkAnim>0?2:0].join(',');
     if(cur.length+s.length>900){en.push(cur);cur=''}cur+=(cur?';':'')+s}if(cur)en.push(cur);
   const PB=portalB();const ps=PB&&PB.st?(PB.st.step||0)+'|'+Object.entries(PB.st.paid||{}).map(([k,v])=>k+':'+v).join(','):'0|';
-  return{o:bits,pd,en,ps,y:OPT.yield}}
+  return{w:CUR,o:bits,pd,en,ps,y:OPT.yield}}
 function readBits(s){const set=new Set([0]);const A='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';for(let i=0;i<s.length;i++){const v=A.indexOf(s[i]);if(v<0)continue;for(let k=0;k<6;k++)if(v&(1<<k)){const n=i*6+k;if(n<=NTILE)set.add(n)}}return set}
 // ---- 毎コマ ----
 NET.tick=function(dt){if(!this.on)return;this.sendT=(this.sendT||0)+dt;if(this.sendT>=.1){this.sendT=0;this.send()}updateAvatars(dt)};
@@ -1419,13 +1762,16 @@ function netPeers(){const os=NET.others();
   for(const id of [...NET.known])if(!os.some(q=>q.presence.id===id)){NET.known.delete(id);const a=NET.avs.get(id);toast((a?a.name:'だれか')+' が出ました');if(a){dropAv(a);NET.avs.delete(id)}}
   if(NET.host&&os.length+1!==NET.npSent)netLobby();uiNetBox()}
 // ゲスト：ホストの星を読む
-function readHost(o){const H=o.H;if(typeof H.o!=='string')return;const open=readBits(H.o);
+function readHost(o){const H=o.H;if(typeof H.o!=='string')return;const hw=WDEF[H.w]?H.w:'gaia';
+  if(NET.ready&&hw!==CUR){NET.ready=false;showLoading('ホストといっしょに '+WDEF[hw].n+' へ…')}
+  if(!NET.ready&&hw!==CUR){buildWorld(hw)}
+  const open=readBits(H.o);
   if(!NET.ready){// はじめて：ホストの星をそのまま
     const paid={};for(const k in H.pd||{}){const n=+k.slice(1);paid[n]={};String(H.pd[k]).split(',').forEach(x=>{const [r,v]=x.split(':');if(RES[r])paid[n][r]=+v||0})}
     const pb=portalB();const b={};if(pb&&typeof H.ps==='string'){const [st,pp]=H.ps.split('|');const pd2={};(pp||'').split(',').filter(Boolean).forEach(x=>{const [r,v]=x.split(':');pd2[r]=+v||0});b[pb.n]={step:+st||0,paid:pd2}}
-    applySave({v:1,w:'gaia',open:[...open],paid,b,nodes:[],seen:[...AREA_SEEN]},{worldOnly:true});
+    applySave({v:2,w:hw,worlds:{[hw]:{open:[...open],paid,b,nodes:[],seen:[...AREA_SEEN]}}},{worldOnly:true});
     if(Array.isArray(o.s)&&o.s.length>=3){const u=V3(o.s[0],o.s[1],o.s[2]).normalize();const ci=cellAt(u,-1);PL.u.copy(u);PL.cell=ci;PL.r=groundR(u,CELLS[ci]);CAM.ready=0}
-    NET.ready=true;OPT.hostYield=H.y;hideLoading();toast((NET.hostName||'ホスト')+' の星に来ました');for(const q of NET.others())if(q.presence.in===1)NET.known.add(q.presence.id);return}
+    NET.ready=true;OPT.hostYield=H.y;STATE='play';hideLoading();toast((NET.hostName||'ホスト')+' の星（'+WD.n+'）に来ました');for(const q of NET.others())if(q.presence.in===1)NET.known.add(q.presence.id);return}
   for(const n of open)if(!W.open.has(n))unlockTile(n,true);
   for(const k in H.pd||{}){const n=+k.slice(1);const cur=W.paid[n]||(W.paid[n]={});String(H.pd[k]).split(',').forEach(x=>{const [r,v]=x.split(':');if(RES[r])cur[r]=Math.max(cur[r]||0,+v||0)})}
   const pb=portalB();if(pb&&typeof H.ps==='string'){const [st,pp]=H.ps.split('|');const S=pb.st||(pb.st={});const step=+st||0;if(step>(S.step||0)){S.step=step;S.paid={};if(step>=7){SFX.portal();banner('ポータルが動いた！','')}}
@@ -1440,7 +1786,7 @@ function netEnemyFollow(e,dt){if(!e.netU)return;const before=_t1.copy(e.u);e.u.l
 // 出来事を読む
 function readEvents(o){const L=Array.isArray(o.ev)?o.ev:[];const id=o.id;let last=NET.seen[id];
   const parsed=L.map(s=>{const i=String(s).indexOf('|');return[parseInt(s,10),String(s).slice(i+1)]}).filter(x=>Number.isFinite(x[0]));const mx=parsed.reduce((m,x)=>Math.max(m,x[0]),0);
-  if(last===undefined){NET.seen[id]=mx;return}
+  if(last===undefined||o.w&&o.w!==CUR){NET.seen[id]=Math.max(last||0,mx);return}
   for(const [q,s] of parsed){if(q<=last)continue;const a=s.split(':');
     if(a[0]==='g'){const nd=NODES[+a[1]];if(nd)nodeDown(nd)}
     else if(a[0]==='p'&&NET.host){const n=+a[1],k=a[2],v=+a[3];if(TILES[n]&&RES[k]&&available(n)&&v>0){const pd=W.paid[n]||(W.paid[n]={});pd[k]=Math.min(TILES[n].cost[k]||0,(pd[k]||0)+v);if(Object.keys(TILES[n].cost).every(r=>(pd[r]||0)>=TILES[n].cost[r]))unlockTile(n,true)}}
@@ -1453,7 +1799,7 @@ function readEvents(o){const L=Array.isArray(o.ev)?o.ev:[];const id=o.id;let las
 function avatarState(q){const o=q.presence,id=o.id;let a=NET.avs.get(id);const name=netClean(o.n).slice(0,14)||'???',sk=SKINS.some(s=>s.id===o.sk)?o.sk:'stick';
   if(!a){a={id,name,buf:[],m:null,sk:'',el:document.createElement('div'),u:new THREE.Vector3(),f:new THREE.Vector3(),r:SEA,walk:0,spd:0};a.el.className='nameTag';$('tags').appendChild(a.el);NET.avs.set(id,a)}
   a.name=name;a.el.textContent=name;if(a.sk!==sk){if(a.m)scene.remove(a.m);a.m=makeChar(sk);scene.add(a.m);a.sk=sk}
-  a.in=o.in===1;a.wt=o.wt===1;a.dd=o.dd===1;a.sw=typeof o.sw==='string'?o.sw:'';a.tl=Array.isArray(o.tl)?o.tl:[1,1,1];
+  a.in=o.in===1&&(!o.w||o.w===CUR);a.wt=o.wt===1;a.dd=o.dd===1;a.sw=typeof o.sw==='string'?o.sw:'';a.tl=Array.isArray(o.tl)?o.tl:[1,1,1];
   const s=o.s;if(Array.isArray(s)&&s.length===6&&s.every(Number.isFinite)){const L=a.buf[a.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i])||L.r!==o.r)a.buf.push({t:performance.now(),s:s.slice(),r:(+o.r||2600)/100});if(a.buf.length>20)a.buf.shift()}}
 function dropAv(a){if(a.m)scene.remove(a.m);if(a.el)a.el.remove()}
 const _av=new THREE.Vector3(),_avf=new THREE.Vector3();
@@ -1494,9 +1840,9 @@ function drawRes(){const shown=RES_ORDER.filter(k=>(PL.inv[k]||0)>0);const key=s
   for(const k in GAIN)delete GAIN[k]}
 // ---- 上：星の進み具合・体力・道具 ----
 let topKey='';
-function drawTop(){const pct=Math.floor((W.open.size-1)/NTILE*100),hp=Math.ceil(PL.hp),mh=maxHp(),T=PL.tools;const key=[pct,hp,mh,T.axe,T.pick,T.weap,NET.on?1:0].join();if(key===topKey)return;topKey=key;
-  $('pPct').textContent=pct+'%';$('pBar').style.width=pct+'%';$('hpTxt').textContent=hp+' / '+mh;$('hpBar').style.width=(hp/mh*100)+'%';
-  $('tools').innerHTML=['axe','pick','weap'].map(t=>`<span>${iconImg(t)}<b>${T[t]}</b></span>`).join('')}
+function drawTop(){const pct=Math.floor((W.open.size-1)/NTILE*100),hp=Math.ceil(PL.hp),mh=maxHp(),T=PL.tools;const key=[CUR,pct,hp,mh,T.axe,T.pick,T.weap,T.helm,T.arm,NET.on?1:0].join();if(key===topKey)return;topKey=key;
+  $('wName').textContent=WD.n;$('pPct').textContent=pct+'%';$('pBar').style.width=pct+'%';$('hpTxt').textContent=hp+' / '+mh;$('hpBar').style.width=(hp/mh*100)+'%';
+  $('tools').innerHTML=['axe','pick','weap','helm','arm'].filter(t=>T[t]>0).map(t=>`<span>${iconImg(t)}<b>${T[t]}</b></span>`).join('')}
 // ---- 値札（買えるタイルの上）----
 const PTAGS={};
 function drawPriceTags(){const cam=camera.position;const list=[...GH_ON].map(n=>{const c=CELLS[TILES[n].cell];return{n,c,d:cam.distanceTo(_t1.copy(c.c).multiplyScalar(SEA))}}).sort((a,b)=>a.d-b.d);
@@ -1504,19 +1850,20 @@ function drawPriceTags(){const cam=camera.position;const list=[...GH_ON].map(n=>
     // 星の裏側は出さない
     if(_t2.copy(it.c.c).dot(_t3.copy(cam).normalize())<.15)continue;
     keep.add(it.n);let e=PTAGS[it.n];if(!e){e=PTAGS[it.n]=document.createElement('div');e.className='ptag';$('tags').appendChild(e)}
-    const T=TILES[it.n],pd=W.paid[it.n]||{};const html=Object.keys(T.cost).map(k=>{const left=T.cost[k]-(pd[k]||0);return left>0?`<span class="${(PL.inv[k]||0)>=left?'ok':''}">${iconImg(k)}${fmt(left)}</span>`:''}).join('')+(T.cont.includes('yetiBig')?'<i>通せんぼ</i>':T.cont.includes('cave')?'<i>トロルの通行料</i>':'');
+    const T=TILES[it.n],pd=W.paid[it.n]||{};const html=Object.keys(T.cost).map(k=>{const left=T.cost[k]-(pd[k]||0);return left>0?`<span class="${(PL.inv[k]||0)>=left?'ok':''}">${iconImg(k)}${fmt(left)}</span>`:''}).join('')+(T.cont.includes('yetiBig')?'<i>通せんぼ</i>':T.cont.includes('cave')&&TILES[T.par]&&TILES[T.par].cont.includes('troll')?'<i>トロルの通行料</i>':T.cont.includes('trollgo')?'<i>トロルに小麦をあげる</i>':T.cont.some(k=>NPC_OF[k])?'<i>カギで助ける</i>':'');
     if(e._h!==html){e.innerHTML=html;e._h=html}e.style.display='flex';e.style.transform=`translate(${sp[0]}px,${sp[1]}px) translate(-50%,-100%) scale(${CAM.map?.7:clamp(28/it.d,.7,1.15)})`;e.classList.toggle('here',PAY.n===it.n)}
   for(const n in PTAGS)if(!keep.has(+n))PTAGS[n].style.display='none'}
 // ---- 建物の名前・カギ・敵の体力 ----
 const BTAG={};let lockEl=null;const EBAR=[];
 function drawWorldTags(){const cam=camera.position;
-  for(const B of BLDS){const D=BLD[B.k];let e=BTAG[B.n];const show=W.open.has(B.n)&&D.kind!=='deco'&&!CAM.map&&arcDist(PL.u,_t1.copy(B.pos).normalize(),SEA)<9;
-    if(!show){if(e)e.style.display='none';continue}if(!e){e=BTAG[B.n]=document.createElement('div');e.className='btag';$('tags').appendChild(e)}
-    const sp=toScreen(_t1.copy(B.pos).addScaledVector(B.up,B.k==='portal'?4.4:3.2));if(!sp){e.style.display='none';continue}
+  for(const B of BLDS){const D=BLD[B.k];let e=BTAG[B.key];const show=W.open.has(B.n)&&D.kind!=='deco'&&!CAM.map&&arcDist(PL.u,_t1.copy(B.pos).normalize(),SEA)<9;
+    if(!show){if(e)e.style.display='none';continue}if(!e){e=BTAG[B.key]=document.createElement('div');e.className='btag';$('tags').appendChild(e)}
+    const sp=toScreen(_t1.copy(B.pos).addScaledVector(B.up,B.k==='portal'||B.k==='rportal'?4.4:D.kind==='npc'?2.3:3.2));if(!sp){e.style.display='none';continue}
     const S=B.st||{};let h=`<b>${D.n}</b>`;
     if(D.kind==='ref'){const ink=Object.keys(D.inp)[0];h+=`<div>${iconImg(ink)}×${D.inp[ink]} → ${iconImg(D.out)}×1</div>`;if(S.q)h+=`<div class="sm">入っている ${fmt(S.q)}</div>`;if(S.out)h+=`<div class="sm">できた ${fmt(S.out)}（緑の丸へ）</div>`}
-    else if(D.kind==='trade'){const ink=Object.keys(D.inp)[0];h+=`<div>${iconImg(ink)}×${D.inp[ink]} → ${iconImg('coin')}×${D.k}</div>`}
-    else if(D.kind==='eq'){const lv=PL.tools[D.tool];h+=S.craft>0?`<div>${iconImg(D.tool)} Lv${S.lv} を作っています… ${Math.ceil(S.craft)}秒</div>`:`<div>${iconImg(D.tool)} Lv${lv}${(D.tool==='weap'?lv>=8:lv>=8)?'（ここでは最大）':' → Lv'+(lv+1)}</div>`}
+    else if(D.kind==='trade'){const ink=Object.keys(D.inp)[0];h+=`<div>${iconImg(ink)}×${D.inp[ink]} → ${iconImg(D.out||'coin')}×${D.k}</div>`}
+    else if(D.kind==='eq'){for(const t of D.tools||[D.tool]){const S2=D.tools?S[t]||{}:S,lv=PL.tools[t]||0;h+=S2.craft>0?`<div>${iconImg(t)} Lv${S2.lv} を作っています… ${Math.ceil(S2.craft)}秒</div>`:`<div>${iconImg(t)} Lv${lv}${lv>=(WD.maxLv[t]||0)?'（この星では最大）':' → Lv'+(lv+1)}</div>`}}
+    else if(D.kind==='warp')h+='<div>ガイアへもどる</div>';else if(D.kind==='boat')h+='<div>船に乗る</div>';else if(D.kind==='npc')h+='<div>助けてくれてありがとう！</div>';
     else if(D.kind==='portal'){const st=S.step||0;h+=st>=7?'<div>動いている！ 中に入ろう</div>':`<div>${st}/7　${PORTAL_STEPS[st].n}</div>`}
     else if(D.kind==='skin')h+='<div>キャラクターを変える</div>';
     if(e._h!==h){e.innerHTML=h;e._h=h}e.style.display='block';e.style.transform=`translate(${sp[0]}px,${sp[1]}px) translate(-50%,-100%)`}
@@ -1532,18 +1879,20 @@ function drawWorldTags(){const cam=camera.position;
   // 払うまでの1秒ゲージ（止まっているあいだたまる）
   const dw=$('dwBar');if(me&&DW.key&&DW.t<1&&!CAM.map&&PL.dead<=0){dw.style.display='block';dw.style.transform=`translate(${me[0]}px,${me[1]-(hb.style.display==='block'?16:0)}px) translate(-50%,-100%)`;dw.firstChild.style.width=(DW.t*100)+'%'}else dw.style.display='none';
   // サメまでの時間
-  const sw=$('swimT');if(PL.inWater&&PL.swimT>.5&&PL.swimT<4&&me){sw.style.display='block';sw.textContent='🦈 '+Math.ceil(4-PL.swimT);sw.style.transform=`translate(${me[0]}px,${me[1]-30}px) translate(-50%,-100%)`}else sw.style.display='none'}
+  const sw=$('swimT');if(PL.inWater&&PL.swimT>.5&&PL.swimT<WD.shark&&me){sw.style.display='block';sw.textContent='🦈 '+Math.ceil(WD.shark-PL.swimT);sw.style.transform=`translate(${me[0]}px,${me[1]-30}px) translate(-50%,-100%)`}else sw.style.display='none'}
 // ---- 下：台の上にいるときの説明 ----
 let padKey='';
 function drawPadUI(){const P=PADUI,el=$('padui');if(!P||CAM.map){if(padKey){el.classList.remove('on');padKey=''}return}
-  const B=P.B,D=BLD[B.k],S=B.st||{};let h='';
+  const B=P.B,D=BLD[B.k],S=P.S||B.st||{};let h='';
   if(P.type==='ref'){const ink=Object.keys(D.inp)[0];h=`<b>${D.n}</b><div>${iconImg(ink)}${fmt(PL.inv[ink]||0)} を入れています → ${iconImg(D.out)}（${D.t}秒で1つ）</div><div class="sm">入っている ${fmt(S.q||0)}・できた ${fmt(S.out||0)}　できたものは緑の丸で受け取ろう</div>`}
   else if(P.type==='trade'){const ink=Object.keys(D.inp)[0];h=`<b>${D.n}</b><div>${iconImg(ink)}×${D.inp[ink]} を ${iconImg('coin')}×${D.k} にかえます（持っている ${fmt(PL.inv[ink]||0)}）</div>`}
   else if(P.type==='eq'){const t=P.t,lv=P.lv;if(S.craft>0)h=`<b>${D.n}</b><div>${iconImg(t)} Lv${S.lv} を作っています… あと${Math.ceil(S.craft)}秒</div>`;
-    else if(!P.cost||lv>=8)h=`<b>${D.n}</b><div>${iconImg(t)} Lv${lv}：この星で作れるいちばん上です${t==='weap'&&lv<9?'（Lv9 の剣は山の岩にささっています）':''}</div>`;
-    else{const pd=S.paid||{};h=`<b>${D.n}　${TOOLN[t]} Lv${lv} → Lv${lv+1}</b><div class="cost">${Object.keys(P.cost).map(k=>{const left=P.cost[k]-(pd[k]||0);return`<span class="${(PL.inv[k]||0)>=left?'ok':'lack'}">${iconImg(k)}${fmt(Math.max(0,left))}</span>`}).join('')}</div><div class="sm">${t==='weap'?'こうげき '+WPOW[lv]+'→'+WPOW[lv+1]+'・体力 '+WHP[lv]+'→'+WHP[lv+1]:'切れるもの・掘れるものがふえる'}</div>`}}
+    else if(!P.cost)h=`<b>${D.n}</b><div>${iconImg(t)} Lv${lv}：この星で作れるいちばん上です${t==='weap'&&lv<9&&CUR==='gaia'?'（Lv9 の剣は山の岩にささっています）':''}</div>`;
+    else{const pd=S.paid||{};h=`<b>${D.n}　${TOOLN[t]} Lv${lv} → Lv${lv+1}</b><div class="cost">${Object.keys(P.cost).map(k=>{const left=P.cost[k]-(pd[k]||0);return`<span class="${(PL.inv[k]||0)>=left?'ok':'lack'}">${iconImg(k)}${fmt(Math.max(0,left))}</span>`}).join('')}</div><div class="sm">${t==='weap'?'こうげき '+WPOW[lv]+'→'+WPOW[lv+1]+'・体力 '+WHP[lv]+'→'+WHP[lv+1]:t==='helm'||t==='arm'?'体力 +'+ARMHP[lv]+'→+'+ARMHP[lv+1]:'切れるもの・掘れるものがふえる'}</div>`}}
   else if(P.type==='portal'){const st=S.step||0;if(st>=7)h='<b>ポータル</b><div>そのまま立っていると、次の星へ…</div>';else{const c=PORTAL_STEPS[st].c,pd=S.paid||{};h=`<b>ポータル ${st}/7：${PORTAL_STEPS[st].n}</b><div class="cost">${Object.keys(c).map(k=>{const left=c[k]-(pd[k]||0);return`<span class="${(PL.inv[k]||0)>=left?'ok':'lack'}">${iconImg(k)}${fmt(Math.max(0,left))}</span>`}).join('')}</div>`}}
   else if(P.type==='skin')h='<b>キャラクターポータル</b><div>キャラクターを選べます</div>';
+  else if(P.type==='warp')h=`<b>${D.n}</b><div>そのまま立っていると、${WDEF[D.to].n}へもどります</div>`;
+  else if(P.type==='boat')h=P.ok?`<b>${D.n}</b><div>そのまま立っていると、船で向こうの島へわたります</div>`:`<b>${D.n}</b><div>向こうの船着き場がまだありません</div>`;
   if(h!==padKey){el.innerHTML=h;padKey=h;el.classList.add('on')}}
 // ---- 確認・入力（claude.ai の枠の中では prompt/confirm が使えないことがあるので自前で）----
 function ask(title,msg,opt){opt=opt||{};return new Promise(res=>{const back=document.querySelector('.scr.on');const backId=back?back.id:'';$('dlgT').textContent=title;$('dlgM').textContent=msg||'';const inp=$('dlgIn');inp.style.display=opt.input!=null?'':'none';inp.value=opt.input||'';
@@ -1598,13 +1947,13 @@ function uiNet(){const st=$('nState');if(!st)return;const rs=NET.st==='ok'?netRo
   st.textContent=NET.st==='wait'?'オンラインに接続しています…':NET.st==='none'?(NET.why==='nohost'?'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くといっしょに遊べます。':NET.why==='denied'?'オンラインの許可がオフになっています。アーティファクトの「権限」からオンにしてください。':'この画面ではオンラインに入れませんでした。claude.ai にログインして、作った人の組織のメンバーか、共有で招待されたアカウントで開いてください（公開リンクからは入れません）。'):NET.st==='err'?'つながりが切れました。もう一度ためしてね。':NET.on?(NET.host?'部屋を開いています（'+(NET.others().length+1)+'人）':'部屋に入っています'):'部屋に入るか、自分の星で部屋を開こう';
   $('nHost').disabled=NET.st!=='ok'||NET.on;$('nHost').textContent=NET.on&&NET.host?'部屋を開いています':'自分の星で部屋を開く';
   const L=$('nRooms');L.innerHTML='';if(!rs.length){L.innerHTML=`<div class="empty">${NET.st==='ok'?'まだ部屋がありません':'—'}</div>`}
-  for(const r of rs){const d=document.createElement('div');d.className='room';d.innerHTML=`<b>${esc(r.n)} の星</b><small>${r.p}% ・ ${r.np}/8人${r.mine?'（あなたの別のタブ）':''}</small>`;d.onclick=()=>{SFX.click();if(NET.on){toast('いまは別の部屋にいます');return}if(STATE!=='play'){startPlay(true)}netJoin(r)};L.appendChild(d)}
+  for(const r of rs){const d=document.createElement('div');d.className='room';d.innerHTML=`<b>${esc(r.n)} の星</b><small>${WDEF[r.w].n} ${r.p}% ・ ${r.np}/8人${r.mine?'（あなたの別のタブ）':''}</small>`;d.onclick=()=>{SFX.click();if(NET.on){toast('いまは別の部屋にいます');return}if(STATE!=='play'){startPlay(true)}netJoin(r)};L.appendChild(d)}
   uiNetBox()}
 function uiNetBox(){const e=$('netbox');if(!NET.on){e.style.display='none';return}const os=NET.others();e.style.display='block';e.textContent='🌐 '+(NET.host?'ホスト':'ゲスト')+'・'+(os.length+1)+'人'}
 $('nHost').onclick=async()=>{SFX.click();if(STATE!=='play'){const s=loadSave();if(s)applySave(s);startPlay(true)}await netHost();showScr('');};
 $('nBack').onclick=()=>{SFX.click();showScr(STATE==='play'?'menu':'title')};
 // ---- 地図 ----
-function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.display=CAM.map?'block':'none';if(CAM.map){const pct=Math.floor((W.open.size-1)/NTILE*100);$('mapInfo').innerHTML=`<b>ガイア</b><span>${pct}% ・ タイル ${W.open.size-1}/${NTILE}</span><small>ドラッグで回す・もう一度🌍でもどる</small>`}}
+function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.display=CAM.map?'block':'none';if(CAM.map){const pct=Math.floor((W.open.size-1)/NTILE*100);$('mapInfo').innerHTML=`<b>${WD.n}</b><span>${pct}% ・ タイル ${W.open.size-1}/${NTILE}</span><small>ドラッグで回す・もう一度🌍でもどる</small>`}}
 // ---- タイトル ----
 function toTitle(){if(NET.on)netLeave();autoStop();STATE='title';document.body.classList.remove('playing');CAM.map=true;document.body.classList.add('mapv');showScr('title');const s=loadSave();$('tCont').style.display=s?'':'none';$('tNew').textContent=s?'はじめから':'はじめる'}
 function startPlay(keepScr){STATE='play';MUSIC.on=true;document.body.classList.add('playing');CAM.map=false;document.body.classList.remove('mapv');CAM.ready=0;if(!keepScr)showScr('');uiMap();HUD_DIRTY=true;resKey='';topKey=''}
@@ -1617,7 +1966,8 @@ $('tNew').onclick=async()=>{SFX.click();ac();const old=loadSave();if(old&&!(awai
 $('tOnline').onclick=()=>{SFX.click();ac();openOnline()};
 $('tCode').onclick=()=>{SFX.click();codeMode='';$('codeCloud').style.display='none';codeBig(false);$('codeTa').value='';$('codeMsg').textContent='セーブコード（長いコードか、ずっと使えるコード LUC-…）をはりつけて「このコードを読みこむ」を押してね';showScr('codeScr')};
 // ---- エンディング ----
-function goPortal(){SFX.portal();W.clear=1;saveGame();const t=Math.round(W.play||0);$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;showScr('ending');STATE='ending';document.body.classList.remove('playing')}
+// いちばん最後の星（トロルヘイム）のポータル
+function goEnding(){SFX.portal();W.clear=1;autoStop();saveGame();const t=Math.round(W.play||0);$('endT').textContent=WD.n+'をクリア！';$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;$('endBack').textContent=WD.n+'にもどる';showScr('ending');STATE='ending';document.body.classList.remove('playing')}
 $('endBack').onclick=()=>{SFX.click();const B=portalB();if(B)B.went=0;respawn();startPlay()};
 
 // ---- 放置モードの画面 ----
@@ -1644,17 +1994,20 @@ let autoKey='';function drawAutoBar(){if(!AUTO.on)return;const g=Object.keys(AUT
 let GAME_READY=false;
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?55:42;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);
-function init(){resize();buildNodes();buildDeco();buildBuildings();makeEnemies();makeTolls();
+function init(){resize();
+  // セーブの星を作ってあてはめる（はじめてならガイア）
   applySave(loadSave());GAME_READY=true;toTitle();requestAnimationFrame(frame);
   // 少しずつ自動セーブ
   setInterval(()=>{if(STATE==='play')saveGame()},20000);addEventListener('pagehide',saveGame)}
 let last=performance.now(),ghostT=0;
-function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(dt>0))dt=1/60;const rdt=Math.min(dt,10);dt=Math.min(dt,.05);
-  WAVE.value+=dt;ghostT+=dt;
+// 1コマぶんの動き（絵をかく前まで）
+function tick(dt,rdt){WAVE.value+=dt;ghostT+=dt;
   if(STATE==='play'){autoTick(dt);updatePlayer(dt);payTick(dt);updateBuildings(dt,rdt);dwellStep(dt);updateGuide(dt);W.play=(W.play||0)+rdt;if(saveT>0){saveT-=dt;if(saveT<=0){saveT=0;saveGame()}}}
   else{if(GUIDE)GUIDE.visible=false}
   if(STATE==='title'){CAM.mapQ.premultiply(_q1.setFromAxisAngle(_t1.set(0,1,0).applyQuaternion(CAM.mapQ),dt*.08));CAM.mapDist=lerp(CAM.mapDist,innerWidth<innerHeight?95:72,dt*2)}
-  updateNodes(dt);if(STATE==='play')updateEnemies(dt);updatePieces(dt);updateSparks(dt);updateRising(dt);
+  updateNodes(dt);if(STATE==='play')updateEnemies(dt);updatePieces(dt);updateSparks(dt);updateRising(dt)}
+function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(dt>0))dt=1/60;const rdt=Math.min(dt,10);dt=Math.min(dt,.05);
+  tick(dt,rdt);
   ghostMat.opacity=.22+Math.sin(ghostT*3)*.1;ghostLine.opacity=.7+Math.sin(ghostT*3)*.25;
   updateCamera(dt);drawPlayer(dt);NET.tick(dt);
   renderer.render(scene,camera);
@@ -1662,7 +2015,7 @@ function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(
   else{for(const n in PTAGS)PTAGS[n].style.display='none'}}
 init();
 // テスト用
-window.__L={autoBlockers,nearList,AUTO,autoStart,autoStop,autoKinds,CLOUD,CL,clMake,clSync,clLoad,clShow,renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
+window.__L={THREE,makeEnemy,makeNpc,cageMesh,get WG(){return WG},camera,step(n,dt){for(let i=0;i<n;i++)tick(dt||.05,dt||.05)},travelTo,buildWorld,applyWorld,worldPart,upgradeSave,validSave,WDEF,get CUR(){return CUR},get WD(){return WD},get NTILE(){return NTILE},get WSTATE(){return WSTATE},autoBlockers,nearList,AUTO,autoStart,autoStop,autoKinds,CLOUD,CL,clMake,clSync,clLoad,clShow,renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
 
 </script>
 </body>

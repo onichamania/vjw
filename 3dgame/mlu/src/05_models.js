@@ -105,11 +105,11 @@ const BLD_BUILD={
    b.add(G.cyl(.04,.04,3.9,4),'#d9b48a',T(0,.6,.8,0,0,Math.PI/2));b.add(G.cyl(.04,.04,3.9,4),'#d9b48a',T(0,.6,-.8,0,0,Math.PI/2))},
  deco(b){b.add(G.box(.3,.3,.3),'#888',T(0,.15,0))}};
 // ポータル：石の台・2本の柱・6つのかけらでできた輪（まだのかけらはうすい影）・動くと紫のうず
-function portalModel(){const g=new THREE.Group();const base=new MB();base.add(G.cyl(2.0,2.25,.3,10),'#8a939d',T(0,.15,0));base.add(G.cyl(1.6,1.8,.22,10),'#a3acb6',T(0,.4,0));
+function portalModel(cols){const g=new THREE.Group();const base=new MB();base.add(G.cyl(2.0,2.25,.3,10),'#8a939d',T(0,.15,0));base.add(G.cyl(1.6,1.8,.22,10),'#a3acb6',T(0,.4,0));
   [[-2.15],[2.15]].forEach(([x])=>{base.add(G.box(.55,3.6,.6),'#7c8794',T(x,1.9,0));base.add(G.box(.75,.3,.8),'#9aa3ad',T(x,3.8,0));base.add(G.box(.75,.3,.8),'#9aa3ad',T(x,.35,0))});
   base.add(G.dod(.35),'#9aa3ad',T(-1.6,.5,1.2));base.add(G.dod(.28),'#8a939d',T(1.7,.45,-1.1));
   const bm=new THREE.Mesh(base.geo(),VCMAT);bm.castShadow=bm.receiveShadow=true;g.add(bm);
-  const cols=['#9aa3ad','#2f7cf0','#b25cf0','#5ff0f0','#5ce04a','#f0284a'],Y=2.25,RR=1.75;const pieces=[],ghosts=[];
+  cols=cols||['#9aa3ad','#2f7cf0','#b25cf0','#5ff0f0','#5ce04a','#f0284a'];const Y=2.25,RR=1.75;const pieces=[],ghosts=[];
   const ghostM=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.22,depthWrite:false});
   for(let i=0;i<6;i++){const a0=-Math.PI/2-Math.PI/6+i*Math.PI/3+.03;const geo=new THREE.TorusGeometry(RR,.3,6,8,Math.PI/3-.06);geo.rotateZ(a0);
     const b=new MB();b.add(geo,cols[i]);if(i){const mid=a0+Math.PI/6;b.add(G.oct(.32),cols[i],T(Math.cos(mid)*RR,Math.sin(mid)*RR,.25,0,0,0,1,1.3,.6))}
@@ -119,9 +119,9 @@ function portalModel(){const g=new THREE.Group();const base=new MB();base.add(G.
   const sw2=new THREE.Mesh(new THREE.RingGeometry(.35,1.25,5,1),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.4,side:THREE.DoubleSide}));sw2.position.set(0,Y,.03);sw2.visible=false;g.add(sw2);
   g.userData={pieces,ghosts,swirl,sw2};return g}
 // ---------------- 大きな通せんぼ（トロル・大イエティ）----------------
-function bigTroll(){const b=new MB();b.add(G.sph(1.1,8,6),'#8fd23a',T(0,1.6,0,0,0,0,1,1.1,.9));b.add(G.sph(.7,8,6),'#9ae042',T(0,2.9,.15));b.add(G.cone(.25,.9,4),'#8fd23a',T(-.85,3.05,0,0,0,1.3));b.add(G.cone(.25,.9,4),'#8fd23a',T(.85,3.05,0,0,0,-1.3));
+function bigTroll(sk,sk2,cl){sk=sk||'#8fd23a';sk2=sk2||'#9ae042';cl=cl||'#a0522d';const b=new MB();b.add(G.sph(1.1,8,6),sk,T(0,1.6,0,0,0,0,1,1.1,.9));b.add(G.sph(.7,8,6),sk2,T(0,2.9,.15));b.add(G.cone(.25,.9,4),sk,T(-.85,3.05,0,0,0,1.3));b.add(G.cone(.25,.9,4),sk,T(.85,3.05,0,0,0,-1.3));
   b.add(G.box(.5,.1,.1),'#2a3a10',T(-.25,3.05,.75));b.add(G.box(.5,.1,.1),'#2a3a10',T(.25,3.05,.75));b.add(G.cone(.16,.5,4),'#7ac030',T(0,2.85,.85,Math.PI/2,0,0));
-  b.add(G.cyl(1.05,1.15,.6,8),'#a0522d',T(0,.85,0));b.add(G.cyl(.3,.25,1.3,6),'#8fd23a',T(-1.2,1.5,.2,0,0,.4));b.add(G.cyl(.3,.25,1.3,6),'#8fd23a',T(1.2,1.5,.2,0,0,-.4));b.add(G.cyl(.32,.3,.8,6),'#8fd23a',T(-.5,.35,0));b.add(G.cyl(.32,.3,.8,6),'#8fd23a',T(.5,.35,0));
+  b.add(G.cyl(1.05,1.15,.6,8),cl,T(0,.85,0));b.add(G.cyl(.3,.25,1.3,6),sk,T(-1.2,1.5,.2,0,0,.4));b.add(G.cyl(.3,.25,1.3,6),sk,T(1.2,1.5,.2,0,0,-.4));b.add(G.cyl(.32,.3,.8,6),sk,T(-.5,.35,0));b.add(G.cyl(.32,.3,.8,6),sk,T(.5,.35,0));
   const m=new THREE.Mesh(b.geo(),VCMAT);m.castShadow=true;return m}
 function bigYeti(){const b=new MB();b.add(G.sph(1.2,8,6),'#f2f4fa',T(0,1.7,0,0,0,0,1,1.15,.95));b.add(G.sph(.75,8,6),'#f2f4fa',T(0,3.05,.1));b.add(G.sph(.55,8,6),'#f4a8c8',T(0,2.95,.45,0,0,0,1,.8,.6));
   b.add(G.sph(.2,6,5),'#ffffff',T(0,3.15,.8));b.add(G.sph(.1,5,4),'#30307a',T(0,3.15,.97));b.add(G.cone(.18,.7,5),'#4aa8f0',T(0,3.9,0));
@@ -149,17 +149,18 @@ function makeChar(skin){const S=SKINS.find(s=>s.id===skin)||SKINS[0];const g=new
 function setHeld(ch,k,lv){const U=ch.userData;const key=k?k+lv:null;if(U.cur===key)return;if(U.curMesh){U.P.hand.remove(U.curMesh)}U.cur=key;U.curMesh=null;if(!k)return;
   const m=U.tools[key]||(U.tools[key]=toolMesh(k,lv));m.rotation.set(Math.PI/2,0,0);m.position.set(0,0,0);U.P.hand.add(m);U.curMesh=m}
 // ---------------- 敵 ----------------
-function makeEnemy(k){const g=new THREE.Group(),P={};const add=(n,mesh,x,y,z)=>{const p=new THREE.Group();p.position.set(x,y,z);p.add(mesh);g.add(p);P[n]=p};
+function makeEnemy(k){if(ENEMY_EXTRA[k]){const R=ENEMY_EXTRA[k]();R.g.scale.setScalar(ENEMY[k].sc);R.g.userData={P:R.P,k};return R.g}
+  const g=new THREE.Group(),P={};const add=(n,mesh,x,y,z)=>{const p=new THREE.Group();p.position.set(x,y,z);p.add(mesh);g.add(p);P[n]=p};
   const limb=(r,h,c)=>partMesh(b=>{b.add(G.cyl(r,r*.85,h,6),c,T(0,-h/2,0))});
-  if(k==='gob'||k==='red'||k==='master'||k==='skel'){
-    const skinC={gob:'#8fd23a',red:'#e8c09a',master:'#e8c09a',skel:'#f0ead8'}[k],cloth={gob:'#a0522d',red:'#c8302a',master:'#2a2a34',skel:'#3a3a4a'}[k];
-    add('body',partMesh(b=>{b.add(G.cyl(.24,.28,.55,7),cloth,T(0,0,0));if(k==='red'||k==='master'){b.add(G.box(.55,.2,.35),'#8a8f9a',T(0,.2,0))}if(k==='skel'){for(let i=0;i<3;i++)b.add(G.box(.42,.04,.3),'#f0ead8',T(0,.15-i*.12,.02))}}),0,.72,0);
+  if(k==='gob'||k==='red'||k==='master'||k==='skel'||k==='crim'||k==='skelb'){const hum=k==='crim'?'master':k==='skelb'?'skel':k;
+    const skinC={gob:'#8fd23a',red:'#e8c09a',master:'#e8c09a',skel:'#f0ead8',crim:'#e8302a',skelb:'#f0ead8'}[k],cloth={gob:'#a0522d',red:'#c8302a',master:'#2a2a34',skel:'#3a3a4a',crim:'#2a2a34',skelb:'#5a5040'}[k];
+    add('body',partMesh(b=>{b.add(G.cyl(.24,.28,.55,7),cloth,T(0,0,0));if(hum==='red'||hum==='master'){b.add(G.box(.55,.2,.35),'#8a8f9a',T(0,.2,0))}if(hum==='skel'){for(let i=0;i<3;i++)b.add(G.box(.42,.04,.3),'#f0ead8',T(0,.15-i*.12,.02))}}),0,.72,0);
     add('head',partMesh(b=>{b.add(G.sph(.3,8,6),skinC,T(0,.3,0));b.add(G.sph(.06,5,4),k==='skel'?'#1a1a1a':'#1a1a1a',T(-.11,.35,.25));b.add(G.sph(.06,5,4),'#1a1a1a',T(.11,.35,.25));
       if(k==='gob'){b.add(G.cone(.1,.45,4),skinC,T(-.38,.38,0,0,0,1.3));b.add(G.cone(.1,.45,4),skinC,T(.38,.38,0,0,0,-1.3));b.add(G.cone(.07,.2,4),'#7ac030',T(0,.28,.32,Math.PI/2,0,0))}
-      if(k==='red'||k==='master'){const hc=k==='master'?'#1a1a22':'#3a3a44';b.add(G.hemi(.36,9),hc,T(0,.32,0));b.add(G.box(.5,.08,.1),'#1a1a1a',T(0,.32,.28));b.add(G.cone(.08,.35,4),'#e02a2a',T(-.32,.62,0,0,0,.6));b.add(G.cone(.08,.35,4),'#e02a2a',T(.32,.62,0,0,0,-.6))}
-      if(k==='skel'){b.add(G.hemi(.33,9),'#d0303a',T(0,.36,0,-.2,0,0));b.add(G.box(.18,.06,.04),'#1a1a1a',T(0,.18,.28))}}),0,1.0,0);
+      if(hum==='red'||hum==='master'){const hc=k==='crim'?'#4a1414':k==='master'?'#1a1a22':'#3a3a44';b.add(G.hemi(.36,9),hc,T(0,.32,0));b.add(G.box(.5,.08,.1),'#1a1a1a',T(0,.32,.28));b.add(G.cone(.08,.35,4),'#e02a2a',T(-.32,.62,0,0,0,.6));b.add(G.cone(.08,.35,4),'#e02a2a',T(.32,.62,0,0,0,-.6))}
+      if(hum==='skel'){if(k==='skel')b.add(G.hemi(.33,9),'#d0303a',T(0,.36,0,-.2,0,0));b.add(G.box(.18,.06,.04),'#1a1a1a',T(0,.18,.28))}}),0,1.0,0);
     add('armL',limb(.08,.42,skinC),-.33,.95,0);add('armR',limb(.08,.42,skinC),.33,.95,0);add('legL',limb(.1,.45,k==='gob'?skinC:cloth),-.12,.48,0);add('legR',limb(.1,.45,k==='gob'?skinC:cloth),.12,.48,0);
-    const w=partMesh(b=>{if(k==='gob'){b.add(G.cyl(.05,.09,.6,5),'#7a4a24',T(0,-.3,0))}else if(k==='skel'){b.add(G.box(.06,.6,.12),'#cfd6de',T(0,-.35,.05));b.add(G.tor(.08,.02,Math.PI,6),'#e0b030',T(0,-.05,.05))}else{b.add(G.box(.06,.75,.1),'#cfd6de',T(0,-.4,0));b.add(G.box(.25,.05,.08),'#e0b030',T(0,-.05,0))}});
+    const w=partMesh(b=>{if(k==='gob'){b.add(G.cyl(.05,.09,.6,5),'#7a4a24',T(0,-.3,0))}else if(hum==='skel'){b.add(G.box(.06,.6,.12),'#cfd6de',T(0,-.35,.05));b.add(G.tor(.08,.02,Math.PI,6),'#e0b030',T(0,-.05,.05))}else{b.add(G.box(.06,.75,.1),'#cfd6de',T(0,-.4,0));b.add(G.box(.25,.05,.08),'#e0b030',T(0,-.05,0))}});
     w.position.y=-.42;w.rotation.x=Math.PI/2;P.armR.add(w)}
   else if(k==='log'){add('body',partMesh(b=>{b.add(G.cyl(.4,.42,1.1,8),'#8a5a32',T(0,0,0));b.add(G.cyl(.38,.38,.02,8),'#e8b878',T(0,.56,0));b.add(G.sph(.1,5,4),'#ffffff',T(-.15,.15,.38));b.add(G.sph(.1,5,4),'#ffffff',T(.15,.15,.38));b.add(G.sph(.05,4,3),'#1a1a1a',T(-.15,.15,.46));b.add(G.sph(.05,4,3),'#1a1a1a',T(.15,.15,.46));b.add(G.box(.25,.05,.05),'#3a1a0a',T(0,-.08,.42));b.add(G.ico(.25,0),'#4cae3a',T(.2,.65,0))}),0,1.0,0);
     add('armL',limb(.07,.4,'#7a4a2a'),-.45,1.1,0);add('armR',limb(.07,.4,'#7a4a2a'),.45,1.1,0);add('legL',limb(.09,.45,'#7a4a2a'),-.18,.48,0);add('legR',limb(.09,.45,'#7a4a2a'),.18,.48,0)}
@@ -172,7 +173,7 @@ function makeEnemy(k){const g=new THREE.Group(),P={};const add=(n,mesh,x,y,z)=>{
   g.scale.setScalar(ENEMY[k].sc);g.userData={P,k};return g}
 // ---------------- 飛ぶ資源のかけら ----------------
 const PIECE_GEO={};function pieceGeo(k){if(PIECE_GEO[k])return PIECE_GEO[k];const b=new MB(),c=RES[k].c;
-  ({wood:()=>{b.add(G.cyl(.13,.13,.5,6),c,T(0,0,0,0,0,Math.PI/2));b.add(G.cyl(.12,.12,.02,6),'#e8b878',T(.26,0,0,0,0,Math.PI/2))},plank:()=>b.add(G.box(.55,.1,.22),c),rock:()=>b.add(G.dod(.2),c),steel:()=>b.add(G.box(.42,.14,.2),c),
+  (({wood:()=>{b.add(G.cyl(.13,.13,.5,6),c,T(0,0,0,0,0,Math.PI/2));b.add(G.cyl(.12,.12,.02,6),'#e8b878',T(.26,0,0,0,0,Math.PI/2))},plank:()=>b.add(G.box(.55,.1,.22),c),rock:()=>b.add(G.dod(.2),c),steel:()=>b.add(G.box(.42,.14,.2),c),
    azr:()=>b.add(G.box(.26,.26,.26),c),ame:()=>b.add(G.cyl(.1,.1,.35,6),c),shroom:()=>{b.add(G.hemi(.2,7),c);b.add(G.cyl(.07,.08,.15,5),'#f6ead6',T(0,-.07,0))},meat:()=>b.add(G.sph(.17,6,5),c,T(0,0,0,0,0,0,1.3,1,1)),
    dia:()=>b.add(G.oct(.18),c),sul:()=>b.add(G.oct(.17),c,T(0,0,0,0,0,0,1,1.6,1)),ura:()=>b.add(G.cyl(.11,.11,.3,6),c),cact:()=>b.add(G.cyl(.1,.1,.35,6),c),ruby:()=>b.add(G.oct(.18),c,T(0,0,0,0,0,0,1,1.4,1)),
-   coin:()=>b.add(G.cyl(.18,.18,.05,10),c,T(0,0,0,Math.PI/2,0,0)),core:()=>b.add(G.ico(.2,1),c)})[k]();return PIECE_GEO[k]=b.geo()}
+   coin:()=>b.add(G.cyl(.18,.18,.05,10),c,T(0,0,0,Math.PI/2,0,0)),core:()=>b.add(G.ico(.2,1),c)})[k]||PIECE_EXTRA[k]&&(()=>PIECE_EXTRA[k](b,c))||(()=>b.add(G.dod(.18),c)))();return PIECE_GEO[k]=b.geo()}

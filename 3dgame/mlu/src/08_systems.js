@@ -4,7 +4,9 @@ const OPT={yield:+LSget('lu-yield','1')||1};
 let HUD_DIRTY=true;const GAIN={};
 function addRes(k,n){if(!n)return;PL.inv[k]=(PL.inv[k]||0)+n;HUD_DIRTY=true;if(n>0){GAIN[k]=(GAIN[k]||0)+n;if(AUTO.on)AUTO.got[k]=(AUTO.got[k]||0)+n}}
 const has=(k,n)=>(PL.inv[k]||0)>=n;
-function bonus(k){const b=skinOf().bonus;return b&&b[k]||1}
+// 助けた人がいるタイル（農家を助けると小麦が2倍）
+const freed=k=>TILES.some((T,n)=>n>0&&T.cont.includes(k)&&W.open.has(n));
+function bonus(k){const b=skinOf().bonus;let v=b&&b[k]||1;if(k==='wheat'&&freed('farmer'))v*=2;return v}
 // ---- 飛ぶかけら ----
 const PIECES=[],PIECE_POOL={};
 function pieceMesh(k){const pool=PIECE_POOL[k]||(PIECE_POOL[k]=[]);const m=pool.pop()||new THREE.Mesh(pieceGeo(k),k==='core'?lam({emissive:0x802070}):VCMAT);m.visible=true;world.add(m);return m}
@@ -29,22 +31,24 @@ function updateSparks(dt){for(let i=SPARKS.length-1;i>=0;i--){const s=SPARKS[i];
 const NDIRTY=new Set();
 function hitNode(o,dmg,mine){const N=NODE[o.k];if(!o.alive)return;o.hp-=dmg;o.shake=.25;NDIRTY.add(o);
   const top=_t1.copy(o.pos).addScaledVector(o.up,N.hh*.5).clone();
-  if(N.tool==='axe')SFX.chop();else SFX.mine();sparks(top,o.up,N.res?RES[N.res].c:'#cccccc',4);
+  if(N.tool==='axe')SFX.chop();else if(N.tool==='weap')SFX.slash();else SFX.mine();sparks(top,o.up,N.res?RES[N.res].c:'#cccccc',4);
   // 体力に合わせて少しずつ出す
   if(N.res){const mult=(N.res==='coin'||N.res==='core'?1:OPT.yield)*bonus(N.res);const total=Math.round(N.amt*mult),done=Math.round(total*(1-Math.max(0,o.hp)/N.hp));const give=done-(o.given||0);o.given=done;
     if(give>0)dropPieces(N.res,give,top,o.up)}
-  if(o.hp<=0){o.alive=false;o.t=N.rsp;o.given=0;SFX.fell();sparks(top,o.up,'#ffffff',6);
+  if(o.hp<=0){o.alive=false;o.t=N.rsp;o.given=0;SFX.fell();sparks(top,o.up,'#ffffff',6);if(N.once)W.once.add(o.id);
     if(o.k==='sword'){if(PL.tools.weap<9){PL.tools.weap=9;PL.hp=maxHp();SFX.level();banner('剣 Lv9 を手に入れた！','こうげき 15・体力 120')}W.sword=1}
-    if(o.k==='core'){W.core=1;banner('ソースコアを手に入れた！','ポータルを動かすのに使います')}
+    if(o.k==='core'){if(CUR==='gaia')W.core=1;banner('ソースコアを手に入れた！','ポータルを動かすのに使います')}
+    if(o.k==='key')banner('金のカギを手に入れた！','つかまっている人を助けるのに使います');
+    if(o.k==='icepick'&&PL.tools.pick<17){PL.tools.pick=17;SFX.level();banner('つるはし Lv17 を手に入れた！','氷の中から出てきた');HUD_DIRTY=true}
     if(mine&&NET.on)NET.nodeGone(o)}}
-function nodeDown(o,t){if(!o.alive&&!NODE[o.k].once)return;o.alive=false;o.hp=0;o.t=t==null?NODE[o.k].rsp:t;NDIRTY.add(o)}
+function nodeDown(o,t){if(!o.alive&&!NODE[o.k].once)return;o.alive=false;o.hp=0;o.t=t==null?NODE[o.k].rsp:t;if(NODE[o.k].once)W.once.add(o.id);NDIRTY.add(o)}
 function updateNodes(dt){for(const o of NODES){if(!o.alive&&!NODE[o.k].once){o.t-=dt;if(o.t<=0&&!o.hidden){o.alive=true;o.hp=NODE[o.k].hp;o.grow=0;NDIRTY.add(o)}}
     if(o.grow<1){o.grow=Math.min(1,o.grow+dt*2.5);NDIRTY.add(o)}if(o.shake>0){o.shake=Math.max(0,o.shake-dt);NDIRTY.add(o)}}
   for(const o of NDIRTY)drawNode(o);NDIRTY.clear()}
 // ---- 敵 ----
 const ENEMIES=[];
 function makeEnemies(){for(const s of SPAWNS){const c=CELLS[s.cell],E=ENEMY[s.k];const home=c.c.clone();const e={k:s.k,n:s.n,cell:s.cell,home,u:home.clone(),face:c.e1.clone(),hp:E.hp,alive:true,t:0,st:'idle',atk:0,wind:0,r:E.r,id:ENEMIES.length,wT:Math.random()*3,
-    wdir:c.e2.clone(),mesh:makeEnemy(s.k),vis:false,flash:0,walk:0,pos:new THREE.Vector3()};e.mesh.visible=false;world.add(e.mesh);ENEMIES.push(e)}}
+    wdir:c.e2.clone(),mesh:makeEnemy(s.k),vis:false,flash:0,walk:0,pos:new THREE.Vector3()};e.mesh.visible=false;WG.add(e.mesh);ENEMIES.push(e)}}
 function enemyGround(e){const c=CELLS[e.cell];return groundAt(e.u,c)}
 const _eu=new THREE.Vector3();
 function updateEnemies(dt){const host=!NET.on||NET.host;
@@ -84,29 +88,30 @@ function hitEnemy(e,dmg,mine){if(!e.alive)return;SFX.slash();SFX.hit();e.flash=.
 function killEnemy(e,who){e.alive=false;e.t=ENEMY[e.k].rsp;e.dying=.4;SFX.fell();const top=e.pos.clone().addScaledVector(e.u,1);sparks(top,e.u,'#ffd060',8);
   if(who==='me'){const D=ENEMY[e.k].drop;for(const k in D)dropPieces(k,Math.round(D[k]*(k==='coin'?1:OPT.yield)*bonus(k)),top,e.u);if(ENEMY[e.k].boss)banner(ENEMY[e.k].n+'をたおした！','')}
   else if(who&&NET.on)NET.giveDrop(who,e.k)}
-// ---- 払う：その場で1秒止まってから。0.5秒ごとに、払いはじめに持っていた量の2.5%ずつ（少なくとも1）----
+// ---- 商人・精錬所・ポータルに払う：その場で1秒止まってから。0.5秒ごとに、払いはじめに持っていた量の2.5%ずつ（少なくとも1）----
+// （タイル＝地面に払うときは待たずに、0.5秒ほどで払いきる：payTick）
 const DW={key:null,t:0,cur:null,snap:{},pt:0};
 function dwell(key){DW.cur=key;return DW.key===key&&DW.t>=1}
 function dwellStep(dt){if(DW.cur!==DW.key){DW.key=DW.cur;DW.t=0;DW.snap={};DW.pt=0}else if(DW.cur){if(PL.spd>.3){DW.t=0;DW.snap={};DW.pt=0}else DW.t+=dt}DW.cur=null}
 function payReady(dt){DW.pt-=dt;if(DW.pt>0)return false;DW.pt=.5;return true}
 function payStep(k,need){DW.snap[k]=Math.max(DW.snap[k]||0,PL.inv[k]||0);return Math.max(0,Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(DW.snap[k]*.025))))}
-// ---- タイルを買う ----
+// ---- タイルを買う：のったらすぐ、0.05秒ごとに費用の1割ずつ（0.5秒ほどで払いきる）----
 const GH_ON=new Set();let PAY={n:-1,t:0,cnt:0};
 function payTick(dt){let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
   for(const n of GH_ON){const c=CELLS[TILES[n].cell];if(arcDist(PL.u,c.c,SEA)<1.55&&PL.dead<=0){on=n;break}}
-  if(on!==PAY.n){PAY.n=on;PAY.cnt=0}
-  if(on<0||!dwell('t'+on)||!payReady(dt))return;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let done=true;
-  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const step=payStep(k,need);
-    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;PAY.cnt++;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
-    if(paid[k]<T.cost[k])done=false}
+  if(on!==PAY.n){PAY.n=on;PAY.cnt=0;PAY.t=0}
+  if(on<0)return;PAY.t-=dt;if(PAY.t>0)return;PAY.t=.05;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let done=true;
+  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const step=Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(T.cost[k]*.1)));
+    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;PAY.cnt++;if(PAY.cnt%2)sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
+    if((paid[k]||0)<T.cost[k])done=false}
   if(done&&(!NET.on||NET.host))unlockTile(on,true)}
 // ---- タイルが開く ----
 const RISING=[];let AREA_SEEN=new Set([1]);
 function unlockTile(n,anim){if(W.open.has(n))return;W.open.add(n);delete W.paid[n];const T=TILES[n],c=CELLS[T.cell];
   showTile(c.i,anim);rebuildShore();refreshGhosts();
   if(anim){SFX.unlock();SFX.rise();sparks(c.c.clone().multiplyScalar(SEA+.5),c.c,'#ffffff',14);
-    if(!AREA_SEEN.has(T.a)&&AREA[T.a]&&T.a<11){AREA_SEEN.add(T.a);banner(AREA[T.a].n,'新しい場所が見つかった！')}
-    const bk=T.cont.find(k=>BLD[k]);if(bk&&BLD[bk].kind!=='deco')setTimeout(()=>toast(BLD[bk].n+'ができた！'),700);
+    if(!AREA_SEEN.has(T.a)&&AREA[T.a]&&!AREA[T.a].nob){AREA_SEEN.add(T.a);banner(AREA[T.a].n,'新しい場所が見つかった！')}
+    const bk=T.cont.find(k=>BLD[k]);if(bk&&NPC_FREE[bk])setTimeout(()=>{SFX.level();banner(NPC_FREE[bk][0],NPC_FREE[bk][1])},700);else if(bk&&BLD[bk].kind!=='deco')setTimeout(()=>toast(BLD[bk].n+'ができた！'),700);
     if(NET.on&&NET.host)NET.unlocked(n);saveSoon()}
   HUD_DIRTY=true}
 function showTile(ci,anim){const c=CELLS[ci];if(c.a!==12){const m=TILE_MESH[ci]||buildTileMesh(c);m.visible=true;if(anim)RISING.push({m,c,t:0})}
@@ -116,17 +121,24 @@ function updateRising(dt){for(let i=RISING.length-1;i>=0;i--){const r=RISING[i];
   if(r.base)r.m.position.copy(r.base).addScaledVector(r.c.c,off);else r.m.position.copy(r.c.c).multiplyScalar(off);if(k>=1){if(r.base)r.m.position.copy(r.base);else r.m.position.set(0,0,0);RISING.splice(i,1)}}}
 // 買える目印を作り直す
 function refreshGhosts(){calcMinLock();for(const n in GHOST){if(!available(+n)){GHOST[n].visible=false;GH_ON.delete(+n)}}
-  for(let n=1;n<=NTILE;n++)if(available(n)){ghostOf(n).visible=true;GH_ON.add(n)}
-  for(const k of TOLLS)k.m.visible=k.show()}
+  const free=[];for(let n=1;n<=NTILE;n++)if(available(n)){ghostOf(n).visible=true;GH_ON.add(n);if(!Object.keys(TILES[n].cost).length)free.push(n)}
+  for(const k of TOLLS)k.m.visible=k.show();
+  // 費用のないタイル（船で着く南の船着き場）は、買えるようになったらすぐ開く
+  if(free.length&&(!NET.on||NET.host))setTimeout(()=>free.forEach(n=>{if(available(n))unlockTile(n,true)}),0)}
 // ---- 通せんぼ（大きなトロル・大イエティ）----
 const TOLLS=[];
 function makeTolls(){for(let n=1;n<=NTILE;n++){const T=TILES[n];const c=CELLS[T.cell];
-  if(T.cont.includes('troll')){const ch=TILES.findIndex((t,i)=>i>0&&t.par===n&&t.cont.includes('cave'));const m=bigTroll();world.add(m);const tt={n,m,show:()=>W.open.has(n)&&!(ch>0&&W.open.has(ch)),c,on:true};TOLLS.push(tt);placeToll(tt,0)}
-  if(T.cont.includes('yetiBig')){const m=bigYeti();world.add(m);const tt={n,m,show:()=>available(n),c,ghost:true};TOLLS.push(tt);placeToll(tt,0)}}}
+  if(T.cont.includes('troll')){const ch=TILES.findIndex((t,i)=>i>0&&t.par===n&&t.cont.includes('cave'));const m=bigTroll();WG.add(m);const tt={n,m,show:()=>W.open.has(n)&&!(ch>0&&W.open.has(ch)),c,on:true};TOLLS.push(tt);placeToll(tt,0)}
+  // 小麦トロル：小麦をあげる（trollgo のタイルを開ける）まで通せんぼ
+  if(T.cont.includes('wtroll')){const go=TILES.findIndex((t,i)=>i>0&&t.cont.includes('trollgo'));const m=bigTroll('#c8a85a','#d8b868','#5a7a2a');WG.add(m);const tt={n,m,show:()=>W.open.has(n)&&!(go>0&&W.open.has(go)),c,on:true};TOLLS.push(tt);placeToll(tt,0)}
+  if(T.cont.includes('yetiBig')){const m=bigYeti();WG.add(m);const tt={n,m,show:()=>available(n),c,ghost:true};TOLLS.push(tt);placeToll(tt,0)}
+  // つかまっている人：買えるあいだはおりの中
+  const np=T.cont.find(k=>NPC_OF[k]);if(np){const m=new THREE.Group();m.add(cageMesh());m.add(makeNpc(NPC_OF[np]));WG.add(m);const tt={n,m,show:()=>available(n),c,ghost:true};TOLLS.push(tt);placeToll(tt,0)}}}
 function placeToll(tt,ph){const c=tt.c;const r=tt.ghost?SEA+.1:topR(c);const pos=c.c.clone().multiplyScalar(r).addScaledVector(c.e1,tt.ghost?0:.4);tt.m.position.copy(pos);frameQuat(c.c,c.e2,tt.m.quaternion);tt.m.rotateY(Math.sin(ph)*.1);tt.m.scale.setScalar(1+Math.sin(ph*2)*.02)}
 // ---- 建物の台 ----
-function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco')return;const up=B.up;
-  B.pads.push(...padMesh(B.pIn,up,B.padR||.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
+function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco'||kind==='npc')return;const up=B.up;
+  B.pads.push(...padMesh(B.pIn,up,B.padR||.95,kind==='trade'?'#ffd84a':kind==='eq'||kind==='boat'?'#7ae0ff':kind==='portal'||kind==='skin'||kind==='warp'?'#ff8af0':'#ffffff'));
+  if(B.pIn2)B.pads.push(...padMesh(B.pIn2,up,B.padR||.95,'#7ae0ff'));
   if(B.pOut)B.pads.push(...padMesh(B.pOut,up,B.padR||.95,'#8aff8a'));B.st=B.st||{}}
 const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<(B.padR||.95)&&PL.dead<=0;   // 放置中は台の上でも何もしない
 let PADUI=null;
@@ -135,29 +147,41 @@ function updateBuildings(dt,rdt){let ui=null;rdt=rdt||dt;
     if(D.kind==='ref'){// 精錬所：入れたぶんを順番に（オフラインでも進む）
       const ink=Object.keys(D.inp)[0],per=D.inp[ink];S.q=S.q||0;S.out=S.out||0;S.tm=S.tm||0;
       if(S.q>=per){S.tm+=rdt;while(S.tm>=D.t&&S.q>=per){S.tm-=D.t;S.q-=per;S.out++}}else S.tm=0;
-      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};if(dwell('r'+B.n)&&payReady(dt)&&has(ink,1)&&S.q<900){const n=Math.min(PL.inv[ink],Math.max(per,payStep(ink,900-S.q)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
+      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};if(dwell('r'+B.key)&&payReady(dt)&&has(ink,1)&&S.q<900){const n=Math.min(PL.inv[ink],Math.max(per,payStep(ink,900-S.q)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
       if(ON_PAD(B,B.pOut)&&S.out>0){dropPieces(D.out,S.out,B.pOut.clone().addScaledVector(B.up,.6),B.up);S.out=0}
       drawOutPile(B,D.out,S.out)}
-    else if(D.kind==='eq'){const t=D.tool,lv=PL.tools[t],nx=lv+1,cost=(t==='axe'?AXE:t==='pick'?PICK:WEAP)[nx];
-      if(S.craft>0){S.craft-=rdt;if(S.craft<=0){S.craft=0;PL.tools[t]=Math.max(PL.tools[t],S.lv);S.paid={};SFX.level();banner(TOOLN[t]+' Lv'+S.lv+'！',t==='weap'?'こうげき '+WPOW[S.lv]+'・体力 '+WHP[S.lv]:'力 '+S.lv);if(t==='weap')PL.hp=maxHp();saveSoon()}}
-      if(ON_PAD(B,B.pIn)){ui={B,type:'eq',t,lv,cost,nx};
-        if(cost&&!(S.craft>0)&&!(t==='weap'&&lv>=8)){S.paid=S.paid||{};if(dwell('e'+B.n)&&payReady(dt)){let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=payStep(k,need);if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if(S.paid[k]<cost[k])done=false}
-          if(done){S.craft=CRAFT_T[nx]||5;S.lv=nx;S.ct=S.craft;SFX.craft()}}}}}
-    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];if(dwell('s'+B.n)&&payReady(dt)&&has(ink,per)){const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.floor(payStep(ink,PL.inv[ink])/per)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces('coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
+    else if(D.kind==='eq'){// 道具の精錬所（仕立て屋は台が2つ：左かぶと・右よろい）
+      const tools=D.tools||[D.tool];tools.forEach((t,i)=>{const r=eqTick(B,t,i?B.pIn2:B.pIn,D.tools?(S[t]||(S[t]={})):S,dt,rdt);if(r)ui=r})}
+    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];if(dwell('s'+B.key)&&payReady(dt)&&has(ink,per)){const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.floor(payStep(ink,PL.inv[ink])/per)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces(D.out||'coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
     else if(D.kind==='portal'){portalTick(B,dt);if(ON_PAD(B,B.pIn))ui={B,type:'portal'}}
-    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(dwell('k'+B.n)&&!B.was){B.was=1;openSkins()}}else B.was=0}}
+    else if(D.kind==='warp'){const U=B.m.userData;U.sw2.rotation.z+=dt*2;U.swirl.material.opacity=.7+Math.sin(performance.now()/300)*.15;
+      if(ON_PAD(B,B.pIn)){ui={B,type:'warp'};if(dwell('w'+B.key)&&!B.went){B.went=1;travelTo(D.to,'warp')}}else B.went=0}
+    else if(D.kind==='boat'){const Q=BLDS.find(b=>b.k===D.pair);const ok=Q&&W.open.has(Q.n);
+      if(ON_PAD(B,B.pIn)){ui={B,type:'boat',ok,Q};if(ok&&dwell('b'+B.key)&&!B.went){B.went=1;Q.went=1;boatTo(Q)}}else B.went=0}
+    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(dwell('k'+B.key)&&!B.was){B.was=1;openSkins()}}else B.was=0}}
   for(const tt of TOLLS)if(tt.m.visible)placeToll(tt,performance.now()/700);
   PADUI=ui}
+// 道具・かぶと・よろいを作る台（S はその道具の作りかけの状態）
+const toolNote=(t,lv)=>t==='weap'?'こうげき '+WPOW[lv]+'・体力 '+WHP[lv]:t==='helm'||t==='arm'?'体力 +'+ARMHP[lv]:'力 '+lv;
+function eqTick(B,t,pad,S,dt,rdt){const lv=PL.tools[t]||0,nx=lv+1,cost=nx<=(WD.maxLv[t]||0)?TOOLCOST[t][nx]:null;
+  if(S.craft>0){S.craft-=rdt;if(S.craft<=0){S.craft=0;PL.tools[t]=Math.max(PL.tools[t]||0,S.lv);S.paid={};SFX.level();banner(TOOLN[t]+' Lv'+S.lv+'！',toolNote(t,S.lv));if(t==='weap'||t==='helm'||t==='arm')PL.hp=maxHp();HUD_DIRTY=true;saveSoon()}}
+  if(!ON_PAD(B,pad))return null;const ui={B,type:'eq',t,lv,cost,nx,S};
+  if(cost&&!(S.craft>0)){S.paid=S.paid||{};if(dwell('e'+B.key+t)&&payReady(dt)){let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=payStep(k,need);if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if((S.paid[k]||0)<cost[k])done=false}
+    if(done){S.craft=CRAFT_T[nx]||5;S.lv=nx;S.ct=S.craft;SFX.craft()}}}
+  return ui}
+// 船：向こうの船着き場の台の先へ
+function boatTo(Q){SFX.splash();const u=Q.pIn.clone().addScaledVector(Q.f,1.35).normalize();const ci=cellAt(u,Q.cell);PL.u.copy(u);PL.cell=ci;PL.r=groundR(u,CELLS[ci]);CAM.f.copy(Q.f);tangent(CAM.f,PL.u,CAM.f);PL.face.copy(CAM.f);CAM.ready=0;
+  sparks(PL.u.clone().multiplyScalar(PL.r+.5),PL.u,'#ffffff',10);toast('船で'+BLD[Q.k].n.replace('船着き場','').replace(/[（）]/g,'')+'の島へわたった');saveSoon()}
 // 精錬所の前の、できたものの山
-function drawOutPile(B,k,n){const want=Math.min(12,n);B.pile=B.pile||[];while(B.pile.length<want){const m=new THREE.Mesh(pieceGeo(k),VCMAT);m.castShadow=true;world.add(m);B.pile.push(m)}while(B.pile.length>want){world.remove(B.pile.pop())}
+function drawOutPile(B,k,n){const want=Math.min(12,n);B.pile=B.pile||[];while(B.pile.length<want){const m=new THREE.Mesh(pieceGeo(k),VCMAT);m.castShadow=true;WG.add(m);B.pile.push(m)}while(B.pile.length>want){WG.remove(B.pile.pop())}
   B.pile.forEach((m,i)=>{m.position.copy(B.pOut).addScaledVector(B.up,.1+Math.floor(i/3)*.14).addScaledVector(B.rt,(i%3-1)*.25);frameQuat(B.up,B.f,m.quaternion)})}
 // ---- ポータル（7つの段階）----
 function portalTick(B,dt){const S=B.st;S.step=S.step||0;const U=B.m.userData;U.pieces.forEach((p,i)=>{p.visible=i<S.step;U.ghosts[i].visible=i>=S.step});U.swirl.visible=U.sw2.visible=S.step>=7;if(S.step>=7){U.sw2.rotation.z+=dt*2;U.swirl.material.opacity=.7+Math.sin(performance.now()/300)*.15}
-  if(!ON_PAD(B,B.pIn)||PL.dead>0){B.inT=0;return}
-  if(!dwell('p'+B.n))return;
-  if(S.step>=7){if(!B.went){B.went=1;goPortal()}return}
+  if(!ON_PAD(B,B.pIn)||PL.dead>0){B.inT=0;B.went=0;return}
+  if(!dwell('p'+B.key))return;
+  if(S.step>=7){if(!B.went){B.went=1;portalGo()}return}
   const st=PORTAL_STEPS[S.step];S.paid=S.paid||{};if(!payReady(dt))return;let done=true;
-  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=payStep(k,need);if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if(S.paid[k]<st.c[k])done=false}
+  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=payStep(k,need);if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if((S.paid[k]||0)<st.c[k])done=false}
   if(done&&(!NET.on||NET.host))portalStepDone(B)}
 function portalStepDone(B){const S=B.st;S.step++;S.paid={};SFX.unlock();sparks(B.pos.clone().addScaledVector(B.up,2),B.up,'#ff8af0',16);
   if(S.step>=7){SFX.portal();banner('ポータルが動いた！','光の中に入ると…')}else toast('ポータル：'+PORTAL_STEPS[S.step-1].n+' ができた（'+S.step+'/7）');if(NET.on&&NET.host)NET.enemyDirty=true;saveSoon()}

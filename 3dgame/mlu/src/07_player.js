@@ -4,7 +4,8 @@ const PL={u:new THREE.Vector3(0,1,0),r:SEA+1,f:new THREE.Vector3(0,0,1),face:new
 const CAM={f:new THREE.Vector3(0,0,1),dist:17,pitch:.98,map:false,mapQ:new THREE.Quaternion(),mapDist:78};
 const pTag=document.createElement('div');pTag.className='hpTag';
 function skinOf(){return SKINS.find(s=>s.id===PL.skin)||SKINS[0]}
-function maxHp(){return Math.round(WHP[PL.tools.weap]*(skinOf().hp||1))}
+// 体力：剣のレベル＋かぶと・よろい（Wiki「Helmets」「Armor」）
+function maxHp(){return Math.round((WHP[PL.tools.weap]+ARMHP[PL.tools.helm||0]+ARMHP[PL.tools.arm||0])*(skinOf().hp||1))}
 let PLAYER_MESH=makeChar('stick');scene.add(PLAYER_MESH);
 function setSkin(id){PL.skin=id;const old=PLAYER_MESH;PLAYER_MESH=makeChar(id);PLAYER_MESH.position.copy(old.position);PLAYER_MESH.quaternion.copy(old.quaternion);scene.remove(old);scene.add(PLAYER_MESH)}
 // ---- はじめの場所 ----
@@ -70,9 +71,9 @@ function updatePlayer(dt){
   PL.cell=cellAt(PL.u,PL.cell);const c=CELLS[PL.cell],k=groundKind(c);const tr=groundR(PL.u,c,k);
   PL.r+=(tr-PL.r)*(1-Math.exp(-dt*(tr>PL.r?16:10)));
   PL.spd=spd;PL.walk+=dt*spd*2.2;
-  // 泳ぐ・サメ（Wiki: Gaia の shark delay 4 秒）
+  // 泳ぐ・サメ（Wiki の shark delay：ガイア 4 秒・トロルヘイム 0.5 秒）
   const wet=k==='water';if(wet&&!PL.inWater)SFX.splash();PL.inWater=wet;
-  if(wet){PL.swimT+=dt;if(PL.swimT>4)sharkTick(dt)}else{PL.swimT=0;sharkGone()}
+  if(wet){PL.swimT+=dt;if(PL.swimT>WD.shark)sharkTick(dt)}else{PL.swimT=0;sharkGone()}
   // 体力の回復（4 秒こうげきされなかったら）
   PL.hurtT+=dt;if(PL.hurtT>4&&PL.hp<maxHp())PL.hp=Math.min(maxHp(),PL.hp+maxHp()*.12*dt);
   autoAction(dt)}

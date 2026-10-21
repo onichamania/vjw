@@ -7,7 +7,7 @@
 //   ホストだけ H：開いたタイル（o）・はらい中（pd）・敵（en）・ポータル（ps）・資源の量（y）
 // ・タイルを開ける・敵を動かすのはホスト。木や岩は、なくした人が知らせる。持ち物と道具はそれぞれのもの
 const NET={on:false,host:false,room:null,game:null,code:'',st:'off',peers:[],lobby:[],seq:0,ev:[],seen:{},avs:new Map(),enemyDirty:false,id:Math.random().toString(36).slice(2,8),unsub:[],gunsub:[],ready:false,
-  targets(){const out=[];if(!this.on)return out;for(const q of this.others()){const o=q.presence,s=o.s;if(!Array.isArray(s)||s.length<3||o.wt||o.dd)continue;out.push({u:new THREE.Vector3(s[0],s[1],s[2]).normalize(),ok:true,peer:o.id})}return out},
+  targets(){const out=[];if(!this.on)return out;for(const q of this.others()){const o=q.presence,s=o.s;if(!Array.isArray(s)||s.length<3||o.wt||o.dd||o.w&&o.w!==CUR)continue;out.push({u:new THREE.Vector3(s[0],s[1],s[2]).normalize(),ok:true,peer:o.id})}return out},
   others(){return this.peers.filter(p=>!p.sameTab&&p.kind==='viewer'&&p.presence&&typeof p.presence.id==='string'&&p.presence.id!==this.id)},
   push(s){this.seq++;this.ev.push(this.seq+'|'+s);let len=this.ev.reduce((a,e)=>a+e.length+3,0);while(len>1100&&this.ev.length){len-=this.ev[0].length+3;this.ev.shift()}},
   nodeGone(o){this.push('g:'+o.id)},pay(n,k,a){if(!this.host)this.push('p:'+n+':'+k+':'+a)},portalPay(k,a){if(!this.host)this.push('q:'+k+':'+a)},
@@ -20,9 +20,9 @@ async function netInit(){if(NET.room)return true;if(NET.st==='wait')return false
   if(!room){NET.st='none';NET.why=await netWhy(C);uiNet();return false}NET.room=room;NET.st='ok';NET.conn=room.connected?room.connected():true;
   if(room.onConnection)NET.unsub.push(room.onConnection(c=>{NET.conn=c;uiNet()},()=>{}));
   NET.unsub.push(room.onPeers(ch=>{NET.lobby=ch.peers;uiNet()},()=>{NET.st='err';uiNet()}));netLobby();uiNet();return true}
-function netLobby(){if(!NET.room)return;const lu=NET.on&&NET.host?{n:myName(),c:NET.code,np:NET.others().length+1,p:Math.round(W.open.size/(NTILE+1)*100)}:null;NET.npSent=lu?lu.np:-1;NET.room.presence({lu}).catch(()=>{})}
+function netLobby(){if(!NET.room)return;const lu=NET.on&&NET.host?{n:myName(),c:NET.code,np:NET.others().length+1,p:Math.round(W.open.size/(NTILE+1)*100),w:CUR}:null;NET.npSent=lu?lu.np:-1;NET.room.presence({lu}).catch(()=>{})}
 function netRooms(){const out=[];for(const p of NET.lobby){if(p.sameTab||p.kind!=='viewer')continue;const b=p.presence&&p.presence.lu;if(!b||typeof b!=='object'||typeof b.c!=='string'||!/^lu-[a-z0-9]{6}$/.test(b.c))continue;
-  out.push({c:b.c,n:netClean(b.n).slice(0,14)||'???',np:clamp(b.np|0,1,8),p:clamp(b.p|0,0,100),mine:p.isMe})}return out}
+  out.push({c:b.c,n:netClean(b.n).slice(0,14)||'???',np:clamp(b.np|0,1,8),p:clamp(b.p|0,0,100),w:WDEF[b.w]?b.w:'gaia',mine:p.isMe})}return out}
 // ---- 部屋を作る・入る・出る ----
 async function netHost(){if(NET.on)return;await netInit();if(!NET.room){toast('この画面ではオンラインに入れません');return}const code='lu-'+Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.random()*36|0]).join('');
   let g=null;try{g=await NET.room.join(code)}catch(e){toast('部屋を作れませんでした');return}Object.assign(NET,{on:true,host:true,game:g,code,ready:true,joinT:performance.now()});netStart();toast('部屋を開きました。ほかの人は「オンライン」から入れます（8人まで）');uiNet()}
@@ -37,7 +37,7 @@ async function netLeave(){if(!NET.on)return;const g=NET.game,guest=!NET.host;NET
 // ---- 自分の presence（毎秒10回）----
 const n3=v=>Math.round(v*1000)/1000;
 NET.send=function(){if(!this.on||!this.game)return;const sw=PL.swingK?{axe:'a',pick:'p',weap:'w'}[PL.swingK]+Math.floor(PL.swing*8):'';
-  const p={id:this.id,n:myName(),sk:PL.skin,s:[n3(PL.u.x),n3(PL.u.y),n3(PL.u.z),n3(PL.face.x),n3(PL.face.y),n3(PL.face.z)],r:Math.round(PL.r*100),sw,tl:[PL.tools.axe,PL.tools.pick,PL.tools.weap],wt:PL.inWater?1:0,dd:PL.dead>0?1:0,in:this.ready?1:0,ev:this.ev};
+  const p={id:this.id,w:CUR,n:myName(),sk:PL.skin,s:[n3(PL.u.x),n3(PL.u.y),n3(PL.u.z),n3(PL.face.x),n3(PL.face.y),n3(PL.face.z)],r:Math.round(PL.r*100),sw,tl:[PL.tools.axe,PL.tools.pick,PL.tools.weap],wt:PL.inWater?1:0,dd:PL.dead>0?1:0,in:this.ready?1:0,ev:this.ev};
   if(this.host)p.H=hostState();
   const sz=()=>new TextEncoder().encode(JSON.stringify(p)).length;while(sz()>3900&&p.H&&p.H.en&&p.H.en.length){p.H.en.pop()}while(sz()>3900&&p.ev.length>2)p.ev=p.ev.slice(1);
   this.game.presence(p).catch(()=>{})};
@@ -49,7 +49,7 @@ function hostState(){let bits='';for(let n=0;n<=NTILE;n+=6){let v=0;for(let k=0;
   for(const e of ENEMIES){if(!W.open.has(e.n))continue;if(!near.some(u=>arcDist(u,e.u,SEA)<25))continue;const s=[e.id.toString(36),e.alive?1:0,n3(e.u.x),n3(e.u.y),n3(e.u.z),Math.max(0,Math.round(e.hp)),e.wind>0?1:e.atkAnim>0?2:0].join(',');
     if(cur.length+s.length>900){en.push(cur);cur=''}cur+=(cur?';':'')+s}if(cur)en.push(cur);
   const PB=portalB();const ps=PB&&PB.st?(PB.st.step||0)+'|'+Object.entries(PB.st.paid||{}).map(([k,v])=>k+':'+v).join(','):'0|';
-  return{o:bits,pd,en,ps,y:OPT.yield}}
+  return{w:CUR,o:bits,pd,en,ps,y:OPT.yield}}
 function readBits(s){const set=new Set([0]);const A='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';for(let i=0;i<s.length;i++){const v=A.indexOf(s[i]);if(v<0)continue;for(let k=0;k<6;k++)if(v&(1<<k)){const n=i*6+k;if(n<=NTILE)set.add(n)}}return set}
 // ---- 毎コマ ----
 NET.tick=function(dt){if(!this.on)return;this.sendT=(this.sendT||0)+dt;if(this.sendT>=.1){this.sendT=0;this.send()}updateAvatars(dt)};
@@ -62,13 +62,16 @@ function netPeers(){const os=NET.others();
   for(const id of [...NET.known])if(!os.some(q=>q.presence.id===id)){NET.known.delete(id);const a=NET.avs.get(id);toast((a?a.name:'だれか')+' が出ました');if(a){dropAv(a);NET.avs.delete(id)}}
   if(NET.host&&os.length+1!==NET.npSent)netLobby();uiNetBox()}
 // ゲスト：ホストの星を読む
-function readHost(o){const H=o.H;if(typeof H.o!=='string')return;const open=readBits(H.o);
+function readHost(o){const H=o.H;if(typeof H.o!=='string')return;const hw=WDEF[H.w]?H.w:'gaia';
+  if(NET.ready&&hw!==CUR){NET.ready=false;showLoading('ホストといっしょに '+WDEF[hw].n+' へ…')}
+  if(!NET.ready&&hw!==CUR){buildWorld(hw)}
+  const open=readBits(H.o);
   if(!NET.ready){// はじめて：ホストの星をそのまま
     const paid={};for(const k in H.pd||{}){const n=+k.slice(1);paid[n]={};String(H.pd[k]).split(',').forEach(x=>{const [r,v]=x.split(':');if(RES[r])paid[n][r]=+v||0})}
     const pb=portalB();const b={};if(pb&&typeof H.ps==='string'){const [st,pp]=H.ps.split('|');const pd2={};(pp||'').split(',').filter(Boolean).forEach(x=>{const [r,v]=x.split(':');pd2[r]=+v||0});b[pb.n]={step:+st||0,paid:pd2}}
-    applySave({v:1,w:'gaia',open:[...open],paid,b,nodes:[],seen:[...AREA_SEEN]},{worldOnly:true});
+    applySave({v:2,w:hw,worlds:{[hw]:{open:[...open],paid,b,nodes:[],seen:[...AREA_SEEN]}}},{worldOnly:true});
     if(Array.isArray(o.s)&&o.s.length>=3){const u=V3(o.s[0],o.s[1],o.s[2]).normalize();const ci=cellAt(u,-1);PL.u.copy(u);PL.cell=ci;PL.r=groundR(u,CELLS[ci]);CAM.ready=0}
-    NET.ready=true;OPT.hostYield=H.y;hideLoading();toast((NET.hostName||'ホスト')+' の星に来ました');for(const q of NET.others())if(q.presence.in===1)NET.known.add(q.presence.id);return}
+    NET.ready=true;OPT.hostYield=H.y;STATE='play';hideLoading();toast((NET.hostName||'ホスト')+' の星（'+WD.n+'）に来ました');for(const q of NET.others())if(q.presence.in===1)NET.known.add(q.presence.id);return}
   for(const n of open)if(!W.open.has(n))unlockTile(n,true);
   for(const k in H.pd||{}){const n=+k.slice(1);const cur=W.paid[n]||(W.paid[n]={});String(H.pd[k]).split(',').forEach(x=>{const [r,v]=x.split(':');if(RES[r])cur[r]=Math.max(cur[r]||0,+v||0)})}
   const pb=portalB();if(pb&&typeof H.ps==='string'){const [st,pp]=H.ps.split('|');const S=pb.st||(pb.st={});const step=+st||0;if(step>(S.step||0)){S.step=step;S.paid={};if(step>=7){SFX.portal();banner('ポータルが動いた！','')}}
@@ -83,7 +86,7 @@ function netEnemyFollow(e,dt){if(!e.netU)return;const before=_t1.copy(e.u);e.u.l
 // 出来事を読む
 function readEvents(o){const L=Array.isArray(o.ev)?o.ev:[];const id=o.id;let last=NET.seen[id];
   const parsed=L.map(s=>{const i=String(s).indexOf('|');return[parseInt(s,10),String(s).slice(i+1)]}).filter(x=>Number.isFinite(x[0]));const mx=parsed.reduce((m,x)=>Math.max(m,x[0]),0);
-  if(last===undefined){NET.seen[id]=mx;return}
+  if(last===undefined||o.w&&o.w!==CUR){NET.seen[id]=Math.max(last||0,mx);return}
   for(const [q,s] of parsed){if(q<=last)continue;const a=s.split(':');
     if(a[0]==='g'){const nd=NODES[+a[1]];if(nd)nodeDown(nd)}
     else if(a[0]==='p'&&NET.host){const n=+a[1],k=a[2],v=+a[3];if(TILES[n]&&RES[k]&&available(n)&&v>0){const pd=W.paid[n]||(W.paid[n]={});pd[k]=Math.min(TILES[n].cost[k]||0,(pd[k]||0)+v);if(Object.keys(TILES[n].cost).every(r=>(pd[r]||0)>=TILES[n].cost[r]))unlockTile(n,true)}}
@@ -96,7 +99,7 @@ function readEvents(o){const L=Array.isArray(o.ev)?o.ev:[];const id=o.id;let las
 function avatarState(q){const o=q.presence,id=o.id;let a=NET.avs.get(id);const name=netClean(o.n).slice(0,14)||'???',sk=SKINS.some(s=>s.id===o.sk)?o.sk:'stick';
   if(!a){a={id,name,buf:[],m:null,sk:'',el:document.createElement('div'),u:new THREE.Vector3(),f:new THREE.Vector3(),r:SEA,walk:0,spd:0};a.el.className='nameTag';$('tags').appendChild(a.el);NET.avs.set(id,a)}
   a.name=name;a.el.textContent=name;if(a.sk!==sk){if(a.m)scene.remove(a.m);a.m=makeChar(sk);scene.add(a.m);a.sk=sk}
-  a.in=o.in===1;a.wt=o.wt===1;a.dd=o.dd===1;a.sw=typeof o.sw==='string'?o.sw:'';a.tl=Array.isArray(o.tl)?o.tl:[1,1,1];
+  a.in=o.in===1&&(!o.w||o.w===CUR);a.wt=o.wt===1;a.dd=o.dd===1;a.sw=typeof o.sw==='string'?o.sw:'';a.tl=Array.isArray(o.tl)?o.tl:[1,1,1];
   const s=o.s;if(Array.isArray(s)&&s.length===6&&s.every(Number.isFinite)){const L=a.buf[a.buf.length-1];if(!L||L.s.some((v,i)=>v!==s[i])||L.r!==o.r)a.buf.push({t:performance.now(),s:s.slice(),r:(+o.r||2600)/100});if(a.buf.length>20)a.buf.shift()}}
 function dropAv(a){if(a.m)scene.remove(a.m);if(a.el)a.el.remove()}
 const _av=new THREE.Vector3(),_avf=new THREE.Vector3();

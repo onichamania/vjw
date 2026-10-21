@@ -25,7 +25,7 @@ async function clPut(key,save,base){const db=await clInit();if(!db)throw new Err
   const g=h&&h.g==='a'?'b':'a',ng=Object.assign({a:0,b:0},h&&h.ng),s=Date.now().toString(36)+Math.random().toString(36).slice(2,6),n=Math.max(1,Math.ceil(code.length/CL_PART));
   for(let i=0;i<n;i++)await H.collection(g).doc(String(i)).set({s,d:code.slice(i*CL_PART,(i+1)*CL_PART)});
   for(let i=n;i<(ng[g]|0);i++)try{await H.collection(g).doc(String(i)).delete()}catch(e){}   // 前より短くなった分
-  ng[g]=n;const pct=Math.floor(((save.open||[]).length-1)/NTILE*100);await H.set({v:1,g,n,s,ng,len:code.length,t:Date.now(),p:pct});return{s}}
+  ng[g]=n;const pct=savePct(save);await H.set({v:1,g,n,s,ng,len:code.length,t:Date.now(),p:pct});return{s}}
 // 書いた版をおぼえる（この端末のセーブにも）
 function clMark(s){CLOUD.s=s;try{const o=loadSave();if(o&&o.cloud===CLOUD.key&&o.cloudS!==s){o.cloudS=s;LSset(SAVE_KEY,JSON.stringify(o))}}catch(e){}}
 // 新しいコードを作って、いまのセーブをつなぐ

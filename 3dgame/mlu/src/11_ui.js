@@ -23,9 +23,9 @@ function drawRes(){const shown=RES_ORDER.filter(k=>(PL.inv[k]||0)>0);const key=s
   for(const k in GAIN)delete GAIN[k]}
 // ---- 上：星の進み具合・体力・道具 ----
 let topKey='';
-function drawTop(){const pct=Math.floor((W.open.size-1)/NTILE*100),hp=Math.ceil(PL.hp),mh=maxHp(),T=PL.tools;const key=[pct,hp,mh,T.axe,T.pick,T.weap,NET.on?1:0].join();if(key===topKey)return;topKey=key;
-  $('pPct').textContent=pct+'%';$('pBar').style.width=pct+'%';$('hpTxt').textContent=hp+' / '+mh;$('hpBar').style.width=(hp/mh*100)+'%';
-  $('tools').innerHTML=['axe','pick','weap'].map(t=>`<span>${iconImg(t)}<b>${T[t]}</b></span>`).join('')}
+function drawTop(){const pct=Math.floor((W.open.size-1)/NTILE*100),hp=Math.ceil(PL.hp),mh=maxHp(),T=PL.tools;const key=[CUR,pct,hp,mh,T.axe,T.pick,T.weap,T.helm,T.arm,NET.on?1:0].join();if(key===topKey)return;topKey=key;
+  $('wName').textContent=WD.n;$('pPct').textContent=pct+'%';$('pBar').style.width=pct+'%';$('hpTxt').textContent=hp+' / '+mh;$('hpBar').style.width=(hp/mh*100)+'%';
+  $('tools').innerHTML=['axe','pick','weap','helm','arm'].filter(t=>T[t]>0).map(t=>`<span>${iconImg(t)}<b>${T[t]}</b></span>`).join('')}
 // ---- 値札（買えるタイルの上）----
 const PTAGS={};
 function drawPriceTags(){const cam=camera.position;const list=[...GH_ON].map(n=>{const c=CELLS[TILES[n].cell];return{n,c,d:cam.distanceTo(_t1.copy(c.c).multiplyScalar(SEA))}}).sort((a,b)=>a.d-b.d);
@@ -33,19 +33,20 @@ function drawPriceTags(){const cam=camera.position;const list=[...GH_ON].map(n=>
     // 星の裏側は出さない
     if(_t2.copy(it.c.c).dot(_t3.copy(cam).normalize())<.15)continue;
     keep.add(it.n);let e=PTAGS[it.n];if(!e){e=PTAGS[it.n]=document.createElement('div');e.className='ptag';$('tags').appendChild(e)}
-    const T=TILES[it.n],pd=W.paid[it.n]||{};const html=Object.keys(T.cost).map(k=>{const left=T.cost[k]-(pd[k]||0);return left>0?`<span class="${(PL.inv[k]||0)>=left?'ok':''}">${iconImg(k)}${fmt(left)}</span>`:''}).join('')+(T.cont.includes('yetiBig')?'<i>通せんぼ</i>':T.cont.includes('cave')?'<i>トロルの通行料</i>':'');
+    const T=TILES[it.n],pd=W.paid[it.n]||{};const html=Object.keys(T.cost).map(k=>{const left=T.cost[k]-(pd[k]||0);return left>0?`<span class="${(PL.inv[k]||0)>=left?'ok':''}">${iconImg(k)}${fmt(left)}</span>`:''}).join('')+(T.cont.includes('yetiBig')?'<i>通せんぼ</i>':T.cont.includes('cave')&&TILES[T.par]&&TILES[T.par].cont.includes('troll')?'<i>トロルの通行料</i>':T.cont.includes('trollgo')?'<i>トロルに小麦をあげる</i>':T.cont.some(k=>NPC_OF[k])?'<i>カギで助ける</i>':'');
     if(e._h!==html){e.innerHTML=html;e._h=html}e.style.display='flex';e.style.transform=`translate(${sp[0]}px,${sp[1]}px) translate(-50%,-100%) scale(${CAM.map?.7:clamp(28/it.d,.7,1.15)})`;e.classList.toggle('here',PAY.n===it.n)}
   for(const n in PTAGS)if(!keep.has(+n))PTAGS[n].style.display='none'}
 // ---- 建物の名前・カギ・敵の体力 ----
 const BTAG={};let lockEl=null;const EBAR=[];
 function drawWorldTags(){const cam=camera.position;
-  for(const B of BLDS){const D=BLD[B.k];let e=BTAG[B.n];const show=W.open.has(B.n)&&D.kind!=='deco'&&!CAM.map&&arcDist(PL.u,_t1.copy(B.pos).normalize(),SEA)<9;
-    if(!show){if(e)e.style.display='none';continue}if(!e){e=BTAG[B.n]=document.createElement('div');e.className='btag';$('tags').appendChild(e)}
-    const sp=toScreen(_t1.copy(B.pos).addScaledVector(B.up,B.k==='portal'?4.4:3.2));if(!sp){e.style.display='none';continue}
+  for(const B of BLDS){const D=BLD[B.k];let e=BTAG[B.key];const show=W.open.has(B.n)&&D.kind!=='deco'&&!CAM.map&&arcDist(PL.u,_t1.copy(B.pos).normalize(),SEA)<9;
+    if(!show){if(e)e.style.display='none';continue}if(!e){e=BTAG[B.key]=document.createElement('div');e.className='btag';$('tags').appendChild(e)}
+    const sp=toScreen(_t1.copy(B.pos).addScaledVector(B.up,B.k==='portal'||B.k==='rportal'?4.4:D.kind==='npc'?2.3:3.2));if(!sp){e.style.display='none';continue}
     const S=B.st||{};let h=`<b>${D.n}</b>`;
     if(D.kind==='ref'){const ink=Object.keys(D.inp)[0];h+=`<div>${iconImg(ink)}×${D.inp[ink]} → ${iconImg(D.out)}×1</div>`;if(S.q)h+=`<div class="sm">入っている ${fmt(S.q)}</div>`;if(S.out)h+=`<div class="sm">できた ${fmt(S.out)}（緑の丸へ）</div>`}
-    else if(D.kind==='trade'){const ink=Object.keys(D.inp)[0];h+=`<div>${iconImg(ink)}×${D.inp[ink]} → ${iconImg('coin')}×${D.k}</div>`}
-    else if(D.kind==='eq'){const lv=PL.tools[D.tool];h+=S.craft>0?`<div>${iconImg(D.tool)} Lv${S.lv} を作っています… ${Math.ceil(S.craft)}秒</div>`:`<div>${iconImg(D.tool)} Lv${lv}${(D.tool==='weap'?lv>=8:lv>=8)?'（ここでは最大）':' → Lv'+(lv+1)}</div>`}
+    else if(D.kind==='trade'){const ink=Object.keys(D.inp)[0];h+=`<div>${iconImg(ink)}×${D.inp[ink]} → ${iconImg(D.out||'coin')}×${D.k}</div>`}
+    else if(D.kind==='eq'){for(const t of D.tools||[D.tool]){const S2=D.tools?S[t]||{}:S,lv=PL.tools[t]||0;h+=S2.craft>0?`<div>${iconImg(t)} Lv${S2.lv} を作っています… ${Math.ceil(S2.craft)}秒</div>`:`<div>${iconImg(t)} Lv${lv}${lv>=(WD.maxLv[t]||0)?'（この星では最大）':' → Lv'+(lv+1)}</div>`}}
+    else if(D.kind==='warp')h+='<div>ガイアへもどる</div>';else if(D.kind==='boat')h+='<div>船に乗る</div>';else if(D.kind==='npc')h+='<div>助けてくれてありがとう！</div>';
     else if(D.kind==='portal'){const st=S.step||0;h+=st>=7?'<div>動いている！ 中に入ろう</div>':`<div>${st}/7　${PORTAL_STEPS[st].n}</div>`}
     else if(D.kind==='skin')h+='<div>キャラクターを変える</div>';
     if(e._h!==h){e.innerHTML=h;e._h=h}e.style.display='block';e.style.transform=`translate(${sp[0]}px,${sp[1]}px) translate(-50%,-100%)`}
@@ -61,18 +62,20 @@ function drawWorldTags(){const cam=camera.position;
   // 払うまでの1秒ゲージ（止まっているあいだたまる）
   const dw=$('dwBar');if(me&&DW.key&&DW.t<1&&!CAM.map&&PL.dead<=0){dw.style.display='block';dw.style.transform=`translate(${me[0]}px,${me[1]-(hb.style.display==='block'?16:0)}px) translate(-50%,-100%)`;dw.firstChild.style.width=(DW.t*100)+'%'}else dw.style.display='none';
   // サメまでの時間
-  const sw=$('swimT');if(PL.inWater&&PL.swimT>.5&&PL.swimT<4&&me){sw.style.display='block';sw.textContent='🦈 '+Math.ceil(4-PL.swimT);sw.style.transform=`translate(${me[0]}px,${me[1]-30}px) translate(-50%,-100%)`}else sw.style.display='none'}
+  const sw=$('swimT');if(PL.inWater&&PL.swimT>.5&&PL.swimT<WD.shark&&me){sw.style.display='block';sw.textContent='🦈 '+Math.ceil(WD.shark-PL.swimT);sw.style.transform=`translate(${me[0]}px,${me[1]-30}px) translate(-50%,-100%)`}else sw.style.display='none'}
 // ---- 下：台の上にいるときの説明 ----
 let padKey='';
 function drawPadUI(){const P=PADUI,el=$('padui');if(!P||CAM.map){if(padKey){el.classList.remove('on');padKey=''}return}
-  const B=P.B,D=BLD[B.k],S=B.st||{};let h='';
+  const B=P.B,D=BLD[B.k],S=P.S||B.st||{};let h='';
   if(P.type==='ref'){const ink=Object.keys(D.inp)[0];h=`<b>${D.n}</b><div>${iconImg(ink)}${fmt(PL.inv[ink]||0)} を入れています → ${iconImg(D.out)}（${D.t}秒で1つ）</div><div class="sm">入っている ${fmt(S.q||0)}・できた ${fmt(S.out||0)}　できたものは緑の丸で受け取ろう</div>`}
   else if(P.type==='trade'){const ink=Object.keys(D.inp)[0];h=`<b>${D.n}</b><div>${iconImg(ink)}×${D.inp[ink]} を ${iconImg('coin')}×${D.k} にかえます（持っている ${fmt(PL.inv[ink]||0)}）</div>`}
   else if(P.type==='eq'){const t=P.t,lv=P.lv;if(S.craft>0)h=`<b>${D.n}</b><div>${iconImg(t)} Lv${S.lv} を作っています… あと${Math.ceil(S.craft)}秒</div>`;
-    else if(!P.cost||lv>=8)h=`<b>${D.n}</b><div>${iconImg(t)} Lv${lv}：この星で作れるいちばん上です${t==='weap'&&lv<9?'（Lv9 の剣は山の岩にささっています）':''}</div>`;
-    else{const pd=S.paid||{};h=`<b>${D.n}　${TOOLN[t]} Lv${lv} → Lv${lv+1}</b><div class="cost">${Object.keys(P.cost).map(k=>{const left=P.cost[k]-(pd[k]||0);return`<span class="${(PL.inv[k]||0)>=left?'ok':'lack'}">${iconImg(k)}${fmt(Math.max(0,left))}</span>`}).join('')}</div><div class="sm">${t==='weap'?'こうげき '+WPOW[lv]+'→'+WPOW[lv+1]+'・体力 '+WHP[lv]+'→'+WHP[lv+1]:'切れるもの・掘れるものがふえる'}</div>`}}
+    else if(!P.cost)h=`<b>${D.n}</b><div>${iconImg(t)} Lv${lv}：この星で作れるいちばん上です${t==='weap'&&lv<9&&CUR==='gaia'?'（Lv9 の剣は山の岩にささっています）':''}</div>`;
+    else{const pd=S.paid||{};h=`<b>${D.n}　${TOOLN[t]} Lv${lv} → Lv${lv+1}</b><div class="cost">${Object.keys(P.cost).map(k=>{const left=P.cost[k]-(pd[k]||0);return`<span class="${(PL.inv[k]||0)>=left?'ok':'lack'}">${iconImg(k)}${fmt(Math.max(0,left))}</span>`}).join('')}</div><div class="sm">${t==='weap'?'こうげき '+WPOW[lv]+'→'+WPOW[lv+1]+'・体力 '+WHP[lv]+'→'+WHP[lv+1]:t==='helm'||t==='arm'?'体力 +'+ARMHP[lv]+'→+'+ARMHP[lv+1]:'切れるもの・掘れるものがふえる'}</div>`}}
   else if(P.type==='portal'){const st=S.step||0;if(st>=7)h='<b>ポータル</b><div>そのまま立っていると、次の星へ…</div>';else{const c=PORTAL_STEPS[st].c,pd=S.paid||{};h=`<b>ポータル ${st}/7：${PORTAL_STEPS[st].n}</b><div class="cost">${Object.keys(c).map(k=>{const left=c[k]-(pd[k]||0);return`<span class="${(PL.inv[k]||0)>=left?'ok':'lack'}">${iconImg(k)}${fmt(Math.max(0,left))}</span>`}).join('')}</div>`}}
   else if(P.type==='skin')h='<b>キャラクターポータル</b><div>キャラクターを選べます</div>';
+  else if(P.type==='warp')h=`<b>${D.n}</b><div>そのまま立っていると、${WDEF[D.to].n}へもどります</div>`;
+  else if(P.type==='boat')h=P.ok?`<b>${D.n}</b><div>そのまま立っていると、船で向こうの島へわたります</div>`:`<b>${D.n}</b><div>向こうの船着き場がまだありません</div>`;
   if(h!==padKey){el.innerHTML=h;padKey=h;el.classList.add('on')}}
 // ---- 確認・入力（claude.ai の枠の中では prompt/confirm が使えないことがあるので自前で）----
 function ask(title,msg,opt){opt=opt||{};return new Promise(res=>{const back=document.querySelector('.scr.on');const backId=back?back.id:'';$('dlgT').textContent=title;$('dlgM').textContent=msg||'';const inp=$('dlgIn');inp.style.display=opt.input!=null?'':'none';inp.value=opt.input||'';
@@ -127,13 +130,13 @@ function uiNet(){const st=$('nState');if(!st)return;const rs=NET.st==='ok'?netRo
   st.textContent=NET.st==='wait'?'オンラインに接続しています…':NET.st==='none'?(NET.why==='nohost'?'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くといっしょに遊べます。':NET.why==='denied'?'オンラインの許可がオフになっています。アーティファクトの「権限」からオンにしてください。':'この画面ではオンラインに入れませんでした。claude.ai にログインして、作った人の組織のメンバーか、共有で招待されたアカウントで開いてください（公開リンクからは入れません）。'):NET.st==='err'?'つながりが切れました。もう一度ためしてね。':NET.on?(NET.host?'部屋を開いています（'+(NET.others().length+1)+'人）':'部屋に入っています'):'部屋に入るか、自分の星で部屋を開こう';
   $('nHost').disabled=NET.st!=='ok'||NET.on;$('nHost').textContent=NET.on&&NET.host?'部屋を開いています':'自分の星で部屋を開く';
   const L=$('nRooms');L.innerHTML='';if(!rs.length){L.innerHTML=`<div class="empty">${NET.st==='ok'?'まだ部屋がありません':'—'}</div>`}
-  for(const r of rs){const d=document.createElement('div');d.className='room';d.innerHTML=`<b>${esc(r.n)} の星</b><small>${r.p}% ・ ${r.np}/8人${r.mine?'（あなたの別のタブ）':''}</small>`;d.onclick=()=>{SFX.click();if(NET.on){toast('いまは別の部屋にいます');return}if(STATE!=='play'){startPlay(true)}netJoin(r)};L.appendChild(d)}
+  for(const r of rs){const d=document.createElement('div');d.className='room';d.innerHTML=`<b>${esc(r.n)} の星</b><small>${WDEF[r.w].n} ${r.p}% ・ ${r.np}/8人${r.mine?'（あなたの別のタブ）':''}</small>`;d.onclick=()=>{SFX.click();if(NET.on){toast('いまは別の部屋にいます');return}if(STATE!=='play'){startPlay(true)}netJoin(r)};L.appendChild(d)}
   uiNetBox()}
 function uiNetBox(){const e=$('netbox');if(!NET.on){e.style.display='none';return}const os=NET.others();e.style.display='block';e.textContent='🌐 '+(NET.host?'ホスト':'ゲスト')+'・'+(os.length+1)+'人'}
 $('nHost').onclick=async()=>{SFX.click();if(STATE!=='play'){const s=loadSave();if(s)applySave(s);startPlay(true)}await netHost();showScr('');};
 $('nBack').onclick=()=>{SFX.click();showScr(STATE==='play'?'menu':'title')};
 // ---- 地図 ----
-function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.display=CAM.map?'block':'none';if(CAM.map){const pct=Math.floor((W.open.size-1)/NTILE*100);$('mapInfo').innerHTML=`<b>ガイア</b><span>${pct}% ・ タイル ${W.open.size-1}/${NTILE}</span><small>ドラッグで回す・もう一度🌍でもどる</small>`}}
+function uiMap(){$('bMap').classList.toggle('act',CAM.map);$('mapInfo').style.display=CAM.map?'block':'none';if(CAM.map){const pct=Math.floor((W.open.size-1)/NTILE*100);$('mapInfo').innerHTML=`<b>${WD.n}</b><span>${pct}% ・ タイル ${W.open.size-1}/${NTILE}</span><small>ドラッグで回す・もう一度🌍でもどる</small>`}}
 // ---- タイトル ----
 function toTitle(){if(NET.on)netLeave();autoStop();STATE='title';document.body.classList.remove('playing');CAM.map=true;document.body.classList.add('mapv');showScr('title');const s=loadSave();$('tCont').style.display=s?'':'none';$('tNew').textContent=s?'はじめから':'はじめる'}
 function startPlay(keepScr){STATE='play';MUSIC.on=true;document.body.classList.add('playing');CAM.map=false;document.body.classList.remove('mapv');CAM.ready=0;if(!keepScr)showScr('');uiMap();HUD_DIRTY=true;resKey='';topKey=''}
@@ -146,7 +149,8 @@ $('tNew').onclick=async()=>{SFX.click();ac();const old=loadSave();if(old&&!(awai
 $('tOnline').onclick=()=>{SFX.click();ac();openOnline()};
 $('tCode').onclick=()=>{SFX.click();codeMode='';$('codeCloud').style.display='none';codeBig(false);$('codeTa').value='';$('codeMsg').textContent='セーブコード（長いコードか、ずっと使えるコード LUC-…）をはりつけて「このコードを読みこむ」を押してね';showScr('codeScr')};
 // ---- エンディング ----
-function goPortal(){SFX.portal();W.clear=1;saveGame();const t=Math.round(W.play||0);$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;showScr('ending');STATE='ending';document.body.classList.remove('playing')}
+// いちばん最後の星（トロルヘイム）のポータル
+function goEnding(){SFX.portal();W.clear=1;autoStop();saveGame();const t=Math.round(W.play||0);$('endT').textContent=WD.n+'をクリア！';$('endStat').innerHTML=`遊んだ時間 ${Math.floor(t/3600)}時間${Math.floor(t%3600/60)}分<br>開いたタイル ${W.open.size-1}/${NTILE}`;$('endBack').textContent=WD.n+'にもどる';showScr('ending');STATE='ending';document.body.classList.remove('playing')}
 $('endBack').onclick=()=>{SFX.click();const B=portalB();if(B)B.went=0;respawn();startPlay()};
 
 // ---- 放置モードの画面 ----
