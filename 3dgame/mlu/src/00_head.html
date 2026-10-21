@@ -51,7 +51,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0c1236;font-family:'M
 .ebar,#meBar{width:56px;height:8px;border-radius:5px;background:rgba(0,0,0,.55);border:1.5px solid rgba(255,255,255,.6);overflow:hidden}
 .ebar i,#meBar i{display:block;height:100%;background:linear-gradient(#ff8a8a,#e02a3a)}.ebar.boss{width:110px;height:11px}
 #meBar i{background:linear-gradient(#9ef56a,#3fbf2a)}
-#meBar,#swimT{display:none}
+#meBar,#swimT,#dwBar{display:none}
+#dwBar{width:64px;height:12px;border-radius:7px;background:rgba(20,16,50,.7);border:2px solid #fff;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.3)}#dwBar i{display:block;height:100%;width:0;background:linear-gradient(#fff3a0,#ffc21a)}
 #swimT{font-weight:800;font-size:16px;background:rgba(0,40,90,.7);border-radius:10px;padding:2px 8px}
 .flt{font-weight:800;font-size:20px;text-shadow:0 2px 0 #2a1a3a,1px 0 0 #2a1a3a,-1px 0 0 #2a1a3a}
 .nameTag{font-weight:800;font-size:13px;transform:translate(-50%,-100%);background:rgba(20,16,50,.6);padding:1px 7px;border-radius:8px;white-space:nowrap}
@@ -115,7 +116,7 @@ body.mapv #autoBar{opacity:.4}
 <body>
 <div id="game">
 <canvas id="c"></canvas>
-<div id="tags"><div id="meBar"><i></i></div><div id="swimT"></div></div>
+<div id="tags"><div id="meBar"><i></i></div><div id="swimT"></div><div id="dwBar"><i></i></div></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="res" class="ui"></div>
 <div id="topbar" class="ui"><div class="pill">🌍 ガイア <div class="bar"><i id="pBar"></i></div><span id="pPct">0%</span></div><div class="pill">❤️ <div class="bar"><i id="hpBar"></i></div><span id="hpTxt" style="font-size:12px"></span></div><div class="pill" id="tools"></div></div>

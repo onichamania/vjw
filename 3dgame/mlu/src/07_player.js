@@ -46,7 +46,9 @@ function groundKind(c){if(c.t>=0&&W.open.has(c.t))return c.a===12?'bridge':'land
 function groundR(u,c,k){k=k||groundKind(c);return k==='land'?groundAt(u,c):k==='bridge'?SEA+.4:k==='ghost'?SEA+.1:SEA-.42}
 // ---- ぶつかるもの（木・岩・建物・敵）----
 const _d=new THREE.Vector3();
-function pushOut(u,rad,list){for(const o of list){const ou=o.u||o.up;if(!ou)continue;const orad=o.isB?o.r:o.k&&NODE[o.k]?NODE[o.k].r:o.r||0;if(!orad)continue;if(o.k&&NODE[o.k]&&!o.alive)continue;
+// まだ開いていないタイルの建物・木や岩（見えないもの）にはぶつからない
+function pushOut(u,rad,list){for(const o of list){const ou=o.u||o.up;if(!ou)continue;const orad=o.isB?o.r:o.k&&NODE[o.k]?NODE[o.k].r:o.r||0;if(!orad)continue;if(o.k&&NODE[o.k]&&(!o.alive||o.hidden))continue;
+    if(o.cell!=null&&!isLand(CELLS[o.cell]))continue;if(o.isB&&o.m&&!o.m.visible)continue;
     const p=o.isB?o.pos:o.pos;_d.copy(u).multiplyScalar(SEA).sub(_t2.copy(p).normalize().multiplyScalar(SEA));const dd=_d.length(),need=rad+orad;
     if(dd<need&&dd>1e-5){tangent(_d,u,_d);u.addScaledVector(_d,(need-dd)/SEA).normalize()}}}
 function nearList(ci){const L=[];const add=i=>{const b=BY_CELL[i];if(b)for(const o of b)L.push(o)};add(ci);for(const j of CELLS[ci].nb)add(j);return L}
@@ -63,7 +65,7 @@ function updatePlayer(dt){
   if(m>.05||autoMv){if(autoMv)_mv.copy(AUTO.dir);else _mv.copy(CAM.f).multiplyScalar(iy).addScaledVector(_rt,ix).normalize();PL.face.lerp(_mv,1-Math.exp(-dt*14));tangent(PL.face,PL.u,PL.face);
     const nu=PL.u.clone().addScaledVector(_mv,spd*dt/PL.r).normalize();const nc=cellAt(nu,PL.cell),nk=groundKind(CELLS[nc]);
     // 高すぎる段は登れない（海から陸へは上がれる）
-    const tr=groundR(nu,CELLS[nc],nk);if(nk!=='water'&&tr-PL.r>1.6&&!PL.inWater){}else{PL.u.copy(nu);PL.cell=nc}}
+    const tr=groundR(nu,CELLS[nc],nk);if(nk!=='water'&&tr-PL.r>1.6&&!PL.inWater){}else if(autoMv&&(nk==='water'||nk==='ghost')&&!PL.inWater){}else{PL.u.copy(nu);PL.cell=nc}}
   pushOut(PL.u,.32,nearList(PL.cell));for(const e of ENEMIES)if(e.alive&&e.vis)pushOut(PL.u,.3,[{pos:e.pos,u:e.u,r:e.r*.8}]);
   PL.cell=cellAt(PL.u,PL.cell);const c=CELLS[PL.cell],k=groundKind(c);const tr=groundR(PL.u,c,k);
   PL.r+=(tr-PL.r)*(1-Math.exp(-dt*(tr>PL.r?16:10)));
@@ -80,7 +82,7 @@ function findTarget(){let best=null,bd=1e9,lock=null,ld=1e9;
   for(const e of ENEMIES){if(!e.alive||!e.vis)continue;const d=arcDist(PL.u,e.u,SEA)-e.r;if(d<1.25&&d<bd){bd=d;best={type:'enemy',o:e}}}
   if(best)return{t:best,lock:null};
   const only=autoActive()?AUTO.sel:null;
-  for(const o of nearList(PL.cell)){if(!o.k||!NODE[o.k]||!o.alive||o.hidden||!isLand(CELLS[o.cell]))continue;if(only&&!only.has('n:'+o.k))continue;const N=NODE[o.k];const d=arcDist(PL.u,_t1.copy(o.pos).normalize(),SEA)-N.r;
+  for(const o of nearList(PL.cell)){if(!o.k||!NODE[o.k]||!o.alive||o.hidden||!isLand(CELLS[o.cell]))continue;if(only&&!only.has('n:'+o.k)&&o!==AUTO.clear)continue;const N=NODE[o.k];const d=arcDist(PL.u,_t1.copy(o.pos).normalize(),SEA)-N.r;
     if(d>.75)continue;if(toolLv(N.tool)<N.lv){if(d<ld){ld=d;lock=o}continue}if(d<bd){bd=d;best={type:'node',o}}}
   return{t:best,lock}}
 let LOCK_SHOW=null;

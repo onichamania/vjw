@@ -58,6 +58,8 @@ function drawWorldTags(){const cam=camera.position;
   for(;k<EBAR.length;k++)EBAR[k].style.display='none';
   // 自分の体力（へったときだけ）
   const me=toScreen(_t1.copy(PL.u).multiplyScalar(PL.r+1.9));const hb=$('meBar');if(me&&PL.hp<maxHp()&&!CAM.map&&PL.dead<=0){hb.style.display='block';hb.style.transform=`translate(${me[0]}px,${me[1]}px) translate(-50%,-100%)`;hb.firstChild.style.width=(PL.hp/maxHp()*100)+'%'}else hb.style.display='none';
+  // 払うまでの1秒ゲージ（止まっているあいだたまる）
+  const dw=$('dwBar');if(me&&DW.key&&DW.t<1&&!CAM.map&&PL.dead<=0){dw.style.display='block';dw.style.transform=`translate(${me[0]}px,${me[1]-(hb.style.display==='block'?16:0)}px) translate(-50%,-100%)`;dw.firstChild.style.width=(DW.t*100)+'%'}else dw.style.display='none';
   // サメまでの時間
   const sw=$('swimT');if(PL.inWater&&PL.swimT>.5&&PL.swimT<4&&me){sw.style.display='block';sw.textContent='🦈 '+Math.ceil(4-PL.swimT);sw.style.transform=`translate(${me[0]}px,${me[1]-30}px) translate(-50%,-100%)`}else sw.style.display='none'}
 // ---- 下：台の上にいるときの説明 ----

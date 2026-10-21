@@ -51,7 +51,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0c1236;font-family:'M
 .ebar,#meBar{width:56px;height:8px;border-radius:5px;background:rgba(0,0,0,.55);border:1.5px solid rgba(255,255,255,.6);overflow:hidden}
 .ebar i,#meBar i{display:block;height:100%;background:linear-gradient(#ff8a8a,#e02a3a)}.ebar.boss{width:110px;height:11px}
 #meBar i{background:linear-gradient(#9ef56a,#3fbf2a)}
-#meBar,#swimT{display:none}
+#meBar,#swimT,#dwBar{display:none}
+#dwBar{width:64px;height:12px;border-radius:7px;background:rgba(20,16,50,.7);border:2px solid #fff;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.3)}#dwBar i{display:block;height:100%;width:0;background:linear-gradient(#fff3a0,#ffc21a)}
 #swimT{font-weight:800;font-size:16px;background:rgba(0,40,90,.7);border-radius:10px;padding:2px 8px}
 .flt{font-weight:800;font-size:20px;text-shadow:0 2px 0 #2a1a3a,1px 0 0 #2a1a3a,-1px 0 0 #2a1a3a}
 .nameTag{font-weight:800;font-size:13px;transform:translate(-50%,-100%);background:rgba(20,16,50,.6);padding:1px 7px;border-radius:8px;white-space:nowrap}
@@ -115,7 +116,7 @@ body.mapv #autoBar{opacity:.4}
 <body>
 <div id="game">
 <canvas id="c"></canvas>
-<div id="tags"><div id="meBar"><i></i></div><div id="swimT"></div></div>
+<div id="tags"><div id="meBar"><i></i></div><div id="swimT"></div><div id="dwBar"><i></i></div></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="res" class="ui"></div>
 <div id="topbar" class="ui"><div class="pill">🌍 ガイア <div class="bar"><i id="pBar"></i></div><span id="pPct">0%</span></div><div class="pill">❤️ <div class="bar"><i id="hpBar"></i></div><span id="hpTxt" style="font-size:12px"></span></div><div class="pill" id="tools"></div></div>
@@ -318,9 +319,9 @@ const BLD={
  portal:{n:'ポータル',kind:'portal'},skin:{n:'キャラクターポータル',kind:'skin'},
  cave:{n:'洞くつの入り口',kind:'deco'},bridge:{n:'橋',kind:'deco'}};
 // ポータル（Wiki「Gaia Tile By Tile」の最後）
-const PORTAL_STEPS=[{n:'下のリング',c:{steel:60}},{n:'アズライトのかけら',c:{azr:700}},{n:'アメジストのかけら',c:{ame:750}},{n:'ダイヤのかけら',c:{dia:150}},{n:'ウランのかけら',c:{ura:450}},{n:'ルビーのかけら',c:{ruby:500}},{n:'ポータルを動かす',c:{core:1}}];
+let PORTAL_STEPS=[{n:'下のリング',c:{steel:60}},{n:'アズライトのかけら',c:{azr:700}},{n:'アメジストのかけら',c:{ame:750}},{n:'ダイヤのかけら',c:{dia:150}},{n:'ウランのかけら',c:{ura:450}},{n:'ルビーのかけら',c:{ruby:500}},{n:'ポータルを動かす',c:{core:1}}];
 // ---- エリア（Wiki の 2D マップの番号）----
-const AREA={
+let AREA={
  1:{n:'草原',top:'#8ed14f',top2:'#a5de62',side:'#c98a4c',deco:'meadow'},
  2:{n:'岩の丘',top:'#d9a066',top2:'#e6b27a',side:'#a8663a',deco:'hills'},
  3:{n:'トウヒの森',top:'#3f9c64',top2:'#4fae72',side:'#7a5636',deco:'spruce'},
@@ -334,7 +335,7 @@ const AREA={
  11:{n:'草原',top:'#8ed14f',top2:'#a5de62',side:'#c98a4c',deco:'meadow'},
  12:{n:'橋',top:'#b9773f',top2:'#c98a4c',side:'#7a4a24',deco:'none'}};
 // エリアによって「岩」の種類が変わる
-const ROCK_BY_AREA={4:'crock',7:'snowr'};
+let ROCK_BY_AREA={4:'crock',7:'snowr'};
 // ---- キャラクター（Wiki「Playable Characters」のガイアの2人と、はじめのキャラ）----
 const SKINS=[
  {id:'stick',n:'ぼうにんげん',cost:null,body:'#ffd21f',head:'#ffd21f',acc:null,note:'ボーナスなし'},
@@ -855,7 +856,8 @@ function buildBuildings(){for(const B of BLDS){const c=CELLS[B.cell];
   m.visible=false;world.add(m);B.m=m;(BY_CELL[B.cell]||(BY_CELL[B.cell]=[])).push(B);B.isB=true;B.r=B.k==='bridge'?0:B.k==='portal'?1.6:B.k==='cave'?0:1.15;
   // 台（足をのせる丸）：精錬所・商人は前、ポータルとキャラは前
   const rt=new THREE.Vector3().crossVectors(c.c,f).normalize();B.rt=rt;const pad=(dx,dz)=>c.c.clone().multiplyScalar(topR(c)).addScaledVector(f,dz).addScaledVector(rt,dx);
-  B.pIn=pad(0,2.05);if(BLD[B.k].kind==='ref')B.pOut=pad(-2.05,.2)}}
+  // 台は正面（来た方＝開いているタイルの側）に置く。精錬所は「入れる丸」と「受け取る緑の丸」を並べる
+  if(BLD[B.k].kind==='ref'){B.pIn=pad(-.95,1.72);B.pOut=pad(.95,1.72);B.padR=.72}else{B.pIn=pad(0,2.05);B.padR=.95}}}
 // 足元の丸（台）
 const padMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.55,depthWrite:false});
 function padMesh(pos,up,r,col){const g=new THREE.RingGeometry(r*.78,r,28);const m=new THREE.Mesh(g,padMat.clone());m.material.color.set(col||'#ffffff');m.position.copy(pos).addScaledVector(up,.04);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),up);m.renderOrder=7;world.add(m);
@@ -917,7 +919,9 @@ function groundKind(c){if(c.t>=0&&W.open.has(c.t))return c.a===12?'bridge':'land
 function groundR(u,c,k){k=k||groundKind(c);return k==='land'?groundAt(u,c):k==='bridge'?SEA+.4:k==='ghost'?SEA+.1:SEA-.42}
 // ---- ぶつかるもの（木・岩・建物・敵）----
 const _d=new THREE.Vector3();
-function pushOut(u,rad,list){for(const o of list){const ou=o.u||o.up;if(!ou)continue;const orad=o.isB?o.r:o.k&&NODE[o.k]?NODE[o.k].r:o.r||0;if(!orad)continue;if(o.k&&NODE[o.k]&&!o.alive)continue;
+// まだ開いていないタイルの建物・木や岩（見えないもの）にはぶつからない
+function pushOut(u,rad,list){for(const o of list){const ou=o.u||o.up;if(!ou)continue;const orad=o.isB?o.r:o.k&&NODE[o.k]?NODE[o.k].r:o.r||0;if(!orad)continue;if(o.k&&NODE[o.k]&&(!o.alive||o.hidden))continue;
+    if(o.cell!=null&&!isLand(CELLS[o.cell]))continue;if(o.isB&&o.m&&!o.m.visible)continue;
     const p=o.isB?o.pos:o.pos;_d.copy(u).multiplyScalar(SEA).sub(_t2.copy(p).normalize().multiplyScalar(SEA));const dd=_d.length(),need=rad+orad;
     if(dd<need&&dd>1e-5){tangent(_d,u,_d);u.addScaledVector(_d,(need-dd)/SEA).normalize()}}}
 function nearList(ci){const L=[];const add=i=>{const b=BY_CELL[i];if(b)for(const o of b)L.push(o)};add(ci);for(const j of CELLS[ci].nb)add(j);return L}
@@ -934,7 +938,7 @@ function updatePlayer(dt){
   if(m>.05||autoMv){if(autoMv)_mv.copy(AUTO.dir);else _mv.copy(CAM.f).multiplyScalar(iy).addScaledVector(_rt,ix).normalize();PL.face.lerp(_mv,1-Math.exp(-dt*14));tangent(PL.face,PL.u,PL.face);
     const nu=PL.u.clone().addScaledVector(_mv,spd*dt/PL.r).normalize();const nc=cellAt(nu,PL.cell),nk=groundKind(CELLS[nc]);
     // 高すぎる段は登れない（海から陸へは上がれる）
-    const tr=groundR(nu,CELLS[nc],nk);if(nk!=='water'&&tr-PL.r>1.6&&!PL.inWater){}else{PL.u.copy(nu);PL.cell=nc}}
+    const tr=groundR(nu,CELLS[nc],nk);if(nk!=='water'&&tr-PL.r>1.6&&!PL.inWater){}else if(autoMv&&(nk==='water'||nk==='ghost')&&!PL.inWater){}else{PL.u.copy(nu);PL.cell=nc}}
   pushOut(PL.u,.32,nearList(PL.cell));for(const e of ENEMIES)if(e.alive&&e.vis)pushOut(PL.u,.3,[{pos:e.pos,u:e.u,r:e.r*.8}]);
   PL.cell=cellAt(PL.u,PL.cell);const c=CELLS[PL.cell],k=groundKind(c);const tr=groundR(PL.u,c,k);
   PL.r+=(tr-PL.r)*(1-Math.exp(-dt*(tr>PL.r?16:10)));
@@ -951,7 +955,7 @@ function findTarget(){let best=null,bd=1e9,lock=null,ld=1e9;
   for(const e of ENEMIES){if(!e.alive||!e.vis)continue;const d=arcDist(PL.u,e.u,SEA)-e.r;if(d<1.25&&d<bd){bd=d;best={type:'enemy',o:e}}}
   if(best)return{t:best,lock:null};
   const only=autoActive()?AUTO.sel:null;
-  for(const o of nearList(PL.cell)){if(!o.k||!NODE[o.k]||!o.alive||o.hidden||!isLand(CELLS[o.cell]))continue;if(only&&!only.has('n:'+o.k))continue;const N=NODE[o.k];const d=arcDist(PL.u,_t1.copy(o.pos).normalize(),SEA)-N.r;
+  for(const o of nearList(PL.cell)){if(!o.k||!NODE[o.k]||!o.alive||o.hidden||!isLand(CELLS[o.cell]))continue;if(only&&!only.has('n:'+o.k)&&o!==AUTO.clear)continue;const N=NODE[o.k];const d=arcDist(PL.u,_t1.copy(o.pos).normalize(),SEA)-N.r;
     if(d>.75)continue;if(toolLv(N.tool)<N.lv){if(d<ld){ld=d;lock=o}continue}if(d<bd){bd=d;best={type:'node',o}}}
   return{t:best,lock}}
 let LOCK_SHOW=null;
@@ -1088,15 +1092,20 @@ function hitEnemy(e,dmg,mine){if(!e.alive)return;SFX.slash();SFX.hit();e.flash=.
 function killEnemy(e,who){e.alive=false;e.t=ENEMY[e.k].rsp;e.dying=.4;SFX.fell();const top=e.pos.clone().addScaledVector(e.u,1);sparks(top,e.u,'#ffd060',8);
   if(who==='me'){const D=ENEMY[e.k].drop;for(const k in D)dropPieces(k,Math.round(D[k]*(k==='coin'?1:OPT.yield)*bonus(k)),top,e.u);if(ENEMY[e.k].boss)banner(ENEMY[e.k].n+'をたおした！','')}
   else if(who&&NET.on)NET.giveDrop(who,e.k)}
+// ---- 払う：その場で1秒止まってから。0.5秒ごとに、払いはじめに持っていた量の2.5%ずつ（少なくとも1）----
+const DW={key:null,t:0,cur:null,snap:{},pt:0};
+function dwell(key){DW.cur=key;return DW.key===key&&DW.t>=1}
+function dwellStep(dt){if(DW.cur!==DW.key){DW.key=DW.cur;DW.t=0;DW.snap={};DW.pt=0}else if(DW.cur){if(PL.spd>.3){DW.t=0;DW.snap={};DW.pt=0}else DW.t+=dt}DW.cur=null}
+function payReady(dt){DW.pt-=dt;if(DW.pt>0)return false;DW.pt=.5;return true}
+function payStep(k,need){DW.snap[k]=Math.max(DW.snap[k]||0,PL.inv[k]||0);return Math.max(0,Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(DW.snap[k]*.025))))}
 // ---- タイルを買う ----
 const GH_ON=new Set();let PAY={n:-1,t:0,cnt:0};
-function payTick(dt){PAY.t-=dt;let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
-
+function payTick(dt){let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
   for(const n of GH_ON){const c=CELLS[TILES[n].cell];if(arcDist(PL.u,c.c,SEA)<1.55&&PL.dead<=0){on=n;break}}
-  if(on!==PAY.n){PAY.n=on;PAY.cnt=0;PAY.t=.25}
-  if(on<0||PAY.t>0)return;PAY.t=.055;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let any=false,done=true;
-  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const have=PL.inv[k]||0;const step=Math.min(need,have,Math.max(1,Math.ceil(T.cost[k]*.07)));
-    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;any=true;PAY.cnt++;if(PAY.cnt%2===0)sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
+  if(on!==PAY.n){PAY.n=on;PAY.cnt=0}
+  if(on<0||!dwell('t'+on)||!payReady(dt))return;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let done=true;
+  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const step=payStep(k,need);
+    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;PAY.cnt++;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
     if(paid[k]<T.cost[k])done=false}
   if(done&&(!NET.on||NET.host))unlockTile(on,true)}
 // ---- タイルが開く ----
@@ -1125,37 +1134,38 @@ function makeTolls(){for(let n=1;n<=NTILE;n++){const T=TILES[n];const c=CELLS[T.
 function placeToll(tt,ph){const c=tt.c;const r=tt.ghost?SEA+.1:topR(c);const pos=c.c.clone().multiplyScalar(r).addScaledVector(c.e1,tt.ghost?0:.4);tt.m.position.copy(pos);frameQuat(c.c,c.e2,tt.m.quaternion);tt.m.rotateY(Math.sin(ph)*.1);tt.m.scale.setScalar(1+Math.sin(ph*2)*.02)}
 // ---- 建物の台 ----
 function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco')return;const up=B.up;
-  B.pads.push(...padMesh(B.pIn,up,.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
-  if(B.pOut)B.pads.push(...padMesh(B.pOut,up,.95,'#8aff8a'));B.st=B.st||{}}
-const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<.95&&PL.dead<=0;   // 放置中は台の上でも何もしない
+  B.pads.push(...padMesh(B.pIn,up,B.padR||.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
+  if(B.pOut)B.pads.push(...padMesh(B.pOut,up,B.padR||.95,'#8aff8a'));B.st=B.st||{}}
+const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<(B.padR||.95)&&PL.dead<=0;   // 放置中は台の上でも何もしない
 let PADUI=null;
 function updateBuildings(dt,rdt){let ui=null;rdt=rdt||dt;
   for(const B of BLDS){if(!W.open.has(B.n))continue;const D=BLD[B.k],S=B.st||(B.st={});
     if(D.kind==='ref'){// 精錬所：入れたぶんを順番に（オフラインでも進む）
       const ink=Object.keys(D.inp)[0],per=D.inp[ink];S.q=S.q||0;S.out=S.out||0;S.tm=S.tm||0;
       if(S.q>=per){S.tm+=rdt;while(S.tm>=D.t&&S.q>=per){S.tm-=D.t;S.q-=per;S.out++}}else S.tm=0;
-      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};B.pt=(B.pt||0)-dt;if(B.pt<=0&&has(ink,1)&&S.q<900){B.pt=.05;const n=Math.min(PL.inv[ink],Math.max(per,Math.ceil(PL.inv[ink]*.08)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
+      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};if(dwell('r'+B.n)&&payReady(dt)&&has(ink,1)&&S.q<900){const n=Math.min(PL.inv[ink],Math.max(per,payStep(ink,900-S.q)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
       if(ON_PAD(B,B.pOut)&&S.out>0){dropPieces(D.out,S.out,B.pOut.clone().addScaledVector(B.up,.6),B.up);S.out=0}
       drawOutPile(B,D.out,S.out)}
     else if(D.kind==='eq'){const t=D.tool,lv=PL.tools[t],nx=lv+1,cost=(t==='axe'?AXE:t==='pick'?PICK:WEAP)[nx];
       if(S.craft>0){S.craft-=rdt;if(S.craft<=0){S.craft=0;PL.tools[t]=Math.max(PL.tools[t],S.lv);S.paid={};SFX.level();banner(TOOLN[t]+' Lv'+S.lv+'！',t==='weap'?'こうげき '+WPOW[S.lv]+'・体力 '+WHP[S.lv]:'力 '+S.lv);if(t==='weap')PL.hp=maxHp();saveSoon()}}
       if(ON_PAD(B,B.pIn)){ui={B,type:'eq',t,lv,cost,nx};
-        if(cost&&!(S.craft>0)&&!(t==='weap'&&lv>=8)){S.paid=S.paid||{};B.pt=(B.pt||0)-dt;if(B.pt<=0){B.pt=.06;let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(cost[k]*.06)));if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if(S.paid[k]<cost[k])done=false}
+        if(cost&&!(S.craft>0)&&!(t==='weap'&&lv>=8)){S.paid=S.paid||{};if(dwell('e'+B.n)&&payReady(dt)){let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=payStep(k,need);if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if(S.paid[k]<cost[k])done=false}
           if(done){S.craft=CRAFT_T[nx]||5;S.lv=nx;S.ct=S.craft;SFX.craft()}}}}}
-    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];B.pt=(B.pt||0)-dt;if(B.pt<=0&&has(ink,per)){B.pt=.12;const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.ceil(PL.inv[ink]/per*.05)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces('coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
+    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];if(dwell('s'+B.n)&&payReady(dt)&&has(ink,per)){const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.floor(payStep(ink,PL.inv[ink])/per)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces('coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
     else if(D.kind==='portal'){portalTick(B,dt);if(ON_PAD(B,B.pIn))ui={B,type:'portal'}}
-    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(!B.was){B.was=1;openSkins()}}else B.was=0}}
+    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(dwell('k'+B.n)&&!B.was){B.was=1;openSkins()}}else B.was=0}}
   for(const tt of TOLLS)if(tt.m.visible)placeToll(tt,performance.now()/700);
   PADUI=ui}
 // 精錬所の前の、できたものの山
 function drawOutPile(B,k,n){const want=Math.min(12,n);B.pile=B.pile||[];while(B.pile.length<want){const m=new THREE.Mesh(pieceGeo(k),VCMAT);m.castShadow=true;world.add(m);B.pile.push(m)}while(B.pile.length>want){world.remove(B.pile.pop())}
-  B.pile.forEach((m,i)=>{m.position.copy(B.pOut).addScaledVector(B.up,.1+Math.floor(i/3)*.14).addScaledVector(B.f,(i%3-1)*.25);frameQuat(B.up,B.f,m.quaternion)})}
+  B.pile.forEach((m,i)=>{m.position.copy(B.pOut).addScaledVector(B.up,.1+Math.floor(i/3)*.14).addScaledVector(B.rt,(i%3-1)*.25);frameQuat(B.up,B.f,m.quaternion)})}
 // ---- ポータル（7つの段階）----
 function portalTick(B,dt){const S=B.st;S.step=S.step||0;const U=B.m.userData;U.pieces.forEach((p,i)=>{p.visible=i<S.step;U.ghosts[i].visible=i>=S.step});U.swirl.visible=U.sw2.visible=S.step>=7;if(S.step>=7){U.sw2.rotation.z+=dt*2;U.swirl.material.opacity=.7+Math.sin(performance.now()/300)*.15}
   if(!ON_PAD(B,B.pIn)||PL.dead>0){B.inT=0;return}
-  if(S.step>=7){B.inT=(B.inT||0)+dt;if(B.inT>1.2&&!B.went){B.went=1;goPortal()}return}
-  const st=PORTAL_STEPS[S.step];S.paid=S.paid||{};B.pt=(B.pt||0)-dt;if(B.pt>0)return;B.pt=.06;let done=true;
-  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(st.c[k]*.06)));if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if(S.paid[k]<st.c[k])done=false}
+  if(!dwell('p'+B.n))return;
+  if(S.step>=7){if(!B.went){B.went=1;goPortal()}return}
+  const st=PORTAL_STEPS[S.step];S.paid=S.paid||{};if(!payReady(dt))return;let done=true;
+  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=payStep(k,need);if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if(S.paid[k]<st.c[k])done=false}
   if(done&&(!NET.on||NET.host))portalStepDone(B)}
 function portalStepDone(B){const S=B.st;S.step++;S.paid={};SFX.unlock();sparks(B.pos.clone().addScaledVector(B.up,2),B.up,'#ff8af0',16);
   if(S.step>=7){SFX.portal();banner('ポータルが動いた！','光の中に入ると…')}else toast('ポータル：'+PORTAL_STEPS[S.step-1].n+' ができた（'+S.step+'/7）');if(NET.on&&NET.host)NET.enemyDirty=true;saveSoon()}
@@ -1175,7 +1185,7 @@ function updateGuide(dt){if(!GUIDE)GUIDE=guideMesh();let best=-1;for(const n of 
 // ・えらべるのは「開いたタイルで見つけた、いまの道具で取れるもの」だけ
 // ・道は陸と橋だけを通る（海は泳がない・買えるタイルの板にはのらない）。台（精錬所・商人など）の上でも何もしない
 // ・体力が3割を切ったら、はじめの島へもどって休む。スティックを動かすとしばらく手動になる
-const AUTO={on:false,sel:new Set(),tgt:null,path:[],manualT:0,moving:false,dir:new THREE.Vector3(),st:'',think:0,skip:new Map(),stuckT:0,stuckN:0,lastD:1e9,rest:false,got:{},wake:null};
+const AUTO={clear:null,on:false,sel:new Set(),tgt:null,path:[],manualT:0,moving:false,dir:new THREE.Vector3(),st:'',think:0,skip:new Map(),stuckT:0,stuckN:0,lastD:1e9,rest:false,got:{},wake:null};
 try{const s=JSON.parse(LSget('lu-auto','null'));if(Array.isArray(s))s.forEach(k=>AUTO.sel.add(k));else AUTO.first=true}catch(e){AUTO.first=true}
 const autoActive=()=>AUTO.on&&AUTO.manualT<=0&&STATE==='play'&&!CAM.map;
 // 見つけた・取れるもの（node は道具が足りるもの、敵は開いたタイルにいるもの）
@@ -1197,7 +1207,7 @@ function autoPick(){const now=performance.now();const {D,P}=autoBFS(PL.cell);let
   for(const o of NODES){if(!AUTO.sel.has('n:'+o.k)||o.hidden||!isLand(CELLS[o.cell]))continue;const N=NODE[o.k];if(N.once||toolLv(N.tool)<N.lv||skip(o))continue;const d=D[o.cell];if(d===Infinity)continue;
     const sc=d*2.2+arcDist(PL.u,nodeU(o),SEA)*.3;if(o.alive){if(sc<bs){bs=sc;best={type:'node',o,cell:o.cell}}}else{const w=o.t+d*.6;if(w<ws){ws=w;wait={type:'node',o,cell:o.cell,wait:true}}}}
   for(const e of ENEMIES){if(!AUTO.sel.has('e:'+e.k)||!e.alive||!e.vis||skip(e))continue;const d=D[e.cell];if(d===Infinity)continue;const sc=d*2.2+arcDist(PL.u,e.u,SEA)*.3-1;if(sc<bs){bs=sc;best={type:'enemy',o:e,cell:e.cell}}}
-  const T=best||wait;AUTO.tgt=T;AUTO.stuckN=0;AUTO.lastD=1e9;AUTO.stuckT=0;AUTO.think=T&&T.wait?1.5:4;AUTO.path=T?autoPath(P,T.cell):[];
+  const T=best||wait;const same=T&&AUTO.tgt&&T.o===AUTO.tgt.o;AUTO.tgt=T;if(!same){AUTO.stuckN=0;AUTO.lastD=1e9;AUTO.stuckT=0;AUTO.farT=0}AUTO.think=T&&T.wait?1.5:4;AUTO.path=T?autoPath(P,T.cell):[];
   AUTO.st=T?'':AUTO.sel.size?'えらんだものが、歩いて行けるところにありません':'取るものをえらんでください'}
 // 休む場所（はじめの島）へ
 function autoHome(){const home=TILES[0].cells[0];if(PL.cell===home||TILES[0].cells.includes(PL.cell))return null;const {P}=autoBFS(PL.cell);return autoPath(P,home)}
@@ -1209,8 +1219,9 @@ function autoTick(dt){if(!AUTO.on)return;AUTO.manualT=Math.max(0,AUTO.manualT-dt
   if(AUTO.manualT>0){AUTO.st='手で動かしています（はなすと放置にもどる）';return}
   // 体力が少ない → はじめの島で休む
   if(!AUTO.rest&&PL.hp<maxHp()*.3){AUTO.rest=true;AUTO.tgt=null;AUTO.homePath=autoHome()}
-  if(AUTO.rest){if(PL.hp>=maxHp()*.95){AUTO.rest=false}else{AUTO.st='体力を回復しています';const p=AUTO.homePath;if(p&&p.length&&!TILES[0].cells.includes(PL.cell)){if(!autoFollow(p,CELLS[p[p.length-1]].c))AUTO.homePath=autoHome()}return}}
+  if(AUTO.rest){if(PL.hp>=maxHp()*.95){AUTO.rest=false}else{AUTO.st='体力を回復しています';const p=AUTO.homePath;if(p&&p.length&&!TILES[0].cells.includes(PL.cell)){if(!autoFollow(p,CELLS[p[p.length-1]].c))AUTO.homePath=autoHome();else autoSteer(null)}return}}
   AUTO.think-=dt;if(!autoValid(AUTO.tgt)||AUTO.think<=0&&(AUTO.tgt.wait||AUTO.tgt.type==='enemy'))autoPick();
+  if(AUTO.clear){const o=AUTO.clear;if(!o.alive||arcDist(PL.u,nodeU(o),SEA)>NODE[o.k].r+1.4)AUTO.clear=null;else{AUTO.st='じゃまな'+NODE[o.k].n+'をどかしています';if(arcDist(PL.u,nodeU(o),SEA)>NODE[o.k].r+.45){tangent(_t2.copy(nodeU(o)).sub(PL.u),PL.u,AUTO.dir);AUTO.moving=true}return}}
   const T=AUTO.tgt;if(!T)return;
   const goal=T.type==='enemy'?T.o.u:nodeU(T.o).clone();const reach=T.type==='enemy'?T.o.r+.9:NODE[T.o.k].r+.45;const d=arcDist(PL.u,goal,SEA);
   const name=T.type==='enemy'?ENEMY[T.o.k].n:NODE[T.o.k].n;
@@ -1219,11 +1230,30 @@ function autoTick(dt){if(!AUTO.on)return;AUTO.manualT=Math.max(0,AUTO.manualT-dt
   AUTO.st=name+'へ向かっています';
   if(T.type==='enemy'&&T.o.cell!==AUTO.path[AUTO.path.length-1]){const {P}=autoBFS(PL.cell);AUTO.path=autoPath(P,T.o.cell)}
   if(PL.cell===T.cell||!autoFollow(AUTO.path,goal)){if(PL.cell===T.cell){tangent(_t2.copy(goal).sub(PL.u),PL.u,AUTO.dir);AUTO.moving=true}else{const {P}=autoBFS(PL.cell);AUTO.path=autoPath(P,T.cell);if(!autoFollow(AUTO.path,goal)){AUTO.tgt=null;return}}}
-  // 進んでいないなら、しばらくその相手をあとまわし
-  AUTO.stuckT+=dt;if(AUTO.stuckT>1.5){AUTO.stuckT=0;if(d>AUTO.lastD-.25){if(++AUTO.stuckN>=3){AUTO.skip.set(T.o,performance.now()+25000);AUTO.tgt=null}}else AUTO.stuckN=0;AUTO.lastD=d}}
+  if(AUTO.moving)autoSteer(T);
+  // 進んでいないとき（歩こうとしているのに 0.8 秒でほとんど動けない／2.4 秒たっても近づけない）：
+  // 前やまわりのじゃまな木や岩が取れるならどかす。だめなら、しばらくその相手をあとまわし
+  AUTO.stuckT+=dt;AUTO.farT=(AUTO.farT||0)+dt;let stuck=false;
+  if(AUTO.stuckT>.8){const moved=AUTO.lastU?arcDist(PL.u,AUTO.lastU,SEA):9;AUTO.stuckT=0;(AUTO.lastU||(AUTO.lastU=new THREE.Vector3())).copy(PL.u);if(moved<.35)stuck=true}
+  if(AUTO.farT>2.4){AUTO.farT=0;if(d>AUTO.lastD-.4)stuck=true;AUTO.lastD=d}
+  if(stuck){AUTO.stuckN++;if(!AUTO.clear){const bl=autoClearable(T);if(bl){AUTO.clear=bl;AUTO.stuckN=Math.max(0,AUTO.stuckN-1)}}
+    if(AUTO.stuckN>=4){AUTO.skip.set(T.o,performance.now()+25000);AUTO.tgt=null;AUTO.stuckN=0}}}
+// どかせる木や岩：前にあるもの、なければ体のまわりでいちばん近いもの（いまの道具で取れるものだけ）
+function autoClearable(T){const ok=o=>!o.isB&&NODE[o.k]&&o.alive&&!o.hidden&&!NODE[o.k].once&&toolLv(NODE[o.k].tool)>=NODE[o.k].lv;
+  const fw=autoBlockers(T,1.2).filter(b=>ok(b.o)).sort((a,b)=>a.fwd-b.fwd)[0];if(fw)return fw.o;let best=null,bd=.7;
+  for(const o of nearList(PL.cell)){if(o===(T&&T.o)||!ok(o)||!isLand(CELLS[o.cell]))continue;const dd=arcDist(PL.u,nodeU(o),SEA)-NODE[o.k].r;if(dd<bd){bd=dd;best=o}}return best}
+// ---- 前にある木・岩・建物をよける（えらんでいないものに正面からぶつかって止まらないように）----
+const _ss=new THREE.Vector3(),_so=new THREE.Vector3();
+function autoBlockers(T,ahead){const out=[];_ss.crossVectors(PL.u,AUTO.dir).normalize();
+  for(const o of nearList(PL.cell)){if(T&&o===T.o)continue;if(o.cell!=null&&!isLand(CELLS[o.cell]))continue;let orad=0;
+    if(o.isB){if(!o.m||!o.m.visible)continue;orad=o.r}else if(NODE[o.k]){if(!o.alive||o.hidden)continue;orad=NODE[o.k].r}if(!orad)continue;
+    _so.copy(o.pos).normalize().sub(PL.u).multiplyScalar(SEA);const fwd=_so.dot(AUTO.dir),lat=_so.dot(_ss),need=orad+.32+.3;
+    if(fwd<-.1||fwd>need+(ahead||1.4)||Math.abs(lat)>need)continue;out.push({o,fwd,lat,need})}return out}
+function autoSteer(T){let push=0;for(const b of autoBlockers(T)){const w=(1-Math.abs(b.lat)/b.need)*clamp(1-(b.fwd-b.need*.3)/(b.need+1.4),0,1);push+=(b.lat>=0?-1:1)*w}
+  if(push){AUTO.dir.addScaledVector(_ss,clamp(push,-1.5,1.5)*1.4);tangent(AUTO.dir,PL.u,AUTO.dir)}}
 // ---- はじめる・やめる ----
 async function autoWake(on){try{if(on&&navigator.wakeLock&&!AUTO.wake)AUTO.wake=await navigator.wakeLock.request('screen');else if(!on&&AUTO.wake){await AUTO.wake.release();AUTO.wake=null}}catch(e){AUTO.wake=null}}
-function autoStart(){if(!AUTO.sel.size){toast('取るものをえらんでください');return false}AUTO.on=true;AUTO.tgt=null;AUTO.got={};AUTO.rest=false;AUTO.manualT=0;AUTO.skip.clear();inputReset();document.body.classList.add('auto');autoWake(true);SFX.level();uiAuto();return true}
+function autoStart(){if(!AUTO.sel.size){toast('取るものをえらんでください');return false}AUTO.on=true;AUTO.tgt=null;AUTO.clear=null;AUTO.got={};AUTO.rest=false;AUTO.manualT=0;AUTO.skip.clear();inputReset();document.body.classList.add('auto');autoWake(true);SFX.level();uiAuto();return true}
 function autoStop(){if(!AUTO.on)return;AUTO.on=false;AUTO.tgt=null;AUTO.moving=false;document.body.classList.remove('auto');autoWake(false);const g=Object.keys(AUTO.got).filter(k=>AUTO.got[k]>0);
   if(g.length)toast('放置で集めたもの：'+g.map(k=>RES[k].n+' '+fmt(AUTO.got[k])).join('・'));uiAuto()}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&AUTO.on)autoWake(true)});
@@ -1499,6 +1529,8 @@ function drawWorldTags(){const cam=camera.position;
   for(;k<EBAR.length;k++)EBAR[k].style.display='none';
   // 自分の体力（へったときだけ）
   const me=toScreen(_t1.copy(PL.u).multiplyScalar(PL.r+1.9));const hb=$('meBar');if(me&&PL.hp<maxHp()&&!CAM.map&&PL.dead<=0){hb.style.display='block';hb.style.transform=`translate(${me[0]}px,${me[1]}px) translate(-50%,-100%)`;hb.firstChild.style.width=(PL.hp/maxHp()*100)+'%'}else hb.style.display='none';
+  // 払うまでの1秒ゲージ（止まっているあいだたまる）
+  const dw=$('dwBar');if(me&&DW.key&&DW.t<1&&!CAM.map&&PL.dead<=0){dw.style.display='block';dw.style.transform=`translate(${me[0]}px,${me[1]-(hb.style.display==='block'?16:0)}px) translate(-50%,-100%)`;dw.firstChild.style.width=(DW.t*100)+'%'}else dw.style.display='none';
   // サメまでの時間
   const sw=$('swimT');if(PL.inWater&&PL.swimT>.5&&PL.swimT<4&&me){sw.style.display='block';sw.textContent='🦈 '+Math.ceil(4-PL.swimT);sw.style.transform=`translate(${me[0]}px,${me[1]-30}px) translate(-50%,-100%)`}else sw.style.display='none'}
 // ---- 下：台の上にいるときの説明 ----
@@ -1619,7 +1651,7 @@ function init(){resize();buildNodes();buildDeco();buildBuildings();makeEnemies()
 let last=performance.now(),ghostT=0;
 function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(dt>0))dt=1/60;const rdt=Math.min(dt,10);dt=Math.min(dt,.05);
   WAVE.value+=dt;ghostT+=dt;
-  if(STATE==='play'){autoTick(dt);updatePlayer(dt);payTick(dt);updateBuildings(dt,rdt);updateGuide(dt);W.play=(W.play||0)+rdt;if(saveT>0){saveT-=dt;if(saveT<=0){saveT=0;saveGame()}}}
+  if(STATE==='play'){autoTick(dt);updatePlayer(dt);payTick(dt);updateBuildings(dt,rdt);dwellStep(dt);updateGuide(dt);W.play=(W.play||0)+rdt;if(saveT>0){saveT-=dt;if(saveT<=0){saveT=0;saveGame()}}}
   else{if(GUIDE)GUIDE.visible=false}
   if(STATE==='title'){CAM.mapQ.premultiply(_q1.setFromAxisAngle(_t1.set(0,1,0).applyQuaternion(CAM.mapQ),dt*.08));CAM.mapDist=lerp(CAM.mapDist,innerWidth<innerHeight?95:72,dt*2)}
   updateNodes(dt);if(STATE==='play')updateEnemies(dt);updatePieces(dt);updateSparks(dt);updateRising(dt);
@@ -1630,7 +1662,7 @@ function frame(t){requestAnimationFrame(frame);let dt=(t-last)/1000;last=t;if(!(
   else{for(const n in PTAGS)PTAGS[n].style.display='none'}}
 init();
 // テスト用
-window.__L={AUTO,autoStart,autoStop,autoKinds,CLOUD,CL,clMake,clSync,clLoad,clShow,renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
+window.__L={autoBlockers,nearList,AUTO,autoStart,autoStop,autoKinds,CLOUD,CL,clMake,clSync,clLoad,clShow,renderer,scene,netHost,netJoin,netRooms,netInit,netLeave,PL,W,CAM,CELLS,TILES,NODES,ENEMIES,BLDS,NET,OPT,IN,unlockTile,addRes,applySave,snapshot,toggleMap,setSkin,refreshGhosts,saveGame,loadSave,packCode,unpackCode,hitNode,hitEnemy,portalB,groundKind,available,get STATE(){return STATE},get PADUI(){return PADUI}};
 
 </script>
 </body>

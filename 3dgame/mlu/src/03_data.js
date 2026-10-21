@@ -67,9 +67,9 @@ const BLD={
  portal:{n:'ポータル',kind:'portal'},skin:{n:'キャラクターポータル',kind:'skin'},
  cave:{n:'洞くつの入り口',kind:'deco'},bridge:{n:'橋',kind:'deco'}};
 // ポータル（Wiki「Gaia Tile By Tile」の最後）
-const PORTAL_STEPS=[{n:'下のリング',c:{steel:60}},{n:'アズライトのかけら',c:{azr:700}},{n:'アメジストのかけら',c:{ame:750}},{n:'ダイヤのかけら',c:{dia:150}},{n:'ウランのかけら',c:{ura:450}},{n:'ルビーのかけら',c:{ruby:500}},{n:'ポータルを動かす',c:{core:1}}];
+let PORTAL_STEPS=[{n:'下のリング',c:{steel:60}},{n:'アズライトのかけら',c:{azr:700}},{n:'アメジストのかけら',c:{ame:750}},{n:'ダイヤのかけら',c:{dia:150}},{n:'ウランのかけら',c:{ura:450}},{n:'ルビーのかけら',c:{ruby:500}},{n:'ポータルを動かす',c:{core:1}}];
 // ---- エリア（Wiki の 2D マップの番号）----
-const AREA={
+let AREA={
  1:{n:'草原',top:'#8ed14f',top2:'#a5de62',side:'#c98a4c',deco:'meadow'},
  2:{n:'岩の丘',top:'#d9a066',top2:'#e6b27a',side:'#a8663a',deco:'hills'},
  3:{n:'トウヒの森',top:'#3f9c64',top2:'#4fae72',side:'#7a5636',deco:'spruce'},
@@ -83,7 +83,7 @@ const AREA={
  11:{n:'草原',top:'#8ed14f',top2:'#a5de62',side:'#c98a4c',deco:'meadow'},
  12:{n:'橋',top:'#b9773f',top2:'#c98a4c',side:'#7a4a24',deco:'none'}};
 // エリアによって「岩」の種類が変わる
-const ROCK_BY_AREA={4:'crock',7:'snowr'};
+let ROCK_BY_AREA={4:'crock',7:'snowr'};
 // ---- キャラクター（Wiki「Playable Characters」のガイアの2人と、はじめのキャラ）----
 const SKINS=[
  {id:'stick',n:'ぼうにんげん',cost:null,body:'#ffd21f',head:'#ffd21f',acc:null,note:'ボーナスなし'},

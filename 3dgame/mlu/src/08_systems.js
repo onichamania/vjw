@@ -84,15 +84,20 @@ function hitEnemy(e,dmg,mine){if(!e.alive)return;SFX.slash();SFX.hit();e.flash=.
 function killEnemy(e,who){e.alive=false;e.t=ENEMY[e.k].rsp;e.dying=.4;SFX.fell();const top=e.pos.clone().addScaledVector(e.u,1);sparks(top,e.u,'#ffd060',8);
   if(who==='me'){const D=ENEMY[e.k].drop;for(const k in D)dropPieces(k,Math.round(D[k]*(k==='coin'?1:OPT.yield)*bonus(k)),top,e.u);if(ENEMY[e.k].boss)banner(ENEMY[e.k].n+'をたおした！','')}
   else if(who&&NET.on)NET.giveDrop(who,e.k)}
+// ---- 払う：その場で1秒止まってから。0.5秒ごとに、払いはじめに持っていた量の2.5%ずつ（少なくとも1）----
+const DW={key:null,t:0,cur:null,snap:{},pt:0};
+function dwell(key){DW.cur=key;return DW.key===key&&DW.t>=1}
+function dwellStep(dt){if(DW.cur!==DW.key){DW.key=DW.cur;DW.t=0;DW.snap={};DW.pt=0}else if(DW.cur){if(PL.spd>.3){DW.t=0;DW.snap={};DW.pt=0}else DW.t+=dt}DW.cur=null}
+function payReady(dt){DW.pt-=dt;if(DW.pt>0)return false;DW.pt=.5;return true}
+function payStep(k,need){DW.snap[k]=Math.max(DW.snap[k]||0,PL.inv[k]||0);return Math.max(0,Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(DW.snap[k]*.025))))}
 // ---- タイルを買う ----
 const GH_ON=new Set();let PAY={n:-1,t:0,cnt:0};
-function payTick(dt){PAY.t-=dt;let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
-
+function payTick(dt){let on=-1;if(autoActive()){PAY.n=-1;return}   // 放置中ははらわない
   for(const n of GH_ON){const c=CELLS[TILES[n].cell];if(arcDist(PL.u,c.c,SEA)<1.55&&PL.dead<=0){on=n;break}}
-  if(on!==PAY.n){PAY.n=on;PAY.cnt=0;PAY.t=.25}
-  if(on<0||PAY.t>0)return;PAY.t=.055;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let any=false,done=true;
-  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const have=PL.inv[k]||0;const step=Math.min(need,have,Math.max(1,Math.ceil(T.cost[k]*.07)));
-    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;any=true;PAY.cnt++;if(PAY.cnt%2===0)sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
+  if(on!==PAY.n){PAY.n=on;PAY.cnt=0}
+  if(on<0||!dwell('t'+on)||!payReady(dt))return;const T=TILES[on],paid=W.paid[on]||(W.paid[on]={});let done=true;
+  for(const k in T.cost){const need=T.cost[k]-(paid[k]||0);if(need<=0)continue;const step=payStep(k,need);
+    if(step>0){addRes(k,-step);paid[k]=(paid[k]||0)+step;PAY.cnt++;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),CELLS[T.cell].c.clone().multiplyScalar(SEA+.6));SFX.pay(PAY.cnt);if(NET.on)NET.pay(on,k,step)}
     if(paid[k]<T.cost[k])done=false}
   if(done&&(!NET.on||NET.host))unlockTile(on,true)}
 // ---- タイルが開く ----
@@ -121,37 +126,38 @@ function makeTolls(){for(let n=1;n<=NTILE;n++){const T=TILES[n];const c=CELLS[T.
 function placeToll(tt,ph){const c=tt.c;const r=tt.ghost?SEA+.1:topR(c);const pos=c.c.clone().multiplyScalar(r).addScaledVector(c.e1,tt.ghost?0:.4);tt.m.position.copy(pos);frameQuat(c.c,c.e2,tt.m.quaternion);tt.m.rotateY(Math.sin(ph)*.1);tt.m.scale.setScalar(1+Math.sin(ph*2)*.02)}
 // ---- 建物の台 ----
 function makePads(B){const kind=BLD[B.k].kind;B.pads=[];if(kind==='deco')return;const up=B.up;
-  B.pads.push(...padMesh(B.pIn,up,.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
-  if(B.pOut)B.pads.push(...padMesh(B.pOut,up,.95,'#8aff8a'));B.st=B.st||{}}
-const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<.95&&PL.dead<=0;   // 放置中は台の上でも何もしない
+  B.pads.push(...padMesh(B.pIn,up,B.padR||.95,kind==='trade'?'#ffd84a':kind==='eq'?'#7ae0ff':kind==='portal'||kind==='skin'?'#ff8af0':'#ffffff'));
+  if(B.pOut)B.pads.push(...padMesh(B.pOut,up,B.padR||.95,'#8aff8a'));B.st=B.st||{}}
+const ON_PAD=(B,p)=>p&&!autoActive()&&arcDist(PL.u,_t1.copy(p).normalize(),SEA)<(B.padR||.95)&&PL.dead<=0;   // 放置中は台の上でも何もしない
 let PADUI=null;
 function updateBuildings(dt,rdt){let ui=null;rdt=rdt||dt;
   for(const B of BLDS){if(!W.open.has(B.n))continue;const D=BLD[B.k],S=B.st||(B.st={});
     if(D.kind==='ref'){// 精錬所：入れたぶんを順番に（オフラインでも進む）
       const ink=Object.keys(D.inp)[0],per=D.inp[ink];S.q=S.q||0;S.out=S.out||0;S.tm=S.tm||0;
       if(S.q>=per){S.tm+=rdt;while(S.tm>=D.t&&S.q>=per){S.tm-=D.t;S.q-=per;S.out++}}else S.tm=0;
-      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};B.pt=(B.pt||0)-dt;if(B.pt<=0&&has(ink,1)&&S.q<900){B.pt=.05;const n=Math.min(PL.inv[ink],Math.max(per,Math.ceil(PL.inv[ink]*.08)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
+      if(ON_PAD(B,B.pIn)){ui={B,type:'ref'};if(dwell('r'+B.n)&&payReady(dt)&&has(ink,1)&&S.q<900){const n=Math.min(PL.inv[ink],Math.max(per,payStep(ink,900-S.q)),900-S.q);addRes(ink,-n);S.q+=n;sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(3)}}
       if(ON_PAD(B,B.pOut)&&S.out>0){dropPieces(D.out,S.out,B.pOut.clone().addScaledVector(B.up,.6),B.up);S.out=0}
       drawOutPile(B,D.out,S.out)}
     else if(D.kind==='eq'){const t=D.tool,lv=PL.tools[t],nx=lv+1,cost=(t==='axe'?AXE:t==='pick'?PICK:WEAP)[nx];
       if(S.craft>0){S.craft-=rdt;if(S.craft<=0){S.craft=0;PL.tools[t]=Math.max(PL.tools[t],S.lv);S.paid={};SFX.level();banner(TOOLN[t]+' Lv'+S.lv+'！',t==='weap'?'こうげき '+WPOW[S.lv]+'・体力 '+WHP[S.lv]:'力 '+S.lv);if(t==='weap')PL.hp=maxHp();saveSoon()}}
       if(ON_PAD(B,B.pIn)){ui={B,type:'eq',t,lv,cost,nx};
-        if(cost&&!(S.craft>0)&&!(t==='weap'&&lv>=8)){S.paid=S.paid||{};B.pt=(B.pt||0)-dt;if(B.pt<=0){B.pt=.06;let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(cost[k]*.06)));if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if(S.paid[k]<cost[k])done=false}
+        if(cost&&!(S.craft>0)&&!(t==='weap'&&lv>=8)){S.paid=S.paid||{};if(dwell('e'+B.n)&&payReady(dt)){let done=true;for(const k in cost){const need=cost[k]-(S.paid[k]||0);if(need<=0)continue;const st=payStep(k,need);if(st>0){addRes(k,-st);S.paid[k]=(S.paid[k]||0)+st;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1));SFX.pay(5)}if(S.paid[k]<cost[k])done=false}
           if(done){S.craft=CRAFT_T[nx]||5;S.lv=nx;S.ct=S.craft;SFX.craft()}}}}}
-    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];B.pt=(B.pt||0)-dt;if(B.pt<=0&&has(ink,per)){B.pt=.12;const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.ceil(PL.inv[ink]/per*.05)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces('coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
+    else if(D.kind==='trade'){if(ON_PAD(B,B.pIn)){ui={B,type:'trade'};const ink=Object.keys(D.inp)[0],per=D.inp[ink];if(dwell('s'+B.n)&&payReady(dt)&&has(ink,per)){const times=Math.max(1,Math.min(Math.floor(PL.inv[ink]/per),Math.floor(payStep(ink,PL.inv[ink])/per)));addRes(ink,-per*times);sendPieces(ink,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,1.2));dropPieces('coin',D.k*times,B.pos.clone().addScaledVector(B.up,1.8),B.up)}}}
     else if(D.kind==='portal'){portalTick(B,dt);if(ON_PAD(B,B.pIn))ui={B,type:'portal'}}
-    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(!B.was){B.was=1;openSkins()}}else B.was=0}}
+    else if(D.kind==='skin'){if(ON_PAD(B,B.pIn)){ui={B,type:'skin'};if(dwell('k'+B.n)&&!B.was){B.was=1;openSkins()}}else B.was=0}}
   for(const tt of TOLLS)if(tt.m.visible)placeToll(tt,performance.now()/700);
   PADUI=ui}
 // 精錬所の前の、できたものの山
 function drawOutPile(B,k,n){const want=Math.min(12,n);B.pile=B.pile||[];while(B.pile.length<want){const m=new THREE.Mesh(pieceGeo(k),VCMAT);m.castShadow=true;world.add(m);B.pile.push(m)}while(B.pile.length>want){world.remove(B.pile.pop())}
-  B.pile.forEach((m,i)=>{m.position.copy(B.pOut).addScaledVector(B.up,.1+Math.floor(i/3)*.14).addScaledVector(B.f,(i%3-1)*.25);frameQuat(B.up,B.f,m.quaternion)})}
+  B.pile.forEach((m,i)=>{m.position.copy(B.pOut).addScaledVector(B.up,.1+Math.floor(i/3)*.14).addScaledVector(B.rt,(i%3-1)*.25);frameQuat(B.up,B.f,m.quaternion)})}
 // ---- ポータル（7つの段階）----
 function portalTick(B,dt){const S=B.st;S.step=S.step||0;const U=B.m.userData;U.pieces.forEach((p,i)=>{p.visible=i<S.step;U.ghosts[i].visible=i>=S.step});U.swirl.visible=U.sw2.visible=S.step>=7;if(S.step>=7){U.sw2.rotation.z+=dt*2;U.swirl.material.opacity=.7+Math.sin(performance.now()/300)*.15}
   if(!ON_PAD(B,B.pIn)||PL.dead>0){B.inT=0;return}
-  if(S.step>=7){B.inT=(B.inT||0)+dt;if(B.inT>1.2&&!B.went){B.went=1;goPortal()}return}
-  const st=PORTAL_STEPS[S.step];S.paid=S.paid||{};B.pt=(B.pt||0)-dt;if(B.pt>0)return;B.pt=.06;let done=true;
-  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=Math.min(need,PL.inv[k]||0,Math.max(1,Math.ceil(st.c[k]*.06)));if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if(S.paid[k]<st.c[k])done=false}
+  if(!dwell('p'+B.n))return;
+  if(S.step>=7){if(!B.went){B.went=1;goPortal()}return}
+  const st=PORTAL_STEPS[S.step];S.paid=S.paid||{};if(!payReady(dt))return;let done=true;
+  for(const k in st.c){const need=st.c[k]-(S.paid[k]||0);if(need<=0)continue;const s2=payStep(k,need);if(s2>0){addRes(k,-s2);S.paid[k]=(S.paid[k]||0)+s2;sendPieces(k,_t1.copy(PL.u).multiplyScalar(PL.r+.8),B.pos.clone().addScaledVector(B.up,2));SFX.pay(4);if(NET.on)NET.portalPay(k,s2)}if(S.paid[k]<st.c[k])done=false}
   if(done&&(!NET.on||NET.host))portalStepDone(B)}
 function portalStepDone(B){const S=B.st;S.step++;S.paid={};SFX.unlock();sparks(B.pos.clone().addScaledVector(B.up,2),B.up,'#ff8af0',16);
   if(S.step>=7){SFX.portal();banner('ポータルが動いた！','光の中に入ると…')}else toast('ポータル：'+PORTAL_STEPS[S.step-1].n+' ができた（'+S.step+'/7）');if(NET.on&&NET.host)NET.enemyDirty=true;saveSoon()}

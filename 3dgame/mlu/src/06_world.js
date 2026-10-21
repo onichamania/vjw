@@ -113,7 +113,8 @@ function buildBuildings(){for(const B of BLDS){const c=CELLS[B.cell];
   m.visible=false;world.add(m);B.m=m;(BY_CELL[B.cell]||(BY_CELL[B.cell]=[])).push(B);B.isB=true;B.r=B.k==='bridge'?0:B.k==='portal'?1.6:B.k==='cave'?0:1.15;
   // 台（足をのせる丸）：精錬所・商人は前、ポータルとキャラは前
   const rt=new THREE.Vector3().crossVectors(c.c,f).normalize();B.rt=rt;const pad=(dx,dz)=>c.c.clone().multiplyScalar(topR(c)).addScaledVector(f,dz).addScaledVector(rt,dx);
-  B.pIn=pad(0,2.05);if(BLD[B.k].kind==='ref')B.pOut=pad(-2.05,.2)}}
+  // 台は正面（来た方＝開いているタイルの側）に置く。精錬所は「入れる丸」と「受け取る緑の丸」を並べる
+  if(BLD[B.k].kind==='ref'){B.pIn=pad(-.95,1.72);B.pOut=pad(.95,1.72);B.padR=.72}else{B.pIn=pad(0,2.05);B.padR=.95}}}
 // 足元の丸（台）
 const padMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.55,depthWrite:false});
 function padMesh(pos,up,r,col){const g=new THREE.RingGeometry(r*.78,r,28);const m=new THREE.Mesh(g,padMat.clone());m.material.color.set(col||'#ffffff');m.position.copy(pos).addScaledVector(up,.04);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),up);m.renderOrder=7;world.add(m);
