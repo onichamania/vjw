@@ -72,6 +72,8 @@
   .slot { position:relative; width:58px; height:58px; border-radius:9px; background:rgba(15,12,9,.62); border:2px solid rgba(255,255,255,.14);
     display:grid; place-items:center; transition:transform .1s, border-color .1s; }
   .slot.sel { border-color:rgba(255,255,255,.9); transform:translateY(-5px); background:rgba(40,32,22,.75); }
+  .slot.hold::after { content:""; position:absolute; inset:0; border-radius:7px; background:rgba(255,90,60,.4); transform-origin:bottom; animation:holdfill .55s linear forwards; pointer-events:none; }
+  @keyframes holdfill { from { transform:scaleY(0); } to { transform:scaleY(1); } }
   .slot svg { width:38px; height:38px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
   .slot .n { position:absolute; left:5px; top:2px; font-size:11px; color:rgba(255,255,255,.55); }
   .slot .c { position:absolute; right:5px; bottom:2px; font-size:13px; color:#fff; text-shadow:0 1px 2px #000; }
@@ -294,8 +296,8 @@
     <h2>遊び方</h2>
     <p>ホテルのドアを進み、<b>ドア100</b>の電気室からエレベーターで脱出しよう。部屋は毎回ランダムに生成されます。</p>
     <ul>
-      <li><b>PC</b>：クリックで視点固定 / WASD 移動 / マウス 視点 / E・クリック 調べる / 1〜6 アイテム / C しゃがむ / Esc 一時停止</li>
-      <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、✋ で調べる・隠れる。物を直接タップしても調べられます。</li>
+      <li><b>PC</b>：クリックで視点固定 / WASD 移動 / マウス 視点 / E・クリック 調べる / 1〜6 アイテム / G アイテムを置く / C しゃがむ / Esc 一時停止</li>
+      <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、✋ で調べる・隠れる。物を直接タップしても調べられます。アイテムは長押しで置けます。</li>
       <li>照明がちらついたら <b>Rush / Ambush</b>。クローゼットかベッドの下へ。</li>
       <li>暗い部屋で「プスッ」と鳴り、画面のふちに黒いもじゃもじゃが出たら <b>Screech</b>。すぐに振り向いて見つめる。</li>
       <li>紫の光 → <b>Eyes</b>。見つめるとダメージ。</li>
@@ -407,6 +409,7 @@ const store = {
 };
 const IS_TOUCH = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('touch');
+const BASE_EXPOSURE = 1.25;   // overall brightness (+25%); the settings slider scales this
 const SETTINGS = Object.assign({ quality: IS_TOUCH ? 'medium' : 'high', sens: 1, fov: 72, volume: 0.85, bright: 1, fps: 0 }, store.get('settings', {}));
 const SAVE = Object.assign({ knobs: 0, best: 0, runs: 0, wins: 0, preItems: [] }, store.get('save', {}));
 const saveSettings = () => store.set('settings', SETTINGS);
@@ -472,7 +475,7 @@ function setupRenderer() {
   renderer.setPixelRatio(q.pr);
   renderer.setSize(VW(), VH(), false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0 * SETTINGS.bright;
+  renderer.toneMappingExposure = BASE_EXPOSURE * SETTINGS.bright;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = q.shadows > 0;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1311,6 +1314,7 @@ const SFX = {
     for (let d = c0; d < c1; d += 0.2 + Math.random() * 0.13) AU.burst({ pos, t0: t + d, a: 0.04, dur: 0.16, f: 400, q: 0.6, vol: k * (0.3 + Math.random() * 0.4), brown: true, rev: 0.05 });
     (enter ? [0.72, 0.78, 0.915, 0.965, 1.285] : [1.025, 1.11, 1.16, 1.31, 1.37, 1.535, 1.835]).forEach(d => this.knock(pos, t + d, 115 + Math.random() * 25, 330 + Math.random() * 140, k * (0.55 + Math.random() * 0.3), 0.04));
   },
+  drop(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.07, f: 650, q: 1, vol: 0.45, rev: 0.12 }); AU.tone({ pos, f: 150, f2: 80, dur: 0.07, vol: 0.25 }); AU.burst({ pos, t0: AU.t + 0.09, dur: 0.04, f: 900, q: 1.2, vol: 0.18, rev: 0.1 }); },
   click() { if (!AU.ok) return; AU.burst({ dur: 0.02, f: 3500, q: 2, vol: 0.25, rev: 0 }); },
   lighter() { if (!AU.ok) return; AU.burst({ dur: 0.03, f: 4000, q: 2, vol: 0.3, rev: 0 }); AU.burst({ t0: AU.t + 0.06, dur: 0.25, f: 1200, q: 0.5, vol: 0.12, rev: 0 }); },
   flick(pos) { if (!AU.ok) return; AU.burst({ pos, dur: 0.04, f: 5000, q: 1, type: 'highpass', vol: 0.25 }); AU.tone({ pos, type: 'sawtooth', f: 120, dur: 0.06, vol: 0.06, filter: 900 }); },
@@ -4401,7 +4405,7 @@ const LIGHTS = {
       scene.add(l); this.pool.push(l);
     }
     if (!this.lighter) {
-      this.lighter = new THREE.PointLight(0xff9a40, 0, 9, 1); camera.add(this.lighter); this.lighter.position.set(0.05, 0.12, -0.6);
+      this.lighter = new THREE.PointLight(0xffa04a, 0, 15, 1); camera.add(this.lighter); this.lighter.position.set(0.05, 0.12, -0.6);
       this.flash = new THREE.SpotLight(0xfff1d6, 0, 26, 0.48, 0.55, 1); camera.add(this.flash); this.flash.position.set(0.2, -0.15, 0); camera.add(this.flash.target); this.flash.target.position.set(0.1, -0.05, -5);
     }
   },
@@ -4499,6 +4503,7 @@ addEventListener('keydown', e => {
   if (GAME.modal) { if (e.code === 'Escape') UI.closeModal(); else if (GAME.modal.key) GAME.modal.key(e); return; }
   if (e.code === 'KeyE' && !e.repeat) GAME.interact();
   if (e.code === 'KeyF' && !e.repeat) GAME.useItem();
+  if (e.code === 'KeyG' && !e.repeat && GAME.sel >= 0) GAME.dropItem(GAME.sel);
   if ((e.code === 'KeyC' || e.code === 'ControlLeft') && !e.repeat) PLAYER.toggleCrouch();
   if (e.code === 'KeyQ' && !e.repeat) GAME.heartKey('L');
   if (e.code === 'KeyR' && !e.repeat) GAME.heartKey('R');
@@ -4721,21 +4726,21 @@ const LIGHTER_MAX = 300;
 const lighterUnits = c => Math.max(1, Math.ceil(c / 100 - 1e-6));
 const lighterBar = c => (c <= 0 ? 0 : c - (lighterUnits(c) - 1) * 100);
 GAME.hasItem = t => GAME.inv.some(i => i.type === t && (i.count || 1) > 0);
-GAME.giveItem = function (type, n = 1) {
+GAME.giveItem = function (type, n = 1, state = null) {   // state: fuel/charge of an item that was dropped earlier
   if (type === 'breaker') { const r = GAME.room; if (r && r.meta.breakers != null) { r.meta.breakers++; GAME.showHint(`ブレーカースイッチ ${r.meta.breakers}/10`); } return true; }
   if (type === 'lighter') {
     const lt = GAME.inv.find(i => i.type === 'lighter');
     if (lt) {
       if (lt.charge >= LIGHTER_MAX - 1) { GAME.showHint('ライターの燃料はもう満タンだ'); return false; }
-      lt.charge = Math.min(LIGHTER_MAX, lt.charge + 100 * n); GAME.showHint('ライターの燃料を補給した'); UI.hotbar(); return true;
+      lt.charge = Math.min(LIGHTER_MAX, lt.charge + (state ? state.charge : 100) * n); GAME.showHint('ライターの燃料を補給した'); UI.hotbar(); return true;
     }
   }
   let it = STACKABLE[type] ? GAME.inv.find(i => i.type === type) : null;
   if (it) it.count = (it.count || 1) + n;
   else {
     if (GAME.inv.length >= 6) { GAME.showHint('これ以上持てない'); return false; }
-    it = { type, count: n, charge: 100 };
-    if (type === 'skeleton') it.charge = 100;
+    it = { type, count: n, charge: state ? state.charge : 100 };
+    if (state && state.on != null) it.on = state.on;
     GAME.inv.push(it);
     if (GAME.sel < 0 && (type === 'lighter' || type === 'flashlight')) GAME.select(GAME.inv.length - 1);
   }
@@ -4788,7 +4793,7 @@ GAME.updateItems = function (dt) {
     if (it.type === 'flashlight' && ls === 'flashlight' && GAME.selItem() === it) { it.charge = Math.max(0, it.charge - dt * 0.9); if (it.charge <= 0 && GAME.hasItem('battery')) { GAME.takeItem('battery'); it.charge = 100; GAME.showHint('電池を交換した'); } }
   }
   const t = GAME.time;
-  LIGHTS.lighter.intensity = ls === 'lighter' ? (1.3 + Math.sin(t * 23) * 0.15 + Math.sin(t * 9.1) * 0.15) * GAME.lightMul : 0;
+  LIGHTS.lighter.intensity = ls === 'lighter' ? (6.5 + Math.sin(t * 23) * 0.5 + Math.sin(t * 9.1) * 0.5) * GAME.lightMul : 0;
   LIGHTS.flash.intensity = ls === 'flashlight' ? 7 * GAME.lightMul * (GAME.selItem().charge < 10 ? (Math.sin(t * 30) > 0 ? 1 : 0.3) : 1) : 0;
   UI.hotbarCharge();
 };
@@ -4828,10 +4833,29 @@ GAME.pickupPrompt = function (type, extra) {
 };
 GAME.pickup = function (mesh, type, extra) {
   if (type === 'gold') { GAME.addGold(extra || 10); }
-  else { if (!GAME.giveItem(type)) return; SFX.pickup(); }
+  else { if (!GAME.giveItem(type, 1, mesh.userData.item || null)) return; SFX.pickup(); }
   const dr = mesh.userData.drawer;
   if (dr) dr.contents = dr.contents.filter(m => m !== mesh);
   if (mesh.parent) mesh.parent.remove(mesh);
+};
+// put one of the item in this slot down on the floor just in front of you (long-press a slot, or G)
+GAME.dropItem = function (i) {
+  const it = GAME.inv[i], room = WORLD.roomAt(PLAYER.pos) || GAME.room;
+  if (!it || !room || !PLAYER.alive || PLAYER.hidden || GAME.modal || GAME.cine) return false;
+  const p = PLAYER.pos, dx = -Math.sin(PLAYER.yaw), dz = -Math.cos(PLAYER.yaw);
+  let x = p.x + dx * 0.75, z = p.z + dz * 0.75;
+  const probe = tmpV.set(x, p.y, z); WORLD.collide(probe, 0.12, p.y, 0.5);
+  if (Math.hypot(probe.x - x, probe.z - z) > 0.02) { x = p.x + dx * 0.3; z = p.z + dz * 0.3; }   // wall or furniture there: drop it at your feet
+  const gy = WORLD.groundAt(x, z, p.y + 0.4) ?? p.y;
+  const state = { charge: it.charge, on: it.on };
+  if ((it.count || 1) > 1) it.count--;
+  else { GAME.inv.splice(i, 1); if (GAME.sel === i) GAME.sel = -1; else if (GAME.sel > i) GAME.sel--; }
+  VIEW.set(GAME.selItem()); UI.hotbar();
+  const m = spawnPickup(room, it.type, room.toLocal(x, gy + 0.01, z), PLAYER.yaw);
+  m.userData.item = state;
+  SFX.drop(m.getWorldPosition(new THREE.Vector3()));
+  GAME.showHint(`${ITEM_DEF[it.type] ? ITEM_DEF[it.type].name : it.type}を置いた`, 1400);
+  return true;
 };
 GAME.addGold = function (n) {
   GAME.gold += n; SFX.coins();
@@ -6271,13 +6295,23 @@ const UI = {
       const d = document.createElement('div'); d.className = 'slot' + (i === GAME.sel ? ' sel' : '');
       const lit = it.type === 'lighter', cnt = lit ? lighterUnits(it.charge) : it.count || 1; if (lit) it._u = cnt;   // a lighter shows how many lighters' worth of fuel it holds
       d.innerHTML = `<span class="n">${i + 1}</span>${ICONS[it.type] || ''}` + (cnt > 1 ? `<span class="c">${cnt}</span>` : '') + (['lighter', 'flashlight', 'skeleton'].includes(it.type) ? `<span class="bar"><i style="width:${lit ? lighterBar(it.charge) : it.charge}%"></i></span>` : '');
-      const pick = e => { e.preventDefault(); e.stopPropagation(); AU.resume(); GAME.select(i); };
+      const pick = e => {
+        e.preventDefault(); e.stopPropagation(); AU.resume();
+        UI.pressEnd(false); d.classList.add('hold');
+        UI._press = { i, id: e.changedTouches ? e.changedTouches[0].identifier : 'mouse', t: setTimeout(() => { UI._press = null; GAME.dropItem(i); UI.hotbar(); }, 550) };
+      };
       d.addEventListener('touchstart', pick, { passive: false }); d.addEventListener('mousedown', pick);
       hb.appendChild(d);
     });
     const it = GAME.selItem();
     $('tItem').classList.toggle('on', !!it && ['vitamins', 'bandage', 'battery', 'hint', 'flashlight', 'lighter'].includes(it.type));
     $('tItem').textContent = it && (it.type === 'flashlight' || it.type === 'lighter') ? 'ON/OFF' : '使う';
+  },
+  // a hotbar press that ends before the hold timer is a tap (select); listened for on the document so a re-drawn hotbar can't lose it
+  pressEnd(tap) {
+    const p = UI._press; if (!p) return;
+    clearTimeout(p.t); UI._press = null;
+    if (tap) GAME.select(p.i); else UI.hotbar();
   },
   hotbarCharge() {
     const bars = $('hotbar').querySelectorAll('.slot');
@@ -6697,7 +6731,7 @@ function update(dt) {
   else if (POST.tintFlash && GAME.time < POST.tintFlash.until) { tint.style.background = '#7dff7d'; tint.style.opacity = 0.6; }
   else if (POST.eyes > 0.05) { tint.style.background = '#c48aff'; tint.style.opacity = POST.eyes * 0.45; }
   else tint.style.opacity = 0;
-  renderer.toneMappingExposure = SETTINGS.bright * (1 + POST.flash * 2.5);
+  renderer.toneMappingExposure = BASE_EXPOSURE * SETTINGS.bright * (1 + POST.flash * 2.5);
   if (gradePass) {
     const u = gradePass.uniforms;
     u.time.value = GAME.time; u.grain.value = POST.halt ? 0.2 : 0.045; u.aberr.value = POST.aberr + POST.hurt * 0.006 + (POST.halt ? 0.004 : 0); u.warp.value = (PLAYER.hidden && ENT.hideState) ? 1 : 0;
@@ -6749,6 +6783,11 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
+// only the finger (or mouse) that pressed the slot ends the press; the movement thumb lifting doesn't count
+const pressMine = e => UI._press && (e.changedTouches ? [...e.changedTouches].some(t => t.identifier === UI._press.id) : UI._press.id === 'mouse');
+document.addEventListener('touchend', e => { if (pressMine(e)) UI.pressEnd(true); }, true);
+document.addEventListener('mouseup', e => { if (pressMine(e)) UI.pressEnd(true); }, true);
+document.addEventListener('touchcancel', e => { if (pressMine(e)) UI.pressEnd(false); }, true);
 window.__DOORS = { AU, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, THREE, ANIM, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
 </script>
 </body>
