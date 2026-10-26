@@ -85,6 +85,28 @@
     animation:tin .35s ease-out; max-width:70vw; }
   @keyframes tin { from { transform:translateX(30px); opacity:0; } to { transform:none; opacity:1; } }
   #fps { position:absolute; left:8px; top:6px; font-size:11px; color:#8f8; opacity:.7; }
+  /* ---------- online ---------- */
+  #coopList { position:absolute; left:calc(env(safe-area-inset-left) + 12px); top:calc(env(safe-area-inset-top) + 12px); font-size:13px; line-height:1.55; color:#f3e6cc;
+    text-shadow:0 1px 3px #000, 0 0 2px #000; white-space:pre; }
+  #coopList .dead { color:#a09484; } #coopList .es { color:#ffe39a; }
+  #netTags { position:fixed; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
+  .netTag { position:absolute; transform:translate(-50%,-100%); font-size:13px; color:#fff; white-space:nowrap; text-shadow:0 1px 3px #000, 0 0 2px #000; display:none; }
+  #specBar { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 18px); transform:translateX(-50%); z-index:4; display:flex; align-items:center; gap:8px;
+    background:rgba(10,8,6,.72); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:15px; white-space:nowrap; }
+  #specBar button { background:rgba(40,30,20,.85); color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:8px 12px; font-size:15px; }
+  #specBar .lbl { color:var(--sub); font-size:13px; }
+  .olList { display:flex; flex-direction:column; gap:6px; margin:10px 0; max-height:40vh; overflow:auto; }
+  #online .panel, #netroom .panel { padding:16px 20px; } #online h2, #netroom h2 { margin-bottom:8px; } #netroom p { margin:6px 0; }
+  .olRoom { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; background:rgba(255,255,255,.05); border:1px solid var(--line);
+    border-radius:8px; padding:7px 12px; color:var(--ink); font-family:"Noto Sans JP",sans-serif; }
+  button.olRoom { cursor:pointer; } button.olRoom:hover { background:rgba(255,226,170,.12); }
+  .olRoom b { font-size:16px; font-weight:500; } .olRoom small { font-size:12px; color:var(--sub); }
+  .olEmpty { padding:10px; color:#a0a0a0; font-family:"Noto Sans JP",sans-serif; font-size:14px; }
+  #olState, #nrInfo { white-space:pre-line; }
+  #olName { flex:1; max-width:220px; background:rgba(0,0,0,.4); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:7px 10px; font-size:15px;
+    -webkit-user-select:text; user-select:text; }
+  .mbtn:disabled { opacity:.45; cursor:default; }
+  #pauseInfo { white-space:pre-line; }
 
   /* ---------- touch ---------- */
   #touch { position:fixed; inset:0; pointer-events:none; z-index:1; }
@@ -252,7 +274,10 @@
   <div id="hotbar"></div>
   <div id="toast"></div>
   <div id="fps"></div>
+  <div id="coopList"></div>
 </div>
+<div id="netTags"></div>
+<div id="specBar" class="hidden"><span class="lbl">観戦中</span><b id="specName"></b><button id="specPrev" aria-label="前の人">◀</button><button id="specNext" aria-label="次の人">▶</button><button id="specLeave">部屋にもどる</button></div>
 
 <div id="touch" class="hidden">
   <div id="lookZone"></div>
@@ -268,6 +293,7 @@
   <div class="sublogo">The Hotel</div>
   <div class="menu">
     <button class="mbtn primary" id="bPlay">プレイ</button>
+    <button class="mbtn" id="bOnline">オンラインでいっしょに</button>
     <button class="mbtn" id="bPreShop">ショップ（ラン前）</button>
     <button class="mbtn" id="bSettings">設定</button>
     <button class="mbtn" id="bHow">遊び方</button>
@@ -307,6 +333,7 @@
       <li>ドアの向こうでざわざわと声がして紫の光 → <b>Eyes</b>。最初の2秒ほどは平気だが、見つめ続けるとダメージ。</li>
       <li>壁に目が増えたら <b>Seek</b> の追跡が近い。明かりの方へ走れ。</li>
       <li>ドア50の図書館とドア100では <b>Figure</b>。しゃがんで静かに。</li>
+      <li><b>オンライン</b>：claude.ai で開いているとき、4人まで同じホテルを協力して進めます。ドア・引き出し・アイテム・レバーはみんなで共有。死んでしまったら仲間を観戦できます。</li>
     </ul>
     <div class="btns"><button class="mbtn" id="hBack">戻る</button></div>
   </div>
@@ -318,6 +345,26 @@
     <p style="margin-top:-6px">ノブで次のランに持ち込むアイテムを買えます。（所持：<span id="psKnobs">0</span> ノブ）</p>
     <div class="shopgrid" id="psGrid"></div>
     <div class="btns"><button class="mbtn" id="psBack">戻る</button></div>
+  </div>
+</div>
+
+<div id="online" class="screen hidden" style="background:rgba(0,0,0,.88)">
+  <div class="panel">
+    <h2>オンライン（協力プレイ）</h2>
+    <p id="olState"></p>
+    <div class="row">あなたの名前<input id="olName" maxlength="14" autocomplete="off" spellcheck="false"></div>
+    <div id="olRooms" class="olList"></div>
+    <div class="btns"><button class="mbtn primary" id="olHost">部屋を作る</button><button class="mbtn" id="olPerm">許可の設定を開く</button><button class="mbtn" id="olRetry">もう一度つなぐ</button><button class="mbtn" id="olBack">戻る</button></div>
+  </div>
+</div>
+
+<div id="netroom" class="screen hidden" style="background:rgba(0,0,0,.88)">
+  <div class="panel">
+    <h2>オンラインの部屋</h2>
+    <p><b id="nrHost"></b></p>
+    <div id="nrList" class="olList"></div>
+    <p id="nrInfo"></p>
+    <div class="btns"><button class="mbtn primary" id="nrStart">スタート</button><button class="mbtn" id="nrLeave">部屋から出る</button></div>
   </div>
 </div>
 
@@ -339,6 +386,8 @@
   <div class="btns" id="deathBtns" style="opacity:0;transition:opacity 1s">
     <button class="mbtn primary" id="dRetry">もう一度</button>
     <button class="mbtn" id="dTitle">タイトルへ</button>
+    <button class="mbtn primary" id="dSpec" style="display:none">仲間を観戦する</button>
+    <button class="mbtn" id="dRoom" style="display:none">部屋にもどる</button>
   </div>
 </div>
 
@@ -346,7 +395,7 @@
   <div class="logo" style="font-size:min(14vw,90px)">ESCAPED</div>
   <div style="font-family:'Noto Sans JP';font-size:18px;color:#e9dcc0;margin-top:8px">ホテルから脱出した！</div>
   <div id="winStats"></div>
-  <div class="btns"><button class="mbtn primary" id="wRetry">もう一度</button><button class="mbtn" id="wTitle">タイトルへ</button></div>
+  <div class="btns"><button class="mbtn primary" id="wRetry">もう一度</button><button class="mbtn" id="wTitle">タイトルへ</button><button class="mbtn primary" id="wSpec" style="display:none">仲間を観戦する</button><button class="mbtn" id="wRoom" style="display:none">部屋にもどる</button></div>
 </div>
 
 <div id="modal" class="hidden"></div>
@@ -385,6 +434,7 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+const strHash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; };
 class RNG {
   constructor(seed) { this.f = mulberry32(seed >>> 0); }
   next() { return this.f(); }
@@ -1875,6 +1925,7 @@ class Room {
   }
   addInteract(obj, ia) {
     ia.room = this; obj.userData.ia = ia;
+    if (obj.userData.nid == null) obj.userData.nid = this.index + ':' + (this._nid = (this._nid || 0) + 1);   // the same on every player's screen (NET)
     obj.traverse(o => { if (o.isMesh) o.userData.iaRoot = obj; });
     this.interactables.push(obj); return obj;
   }
@@ -2176,12 +2227,12 @@ function buildExitDoor(room, x, y, z, ry, number, opt = {}) {
   });
   return door;
 }
-function openDoor(door, silent = false) {
+function openDoor(door, silent = false, remote = false) {   // remote: another player opened it (online)
   if (door.open) return;
   door.open = true; door.collider.on = false;
   if (!silent) SFX.door(door.center.clone().applyMatrix4(door.room.group.matrixWorld), door.auto ? 0.65 : 1.15);
   if (door.onOpen) door.onOpen();
-  if (GAME) GAME.onDoorOpened(door);
+  if (GAME) GAME.onDoorOpened(door, remote);
 }
 function updateDoor(door, dt) {
   const target = door.open ? 1 : 0;
@@ -2273,7 +2324,7 @@ function addDresser(room, x, z, ry, opt = {}) {
     for (const s of [-1, 1]) { const sd = new THREE.Mesh(boxGeo(0.01, dh * 0.6, D - 0.06, MAT.wood), MAT.darkWood); sd.position.set(s * (dw / 2 - 0.035), -dh / 2 + 0.03 + dh * 0.3, 0); g.add(sd); }
     const back = new THREE.Mesh(boxGeo(dw - 0.06, dh * 0.6, 0.01, MAT.wood), MAT.darkWood); back.position.set(0, -dh / 2 + 0.03 + dh * 0.3, -D / 2 + 0.06); g.add(back);
     const dr = { g, open: false, t: 0, base: g.position.clone(), dir: new THREE.Vector3(Math.sin(F.ry), 0, Math.cos(F.ry)), depth: D * 0.72, contents: null, filled: false, room, floorY: -dh / 2 + 0.035, w: dw, d: D, timothy: false };
-    drawers.push(dr);
+    drawers.push(dr); g.userData.dr = dr;
     room.addInteract(g, { dist: 2.3, icon: 'loot', prompt: () => (dr.open ? (dr.contents && dr.contents.length ? null : '閉める') : '開ける'), use: () => GAME.toggleDrawer(dr) });
     room.updaters.push(dt => {
       const tgt = dr.open ? 1 : 0;
@@ -2980,6 +3031,7 @@ function spawnPickup(room, type, localPos, ry = 0, extra = null, parent = null) 
   const m = makeItemMesh(type, extra);
   m.position.copy(localPos); m.rotation.y = ry;
   (parent || room.group).add(m);
+  m.userData.ptype = type;
   room.addInteract(m, {
     dist: 2.4,
     prompt: () => GAME.pickupPrompt(type, extra),
@@ -3023,7 +3075,7 @@ function addWallLever(room, F, lx, ly, lz, onPull) {
   const hit = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.2), new THREE.MeshBasicMaterial({ visible: false })); F.dyn(hit, lx - 0.05, ly, lz + 0.1);
   const st = { pulled: false };
   room.addInteract(hit, {
-    dist: 2.4, prompt: () => (st.pulled ? null : 'レバーを引く'),
+    dist: 2.4, sync: true, prompt: () => (st.pulled ? null : 'レバーを引く'),
     use: () => {
       if (st.pulled) return; st.pulled = true;
       const lp = F.pt(lx, ly, lz); SFX.lever(room.toWorld(lp.x, lp.y, lp.z));
@@ -3045,7 +3097,7 @@ function addSideDoor(room, F, lx, ly, lz, opt = {}) {
   const col = F.collide(lx - w / 2, lx + w / 2, ly, ly + h, lz - 0.06, lz + 0.06, 'door');
   const st = { open: false, t: 0 }, dir = opt.dir || 1;
   room.addInteract(leaf, {
-    dist: 2.5, prompt: () => (st.open ? null : '開ける'),
+    dist: 2.5, sync: true, prompt: () => (st.open ? null : '開ける'),
     use: () => {
       if (st.open) return; st.open = true; col.on = false;
       const dp = F.pt(lx, ly + 1.2, lz); SFX.door(room.toWorld(dp.x, dp.y, dp.z), 0.9);
@@ -4315,10 +4367,12 @@ function addChandelierDyn(room, x, ceilY, z, scale, opt) {
    World: room chain generation, lights pool, collision & floor queries
    ========================================================================= */
 const WORLD = {
-  rooms: [], byIndex: new Map(), dyn: [], pool: [], shadowFrame: 0, time: 0,
+  // feet: where the last few rooms stand, kept even after a room is trimmed, so that every player's
+  // copy of the hotel (online) picks the same layouts whatever rooms that screen still holds
+  rooms: [], byIndex: new Map(), feet: new Map(), dyn: [], pool: [], shadowFrame: 0, time: 0,
   reset() {
     for (const r of this.rooms) r.dispose();
-    this.rooms = []; this.byIndex.clear(); this.dyn = [];
+    this.rooms = []; this.byIndex.clear(); this.feet.clear(); this.dyn = [];
   },
   get last() { return this.rooms[this.rooms.length - 1]; },
   room(n) { return this.byIndex.get(n); },
@@ -4331,17 +4385,18 @@ const WORLD = {
     const heading = Math.round(baseYaw / (Math.PI / 2));
     const spec = DIRECTOR.spec(n);
     let P = null, c = null, ok = false, tplName = spec.tpl;
+    const near = [...this.feet].filter(([i]) => i < n - 1 && i >= n - 4);
     for (let attempt = 0; attempt < 10; attempt++) {
       if (attempt === 7 && spec.fallback) tplName = spec.fallback;
       c = Object.assign({ rng: new RNG(RUN.seed + n * 7919 + attempt * 104729), n, allowW: heading < 1, allowE: heading > -1, heading }, spec.flags);
       P = TPL[tplName].plan(c);
       if (TPL[tplName].roomScale) scalePlan(P, TPL[tplName].roomScale);
       const box = this.footBox(footOf(P), basePos, baseYaw, 0.32);
-      if (!this.rooms.some(r => r.index < n - 1 && r.bounds.intersectsBox(box))) { ok = true; break; }
+      if (!near.some(([, b]) => b.intersectsBox(box))) { ok = true; break; }
     }
     if (!ok) {
       const box = this.footBox(footOf(P), basePos, baseYaw, 0.32);
-      for (const r of this.rooms.slice()) if (r.index < n - 1 && r.bounds.intersectsBox(box)) this.remove(r);
+      for (const [i, b] of near) if (b.intersectsBox(box)) { this.feet.delete(i); const r = this.byIndex.get(i); if (r) this.remove(r); }
     }
     const room = new Room(n, tplName);
     room.setTransform(basePos, baseYaw);
@@ -4351,7 +4406,7 @@ const WORLD = {
     room.finalize();
     scene.add(room.group);
     this.rooms.push(room); this.rooms.sort((a, b) => a.index - b.index);
-    this.byIndex.set(n, room);
+    this.byIndex.set(n, room); this.feet.set(n, room.bounds.clone());
     return room;
   },
   footBox(f, pos, yaw, pad) {
@@ -4799,17 +4854,19 @@ GAME.updateTarget = function () {
   $('tUse').classList.toggle('ready', !!TARGET); setBtnIcon('tUse', TARGET ? targetIcon(TARGET) : 'hand');
   setBtnIcon('tCrouch', PLAYER.crouch ? 'stand' : 'crouch');   // shows what pressing it does
 };
+// levers and side doors move for everyone online (doors, drawers and pickups say so themselves)
+function useTarget(t) { if (t.ia.sync) NET.ev('u', t.obj.userData.nid); t.ia.use(); }
 GAME.interact = function () {
   if (!PLAYER.alive || GAME.modal) return false;
   if (PLAYER.hidden) { GAME.exitHide(); return true; }
   if (!TARGET) return false;
-  TARGET.ia.use();
+  useTarget(TARGET);
   return true;
 };
 GAME.tapAt = function (x, y) {
   if (PLAYER.hidden) { GAME.exitHide(); return true; }
   const t = findTarget(new THREE.Vector2(x / VW() * 2 - 1, -(y / VH()) * 2 + 1));
-  if (t) t.ia.use();
+  if (t) useTarget(t);
   return !!t;
 };
 
@@ -4895,30 +4952,34 @@ GAME.heal = function (n) { PLAYER.hp = Math.min(100, PLAYER.hp + n); UI.hp(); };
 
 /* ---------- pickups / drawers / doors ---------- */
 const LOOT = [['none', 46], ['gold', 36], ['lighter', 3.5], ['flashlight', 1.4], ['battery', 3.5], ['bandage', 3.5], ['vitamins', 3], ['lockpick', 2.4], ['timothy', 1.2]];
-GAME.toggleDrawer = function (dr) {
+GAME.toggleDrawer = function (dr, remote = false) {   // remote: another player opened or closed it (online)
+  const id = dr.g.userData.nid;
   if (!dr.open) {
     dr.open = true; SFX.drawer(dr.room.toWorld(dr.base.x, dr.base.y, dr.base.z), true);
     if (!dr.filled) {
       dr.filled = true;
       const items = dr.preset || [];
-      if (!dr.preset) {
-        let roll = rng.weighted(LOOT);
-        if (roll === 'timothy' && (GAME.maxRoom < 3 || !SETTINGS.spiders)) roll = 'none';   // spiders can be turned off in the settings
+      if (!dr.preset) {   // each drawer's loot follows from the run's seed, so every player finds the same thing in it
+        const rr = new RNG(RUN.seed ^ strHash(id));
+        let roll = rr.weighted(LOOT);
+        if (roll === 'timothy' && (dr.room.index < 3 || !SETTINGS.spiders || remote)) roll = 'none';   // spiders can be turned off in the settings
         if (roll === 'timothy') { setTimeout(() => ENT.timothy(dr), 250); }
-        else if (roll === 'gold') items.push({ type: 'gold', amount: rng.weighted([[5, 3], [10, 4], [15, 3], [20, 2], [25, 1]]) + (GAME.maxRoom > 50 ? 5 : 0) });
+        else if (roll === 'gold') items.push({ type: 'gold', amount: rr.weighted([[5, 3], [10, 4], [15, 3], [20, 2], [25, 1]]) + (dr.room.index > 50 ? 5 : 0) });
         else if (roll !== 'none') items.push({ type: roll });
       }
       dr.contents = [];
       items.forEach((it, i) => {
         const pos = new THREE.Vector3((i - (items.length - 1) / 2) * 0.16, dr.floorY, 0.02);
-        const m = spawnPickup(dr.room, it.type, pos, rng.range(-0.5, 0.5), it.amount || null, dr.g);
+        const m = spawnPickup(dr.room, it.type, pos, ((strHash(id + i) % 1000) / 1000 - 0.5), it.amount || null, dr.g);
+        m.userData.nid = id + '/' + i;
         dr.contents.push(m); m.userData.drawer = dr;
       });
     }
-    NOISE.emit(PLAYER.pos, 4);
+    if (!remote) { NOISE.emit(PLAYER.pos, 4); NET.ev('o', id); }
   } else {
     if (dr.contents && dr.contents.length) return;
     dr.open = false; SFX.drawer(dr.room.toWorld(dr.base.x, dr.base.y, dr.base.z), false);
+    if (!remote) NET.ev('c', id);
   }
 };
 GAME.pickupPrompt = function (type, extra) {
@@ -4931,6 +4992,7 @@ GAME.pickup = function (mesh, type, extra) {
   const dr = mesh.userData.drawer;
   if (dr) dr.contents = dr.contents.filter(m => m !== mesh);
   if (mesh.parent) mesh.parent.remove(mesh);
+  NET.ev('t', mesh.userData.nid);
 };
 // put one of the item in this slot down on the floor just in front of you (long-press a slot, or G)
 GAME.dropItem = function (i) {
@@ -4946,7 +5008,8 @@ GAME.dropItem = function (i) {
   else { GAME.inv.splice(i, 1); if (GAME.sel === i) GAME.sel = -1; else if (GAME.sel > i) GAME.sel--; }
   VIEW.set(GAME.selItem()); UI.hotbar();
   const m = spawnPickup(room, it.type, room.toLocal(x, gy + 0.01, z), PLAYER.yaw);
-  m.userData.item = state;
+  m.userData.item = state; m.userData.nid = NET.pid();
+  NET.ev('p', it.type, +x.toFixed(2), +(gy + 0.01).toFixed(2), +z.toFixed(2), +PLAYER.yaw.toFixed(2), state, m.userData.nid, room.index);
   SFX.drop(m.getWorldPosition(new THREE.Vector3()));
   GAME.showHint(`${ITEM_DEF[it.type] ? ITEM_DEF[it.type].name : it.type}を置いた`, 1400);
   return true;
@@ -5225,12 +5288,13 @@ const DIRECTOR = {
     if (pre) flags.forceWall = 'N';
     return { tpl, flags, fallback: 'hallway' };
   },
-  onDoorOpened(door) {
+  // remote: another player opened it. Online only the host decides what comes; Jack only shows to the opener.
+  onDoorOpened(door, remote = false) {
     const cur = door.room, n = cur.index + 1, room = WORLD.room(n);
     if (!room) return;
-    if (room.meta.jackDoor && !ENT.active.length) { ENT.jackDoor(room); return; }
+    if (room.meta.jackDoor && !ENT.active.length) { if (remote) room.meta.jackDoor = false; else ENT.jackDoor(room); return; }
     if (room.meta.halt) { flickerRoom(cur, 3); return; }
-    if (cur.meta.halt) return;
+    if (cur.meta.halt || !NET.director()) return;
     const busy = ENT.active.some(e => ['rush', 'ambush', 'rushPending', 'seek', 'figure', 'halt'].includes(e.kind));
     const special = cur.meta.noRush || room.meta.noRush || room.meta.safe || cur.meta.safe || cur.meta.navRoom || room.meta.navRoom || room.type === 'lobby';
     const prev = WORLD.room(cur.index - 1);
@@ -5246,16 +5310,16 @@ const DIRECTOR = {
         ENT.add({ kind: 'rushPending', t: rng.range(0.4, 6), update(dt) {
           this.t -= dt; if (this.t > 0) return;
           ENT.remove(this);
-          const g = GAME.room;   // not if you have since walked into a room with nowhere to hide
+          const g = NET.refRoom();   // not if you (online: the one furthest ahead) have since walked into a room with nowhere to hide
           if (!g || g.meta.noRush || g.meta.halt || g.meta.seek || g.meta.navRoom || g.meta.safe || !g.hides.length && !(WORLD.room(g.index - 1) || { hides: [] }).hides.length) return;
           if (ENT.active.some(e => ['seek', 'seekArm', 'halt', 'figure'].includes(e.kind))) return;
-          ENT.spawnRush(ambush);
+          NET.spawn('R', ambush ? 1 : 0, g.index, rng.int(1, 2 ** 30));
         } });
         return;
       }
       if (rng.chance(0.03)) flickerRoom(cur, 1.2);
     }
-    if (n >= 3 && n - this.lastEyes > 9 && !special && !room.dark && !busy && rng.chance(0.04)) { this.lastEyes = n; ENT.spawnEyes(room); }
+    if (n >= 3 && n - this.lastEyes > 9 && !special && !room.dark && !busy && rng.chance(0.04)) { this.lastEyes = n; NET.spawn('E', n); }
   },
   onEnterRoom(room) {
     const n = room.index;
@@ -5387,8 +5451,10 @@ const ENT = {
   onExitHide() { this.hideState = 0; $('fxGetOut').style.opacity = 0; $('bigmsg').style.opacity = 0; },
 
   /* ---------------- Rush / Ambush ---------------- */
-  spawnRush(ambush) {
-    const cur = GAME.room; if (!cur) return;
+  // opt.ref: the room it rushes past (online, the same one on every screen); opt.seed: its timing
+  spawnRush(ambush, opt = {}) {
+    const cur = (opt.ref != null && WORLD.room(opt.ref)) || GAME.room; if (!cur) return;
+    const rr = opt.seed != null ? new RNG(opt.seed) : rng;
     const rooms = WORLD.rooms.filter(r => r.index >= cur.index - 2);
     const pts = [];
     for (const r of rooms) {
@@ -5399,7 +5465,7 @@ const ENT = {
     flickerRoom(cur, ambush ? 3.5 : 1.8); flickerRoom(WORLD.room(cur.index + 1), ambush ? 3.5 : 1.8);
     if (ambush) { SFX.ambushWarn(); POST.tintFlash = { color: new THREE.Color(0.4, 1, 0.4), until: GAME.time + 0.5 }; }
     else SFX.rushWarn();
-    const delay = ambush ? rng.range(5.5, 7) : rng.range(4.2, 6);
+    const delay = ambush ? rr.range(5.5, 7) : rr.range(4.2, 6);
     const speed = ambush ? 40 : 24;   // Rush ~75 studs/s
     const d0 = tmpV.subVectors(pts[1], pts[0]).normalize();
     pts.unshift(pts[0].clone().addScaledVector(d0, -speed * delay));
@@ -5414,7 +5480,7 @@ const ENT = {
     WORLD.dyn.push(light);
     const loop = LOOPS.rush(ambush);
     if (loop.panner) { loop.panner.refDistance = 4; loop.panner.rolloffFactor = 0.45; }
-    const rebounds = ambush ? rng.int(2, 6) : 0;
+    const rebounds = ambush ? rr.int(2, 6) : 0;
     const e = {
       kind: ambush ? 'ambush' : 'rush', s: 0, dir: 1, pts, segs, L, speed, pass: 0, rebounds, wait: 0, grp, spr, smoke, light, loop, t: 0,
       pos: new THREE.Vector3().copy(pts[0]),
@@ -5424,7 +5490,7 @@ const ENT = {
         else {
           this.s += this.dir * this.speed * dt * (this.pass > 0 ? 1 : 1);
           if (this.s >= this.L || this.s <= (this.pass > 0 ? this.segs[0] : -1e9)) {
-            if (this.pass < this.rebounds) { this.pass++; this.dir *= -1; this.s = clamp(this.s, this.segs[0], this.L); this.wait = rng.range(0.8, 2.2); flickerRoom(GAME.room, 1.5); }
+            if (this.pass < this.rebounds) { this.pass++; this.dir *= -1; this.s = clamp(this.s, this.segs[0], this.L); this.wait = rr.range(0.8, 2.2); flickerRoom(GAME.room, 1.5); }
             else { ENT.remove(this); return; }
           }
         }
@@ -6328,6 +6394,544 @@ const ANIM = {
 };
 
 /* =========================================================================
+   Online co-op, through the artifact's `room` capability (claude.ai only; elsewhere the game plays alone).
+   Everything travels in presence, so everyone who can open the page can play (event topics need Editors):
+   - lobby (the room itself): a host lists its room as presence {dr:{n,c,np,st}}
+   - a game room (room.join('dr-xxxxxx')), up to 4 players. Each player's presence carries their name,
+     colours, pose and state, plus a window of their last few numbered events (doors, pickups, drawers,
+     levers, ...). The host's also carries H = {st:'lobby'|'run', ep, seed}.
+   - every screen builds the same hotel from the seed. The host alone decides when Rush, Ambush and Eyes
+     come and sends them as events; everything else runs on each screen, and you only die on your own.
+     Fall 3 doors behind the one furthest ahead and you are brought up to them.
+   ========================================================================= */
+const NET_CAP = 4, NET_EVW = 24;
+const NET_SHIRTS = ['#4f7fd8', '#d84f4f', '#4fae5c', '#d8b04f', '#9b5fd8', '#4fc4c8', '#e07a3a', '#c8c8c8'];
+const netClean = s => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g, '').trim();
+const netCol = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+const nr2 = v => Math.round(v * 100) / 100, nr3 = v => Math.round(v * 1000) / 1000;
+function netClaude() {
+  try { if (window.claude && window.claude.use) return window.claude; } catch (e) { /* not framed by claude.ai */ }
+  try { if (window.parent && window.parent !== window && window.parent.claude && window.parent.claude.use) return window.parent.claude; } catch (e) { /* a parent we can't read */ }
+  return null;
+}
+const NET = {
+  st: 'off', why: '', perm: null, room: null, lobby: [], conn: false, okT: 0,
+  on: false, host: false, game: null, code: '', hostPeer: null, hostName: '', gunsub: [], peers: [], joinT: 0, lostT: 0, sawLobby: false, hostSeen: false,
+  H: { st: 'lobby', ep: 0, seed: 0 }, ep: -1, inRun: false, seq: 0, win: [], seen: {}, q: [], applying: false,
+  avs: new Map(), spec: null, specRi: -1, specCine: null, pump: 0, endT: 0, hudT: 0, note: '', noteT: 0, lookC: null, lobbySent: '',
+};
+NET.myName = () => netClean(store.get('name', '')).slice(0, 14) || 'プレイヤー';
+// your 3dgame home-screen avatar's colours if you made one, otherwise a shirt colour from your name
+NET.look = function () {
+  if (NET.lookC) return NET.lookC;
+  let c = null, hair = true;
+  try { const o = JSON.parse(localStorage.getItem('idle-game-settings')); if (o && o.colors) c = o.colors; if (o && typeof o.hair === 'boolean') hair = o.hair; } catch (e) { /* no home-screen avatar */ }
+  const D = { head: '#f2c9a0', torso: NET_SHIRTS[strHash(NET.myName()) % NET_SHIRTS.length], armR: '#f2c9a0', armL: '#f2c9a0', legR: '#3b4252', legL: '#3b4252', hair: '#3a2b22' };
+  const pick = k => (c && netCol(c[k]) ? c[k] : D[k]);
+  return (NET.lookC = ['head', 'torso', 'armR', 'armL', 'legR', 'legL'].map(pick).concat([hair ? pick('hair') : '']));
+};
+NET.others = () => NET.peers.filter(p => !p.sameTab && p.kind === 'viewer' && p.presence && typeof p.presence.n === 'string');
+NET.inThisRun = q => q.presence.ep === NET.ep && q.presence.in === 1;
+NET.director = () => !NET.inRun || NET.host;   // does this screen decide when Rush / Eyes come?
+NET.toast = function (t) { NET.note = t; NET.noteT = performance.now(); NET.render(); if (GAME.state === 'play') GAME.showHint(t, 3500); };
+
+/* ---------------- connecting ---------------- */
+NET.init = async function () {
+  if (NET.room) return true;
+  if (NET.st === 'wait') return false;
+  NET.st = 'wait'; NET.render();
+  const C = netClaude(); let room = null;
+  if (C) { try { room = await C.use('room'); } catch (e) { room = null; } }
+  if (!room) { NET.st = 'none'; NET.why = await NET.whyNot(C); NET.render(); return false; }
+  NET.room = room; NET.st = 'ok'; NET.conn = room.connected(); NET.okT = performance.now();
+  setTimeout(() => NET.render(), 8200);
+  room.onConnection(c => { NET.conn = c; NET.render(); }, () => {});
+  room.onPeers(ch => { NET.lobby = ch.peers; NET.render(); }, () => { NET.st = 'err'; NET.render(); });
+  NET.render(); return true;
+};
+NET.whyNot = async function (C) {
+  if (!C) return 'nohost';
+  try { const P = await C.use('permissions'); if (P) { NET.perm = P; return await P.state('room'); } } catch (e) { /* no permissions panel here */ }
+  return 'unavailable';
+};
+NET.rooms = function () {
+  const out = [];
+  for (const p of NET.lobby) {
+    if (p.kind !== 'viewer') continue;
+    const d = p.presence && p.presence.dr;
+    if (!d || typeof d !== 'object' || typeof d.c !== 'string' || !/^dr-[a-z0-9]{6}$/.test(d.c)) continue;
+    out.push({ c: d.c, peer: p.peer, n: netClean(d.n).slice(0, 14) || '???', np: clamp(d.np | 0, 1, NET_CAP), run: d.st === 'run', mine: p.isMe });
+  }
+  return out;
+};
+// the host lists the room in the lobby
+NET.lobbyPresence = function () {
+  if (!NET.room) return;
+  const dr = NET.on && NET.host ? { n: NET.myName(), c: NET.code, np: NET.others().length + 1, st: NET.H.st } : null;
+  NET.lobbySent = dr ? dr.np + dr.st : '';
+  NET.room.presence({ dr }).catch(() => {});
+};
+
+/* ---------------- making, joining and leaving a room ---------------- */
+NET.hostRoom = async function () {
+  if (NET.on) return;
+  if (!(await NET.init()) || !NET.conn) { NET.toast('まだオンラインにつながっていません'); return; }
+  const code = 'dr-' + Array.from({ length: 6 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.random() * 36 | 0]).join('');
+  let g = null;
+  try { g = await NET.room.join(code); } catch (e) { NET.toast('部屋を作れませんでした'); return; }
+  Object.assign(NET, { on: true, host: true, game: g, code, hostPeer: null, hostName: NET.myName(), H: { st: 'lobby', ep: 0, seed: 0 }, ep: -1 });
+  NET.begin();
+};
+NET.join = async function (r) {
+  if (NET.on) return;
+  if (r.np >= NET_CAP) { NET.toast('この部屋は満員です（4人まで）'); return; }
+  let g = null;
+  try { g = await NET.room.join(r.c); } catch (e) { NET.toast('部屋に入れませんでした'); return; }
+  Object.assign(NET, { on: true, host: false, game: g, code: r.c, hostPeer: r.peer, hostName: r.n, H: { st: 'lobby', ep: 0, seed: 0 }, ep: -1, lostT: 0, sawLobby: false, hostSeen: false });
+  NET.begin();
+};
+NET.begin = function () {
+  NET.peers = []; NET.seen = {}; NET.q = []; NET.win = []; NET.joinT = performance.now();
+  NET.gunsub = [NET.game.onPeers(ch => { NET.peers = ch.peers; NET.onPeers(); }, () => NET.leave('部屋との接続が切れました'))];
+  clearInterval(NET.pump); NET.pump = setInterval(NET.tick, 100);
+  NET.send(); NET.lobbyPresence(); NET.showRoom();
+};
+// leave the room. Mid-run the game carries on alone (the director takes over on this screen).
+NET.leave = async function (msg) {
+  if (!NET.on) return;
+  const g = NET.game, wasDead = NET.inRun && GAME.state === 'play' && !PLAYER.alive && !GAME.won;
+  NET.gunsub.forEach(u => { try { u(); } catch (e) { /* gone already */ } });
+  clearInterval(NET.pump);
+  Object.assign(NET, { on: false, host: false, game: null, inRun: false, spec: null, hostPeer: null, gunsub: [], peers: [] });
+  for (const a of NET.avs.values()) NET.dropAv(a);
+  NET.avs.clear(); $('coopList').innerHTML = ''; UI.show('specBar', false); UI.show('netroom', false);
+  if (GAME.cine === NET.specCine) GAME.cine = null;
+  NET.lobbyPresence();
+  if (g) { try { await g.leave(); } catch (e) { /* left already */ } }
+  if (wasDead) GAME.deathScreen('generic');
+  if (msg) NET.toast(msg);
+};
+
+/* ---------------- my presence (10 times a second) ---------------- */
+NET.tick = function () {
+  if (!NET.on) return;
+  NET.send();
+  const now = performance.now();
+  if (now - (NET.lastTick || now) > 1500 && NET.lostT) NET.lostT = now;   // this page was frozen (building rooms...): give the host time to show up again
+  NET.lastTick = now;
+  if (!NET.host) {   // has the host gone?
+    const gone = (NET.lostT && now - NET.lostT > (NET.inRun ? 30000 : 12000)) || (!NET.hostSeen && now - NET.joinT > 12000);   // mid-run, wait out a long hiccup
+    if (gone) {
+      if (NET.inRun) NET.leave('ホストがいなくなったので、ここからはひとりで続きます');
+      else { NET.leave('ホストが部屋を閉じました'); NET.openOnline(); }
+    }
+  }
+};
+NET.send = function () {
+  if (!NET.on || !NET.game) return;
+  const run = NET.inRun && GAME.state === 'play', P = PLAYER, src = run && P.alive ? GAME.lightSource() : null;
+  const p = {
+    n: NET.myName(), av: NET.look(), ep: NET.ep, in: run ? 1 : 0,
+    s: run ? [nr2(P.pos.x), nr2(P.pos.y), nr2(P.pos.z), nr3(P.yaw), nr3(P.pitch)] : null,
+    ri: run && GAME.room ? GAME.room.index : -1, cr: P.crouch ? 1 : 0, hd: P.hidden ? 1 : 0, al: run && P.alive ? 1 : 0, es: run && GAME.won ? 1 : 0,
+    lt: src === 'lighter' ? 1 : src === 'flashlight' ? 2 : 0, ev: NET.win,
+  };
+  if (NET.host) p.H = NET.H;
+  while (NET.win.length > 4 && new TextEncoder().encode(JSON.stringify(p)).length > 3900) { NET.win.shift(); p.ev = NET.win; }
+  NET.game.presence(p).catch(() => {});
+};
+// a numbered event the others replay (only during a run, never while replaying someone else's)
+NET.ev = function (type, ...args) {
+  if (!NET.on || !NET.inRun || NET.applying) return;
+  NET.win.push([++NET.seq, type, ...args]);
+  if (NET.win.length > NET_EVW) NET.win.shift();
+  NET.send();
+};
+NET.pid = () => 'p' + (NET.code || '').slice(3, 6) + Math.random().toString(36).slice(2, 7) + ':' + NET.seq;   // id of an item you dropped
+// the host (or a lone player) brings in Rush / Ambush / Eyes on every screen
+NET.spawn = function (t, ...args) { if (NET.inRun && NET.host) NET.ev(t, ...args); NET.applySpawn(t, args); };
+NET.applySpawn = function (t, [a, b, c]) {
+  if (t === 'R') ENT.spawnRush(!!a, { ref: b | 0, seed: c >>> 0 });
+  else if (t === 'E') { NET.ensure(a | 0); const r = WORLD.room(a | 0); if (r) ENT.spawnEyes(r); }
+};
+// the room Rush aims for: yours alone, online the one the furthest player is in
+NET.refRoom = function () {
+  if (!NET.inRun) return GAME.room;
+  return WORLD.room(NET.leader()) || GAME.room;
+};
+NET.leader = function () {
+  let lead = PLAYER.alive && !GAME.won && GAME.room ? GAME.room.index : -1;
+  for (const q of NET.others()) { const o = q.presence; if (NET.inThisRun(q) && o.al === 1 && o.es !== 1 && Number.isInteger(o.ri)) lead = Math.max(lead, o.ri); }
+  return lead;
+};
+
+/* ---------------- runs ---------------- */
+NET.mySlot = function () {
+  const ids = NET.peers.filter(p => p.kind === 'viewer').map(p => p.peer).sort();
+  const me = NET.peers.find(p => p.sameTab);
+  return me ? Math.max(0, ids.indexOf(me.peer)) : 0;
+};
+NET.beginRun = function (ep, seed) {
+  Object.assign(NET, { ep, inRun: true, win: [], seen: {}, q: [], spec: null, specRi: -1, endT: 0 });
+  for (const a of NET.avs.values()) { a.buf = []; a.st = null; }
+  UI.show('netroom', false); UI.show('online', false);
+  GAME.startRun({ seed, slot: NET.mySlot() });
+  NET.send();
+};
+NET.startGame = function () {   // host: everyone in the room goes in
+  if (!NET.host || NET.inRun) return;
+  NET.H = { st: 'run', ep: NET.H.ep + 1, seed: (Math.random() * 2 ** 31) | 0 };
+  NET.beginRun(NET.H.ep, NET.H.seed); NET.lobbyPresence();
+};
+// back to the room's waiting screen (host: for everyone)
+NET.endRun = function () {
+  if (NET.host && NET.H.st === 'run') NET.H = { st: 'lobby', ep: NET.H.ep, seed: NET.H.seed };
+  NET.inRun = false; NET.spec = null;
+  GAME.stopRun();
+  NET.send(); NET.lobbyPresence(); NET.showRoom();
+};
+NET.quitRun = function () {
+  if (NET.host) { NET.endRun(); return; }
+  NET.inRun = false; NET.spec = null; GAME.stopRun(); NET.send(); NET.showRoom();
+};
+NET.hostState = function (H) {
+  const st = H.st === 'run' ? 'run' : 'lobby', ep = H.ep | 0, seed = H.seed >>> 0;
+  NET.H = { st, ep, seed };
+  if (st === 'lobby') NET.sawLobby = true;
+  if (st === 'run' && ep !== NET.ep && !NET.inRun && NET.sawLobby && !$('netroom').classList.contains('hidden')) NET.beginRun(ep, seed);
+  else if (st === 'lobby' && NET.inRun) NET.endRun();
+};
+
+/* ---------------- the room changed ---------------- */
+NET.onPeers = function () {
+  const os = NET.others(), now = performance.now();
+  if (!NET.host) {
+    const h = os.find(q => q.peer === NET.hostPeer && q.presence.H && typeof q.presence.H === 'object');
+    if (h && !NET.hostSeen && os.length + 1 > NET_CAP) { NET.leave('この部屋は満員です（4人まで）'); NET.openOnline(); return; }
+    if (h) { NET.lostT = 0; NET.hostSeen = true; NET.hostName = netClean(h.presence.n).slice(0, 14) || NET.hostName; NET.hostState(h.presence.H); }
+    else if (NET.hostSeen && !NET.lostT) NET.lostT = now;   // its page may only be reconnecting
+  }
+  for (const q of os) {
+    const o = q.presence;
+    if (NET.inRun && o.ep === NET.ep && Array.isArray(o.ev)) {   // their new events from this run
+      const last = NET.seen[q.peer] || 0; let mx = last;
+      for (const e of o.ev) if (Array.isArray(e) && Number.isInteger(e[0]) && e[0] > last && typeof e[1] === 'string') { NET.q.push({ host: q.peer === NET.hostPeer, e }); mx = Math.max(mx, e[0]); }
+      NET.seen[q.peer] = mx;
+    }
+    NET.avState(q);
+  }
+  for (const [peer, a] of NET.avs) if (!os.some(q => q.peer === peer)) { if (NET.inRun && GAME.state === 'play') GAME.showHint(`${a.name} が抜けた`); NET.dropAv(a); NET.avs.delete(peer); }
+  if (NET.host && NET.lobbySent !== (os.length + 1) + NET.H.st) NET.lobbyPresence();
+  NET.renderRoom();
+};
+
+/* ---------------- replaying the others' events (in the game loop) ---------------- */
+NET.find = function (nid) {
+  if (typeof nid !== 'string') return null;
+  for (const r of WORLD.rooms) for (const o of r.interactables) if (o.userData.nid === nid) return o;
+  return null;
+};
+NET.remote = function (fn) { NET.applying = true; try { fn(); } finally { NET.applying = false; } };
+// make sure the hotel reaches room n on this screen (rooms are always built in order)
+NET.ensure = function (n) {
+  n = Math.min(n, 100);
+  while (WORLD.last && WORLD.last.index < n && WORLD.last.type !== 'electrical') { const nr = WORLD.generate(WORLD.last.index + 1); ENT.onRoomGenerated(nr); }
+};
+NET.apply = function ({ host, e }) {
+  const t = e[1], a = e[2];
+  if (t === 'd') {   // a door opened (unlocked by whoever opened it)
+    const n = a | 0; if (n < 0 || n > 100) return;
+    NET.ensure(n + 1);
+    const r = WORLD.room(n), d = r && r.door;
+    if (d && !d.open) { d.locked = false; if (d.padlock) { d.pivot.remove(d.padlock); d.padlock = null; } NET.remote(() => openDoor(d, false, true)); }
+  } else if (t === 'u') {   // a lever or a side door
+    const o = NET.find(a); if (o && o.parent && o.userData.ia.sync) NET.remote(() => o.userData.ia.use());
+  } else if (t === 'o' || t === 'c') {   // a drawer
+    const o = NET.find(a), dr = o && o.userData.dr;
+    if (dr && dr.open !== (t === 'o')) NET.remote(() => GAME.toggleDrawer(dr, true));
+  } else if (t === 't') {   // someone took this
+    const o = NET.find(a); if (!o || !o.parent) return;
+    const dr = o.userData.drawer; if (dr) dr.contents = dr.contents.filter(m => m !== o);
+    const r = o.userData.ia.room;
+    if (o.userData.ptype === 'breaker' && r && r.meta.breakers != null) { r.meta.breakers++; GAME.showHint(`仲間がブレーカースイッチを拾った（${r.meta.breakers}/10）`); }
+    o.parent.remove(o);
+  } else if (t === 'p') {   // someone put an item down
+    const [, , type, x, y, z, ry, st, nid, ri] = e;
+    if (!ITEM_DEF[type] || ![x, y, z].every(Number.isFinite) || typeof nid !== 'string' || NET.find(nid)) return;
+    const r = WORLD.room(ri | 0); if (!r) return;
+    const m = spawnPickup(r, type, r.toLocal(x, y, z), +ry || 0); m.userData.nid = nid;
+    if (st && typeof st === 'object') m.userData.item = { charge: Number.isFinite(st.charge) ? clamp(st.charge, 0, 300) : 100, on: !!st.on };
+  } else if (t === 'w') {   // the elevator's power came on
+    const r = WORLD.room(a | 0); if (r && r.meta.ev && !r.meta.ev.powered) NET.remote(() => GAME.powerOn(r));
+  } else if ((t === 'R' || t === 'E') && host && !NET.host) NET.applySpawn(t, e.slice(2));
+};
+NET.update = function (dt) {
+  if (!NET.on || !NET.inRun) return;
+  const q = NET.q; NET.q = [];
+  for (const it of q) { try { NET.apply(it); } catch (err) { console.warn('net event', it.e, err); } }
+  NET.avatars(dt);
+  NET.catchUp();
+  NET.spectate();
+  NET.hudT -= dt; if (NET.hudT <= 0) { NET.hudT = 0.4; NET.hud(); }
+  if (NET.host) {   // everyone dead or out: back to the room after a moment
+    const now = performance.now();
+    const live = (PLAYER.alive && !GAME.won ? 1 : 0) + NET.others().filter(q2 => NET.inThisRun(q2) && q2.presence.al === 1 && q2.presence.es !== 1).length;
+    if (live) NET.endT = 0;
+    else if (!NET.endT) NET.endT = now + 7000;
+    else if (now > NET.endT) NET.endRun();
+  }
+};
+// fallen 3 doors behind the one furthest ahead: join them (the rooms behind them are going away)
+NET.catchUp = function () {
+  if (!PLAYER.alive || PLAYER.hidden || GAME.cine || GAME.cutscene || GAME.won || GAME.modal || !GAME.room) return;
+  const lead = NET.leader();
+  if (lead - GAME.room.index < 3) return;
+  NET.ensure(lead);
+  const r = WORLD.room(lead - 1); if (!r) return;
+  const p = r.toWorld(0, 0, -1.4), gy = WORLD.groundAt(p.x, p.z, p.y + 3);
+  if (gy !== null) p.y = gy;
+  PLAYER.pos.copy(p); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = r.wyaw; PLAYER.pitch = 0; PLAYER.camY = p.y + 1.62;
+  GAME.room = r; GAME.onEnterRoom(r);
+  const fb = $('fxBlack'); fb.style.transition = 'none'; fb.style.opacity = 1; void fb.offsetWidth; fb.style.transition = ''; setTimeout(() => { if (GAME.state === 'play' && PLAYER.alive) fb.style.opacity = 0; }, 60);
+  GAME.showHint('仲間から離れすぎたので、先の部屋まで移動した', 3200);
+};
+
+/* ---------------- the others' bodies: blocky, in their home-screen colours ---------------- */
+let _netGeo = null, _netFace = null;
+function netGeo() {
+  if (_netGeo) return _netGeo;
+  const B = (w, h, d, y = 0) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, y, 0); return g; };
+  _netGeo = { leg: B(0.3, 0.78, 0.3, -0.39), torso: B(0.62, 0.66, 0.31), arm: B(0.27, 0.66, 0.27, -0.3), head: B(0.38, 0.38, 0.38), hair: B(0.4, 0.12, 0.4), hairBack: B(0.4, 0.3, 0.08), face: new THREE.PlaneGeometry(0.34, 0.34), tool: B(0.06, 0.12, 0.04) };
+  const c = newCanvas(64, 64), g = c.getContext('2d');   // the default smiling face
+  g.fillStyle = '#1b1b1b'; g.fillRect(19, 22, 6, 9); g.fillRect(39, 22, 6, 9);
+  g.lineWidth = 4; g.strokeStyle = '#1b1b1b'; g.beginPath(); g.arc(32, 36, 13, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+  _netFace = new THREE.CanvasTexture(c); _netFace.colorSpace = THREE.SRGBColorSpace;
+  return _netGeo;
+}
+NET.avModel = function (av) {
+  const G = netGeo(), g = new THREE.Group(), body = new THREE.Group(), mats = [], parts = {};
+  const mat = c => { const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, emissive: c, emissiveIntensity: 0.05 }); mats.push(m); return m; };
+  const mesh = (geo, m, x, y, z, name) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; body.add(o); if (name) parts[name] = o; return o; };
+  // it faces +z, so its right side is -x
+  mesh(G.leg, mat(av[5]), 0.155, 0.78, 0, 'legL'); mesh(G.leg, mat(av[4]), -0.155, 0.78, 0, 'legR');
+  mesh(G.torso, mat(av[1]), 0, 1.11, 0, 'torso');
+  mesh(G.arm, mat(av[3]), 0.45, 1.41, 0, 'armL'); mesh(G.arm, mat(av[2]), -0.45, 1.41, 0, 'armR');
+  const head = mesh(G.head, mat(av[0]), 0, 1.64, 0, 'head');
+  const fm = new THREE.MeshStandardMaterial({ map: _netFace, transparent: true, roughness: 0.9, depthWrite: false }); mats.push(fm);
+  const face = new THREE.Mesh(G.face, fm); face.position.set(0, 0, 0.192); head.add(face);
+  if (av[6]) { const hm = mat(av[6]); const h1 = new THREE.Mesh(G.hair, hm); h1.position.set(0, 0.2, 0); head.add(h1); const h2 = new THREE.Mesh(G.hairBack, hm); h2.position.set(0, 0.05, -0.17); head.add(h2); }
+  const tool = new THREE.Mesh(G.tool, mat('#b8b8b8')); tool.position.set(0, -0.66, 0.06); parts.armR.add(tool); parts.tool = tool;
+  const flame = glowSprite(0xffa040, 0.3, 0.95); flame.position.set(0, -0.62, 0.16); parts.armR.add(flame); parts.flame = flame;
+  body.scale.setScalar(0.94); g.add(body); scene.add(g);
+  return { g, body, parts, mats, dispose() { scene.remove(g); mats.forEach(m => m.dispose()); flame.material.dispose(); } };
+};
+NET.avState = function (q) {
+  const o = q.presence, name = netClean(o.n).slice(0, 14) || '???';
+  let a = NET.avs.get(q.peer);
+  const av = Array.isArray(o.av) && o.av.length === 7 ? o.av.map((c, i) => (i === 6 ? (netCol(c) ? c : '') : netCol(c) ? c : '#888888')) : ['#f2c9a0', '#4f7fd8', '#f2c9a0', '#f2c9a0', '#3b4252', '#3b4252', ''];
+  const key = av.join();
+  if (!a) {
+    a = { peer: q.peer, name, buf: [], key: '', m: null, el: null, light: null, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, walk: 0, spd: 0, st: null, vis: false, blk: false, blkT: 0 };
+    a.el = document.createElement('div'); a.el.className = 'netTag'; $('netTags').appendChild(a.el);
+    NET.avs.set(q.peer, a);
+  }
+  a.name = name; a.el.textContent = name;
+  if (a.key !== key) { if (a.m) a.m.dispose(); a.m = NET.avModel(av); a.key = key; }
+  const run = NET.inRun && NET.inThisRun(q);
+  const was = a.st;
+  a.st = { in: run, al: o.al === 1, es: o.es === 1, hd: o.hd === 1, cr: o.cr === 1, lt: o.lt | 0, ri: Number.isInteger(o.ri) ? o.ri : -1 };
+  if (run && was && was.in && GAME.state === 'play') {   // tell everyone what became of them
+    if (was.al && !a.st.al && !a.st.es) GAME.showHint(`${name} が死んでしまった…`, 3200);
+    if (!was.es && a.st.es) GAME.showHint(`${name} が脱出した！`, 3200);
+  }
+  const s = o.s;
+  if (run && Array.isArray(s) && s.length === 5 && s.every(Number.isFinite)) {
+    const L = a.buf[a.buf.length - 1];
+    if (!L || L.s.some((v, i) => v !== s[i])) a.buf.push({ t: performance.now(), s: s.slice() });
+    if (a.buf.length > 30) a.buf.shift();
+  }
+};
+NET.dropAv = function (a) {
+  if (a.m) a.m.dispose();
+  if (a.el) a.el.remove();
+  if (a.light) { const i = WORLD.dyn.indexOf(a.light); if (i >= 0) WORLD.dyn.splice(i, 1); a.light = null; }
+};
+const _netV = new THREE.Vector3(), _netW = new THREE.Vector3();
+NET.avatars = function (dt) {
+  const W = VW(), H = VH(), rt = performance.now() - 120;
+  for (const a of NET.avs.values()) {
+    const st = a.st, show = !!(st && st.in && st.al && !st.es && a.buf.length && a.m && WORLD.room(st.ri));
+    if (!show) {
+      if (a.m) a.m.g.visible = false; a.el.style.display = 'none';
+      if (a.light) { const i = WORLD.dyn.indexOf(a.light); if (i >= 0) WORLD.dyn.splice(i, 1); a.light = null; }
+      continue;
+    }
+    // where they were 120 ms ago, between the two poses around then
+    const B = a.buf; let p = B[0], n = B[0];
+    for (let i = 0; i < B.length; i++) { if (B[i].t <= rt) p = B[i]; if (B[i].t >= rt) { n = B[i]; break; } n = B[i]; }
+    const k = n.t > p.t ? clamp((rt - p.t) / (n.t - p.t), 0, 1) : 1;
+    const px = a.x, pz = a.z;
+    a.x = lerp(p.s[0], n.s[0], k); a.y = lerp(p.s[1], n.s[1], k); a.z = lerp(p.s[2], n.s[2], k);
+    let dy = n.s[3] - p.s[3]; while (dy > Math.PI) dy -= TAU; while (dy < -Math.PI) dy += TAU;
+    a.yaw = p.s[3] + dy * k; a.pitch = lerp(p.s[4], n.s[4], k);
+    a.spd = lerp(a.spd, Math.hypot(a.x - px, a.z - pz) / Math.max(dt, 1e-3), Math.min(1, dt * 8));
+    const amp = Math.min(1, a.spd / 4.5); a.walk += dt * Math.min(a.spd, 6) * 2.2;
+    const M = a.m, P2 = M.parts, sw = Math.sin(a.walk) * amp * 0.75, cr = st.cr ? 1 : 0;
+    M.g.visible = !st.hd && NET.spec !== a.peer;   // hidden in a closet, or you are watching through their eyes
+    M.g.position.set(a.x, a.y, a.z); M.g.rotation.y = a.yaw + Math.PI;
+    M.body.position.y = -0.42 * cr; M.body.rotation.x = 0;
+    P2.legL.rotation.x = sw - 1.1 * cr; P2.legR.rotation.x = -sw - 1.1 * cr;
+    P2.torso.rotation.x = 0.25 * cr;
+    P2.armL.rotation.x = -sw * 0.8;
+    P2.armR.rotation.x = st.lt ? -1.25 - a.pitch * 0.5 : sw * 0.8;   // holding the light out in front
+    P2.head.rotation.x = -a.pitch * 0.6;
+    P2.tool.visible = st.lt > 0; P2.flame.visible = st.lt === 1;
+    // their lighter / flashlight lights the room on your screen too
+    if (st.lt && M.g.visible) {
+      if (!a.light) a.light = { pos: new THREE.Vector3(), color: new THREE.Color(0xffa04a), intensity: 3.6, range: 9, level: 1, priority: 0, kind: 'peer' };
+      if (!WORLD.dyn.includes(a.light)) WORLD.dyn.push(a.light);   // (a new run starts a fresh list)
+      a.light.color.setHex(st.lt === 2 ? 0xfff1d6 : 0xffa04a); a.light.intensity = st.lt === 2 ? 5 : 3.6;
+      a.light.pos.set(a.x - Math.sin(a.yaw) * 0.5, a.y + 1.45 - 0.4 * cr, a.z - Math.cos(a.yaw) * 0.5);
+    } else if (a.light) { const i = WORLD.dyn.indexOf(a.light); if (i >= 0) WORLD.dyn.splice(i, 1); a.light = null; }
+    // name tag over their head (not through walls)
+    _netV.set(a.x, a.y + 2.05 - 0.45 * cr, a.z);
+    a.blkT -= dt; if (a.blkT <= 0) { a.blkT = 0.3; a.blk = WORLD.blocked(_netW.copy(_netV).setY(a.y + 1.4), GAME.camPos); }
+    const dist = _netV.distanceTo(GAME.camPos);
+    _netV.project(camera);
+    if (!M.g.visible || _netV.z > 1 || dist > 30 || a.blk) a.el.style.display = 'none';
+    else { a.el.style.display = 'block'; a.el.style.left = ((_netV.x + 1) / 2 * W) + 'px'; a.el.style.top = ((1 - _netV.y) / 2 * H) + 'px'; a.el.style.opacity = dist > 18 ? 0.5 : 0.9; }
+  }
+};
+
+/* ---------------- after you die (or escape): watch the others ---------------- */
+NET.targets = () => NET.others().filter(q => NET.inThisRun(q) && q.presence.al === 1 && q.presence.es !== 1);
+NET.died = function (cause) {
+  if (document.pointerLockElement) document.exitPointerLock();
+  UI.show('hud', false); UI.show('touch', false);
+  UI.death(cause);
+};
+NET.watch = function (dir = 0) {
+  const ts = NET.targets();
+  if (!ts.length) { NET.toast('いま見られる仲間がいません'); return; }
+  const i = ts.findIndex(q => q.peer === NET.spec);
+  NET.spec = ts[((i < 0 ? 0 : i + dir) % ts.length + ts.length) % ts.length].peer;
+  UI.show('death', false); UI.show('win', false); UI.show('specBar');
+  MUSIC.stop(1); $('fxBlack').style.opacity = 0; POST.hurt = 0;
+};
+NET.spectate = function () {
+  if (!NET.spec) return;
+  const a = NET.avs.get(NET.spec);
+  if (!a || !a.st || !a.st.al || a.st.es || !a.buf.length) {   // they died or got out: someone else, or back to the screen
+    const ts = NET.targets();
+    if (ts.length) { NET.spec = ts[0].peer; return; }
+    NET.spec = null; GAME.cine = null; UI.show('specBar', false);
+    if (GAME.won) UI.show('win'); else { $('fxBlack').style.opacity = 1; UI.show('death'); }
+    return;
+  }
+  const C = NET.specCine || (NET.specCine = { pos: new THREE.Vector3(), look: new THREE.Vector3() });
+  C.pos.set(a.x, a.y + (a.st.cr ? 1.0 : 1.58), a.z);
+  const cp = Math.cos(a.pitch);
+  C.look.set(C.pos.x - Math.sin(a.yaw) * cp, C.pos.y + Math.sin(a.pitch), C.pos.z - Math.cos(a.yaw) * cp);
+  GAME.cine = C;
+  const r = WORLD.room(a.st.ri);
+  if (r) GAME.room = r;   // their room's light and sound
+  if (a.st.ri > NET.specRi) { NET.specRi = a.st.ri; NET.ensure(a.st.ri + 1); WORLD.trim(a.st.ri); }
+  $('specName').textContent = a.name;
+};
+
+/* ---------------- screens ---------------- */
+NET.hud = function () {
+  const el = $('coopList'); if (!el) return;
+  const me = { name: NET.myName() + '（あなた）', al: PLAYER.alive, es: GAME.won, ri: GAME.room ? GAME.room.index : 0 };
+  const rows = [me].concat([...NET.avs.values()].filter(a => a.st && a.st.in).map(a => ({ name: a.name, al: a.st.al, es: a.st.es, ri: a.st.ri })));
+  el.innerHTML = '';
+  for (const r of rows) {
+    const d = document.createElement('div');
+    d.className = r.es ? 'es' : r.al ? '' : 'dead';
+    d.textContent = `${r.es ? '★' : r.al ? '●' : '✝'} ${r.name}` + (r.al && !r.es && r.ri >= 0 ? `  ${pad4(r.ri)}` : '');
+    el.appendChild(d);
+  }
+};
+NET.openOnline = function () {
+  ['title', 'netroom'].forEach(i => UI.show(i, false));
+  UI.show('online');
+  $('olName').value = NET.myName();
+  NET.render();
+  NET.init().then(() => NET.render());
+};
+NET.showRoom = function () {
+  ['title', 'online'].forEach(i => UI.show(i, false));
+  UI.show('netroom');
+  NET.renderRoom();
+};
+const NET_HOWTO = 'オンラインで遊べるのは、claude.ai にログインして、このアーティファクトを作った人の組織のメンバーか、共有メニューで招待されたアカウントで開いたときです。だれでも見られる公開リンクから開いた人や、ログインしていない人は入れません（ひとりでは遊べます）。';
+NET.render = function () {
+  const st = $('olState'); if (!st) return;
+  const bad = NET.st === 'none' || NET.st === 'err', now = performance.now();
+  $('olPerm').style.display = bad && NET.perm ? '' : 'none';
+  $('olRetry').style.display = bad ? '' : 'none';
+  $('olHost').disabled = NET.st !== 'ok' || !NET.conn || NET.on;
+  st.textContent =
+    NET.st === 'wait' ? 'オンラインに接続しています…'
+      : NET.st === 'none' ? (NET.why === 'nohost' ? 'このページは claude.ai の外で開かれています。claude.ai でアーティファクトを開くと、オンラインでいっしょに遊べます。'
+        : NET.why === 'denied' ? 'このアーティファクトの「ほかの人とつながる」許可がオフになっています。「許可の設定を開く」からオンにしてください。'
+          : 'この画面ではオンラインに入れませんでした。\n' + NET_HOWTO)
+        : NET.st === 'err' ? 'オンラインが使えなくなりました。アーティファクトを開き直してください。\n' + NET_HOWTO
+          : !NET.conn ? (now - NET.okT > 8000 ? '🟡 オンラインのサーバーにつながりません。学校や会社のネットワークでは、通信がふさがれていることがあります。別のネットワークや Claude アプリで試してください。' : '🟡 接続を待っています…')
+            : '🟢 つながっています。部屋を作るか、下の部屋に入ろう（1つの部屋に4人まで）。';
+  if (NET.note && now - NET.noteT < 6000) st.textContent += '\n⚠ ' + NET.note;
+  const L = $('olRooms'); L.innerHTML = '';
+  const rs = NET.st === 'ok' ? NET.rooms() : [];
+  if (!rs.length) { const d = document.createElement('div'); d.className = 'olEmpty'; d.textContent = NET.st === 'ok' ? 'まだ部屋がありません。「部屋を作る」で作ろう！' : '—'; L.appendChild(d); }
+  for (const r of rs) {
+    const d = document.createElement('button'); d.className = 'olRoom';
+    const b = document.createElement('b'); b.textContent = `${r.n} の部屋`;
+    const sm = document.createElement('small'); sm.textContent = `${r.np}/${NET_CAP}人・${r.run ? 'プレイ中（終わったら次から参加）' : '待っています'}${r.mine ? '・あなたの別のタブ' : ''}`;
+    d.append(b, sm);
+    d.onclick = () => { SFX.click && SFX.click(); NET.join(r); };
+    L.appendChild(d);
+  }
+  NET.renderRoom();
+};
+NET.renderRoom = function () {
+  if (!NET.on || $('netroom').classList.contains('hidden')) return;
+  const os = NET.others();
+  $('nrHost').textContent = NET.host ? 'あなたがホスト' : `ホスト：${NET.hostName}`;
+  const L = $('nrList'); L.innerHTML = '';
+  const rows = [{ n: NET.myName() + '（あなた）', host: NET.host, run: false }].concat(os.map(q => ({ n: netClean(q.presence.n).slice(0, 14) || '???', host: q.peer === NET.hostPeer, run: q.presence.in === 1 })));
+  for (const r of rows) {
+    const d = document.createElement('div'); d.className = 'olRoom';
+    const b = document.createElement('b'); b.textContent = (r.host ? '👑 ' : '') + r.n;
+    const sm = document.createElement('small'); sm.textContent = r.run ? 'プレイ中' : '待っています';
+    d.append(b, sm); L.appendChild(d);
+  }
+  $('nrInfo').textContent = NET.host
+    ? `みんながそろったら「スタート」。ほかの人はタイトルの「オンライン」から入れます（${os.length + 1}/${NET_CAP}人）。`
+    : NET.H.st === 'run' && !NET.sawLobby ? 'いまホストたちがプレイ中です。そのランが終わると、次のランからいっしょに遊べます。'
+      : 'ホストがスタートするのを待っています…';
+  $('nrStart').style.display = NET.host ? '' : 'none';
+  $('nrStart').disabled = !NET.conn;
+};
+NET.bind = function () {
+  $('bOnline').onclick = () => NET.openOnline();
+  $('olBack').onclick = () => { UI.show('online', false); UI.title(); };
+  $('olHost').onclick = () => NET.hostRoom();
+  $('olRetry').onclick = () => { if (NET.st === 'err') { NET.room = null; } NET.st = 'off'; NET.init().then(() => NET.render()); NET.render(); };
+  $('olPerm').onclick = () => { if (NET.perm) NET.perm.manage().then(() => { NET.st = 'off'; NET.room = null; return NET.init(); }).then(() => NET.render()).catch(() => NET.toast('アーティファクトのメニューの「権限（Permissions）」から変えてください')); };
+  const nm = $('olName');
+  nm.addEventListener('keydown', e => e.stopPropagation());
+  nm.addEventListener('change', () => { const n = netClean(nm.value).slice(0, 14); store.set('name', n); nm.value = NET.myName(); NET.lookC = null; NET.send(); NET.lobbyPresence(); NET.render(); });
+  $('nrStart').onclick = () => NET.startGame();
+  $('nrLeave').onclick = () => { NET.leave(); NET.openOnline(); };
+  $('dSpec').onclick = $('wSpec').onclick = () => NET.watch(0);
+  $('dRoom').onclick = $('wRoom').onclick = () => NET.quitRun();
+  $('specPrev').onclick = () => NET.watch(-1);
+  $('specNext').onclick = () => NET.watch(1);
+  $('specLeave').onclick = () => NET.quitRun();
+  addEventListener('pagehide', () => { try { if (NET.game) NET.game.leave().catch(() => {}); if (NET.room) NET.room.presence({ dr: null }).catch(() => {}); } catch (e) { /* closing anyway */ } });
+};
+
+/* =========================================================================
    UI
    ========================================================================= */
 const GUIDING = {
@@ -6548,17 +7152,27 @@ const UI = {
     });
   },
   pause() {
-    if (GAME.state !== 'play' || GAME.paused || !PLAYER.alive || GAME.modal || GAME.won) return;
-    GAME.paused = true; UI.show('pause');
-    $('pauseInfo').textContent = `現在の部屋：ドア ${pad4(GAME.room ? GAME.room.index : 0)}　/　金貨 ${GAME.gold}`;
-    if (AU.ctx) AU.ctx.suspend();
+    if (GAME.state !== 'play' || GAME.paused || !PLAYER.alive || GAME.modal || GAME.won || !$('pause').classList.contains('hidden')) return;
+    const coop = NET.inRun;   // online the hotel doesn't stop for you
+    GAME.paused = !coop; UI.show('pause');
+    $('pauseInfo').textContent = `現在の部屋：ドア ${pad4(GAME.room ? GAME.room.index : 0)}　/　金貨 ${GAME.gold}` + (coop ? '\nオンライン中はゲームは止まりません' : '');
+    $('pQuit').textContent = coop ? (NET.host ? 'ランを終わらせる（全員部屋へ）' : '部屋にもどる') : 'タイトルへ';
+    if (AU.ctx && !coop) AU.ctx.suspend();
   },
   resume() {
     GAME.paused = false; UI.show('pause', false); AU.resume();
     if (!IS_TOUCH) requestLock();
   },
+  // the death / win screens: online, watch the others or go back to the room instead of retrying
+  coopButtons(k) {
+    const on = NET.inRun;
+    $(k + 'Retry').style.display = on ? 'none' : ''; $(k + 'Title').style.display = on ? 'none' : '';
+    $(k + 'Spec').style.display = on ? '' : 'none'; $(k + 'Room').style.display = on ? '' : 'none';
+    $(k + 'Room').textContent = NET.host ? 'ランを終わらせる（全員部屋へ）' : '部屋にもどる';
+  },
   death(cause) {
     const lines = GUIDING[cause] || GUIDING.generic;
+    UI.coopButtons('d');
     const box = $('deathText'); box.innerHTML = '';
     UI.show('death'); const d = $('death'); d.classList.remove('show'); void d.offsetWidth; d.classList.add('show');
     MUSIC.play('guiding');
@@ -6572,7 +7186,7 @@ const UI = {
   },
   title() {
     GAME.state = 'title';
-    ['hud', 'touch', 'death', 'win', 'pause', 'loading', 'settings', 'how', 'preshop'].forEach(i => UI.show(i, false));
+    ['hud', 'touch', 'death', 'win', 'pause', 'loading', 'settings', 'how', 'preshop', 'online', 'netroom', 'specBar'].forEach(i => UI.show(i, false));
     UI.show('title');
     $('knobN').textContent = SAVE.knobs; $('bestN').textContent = pad4(SAVE.best);
     MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; } stopRain();
@@ -6605,9 +7219,10 @@ GAME.showHint = (t, ms) => UI.hint(t, ms);
    Game flow
    ========================================================================= */
 let materialsReady = false;
-GAME.startRun = async function () {
+// opt.seed: online, everyone builds the same hotel; opt.slot: where you stand in the elevator
+GAME.startRun = async function (opt = {}) {
   AU.init(); AU.resume();
-  UI.show('title', false); UI.show('death', false); UI.show('win', false);
+  UI.show('title', false); UI.show('death', false); UI.show('win', false); UI.show('online', false); UI.show('netroom', false);
   if (!materialsReady) {
     UI.show('loading');
     if (document.fonts) await Promise.race([document.fonts.load('600 58px "Oswald"').catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
@@ -6617,7 +7232,7 @@ GAME.startRun = async function () {
     materialsReady = true;
     UI.show('loading', false);
   }
-  RUN.seed = (Math.random() * 2 ** 31) | 0;
+  RUN.seed = opt.seed != null ? opt.seed : (Math.random() * 2 ** 31) | 0;
   rng = new RNG(RUN.seed);
   DIRECTOR.newRun(RUN.seed);
   ENT.reset(); WORLD.reset(); PARTICLES.clear(); NOISE.events = []; MUSIC.stop(0.3);
@@ -6628,7 +7243,8 @@ GAME.startRun = async function () {
   LIGHTS.init();
   const r0 = WORLD.generate(0); ENT.onRoomGenerated(r0);
   const r1 = WORLD.generate(1); ENT.onRoomGenerated(r1);
-  PLAYER.reset(r0.toWorld(0, 0, 1.5), r0.wyaw);
+  const sl = opt.slot || 0;
+  PLAYER.reset(r0.toWorld([0, -0.6, 0.6, 0][sl & 3], 0, 1.5 + (sl === 3 ? 0.6 : 0)), r0.wyaw);
   GAME.room = r0; r0.entered = true;
   for (const t of SAVE.preItems) GAME.giveItem(t);
   SAVE.preItems = []; saveGame();
@@ -6654,7 +7270,7 @@ GAME.onEnterRoom = function (room) {
     const rn = $('roomnum'); rn.textContent = pad4(room.index); rn.style.transition = 'none'; rn.style.opacity = 0.9; void rn.offsetWidth; rn.style.transition = 'opacity 2.5s'; rn.style.opacity = 0;
   }
 };
-GAME.onDoorOpened = function (door) { DIRECTOR.onDoorOpened(door); };
+GAME.onDoorOpened = function (door, remote = false) { if (!remote) NET.ev('d', door.room.index); DIRECTOR.onDoorOpened(door, remote); };
 GAME.damage = function (n, cause, quiet = false) {
   if (!PLAYER.alive) return;
   PLAYER.hp -= n; POST.hurt = Math.min(1, POST.hurt + (quiet ? 0.25 : 0.9)); POST.shake = Math.max(POST.shake, quiet ? 0.15 : 0.6);
@@ -6674,15 +7290,30 @@ GAME.kill = function (cause) {
   else SFX.sting();
   GAME.knobsEarned = GAME.maxRoom + (GAME.maxRoom >= 50 ? 15 : 0);
   SAVE.knobs += GAME.knobsEarned; SAVE.best = Math.max(SAVE.best, GAME.maxRoom); SAVE.runs++; saveGame();
-  setTimeout(() => { $('fxBlack').style.opacity = 1; }, 900);
+  const run = RUN.seed, same = () => RUN.seed === run && GAME.state === 'play' && !PLAYER.alive;
+  setTimeout(() => { if (same()) $('fxBlack').style.opacity = 1; }, 900);
   setTimeout(() => {
-    stopRain();
-    GAME.state = 'dead';
-    if (document.pointerLockElement) document.exitPointerLock();
-    UI.show('hud', false); UI.show('touch', false);
-    ENT.reset(); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
-    UI.death(cause);
+    if (!same()) return;
+    if (NET.inRun) { NET.died(cause); return; }   // online the hotel carries on for the others: watch them
+    GAME.deathScreen(cause);
   }, 2200);
+};
+GAME.deathScreen = function (cause) {
+  stopRain();
+  GAME.state = 'dead';
+  if (document.pointerLockElement) document.exitPointerLock();
+  UI.show('hud', false); UI.show('touch', false); UI.show('specBar', false);
+  ENT.reset(); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
+  UI.death(cause);
+};
+// end the run without a death or win screen (online: back to the room's waiting screen)
+GAME.stopRun = function () {
+  GAME.paused = false; GAME.cine = null; GAME.won = false; GAME.modal = null;
+  ENT.reset(); WORLD.reset(); AU.resume(); stopRain();
+  MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
+  ['hud', 'touch', 'death', 'win', 'pause', 'specBar', 'modal'].forEach(i => UI.show(i, false));
+  GAME.state = 'title'; GAME.room = null; $('fxBlack').style.opacity = 0;
+  if (document.pointerLockElement) document.exitPointerLock();
 };
 // a book shows one shape and one digit; reading it is silent. The shape/digit list stays at the bottom left.
 UI.libList = function (clear = false) {
@@ -6736,6 +7367,7 @@ GAME.openBreaker = function (room) {
 };
 GAME.powerOn = function (room) {
   const ev = room.meta.ev; ev.powered = true; ev.stage = 'powered'; SFX.ding();
+  NET.ev('w', room.index);
   const run = RUN.seed, live = () => RUN.seed === run && GAME.state === 'play' && GAME.room === room && PLAYER.alive && !GAME.won;
   ev.led.emissive.setHex(0x00ff40);
   const el = room.meta.elevator; el.open = true; el.carLight.state = 'on'; el.btnM.emissive.setHex(0x30ff60);
@@ -6763,14 +7395,15 @@ GAME.win = function () {
   setTimeout(() => { if (same()) $('fxBlack').style.opacity = 1; }, 3800);
   setTimeout(() => {
     if (!same() || GAME.state !== 'play') return;
-    stopRain();
-    GAME.state = 'won';
     if (document.pointerLockElement) document.exitPointerLock();
     UI.show('hud', false); UI.show('touch', false);
     const earned = 100 + 50;
     SAVE.knobs += earned; SAVE.best = 100; SAVE.wins++; SAVE.runs++; saveGame();
     $('winStats').innerHTML = `ドア 0100 到達　/　金貨 ${GAME.gold}　/　プレイ時間 ${Math.floor(GAME.time / 60)}分${Math.floor(GAME.time % 60)}秒<br>獲得ノブ +${earned}`;
-    UI.show('win'); $('fxBlack').style.opacity = 0;
+    UI.coopButtons('w'); UI.show('win'); $('fxBlack').style.opacity = 0;
+    if (NET.inRun) return;   // online the others may still be in the hotel: you can watch them from here
+    stopRain();
+    GAME.state = 'won';
     if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
   }, 5200);
 };
@@ -6793,11 +7426,12 @@ function update(dt) {
   if (GAME.state === 'play' && !GAME.paused) {
     GAME.time += dt; WORLD.time = GAME.time;
     PLAYER.update(dt);
-    const r = WORLD.roomAt(PLAYER.pos);
+    const r = PLAYER.alive ? WORLD.roomAt(PLAYER.pos) : null;   // (a spectator's room follows whoever they watch)
     if (r && r !== GAME.room) { GAME.room = r; GAME.onEnterRoom(r); }
     GAME.updateDoors(dt);
     for (const rm of WORLD.rooms) for (const fn of rm.updaters) fn(dt, GAME.time);
     ENT.update(dt);
+    NET.update(dt);
     GAME.updateItems(dt);
     PARTICLES.update(dt);
     PLAYER.applyCamera(dt);
@@ -6810,7 +7444,7 @@ function update(dt) {
     // ambience per room
     const rm = GAME.room;
     const dark = rm && rm.dark, out = rm && rm.outdoor, gh = rm && rm.meta.greenhouse;
-    hemi.intensity = damp(hemi.intensity, out ? 0.4 : gh ? 0.07 : dark ? 0.05 : rm.type === 'electrical' ? (rm.meta.ev && rm.meta.ev.powered ? 0.24 : 0.16) : 0.46, 2, dt);
+    hemi.intensity = damp(hemi.intensity, !rm ? 0.3 : out ? 0.4 : gh ? 0.07 : dark ? 0.05 : rm.type === 'electrical' ? (rm.meta.ev && rm.meta.ev.powered ? 0.24 : 0.16) : 0.46, 2, dt);
     hemi.color.setHex(out || gh ? 0x8ea4d8 : 0xc4a27e);
     scene.fog.color.lerp(out ? FOG_OUT : gh ? FOG_GH : FOG_DEFAULT, Math.min(1, dt * 2));
     scene.fog.density = damp(scene.fog.density, out ? 0.02 : 0.034, 2, dt);
@@ -6862,7 +7496,7 @@ function applyHome(S) {
 function boot() {
   if (HUB.embedded) {
     try { applyHome(JSON.parse(localStorage.getItem('3dame-settings'))); } catch (e) { /* no saved home settings */ }
-    addEventListener('message', e => { if (e.data && e.data.h3dSet) applyHome(e.data.h3dSet); });
+    addEventListener('message', e => { if (e.data && e.data.h3dSet) applyHome(e.data.h3dSet); if (e.data && e.data.h3dAvatar) NET.lookC = null; });
   }
   onResize();
   VIEW.init();
@@ -6874,11 +7508,12 @@ function boot() {
   $('bPreShop').onclick = () => UI.preshop();
   $('pResume').onclick = () => UI.resume();
   $('pSettings').onclick = () => { UI.show('pause', false); UI.settings(() => UI.show('pause')); };
-  $('pQuit').onclick = () => { GAME.paused = false; UI.show('pause', false); ENT.reset(); WORLD.reset(); AU.resume(); UI.title(); };
+  $('pQuit').onclick = () => { if (NET.inRun) { UI.show('pause', false); NET.quitRun(); return; } GAME.paused = false; UI.show('pause', false); ENT.reset(); WORLD.reset(); AU.resume(); UI.title(); };
   $('dRetry').onclick = () => { MUSIC.stop(0.5); GAME.startRun(); };
   $('dTitle').onclick = () => { WORLD.reset(); UI.title(); };
   $('wRetry').onclick = () => { MUSIC.stop(0.5); GAME.startRun(); };
   $('wTitle').onclick = () => { WORLD.reset(); UI.title(); };
+  NET.bind();
   document.addEventListener('visibilitychange', () => { if (document.hidden && GAME.state === 'play') UI.pause(); });
   UI.title();
   requestAnimationFrame(frame);
@@ -6889,7 +7524,7 @@ const pressMine = e => UI._press && (e.changedTouches ? [...e.changedTouches].so
 document.addEventListener('touchend', e => { if (pressMine(e)) UI.pressEnd(true); }, true);
 document.addEventListener('mouseup', e => { if (pressMine(e)) UI.pressEnd(true); }, true);
 document.addEventListener('touchcancel', e => { if (pressMine(e)) UI.pressEnd(false); }, true);
-window.__DOORS = { AU, LOOPS, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, THREE, ANIM, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
+window.__DOORS = { AU, LOOPS, NET, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, THREE, ANIM, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
 </script>
 </body>
 </html>
