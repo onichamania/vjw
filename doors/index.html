@@ -103,7 +103,8 @@
   .olRoom b { font-size:16px; font-weight:500; } .olRoom small { font-size:12px; color:var(--sub); }
   .olEmpty { padding:10px; color:#a0a0a0; font-family:"Noto Sans JP",sans-serif; font-size:14px; }
   #olState, #nrInfo { white-space:pre-line; }
-  #olName { flex:1; max-width:220px; background:rgba(0,0,0,.4); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:7px 10px; font-size:15px;
+  #olCode { max-width:120px; text-transform:uppercase; letter-spacing:.1em; }
+  #olName, #olCode { flex:1; max-width:220px; text-transform:none; background:rgba(0,0,0,.4); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:7px 10px; font-size:15px;
     -webkit-user-select:text; user-select:text; }
   .mbtn:disabled { opacity:.45; cursor:default; }
   #pauseInfo { white-space:pre-line; }
@@ -354,6 +355,7 @@
     <p id="olState"></p>
     <div class="row">あなたの名前<input id="olName" maxlength="14" autocomplete="off" spellcheck="false"></div>
     <div id="olRooms" class="olList"></div>
+    <div class="row">部屋番号で入る<span style="display:flex;gap:6px;flex:1;justify-content:flex-end"><input id="olCode" maxlength="6" autocomplete="off" spellcheck="false" placeholder="例 AB12CD"><button class="mbtn" id="olJoin" style="padding:6px 14px;font-size:15px">入る</button></span></div>
     <div class="btns"><button class="mbtn primary" id="olHost">部屋を作る</button><button class="mbtn" id="olPerm">許可の設定を開く</button><button class="mbtn" id="olRetry">もう一度つなぐ</button><button class="mbtn" id="olBack">戻る</button></div>
   </div>
 </div>
@@ -6409,6 +6411,29 @@ const NET_SHIRTS = ['#4f7fd8', '#d84f4f', '#4fae5c', '#d8b04f', '#9b5fd8', '#4fc
 const netClean = s => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g, '').trim();
 const netCol = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
 const nr2 = v => Math.round(v * 100) / 100, nr3 = v => Math.round(v * 1000) / 1000;
+// このゲームは 3dgame のページの枠（iframe）の中で動き、親ページの room を使う。そこで起きる2つの問題をふせぐ：
+// ・渡すデータは親ページ側で作り直す（親の「ふつうのJSONか」の検査で、枠の中で作ったオブジェクトがはじかれないように）
+// ・枠を閉じたら、親に登録した受け取り口をすべて外し、入っていた部屋から出る（閉じた枠の受け取り口が残ると、ほかの受け取り口まで止まることがある）
+// また、つながっている人数と送信エラーを roomDiag() で見られるようにする
+function roomSafe(room){if(!room||room.__safe)return room;let PJ=null;try{if(window.parent!==window&&window.parent.JSON)PJ=window.parent.JSON}catch(e){}
+  const cv=v=>v===undefined||!PJ?v:PJ.parse(JSON.stringify(v));const offs=new Set(),joined=new Set(),keys=new Set();let dead=false;
+  const guard=h=>typeof h!=='function'?h:function(){if(dead)return;try{return h.apply(this,arguments)}catch(e){console.warn('room handler',e)}};
+  const sub=u=>{offs.add(u);return()=>{offs.delete(u);try{u()}catch(e){}}};
+  const note=e=>{roomSafe.err=String(e&&(e.code||e.message)||e).slice(0,60);roomSafe.errT=Date.now();throw e};
+  const wrap=(r,lobby)=>{const w={__safe:true,get name(){return r.name},
+    emit:(t,d)=>r.emit(t,cv(d)).catch(note),on:(t,h,e)=>sub(r.on(t,guard(h),guard(e))),
+    presence:p=>{if(lobby&&p)for(const k in p)keys.add(k);return r.presence(cv(p)).then(()=>{if(lobby)roomSafe.sent=Date.now()},note)},
+    peers:()=>r.peers(),onPeers:(h,e)=>sub(r.onPeers(guard(h),guard(e))),connected:()=>r.connected(),onConnection:(h,e)=>sub(r.onConnection(guard(h),guard(e))),
+    leave:()=>{joined.delete(r);return r.leave()}};
+    if(lobby){roomSafe.lobby=r;w.join=async n=>{const g=await r.join(n);joined.add(g);return wrap(g,false)};
+      if(r.sendToClaudeSession){w.sendToClaudeSession=(d,o)=>r.sendToClaudeSession(cv(d),o);w.canSendToClaudeSession=()=>r.canSendToClaudeSession()}}
+    return w};
+  const bye=()=>{if(dead)return;dead=true;for(const u of offs){try{u()}catch(e){}}offs.clear();for(const g of joined){try{g.leave().catch(()=>{})}catch(e){}}joined.clear();
+    if(keys.size){const p={};for(const k of keys)p[k]=null;try{room.presence(cv(p)).catch(()=>{})}catch(e){}}};
+  addEventListener('pagehide',bye);addEventListener('unload',bye);return wrap(room,true)}
+// 「いまこのページを開いている人：N人」と、出ていれば送信エラー（オンラインの画面に出す）
+function roomDiag(){const r=roomSafe.lobby;if(!r)return'';let n=0;try{n=r.peers().filter(p=>p.kind==='viewer').length}catch(e){}
+  return'（いまこのアーティファクトを開いている人：'+n+'人'+(roomSafe.err&&Date.now()-roomSafe.errT<60000?'・送信エラー：'+roomSafe.err:'')+'）'}
 function netClaude() {
   try { if (window.claude && window.claude.use) return window.claude; } catch (e) { /* not framed by claude.ai */ }
   try { if (window.parent && window.parent !== window && window.parent.claude && window.parent.claude.use) return window.parent.claude; } catch (e) { /* a parent we can't read */ }
@@ -6441,7 +6466,7 @@ NET.init = async function () {
   if (NET.st === 'wait') return false;
   NET.st = 'wait'; NET.render();
   const C = netClaude(); let room = null;
-  if (C) { try { room = await C.use('room'); } catch (e) { room = null; } }
+  if (C) { try { room = roomSafe(await C.use('room')); } catch (e) { room = null; } }
   if (!room) { NET.st = 'none'; NET.why = await NET.whyNot(C); NET.render(); return false; }
   NET.room = room; NET.st = 'ok'; NET.conn = room.connected(); NET.okT = performance.now();
   setTimeout(() => NET.render(), 8200);
@@ -6482,8 +6507,15 @@ NET.hostRoom = async function () {
   Object.assign(NET, { on: true, host: true, game: g, code, hostPeer: null, hostName: NET.myName(), H: { st: 'lobby', ep: 0, seed: 0 }, ep: -1 });
   NET.begin();
 };
+NET.joinCode = function () {
+  const c = netClean($('olCode').value).toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!/^[a-z0-9]{6}$/.test(c)) { NET.toast('部屋番号は英数字6文字です'); return; }
+  const r = NET.rooms().find(x => x.c === 'dr-' + c);
+  NET.join(r || { c: 'dr-' + c, peer: null, n: '', np: 0 });
+};
 NET.join = async function (r) {
   if (NET.on) return;
+  if (!(await NET.init()) || !NET.room) { NET.toast('まだオンラインにつながっていません'); return; }
   if (r.np >= NET_CAP) { NET.toast('この部屋は満員です（4人まで）'); return; }
   let g = null;
   try { g = await NET.room.join(r.c); } catch (e) { NET.toast('部屋に入れませんでした'); return; }
@@ -6519,6 +6551,7 @@ NET.tick = function () {
   const now = performance.now();
   if (now - (NET.lastTick || now) > 1500 && NET.lostT) NET.lostT = now;   // this page was frozen (building rooms...): give the host time to show up again
   NET.lastTick = now;
+  if (NET.host && now - (NET.listT || 0) > 5000) { NET.listT = now; NET.lobbyPresence(); }   // keep the room listed
   if (!NET.host) {   // has the host gone?
     const gone = (NET.lostT && now - NET.lostT > (NET.inRun ? 30000 : 12000)) || (!NET.hostSeen && now - NET.joinT > 12000);   // mid-run, wait out a long hiccup
     if (gone) {
@@ -6606,7 +6639,8 @@ NET.hostState = function (H) {
 NET.onPeers = function () {
   const os = NET.others(), now = performance.now();
   if (!NET.host) {
-    const h = os.find(q => q.peer === NET.hostPeer && q.presence.H && typeof q.presence.H === 'object');
+    const h = os.find(q => (!NET.hostPeer || q.peer === NET.hostPeer) && q.presence.H && typeof q.presence.H === 'object');
+    if (h && !NET.hostPeer) NET.hostPeer = h.peer;   // joined by room number: the host is whoever carries H
     if (h && !NET.hostSeen && os.length + 1 > NET_CAP) { NET.leave('この部屋は満員です（4人まで）'); NET.openOnline(); return; }
     if (h) { NET.lostT = 0; NET.hostSeen = true; NET.hostName = netClean(h.presence.n).slice(0, 14) || NET.hostName; NET.hostState(h.presence.H); }
     else if (NET.hostSeen && !NET.lostT) NET.lostT = now;   // its page may only be reconnecting
@@ -6878,7 +6912,7 @@ NET.render = function () {
           : 'この画面ではオンラインに入れませんでした。\n' + NET_HOWTO)
         : NET.st === 'err' ? 'オンラインが使えなくなりました。アーティファクトを開き直してください。\n' + NET_HOWTO
           : !NET.conn ? (now - NET.okT > 8000 ? '🟡 オンラインのサーバーにつながりません。学校や会社のネットワークでは、通信がふさがれていることがあります。別のネットワークや Claude アプリで試してください。' : '🟡 接続を待っています…')
-            : '🟢 つながっています。部屋を作るか、下の部屋に入ろう（1つの部屋に4人まで）。';
+            : '🟢 つながっています。部屋を作るか、下の部屋に入ろう（1つの部屋に4人まで）。一覧に出ないときは、部屋を作った人の「部屋番号」を入れて入れます。\n' + roomDiag();
   if (NET.note && now - NET.noteT < 6000) st.textContent += '\n⚠ ' + NET.note;
   const L = $('olRooms'); L.innerHTML = '';
   const rs = NET.st === 'ok' ? NET.rooms() : [];
@@ -6896,7 +6930,7 @@ NET.render = function () {
 NET.renderRoom = function () {
   if (!NET.on || $('netroom').classList.contains('hidden')) return;
   const os = NET.others();
-  $('nrHost').textContent = NET.host ? 'あなたがホスト' : `ホスト：${NET.hostName}`;
+  $('nrHost').textContent = (NET.host ? 'あなたがホスト' : `ホスト：${NET.hostName || '…'}`) + `　部屋番号：${NET.code.slice(3).toUpperCase()}`;
   const L = $('nrList'); L.innerHTML = '';
   const rows = [{ n: NET.myName() + '（あなた）', host: NET.host, run: false }].concat(os.map(q => ({ n: netClean(q.presence.n).slice(0, 14) || '???', host: q.peer === NET.hostPeer, run: q.presence.in === 1 })));
   for (const r of rows) {
@@ -6916,6 +6950,8 @@ NET.bind = function () {
   $('bOnline').onclick = () => NET.openOnline();
   $('olBack').onclick = () => { UI.show('online', false); UI.title(); };
   $('olHost').onclick = () => NET.hostRoom();
+  $('olJoin').onclick = () => NET.joinCode();
+  $('olCode').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') NET.joinCode(); });
   $('olRetry').onclick = () => { if (NET.st === 'err') { NET.room = null; } NET.st = 'off'; NET.init().then(() => NET.render()); NET.render(); };
   $('olPerm').onclick = () => { if (NET.perm) NET.perm.manage().then(() => { NET.st = 'off'; NET.room = null; return NET.init(); }).then(() => NET.render()).catch(() => NET.toast('アーティファクトのメニューの「権限（Permissions）」から変えてください')); };
   const nm = $('olName');
