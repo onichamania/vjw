@@ -493,7 +493,7 @@ function addDresser(room, x, z, ry, opt = {}) {
     const back = new THREE.Mesh(boxGeo(dw - 0.06, dh * 0.6, 0.01, MAT.wood), MAT.darkWood); back.position.set(0, -dh / 2 + 0.03 + dh * 0.3, -D / 2 + 0.06); g.add(back);
     const dr = { g, open: false, t: 0, base: g.position.clone(), dir: new THREE.Vector3(Math.sin(F.ry), 0, Math.cos(F.ry)), depth: D * 0.72, contents: null, filled: false, room, floorY: -dh / 2 + 0.035, w: dw, d: D, timothy: false };
     drawers.push(dr); g.userData.dr = dr;
-    room.addInteract(g, { dist: 2.3, icon: 'loot', prompt: () => (dr.open ? (dr.contents && dr.contents.length ? null : '閉める') : '開ける'), use: () => GAME.toggleDrawer(dr) });
+    if (!opt.still) room.addInteract(g, { dist: 2.3, icon: 'loot', prompt: () => (dr.open ? (dr.contents && dr.contents.length ? null : '閉める') : '開ける'), use: () => GAME.toggleDrawer(dr) });
     room.updaters.push(dt => {
       const tgt = dr.open ? 1 : 0;
       if (dr.t !== tgt) { dr.t = dr.open ? Math.min(1, dr.t + dt * 4) : Math.max(0, dr.t - dt * 5); const e = 1 - Math.pow(1 - dr.t, 2); g.position.copy(dr.base).addScaledVector(dr.dir, e * dr.depth); }

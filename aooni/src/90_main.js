@@ -232,11 +232,11 @@ const EVENTS = {
     STORY.flags.glimpse = true; STORY.busy = true; PLAYER.frozen = true;
     PLAYER.pos.set(at.x, FLOORS.F1, at.z); PLAYER.camY = FLOORS.F1 + 1.58; PLAYER.yaw = Math.atan2(at.x - a[0], at.z - a[1]); PLAYER.pitch = 0.05;   // a few steps in, facing it
     ONI.spawn(a[0], FLOORS.F1, a[1], -Math.PI / 2, 'script');
-    ONI.script = { i: 0, steps: [...rest.map(q => ({ t: 'go', p: new THREE.Vector3(q[0], FLOORS.F1, q[1]), sp: 2.8 })), { t: 'gone' }], done: null };
+    ONI.script = { i: 0, steps: [...rest.map(q => ({ t: 'go', p: new THREE.Vector3(q[0], FLOORS.F1, q[1]), sp: 3.2 })), { t: 'gone' }], done: null };
     ONI.script.steps[rest.length].fn = () => { PLAYER.frozen = false; STORY.busy = false; };
     const t0 = GAME.time;
     animate(() => {
-      if (!ONI.on || ONI.state !== 'script' || GAME.time - t0 > 16) { if (PLAYER.frozen && !ONI.on) PLAYER.frozen = false; return false; }
+      if (!ONI.on || ONI.state !== 'script' || GAME.time - t0 > 7) { if (PLAYER.frozen && !ONI.on) PLAYER.frozen = false; return false; }
       lookAtPoint(tmpV.copy(ONI.eye()).setY(ONI.eye().y - 0.4), 0.06); return true;
     });
   },

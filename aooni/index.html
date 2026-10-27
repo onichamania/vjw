@@ -2238,7 +2238,7 @@ function addDresser(room, x, z, ry, opt = {}) {
     const back = new THREE.Mesh(boxGeo(dw - 0.06, dh * 0.6, 0.01, MAT.wood), MAT.darkWood); back.position.set(0, -dh / 2 + 0.03 + dh * 0.3, -D / 2 + 0.06); g.add(back);
     const dr = { g, open: false, t: 0, base: g.position.clone(), dir: new THREE.Vector3(Math.sin(F.ry), 0, Math.cos(F.ry)), depth: D * 0.72, contents: null, filled: false, room, floorY: -dh / 2 + 0.035, w: dw, d: D, timothy: false };
     drawers.push(dr); g.userData.dr = dr;
-    room.addInteract(g, { dist: 2.3, icon: 'loot', prompt: () => (dr.open ? (dr.contents && dr.contents.length ? null : '閉める') : '開ける'), use: () => GAME.toggleDrawer(dr) });
+    if (!opt.still) room.addInteract(g, { dist: 2.3, icon: 'loot', prompt: () => (dr.open ? (dr.contents && dr.contents.length ? null : '閉める') : '開ける'), use: () => GAME.toggleDrawer(dr) });
     room.updaters.push(dt => {
       const tgt = dr.open ? 1 : 0;
       if (dr.t !== tgt) { dr.t = dr.open ? Math.min(1, dr.t + dt * 4) : Math.max(0, dr.t - dt * 5); const e = 1 - Math.pow(1 - dr.t, 2); g.position.copy(dr.base).addScaledVector(dr.dir, e * dr.depth); }
@@ -2502,27 +2502,27 @@ function fusumaTex() {
 // cells: [x, z, w, h] in tiles. wall/floor: material keys. lamps: tile positions of ceiling lights.
 const AREAS = [
   // 1F
-  { id: 'toilet', name: 'トイレ', fl: 'F1', cells: [[-5, 1, 4, 1], [-5, 2, 3, 1], [-5, 3, 1, 2], [-5, 5, 3, 2]], wall: 'wallWhite', floor: 'genkan', lamps: [[-4, 1.5], [-4, 6]] },
+  { id: 'toilet', name: 'トイレ', fl: 'F1', cells: [[-5, 1, 3, 1], [-5, 2, 3, 1], [-5, 3, 1, 2], [-5, 5, 3, 2]], wall: 'wallWhite', floor: 'genkan', lamps: [[-4, 1.5], [-4, 6]] },
   { id: 'corA', name: '廊下', fl: 'F1', cells: [[0, 0, 10, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[2.5, 1.5], [7.5, 1.5]] },
-  { id: 'foyer', name: '玄関', fl: 'F1', cells: [[10, 0, 13, 3], [14, -4, 3, 4], [13, 3, 7, 3], [16, 6, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[13, 1.5], [20, 1.5], [15.5, -2], [16.5, 4.5]] },
+  { id: 'foyer', name: '玄関', fl: 'F1', cells: [[10, 0, 13, 3], [14, -4, 3, 4], [13, 3, 7, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[13, 1.5], [20, 1.5], [15.5, -2], [16.5, 4.5]] },
   { id: 'corB', name: '廊下', fl: 'F1', cells: [[23, 0, 9, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[25.5, 1.5], [30, 1.5]] },
   { id: 'kitchen', name: '食堂', fl: 'F1', cells: [[34, -6, 8, 14]], wall: 'wallGreen', floor: 'floorRed', lamps: [[38, -3.5], [38, 1.5], [38, 5.5]] },
-  { id: 'bath', name: '浴室', fl: 'F1', cells: [[-2, -9, 3, 2], [1, -8, 1, 1], [2, -9, 3, 2], [3, -7, 1, 1]], wall: 'wallWhite', floor: 'vinyl', lamps: [[-0.5, -8], [3.5, -8]] },
-  { id: 'library', name: '図書室', fl: 'F1', cells: [[17, -25, 16, 17], [30, -8, 3, 2], [31, -6, 1, 1]], wall: 'wallBeige', floor: 'floorWood', lamps: [[21, -21], [29, -21], [21, -13], [29, -13], [31.5, -7]] },
+  { id: 'bath', name: '浴室', fl: 'F1', cells: [[-2, -9, 3, 2], [1, -8, 1, 1], [2, -9, 3, 2]], wall: 'wallWhite', floor: 'vinyl', lamps: [[-0.5, -8], [3.5, -8]] },
+  { id: 'library', name: '図書室', fl: 'F1', cells: [[17, -25, 16, 17], [30, -8, 3, 2]], wall: 'wallBeige', floor: 'floorWood', lamps: [[21, -21], [29, -21], [21, -13], [29, -13], [31.5, -7]] },
   { id: 'corC', name: '廊下', fl: 'F1', cells: [[0, -32, 11, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[2.5, -30.5], [8, -30.5]] },
   { id: 'corT', name: '廊下', fl: 'F1', cells: [[11, -32, 15, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[19.5, -30.5], [24, -30.5]] },
   { id: 'tatami', name: '和室', fl: 'F1', cells: [[12, -40, 6, 8]], wall: 'wallBeige', floor: 'tatami', lamps: [[15, -36.5]] },
-  { id: 'hidden', name: '隠し部屋', fl: 'F1', cells: [[30, -44, 9, 8], [34, -36, 1, 1]], wall: 'wallDark', floor: 'floorAttic', dark: true, lamps: [] },
-  { id: 'jail', name: '牢屋', fl: 'F1', cells: [[30, -53, 7, 6], [31, -47, 1, 1]], wall: 'wallGrey', floor: 'brickRed', lamps: [[33.5, -49]] },
+  { id: 'hidden', name: '隠し部屋', fl: 'F1', cells: [[30, -44, 9, 8]], wall: 'wallDark', floor: 'floorAttic', dark: true, lamps: [] },
+  { id: 'jail', name: '牢屋', fl: 'F1', cells: [[30, -53, 7, 6]], wall: 'wallGrey', floor: 'brickRed', lamps: [[33.5, -49]] },
   // 2F
-  { id: 'piano', name: 'ピアノの部屋', fl: 'F2', cells: [[0, 2, 11, 9], [5, 11, 1, 1]], wall: 'wallWhite', floor: 'floorPale', lamps: [[3, 5], [8, 5], [5.5, 9]] },
+  { id: 'piano', name: 'ピアノの部屋', fl: 'F2', cells: [[0, 2, 11, 9]], wall: 'wallWhite', floor: 'floorPale', lamps: [[3, 5], [8, 5], [5.5, 9]] },
   { id: 'cor2', name: '2階 廊下', fl: 'F2', cells: [[13, 2, 10, 2], [16, 4, 2, 8], [20, 4, 1, 5], [18, 10, 2, 2], [20, 11, 1, 1], [13, 12, 10, 2]], wall: 'wallWhite', floor: 'floorWood', lamps: [[15, 3], [21, 3], [17, 8], [17, 13]] },
-  { id: 'kids', name: '子供部屋', fl: 'F2', cells: [[7, -13, 9, 8], [11, -5, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[11.5, -9]] },
-  { id: 'takeshi', name: '右上の部屋', fl: 'F2', cells: [[17, -13, 9, 8], [21, -5, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[21.5, -9]] },
+  { id: 'kids', name: '子供部屋', fl: 'F2', cells: [[7, -13, 9, 8]], wall: 'wallWhite', floor: 'floorWood', lamps: [[11.5, -9]] },
+  { id: 'takeshi', name: '右上の部屋', fl: 'F2', cells: [[17, -13, 9, 8]], wall: 'wallWhite', floor: 'floorWood', lamps: [[21.5, -9]] },
   // 3F
-  { id: 'attic', name: '屋根裏部屋', fl: 'F3', cells: [[11, -12, 9, 10], [15, -2, 1, 1]], wall: 'wallDark', floor: 'floorAttic', lamps: [[15.5, -7]] },
-  { id: 'cor3', name: '3階 廊下', fl: 'F3', cells: [[14, 2, 2, 8], [13, 7, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[15, 4], [15, 8]] },
-  { id: 'bed3', name: '寝室', fl: 'F3', cells: [[0, 4, 9, 8], [9, 8, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[4.5, 8]] },
+  { id: 'attic', name: '屋根裏部屋', fl: 'F3', cells: [[11, -12, 9, 10]], wall: 'wallWhite', floor: 'floorWood', lamps: [[13.5, -8.5], [17.5, -8.5], [15.5, -4.5]] },
+  { id: 'cor3', name: '3階 廊下', fl: 'F3', cells: [[14, 2, 2, 8]], wall: 'wallWhite', floor: 'floorWood', lamps: [[15, 4], [15, 8]] },
+  { id: 'bed3', name: '寝室', fl: 'F3', cells: [[0, 4, 9, 8]], wall: 'wallWhite', floor: 'floorWood', lamps: [[4.5, 8]] },
 ];
 // stairs: a flight inside an area; dir is the way you walk along it from its entry, rise is up (+) or down (-).
 // Each runs on into the dark at its far end; walk into it and you come out of the dark end of the flight it leads to.
@@ -2545,32 +2545,32 @@ const EDGES = [
 // doors: on tile (x, z), in its wall on `side`; `to` is the door you come out of
 const DOORDEFS = [
   { id: 'foyerN', fl: 'F1', x: 15, z: -4, side: 'N', to: 'corC' },
-  { id: 'front', fl: 'F1', x: 16, z: 6, side: 'S', to: null, kind: 'front' },
+  { id: 'front', fl: 'F1', x: 16, z: 5, side: 'S', to: null, kind: 'front' },
   { id: 'corA_wc', fl: 'F1', x: 0, z: 1, side: 'W', to: 'wc' },
-  { id: 'wc', fl: 'F1', x: -2, z: 1, side: 'E', to: 'corA_wc' },
+  { id: 'wc', fl: 'F1', x: -3, z: 1, side: 'E', to: 'corA_wc' },
   { id: 'corB_din', fl: 'F1', x: 31, z: 1, side: 'E', to: 'din' },
   { id: 'din', fl: 'F1', x: 34, z: 1, side: 'W', to: 'corB_din' },
   { id: 'corA_bath', fl: 'F1', x: 2, z: 0, side: 'N', to: 'bath' },
-  { id: 'bath', fl: 'F1', x: 3, z: -7, side: 'S', to: 'corA_bath' },
+  { id: 'bath', fl: 'F1', x: 3, z: -8, side: 'S', to: 'corA_bath' },
   { id: 'corB_lib', fl: 'F1', x: 27, z: 0, side: 'N', to: 'lib', lock: 'k_library' },
-  { id: 'lib', fl: 'F1', x: 31, z: -6, side: 'S', to: 'corB_lib' },
+  { id: 'lib', fl: 'F1', x: 31, z: -7, side: 'S', to: 'corB_lib' },
   { id: 'corC', fl: 'F1', x: 6, z: -30, side: 'S', to: 'foyerN' },
   { id: 'corC_base', fl: 'F1', x: 2, z: -32, side: 'N', to: null, kind: 'basement', lock: 'k_basement' },
   { id: 'corT_hid', fl: 'F1', x: 23, z: -32, side: 'N', to: 'hid', kind: 'hidden' },
-  { id: 'hid', fl: 'F1', x: 34, z: -36, side: 'S', to: 'corT_hid' },
+  { id: 'hid', fl: 'F1', x: 34, z: -37, side: 'S', to: 'corT_hid' },
   { id: 'hid_jail', fl: 'F1', x: 31, z: -44, side: 'N', to: 'jail', kind: 'shelf' },
-  { id: 'jail', fl: 'F1', x: 31, z: -47, side: 'S', to: 'hid_jail' },
+  { id: 'jail', fl: 'F1', x: 31, z: -48, side: 'S', to: 'hid_jail' },
   { id: 'cor2_kids', fl: 'F2', x: 14, z: 2, side: 'N', to: 'kids', lock: 'k_kids' },
-  { id: 'kids', fl: 'F2', x: 11, z: -5, side: 'S', to: 'cor2_kids' },
+  { id: 'kids', fl: 'F2', x: 11, z: -6, side: 'S', to: 'cor2_kids' },
   { id: 'cor2_tk', fl: 'F2', x: 21, z: 2, side: 'N', to: 'tk' },
-  { id: 'tk', fl: 'F2', x: 21, z: -5, side: 'S', to: 'cor2_tk' },
+  { id: 'tk', fl: 'F2', x: 21, z: -6, side: 'S', to: 'cor2_tk' },
   { id: 'cor2_piano', fl: 'F2', x: 14, z: 12, side: 'N', to: 'piano', kind: 'stuck' },
-  { id: 'piano', fl: 'F2', x: 5, z: 11, side: 'S', to: 'cor2_piano' },
+  { id: 'piano', fl: 'F2', x: 5, z: 10, side: 'S', to: 'cor2_piano' },
   { id: 'cor3_attic', fl: 'F3', x: 15, z: 2, side: 'N', to: 'attic' },
-  { id: 'atticBack', fl: 'F3', x: 15, z: -12, side: 'N', to: null, kind: 'back' },
-  { id: 'attic', fl: 'F3', x: 15, z: -2, side: 'S', to: 'cor3_attic' },
-  { id: 'cor3_bed', fl: 'F3', x: 13, z: 7, side: 'W', to: 'bed3', lock: 'k_bedroom' },
-  { id: 'bed3', fl: 'F3', x: 9, z: 8, side: 'E', to: 'cor3_bed' },
+  { id: 'atticBack', fl: 'F3', x: 14, z: -12, side: 'N', to: null, kind: 'back' },
+  { id: 'attic', fl: 'F3', x: 15, z: -3, side: 'S', to: 'cor3_attic' },
+  { id: 'cor3_bed', fl: 'F3', x: 14, z: 7, side: 'W', to: 'bed3', lock: 'k_bedroom' },
+  { id: 'bed3', fl: 'F3', x: 8, z: 8, side: 'E', to: 'cor3_bed' },
 ];
 // what you can carry; desc is the line at the top of the item screen
 const ITEMS = {
@@ -3038,8 +3038,9 @@ const FURNISH = {
     shineAt(r, gb.position.x, 0.83, gb.position.z, 'k_bedroom', false);
     interactBox(r, gb.position.x, 0.9, gb.position.z, 0.5, 0.3, 0.5, () => (STORY.hasGot('k_bedroom') ? null : (STORY.flags.bookMoved ? '寝室の鍵を拾う' : '本を調べる')), () => STORY.event('greenBook'), { icon: 'eye' });
     box(r, 0.45, 0.45, 0.45, MAT.darkWood, tm(ox + 0.5), 0, tm(oz + 15.5));
-    // along the middle aisle, up the gap in the shelves and away behind the top row (seen from just inside the way in)
-    r.oniGlimpse = [[ox + 13.5, oz + 8.6], [ox + 8.2, oz + 8.6], [ox + 8.2, oz + 1.5], [ox + 3.8, oz + 1.5]].map(([x, z]) => [tm(x), tm(z)]);
+    // a moment's sight of it (as in the original, about three seconds): it crosses the near aisle, right to left,
+    // and is gone behind the tall shelf by the way in (seen from just inside it)
+    r.oniGlimpse = [[ox + 11.2, oz + 12.1], [ox + 4.6, oz + 12.1]].map(([x, z]) => [tm(x), tm(z)]);
     r.glimpseAt = { x: tm(ox + 14.5), z: tm(oz + 16.4) };
     r.oniSpawn = [tm(ox + 4.5), tm(oz + 4.8)];
   },
@@ -3161,17 +3162,22 @@ const FURNISH = {
     shineAt(r, tm(ox + 4.5) - 0.3, 0.01, tm(oz) + 0.5, 'k_library', false);
     interactBox(r, tm(ox + 4.5) - 0.3, 0.3, tm(oz) + 0.6, 0.7, 0.6, 0.6, () => (chairAway(MAN.tkChair) && !STORY.hasGot('k_library') ? '机の下を調べる' : null), () => STORY.event('libraryKey'), { icon: 'eye' });
     addBookshelf(r, tm(ox + 7.6), tm(oz) + 0.3, 0, tm(2), 2.4);
-    addDresser(r, tm(ox + 2.3), tm(oz) + 0.35, 0, { w: 1.2, h: 0.9, d: 0.5, rows: 3, cols: 1, mat: MAT.wood });
+    addDresser(r, tm(ox + 2.3), tm(oz) + 0.35, 0, { w: 1.2, h: 0.9, d: 0.5, rows: 3, cols: 1, mat: MAT.wood, still: true });
     addSimpleBed(r, tm(ox + 8) + 0.2, tm(oz + 6));
     // the handkerchief turns up in front of the closet after the first chase
     const hk = shineAt(r, tm(ox) + 0.7, 0.0, tm(oz) + 1.6, 'hanky', false);
     interactBox(r, tm(ox) + 0.7, 0.15, tm(oz) + 1.6, 0.5, 0.3, 0.5, () => (hk.visible && !STORY.hasGot('hanky') ? '光っているものを拾う' : null), () => STORY.event('hanky'), { icon: 'hand' });
   },
   attic(r) {
-    const ox = 11, oz = -12;
-    MAN.atCloset = addTansu(r, tm(ox) + 0.6, tm(oz) + 0.5, 0);
-    for (const [x, z, s, ry] of [[ox + 7.5, oz + 0.8, 0.8, 0.2], [ox + 8.2, oz + 1.6, 0.6, 0.6], [ox + 6.5, oz + 0.7, 0.55, 1.1], [ox + 0.8, oz + 8.5, 0.7, 0.4], [ox + 8, oz + 8.6, 0.7, 0]]) addCrate(r, tm(x), tm(z), s, ry);
-    addShelfRack(r, tm(ox + 4.5), tm(oz) + 0.4, 0, 2.2, 2.2, { mat: MAT.darkWood });
+    // as in 6.23: a plain, lit room. The wardrobe top left, the door that never opens in the back wall,
+    // a low chest of drawers top right, a little desk with a chair bottom right
+    const ox = 11, oz = -12, pale = std({ color: 0xcfc6a8, roughness: 0.6 });
+    MAN.atCloset = addTansu(r, tm(ox) + 0.6, tm(oz) + 0.5, 0, { mat: MAT.wood });
+    addDresser(r, tm(ox + 8), tm(oz) + 0.3, 0, { w: tm(2) - 0.2, h: 1.0, d: 0.55, rows: 2, cols: 4, mat: pale, top: pale, still: true });
+    const dk = new Frame(r, tm(ox + 8.5) - 0.1, 0, tm(oz + 8.5), -Math.PI / 2);
+    dk.box(1.3, 0.05, 0.7, pale, 0, 0.76, 0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) dk.box(0.05, 0.74, 0.05, MAT.darkWood, sx * 0.6, 0.37, sz * 0.3);
+    dk.collide(-0.65, 0.65, 0, 0.8, -0.35, 0.35);
+    addChairW(r, tm(ox + 7.5) + 0.2, tm(oz + 8.5), Math.PI / 2, AOM.grey);
   },
   bed3(r) {
     const ox = 0, oz = 4;
@@ -3182,7 +3188,7 @@ const FURNISH = {
     addNightstand(r, tm(ox + 4), tm(oz) + 0.4, 0);
     box(r, T - 0.05, 0.004, tm(2) - 0.05, AOM.floorPale, tm(ox + 1.5), 0.002, tm(oz + 1), 0, false);
     const hole = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), MAT.void); hole.rotation.x = -Math.PI / 2; hole.position.set(tm(ox + 2.5), 0.012, tm(oz + 1)); hole.visible = false; r.group.add(hole); MAN.hole = hole;
-    addDresser(r, tm(ox + 8) + 0.3, tm(oz + 5), -Math.PI / 2, { w: 1.4, h: 0.9, d: 0.5, rows: 3, cols: 1, mat: MAT.wood });
+    addDresser(r, tm(ox + 9) - 0.3, tm(oz + 6.4), -Math.PI / 2, { w: 1.4, h: 0.9, d: 0.5, rows: 3, cols: 1, mat: MAT.wood, still: true });   // against the right wall, clear of the door
     addRug(r, tm(ox + 4), tm(oz + 5.5), tm(4), tm(2.5), 0, 7);
   },
 };
@@ -4715,11 +4721,11 @@ const EVENTS = {
     STORY.flags.glimpse = true; STORY.busy = true; PLAYER.frozen = true;
     PLAYER.pos.set(at.x, FLOORS.F1, at.z); PLAYER.camY = FLOORS.F1 + 1.58; PLAYER.yaw = Math.atan2(at.x - a[0], at.z - a[1]); PLAYER.pitch = 0.05;   // a few steps in, facing it
     ONI.spawn(a[0], FLOORS.F1, a[1], -Math.PI / 2, 'script');
-    ONI.script = { i: 0, steps: [...rest.map(q => ({ t: 'go', p: new THREE.Vector3(q[0], FLOORS.F1, q[1]), sp: 2.8 })), { t: 'gone' }], done: null };
+    ONI.script = { i: 0, steps: [...rest.map(q => ({ t: 'go', p: new THREE.Vector3(q[0], FLOORS.F1, q[1]), sp: 3.2 })), { t: 'gone' }], done: null };
     ONI.script.steps[rest.length].fn = () => { PLAYER.frozen = false; STORY.busy = false; };
     const t0 = GAME.time;
     animate(() => {
-      if (!ONI.on || ONI.state !== 'script' || GAME.time - t0 > 16) { if (PLAYER.frozen && !ONI.on) PLAYER.frozen = false; return false; }
+      if (!ONI.on || ONI.state !== 'script' || GAME.time - t0 > 7) { if (PLAYER.frozen && !ONI.on) PLAYER.frozen = false; return false; }
       lookAtPoint(tmpV.copy(ONI.eye()).setY(ONI.eye().y - 0.4), 0.06); return true;
     });
   },
