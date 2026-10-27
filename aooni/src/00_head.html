@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>青鬼 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Serif+JP:wght@600;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#eef0f6; --sub:#9aa3bf; --panel:rgba(6,8,16,.86); --line:rgba(170,190,255,.22); --blue:#6f86ff; --blue2:#3a4fd0; --red:#ff3b3b;
+    --ui: "Noto Sans JP",system-ui,sans-serif;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#000; color:var(--ink);
+    font-family:var(--ui); -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  #c { position:fixed; inset:0; width:100%; height:100%; display:block; background:#000; }
+  .hidden { display:none !important; }
+  button { font-family:var(--ui); }
+
+  /* ---------- fx layers ---------- */
+  .fx { position:fixed; inset:0; pointer-events:none; }
+  #fxVignette { background:radial-gradient(ellipse at center, rgba(0,0,0,0) 42%, rgba(0,0,0,.6) 85%, rgba(0,0,0,.92) 120%); }
+  #fxChase { opacity:0; background:radial-gradient(ellipse at center, rgba(20,30,120,0) 40%, rgba(25,35,140,.35) 85%, rgba(10,10,60,.75) 120%); transition:opacity .4s; }
+  #fxHide { opacity:0; transition:opacity .35s; }
+  #fxHide.closet { background:
+      linear-gradient(90deg, #000 0%, #000 calc(50% - 12vw), rgba(0,0,0,.55) calc(50% - 7vw), rgba(0,0,0,0) calc(50% - 3vw), rgba(0,0,0,0) calc(50% + 3vw), rgba(0,0,0,.55) calc(50% + 7vw), #000 calc(50% + 12vw), #000 100%); }
+  #fxHide.bed { background:linear-gradient(180deg, #000 0%, #000 22%, rgba(0,0,0,.5) 34%, rgba(0,0,0,0) 44%, rgba(0,0,0,0) 86%, rgba(0,0,0,.7) 94%, #000 100%); }
+  #fxBlack { background:#000; opacity:0; transition:opacity .6s; z-index:3; }
+  #fxWhite { background:#fff; opacity:0; transition:opacity 1.6s; z-index:3; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:2; }
+  #crosshair { position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%;
+    background:rgba(255,255,255,.55); box-shadow:0 0 4px rgba(0,0,0,.8); transition:all .12s; }
+  #crosshair.on { width:26px; height:26px; margin:-13px 0 0 -13px; background:transparent; border:2px solid rgba(255,255,255,.85); }
+  #prompt { position:absolute; left:50%; top:calc(50% + 30px); transform:translateX(-50%); display:flex; align-items:center; gap:8px;
+    font-size:17px; letter-spacing:.04em; color:#fff; text-shadow:0 2px 6px #000, 0 0 2px #000; opacity:0; transition:opacity .12s; white-space:nowrap; }
+  #prompt.on { opacity:1; }
+  #prompt .key { display:inline-grid; place-items:center; min-width:24px; height:24px; padding:0 6px; border:2px solid #fff; border-radius:5px; font-size:14px; font-weight:700; background:rgba(0,0,0,.35); }
+  body.touch #prompt .key { display:none; }
+  #hint { position:absolute; left:50%; bottom:118px; transform:translateX(-50%); font-size:18px; color:#fff; text-align:center;
+    text-shadow:0 2px 8px #000, 0 0 3px #000; opacity:0; transition:opacity .3s; max-width:90vw; }
+  #hint.on { opacity:1; }
+  #place { position:absolute; left:50%; top:16px; transform:translateX(-50%); font-family:"Noto Serif JP",serif; font-size:16px; letter-spacing:.3em; color:rgba(220,228,255,.8);
+    opacity:0; transition:opacity 1.2s; text-shadow:0 2px 4px #000; white-space:nowrap; }
+  #inv { position:absolute; left:calc(env(safe-area-inset-left) + 12px); top:calc(env(safe-area-inset-top) + 12px); display:flex; flex-direction:column; gap:4px; pointer-events:auto; }
+  #inv .it { display:flex; align-items:center; gap:6px; font-size:14px; color:#e9ecf8; text-shadow:0 1px 3px #000, 0 0 2px #000; background:rgba(0,0,0,.35); border-radius:6px; padding:2px 8px 2px 4px; }
+  #inv .it svg { width:22px; height:22px; filter:drop-shadow(0 1px 2px #000); }
+  #inv .it.view { cursor:pointer; border:1px solid var(--line); }
+  #toast { position:absolute; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+  .toastItem { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--blue); padding:9px 14px; border-radius:6px; font-size:14px; animation:tin .35s ease-out; max-width:70vw; }
+  @keyframes tin { from { transform:translateX(30px); opacity:0; } to { transform:none; opacity:1; } }
+  #fps { position:absolute; right:8px; bottom:6px; font-size:11px; color:#8f8; opacity:.7; }
+
+  /* ---------- message window (like the original's) ---------- */
+  #msg { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 18px); transform:translateX(-50%); width:min(760px,94vw); z-index:5; pointer-events:auto; cursor:pointer; }
+  #msgBox { background:linear-gradient(180deg, rgba(24,30,70,.92), rgba(8,10,30,.94)); border:3px solid #e8ecff; border-radius:8px; box-shadow:0 0 0 2px #0b0e24, 0 10px 30px rgba(0,0,0,.7);
+    padding:14px 20px 18px; min-height:96px; font-size:min(4.6vw,20px); line-height:1.65; color:#fff; white-space:pre-wrap; position:relative; }
+  #msgName { display:inline-block; background:rgba(8,10,30,.94); border:3px solid #e8ecff; border-bottom:0; border-radius:8px 8px 0 0; padding:3px 14px 2px; font-size:15px; color:#bfd0ff; margin-left:12px; }
+  #msgName:empty { display:none; }
+  #msgNext { position:absolute; right:14px; bottom:6px; font-size:14px; color:#cfd8ff; animation:bob 1s infinite; }
+  @keyframes bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
+  body.short #msgBox { min-height:70px; padding:8px 14px 12px; font-size:16px; }
+
+  /* ---------- touch ---------- */
+  #touch { position:fixed; inset:0; pointer-events:none; z-index:1; }
+  #touch > * { pointer-events:auto; }
+  #lookZone { position:absolute; right:0; top:0; width:60%; height:100%; pointer-events:auto; }
+  #stickZone { position:absolute; left:0; top:25%; width:40%; height:75%; }
+  #stickBase { position:absolute; width:130px; height:130px; margin:-65px 0 0 -65px; border-radius:50%; border:2px solid rgba(255,255,255,.25); background:rgba(255,255,255,.06); display:none; }
+  #stickKnob { position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%; background:rgba(255,255,255,.35); }
+  .tbtn { position:absolute; border-radius:50%; border:4px solid #d6ddf6; background:rgba(8,9,16,.78); color:#e6ebff; padding:0; font-size:15px; display:grid; place-items:center; }
+  .tbtn svg { width:62%; height:62%; display:block; pointer-events:none; }
+  .tbtn:active { background:rgba(40,48,90,.85); }
+  #tUse { right:28px; bottom:150px; width:78px; height:78px; opacity:.45; transition:opacity .15s; }
+  #tUse.ready { opacity:1; box-shadow:0 0 16px rgba(200,210,255,.4); }
+  #tRun { right:118px; bottom:92px; width:70px; height:70px; }
+  #tRun.on { background:rgba(60,70,140,.9); }
+  #tPause { right:16px; top:16px; width:44px; height:44px; border-width:3px; border-radius:12px; }
+  #tPause svg { width:56%; height:56%; }
+
+  /* ---------- screens ---------- */
+  .screen { position:fixed; inset:0; z-index:4; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;
+    padding-top:calc(env(safe-area-inset-top) + 24px); padding-bottom:calc(env(safe-area-inset-bottom) + 24px); }
+  #title { background:radial-gradient(ellipse at 50% 35%, rgba(40,55,150,.35), rgba(0,0,0,.96) 70%), #000; overflow-y:auto; justify-content:safe center; }
+  #titleFace { width:min(42vw,30vh,230px); height:auto; margin-bottom:6px; filter:drop-shadow(0 0 24px rgba(70,90,255,.45)); }
+  .logo { font-family:"Noto Serif JP",serif; font-weight:900; font-size:min(24vw,20vh,150px); letter-spacing:.12em; line-height:1; color:#d9e0ff;
+    text-shadow:0 0 30px rgba(80,110,255,.5), 0 6px 0 #0d1240, 0 10px 30px #000; }
+  .sublogo { font-size:14px; letter-spacing:.5em; color:var(--sub); margin:8px 0 28px; }
+  .menu { display:flex; flex-direction:column; gap:10px; width:min(320px,86vw); }
+  .mbtn { background:rgba(12,14,30,.8); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:13px 18px; font-size:18px;
+    letter-spacing:.08em; cursor:pointer; transition:all .15s; text-align:center; }
+  .mbtn:hover { background:rgba(36,44,96,.9); border-color:rgba(190,205,255,.55); }
+  .mbtn.primary { background:linear-gradient(180deg,#6f86ff,#3546b8); color:#fff; border:0; font-weight:700; font-size:20px; }
+  .mbtn:disabled { opacity:.4; cursor:default; }
+  .foot { position:absolute; bottom:calc(env(safe-area-inset-bottom) + 10px); font-size:11px; color:rgba(255,255,255,.35); text-align:center; padding:0 12px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; width:min(540px,94vw); max-height:86vh; overflow:auto; }
+  .panel h2 { margin:0 0 14px; font-size:22px; letter-spacing:.08em; color:#aebdff; font-weight:700; font-family:"Noto Serif JP",serif; }
+  .panel p, .panel li { font-size:14px; line-height:1.75; color:#dfe4f5; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0; font-size:14px; }
+  .seg { display:flex; gap:4px; }
+  .seg button { background:rgba(255,255,255,.06); color:#ddd; border:1px solid var(--line); padding:6px 12px; border-radius:6px; cursor:pointer; }
+  .seg button.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+  input[type=range] { width:160px; accent-color:var(--blue); }
+  #loading { background:#000; }
+  #loading .bar { width:min(320px,70vw); height:3px; background:#222; margin-top:16px; overflow:hidden; }
+  #loading .bar i { display:block; height:100%; width:0; background:var(--blue); transition:width .2s; }
+  #pause { background:rgba(0,0,0,.72); }
+  #over { background:#000; opacity:0; transition:opacity 1.2s; }
+  #over.show { opacity:1; }
+  #over .big { font-family:"Noto Serif JP",serif; font-weight:900; font-size:min(14vw,92px); color:#c8102e; letter-spacing:.12em; text-shadow:0 0 30px rgba(255,0,0,.35); }
+  #overSub { color:#9aa3bf; margin:10px 0 24px; font-size:15px; text-align:center; line-height:1.8; }
+  #end { background:#000; }
+  #endText { max-width:min(680px,90vw); text-align:center; min-height:180px; }
+  #endText .gl { font-family:"Noto Serif JP",serif; font-size:min(5vw,22px); color:#e6ebff; line-height:1.9; margin:8px 0; opacity:0; transition:opacity 1.4s; }
+  #endText .gl.on { opacity:1; }
+  #endStats { font-size:15px; color:#9fb0e6; letter-spacing:.06em; margin:18px 0; text-align:center; line-height:1.8; opacity:0; transition:opacity 1s; }
+  .btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+
+  /* ---------- modal: piano / sheet music ---------- */
+  #modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:6; overflow-y:auto; touch-action:pan-y; }
+  #modal > * { margin:auto; flex-shrink:0; }
+  .close { position:absolute; right:10px; top:6px; background:none; border:0; font-size:26px; cursor:pointer; color:inherit; }
+  .sheet { background:#efe6cf; color:#2a2216; border-radius:4px; padding:18px 22px; width:min(560px,94vw); box-shadow:0 20px 60px #000; position:relative; font-family:"Noto Serif JP",serif; }
+  .sheet h3 { margin:0 0 6px; font-size:17px; letter-spacing:.1em; }
+  .sheet svg { width:100%; height:auto; display:block; }
+  .sheet .note { font-family:var(--ui); font-size:13px; color:#5a4a30; margin-top:6px; }
+  .piano { background:#141414; border:2px solid #3a3a3a; border-radius:12px; padding:14px 16px 18px; width:min(620px,96vw); position:relative; color:#ddd; text-align:center; }
+  .piano .staffs { background:#efe6cf; border-radius:6px; padding:4px 8px; margin-bottom:12px; }
+  .piano .staffs svg { width:100%; height:auto; display:block; }
+  .keys { position:relative; display:flex; height:min(150px,28vh); user-select:none; }
+  .keys .w { flex:1; background:linear-gradient(#fff,#e8e8e8); border:1px solid #333; border-radius:0 0 6px 6px; display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:8px; font-size:14px; color:#333; cursor:pointer; }
+  .keys .w.down { background:linear-gradient(#cfd8ff,#aab8ff); }
+  .keys .b { position:absolute; top:0; width:7%; height:58%; background:linear-gradient(#333,#000); border-radius:0 0 4px 4px; margin-left:-3.5%; cursor:pointer; z-index:1; }
+  .keys .b.down { background:#445; }
+  .piano .msgline { font-size:13px; color:#aab; margin-top:10px; }
+  body.short .piano .staffs { margin-bottom:6px; } body.short .keys { height:22vh; }
+  #rot { position:fixed; left:0; top:0; width:100%; height:100%; transform-origin:0 0; overflow:hidden; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="rot">
+<canvas id="c"></canvas>
+<div id="fxVignette" class="fx"></div>
+<div id="fxChase" class="fx"></div>
+<div id="fxHide" class="fx"></div>
+<div id="fxBlack" class="fx"></div>
+<div id="fxWhite" class="fx"></div>
+
+<div id="hud" class="hidden">
+  <div id="crosshair"></div>
+  <div id="prompt"><span class="key">E</span><span id="promptText"></span></div>
+  <div id="place"></div>
+  <div id="hint"></div>
+  <div id="inv"></div>
+  <div id="toast"></div>
+  <div id="fps"></div>
+</div>
+
+<div id="touch" class="hidden">
+  <div id="lookZone"></div>
+  <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <button id="tUse" class="tbtn" aria-label="調べる"></button>
+  <button id="tRun" class="tbtn" aria-label="走る"></button>
+  <button id="tPause" class="tbtn" aria-label="一時停止"></button>
+</div>
+
+<div id="msg" class="hidden"><div id="msgName"></div><div id="msgBox"><span id="msgText"></span><span id="msgNext">▼</span></div></div>
+
+<div id="title" class="screen">
+  <svg id="titleFace" viewBox="0 0 200 220" aria-hidden="true">
+    <defs><radialGradient id="tfS" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#7d8fff"/><stop offset=".6" stop-color="#4253d6"/><stop offset="1" stop-color="#1c2280"/></radialGradient></defs>
+    <path d="M100 6 C152 6 186 46 186 104 C186 168 150 214 100 214 C50 214 14 168 14 104 C14 46 48 6 100 6Z" fill="url(#tfS)"/>
+    <ellipse cx="68" cy="96" rx="27" ry="30" fill="#fff"/><ellipse cx="132" cy="96" rx="27" ry="30" fill="#fff"/>
+    <circle cx="72" cy="104" r="7" fill="#000"/><circle cx="128" cy="104" r="7" fill="#000"/>
+    <path d="M94 120 Q100 138 106 120" fill="none" stroke="#2a2f9a" stroke-width="5" stroke-linecap="round"/>
+    <path d="M52 160 Q100 178 148 160 Q100 196 52 160Z" fill="#2a2f9a"/><path d="M58 161 Q100 172 142 161" fill="none" stroke="#11145a" stroke-width="3"/>
+  </svg>
+  <div class="logo">青鬼</div>
+  <div class="sublogo">3D　一人称版</div>
+  <div class="menu">
+    <button class="mbtn primary" id="bNew">はじめから</button>
+    <button class="mbtn" id="bCont">つづきから</button>
+    <button class="mbtn" id="bSettings">設定</button>
+    <button class="mbtn" id="bHow">遊び方</button>
+  </div>
+  <div class="foot">非公式のファンメイド再現作品です（原作「青鬼」noprops 様とは無関係）。すべての映像と音はコードで生成しています。</div>
+</div>
+
+<div id="loading" class="screen hidden">
+  <div style="letter-spacing:.4em;color:#9aa3bf">LOADING</div>
+  <div class="bar"><i id="loadBar"></i></div>
+</div>
+
+<div id="settings" class="screen hidden" style="background:rgba(0,0,0,.85)">
+  <div class="panel">
+    <h2>設定</h2>
+    <div class="row">画質<div class="seg" id="sQuality"><button data-v="low">低</button><button data-v="medium">中</button><button data-v="high">高</button></div></div>
+    <div class="row">明るさ<input type="range" id="sBright" min="0.6" max="1.8" step="0.05"></div>
+    <div class="row">視点感度<input type="range" id="sSens" min="0.3" max="2.5" step="0.05"></div>
+    <div class="row">視野角 (FOV)<input type="range" id="sFov" min="60" max="100" step="1"></div>
+    <div class="row">音量<input type="range" id="sVol" min="0" max="1" step="0.05"></div>
+    <div class="row">FPS表示<div class="seg" id="sFps"><button data-v="0">OFF</button><button data-v="1">ON</button></div></div>
+    <div class="btns"><button class="mbtn" id="sBack">戻る</button></div>
+  </div>
+</div>
+
+<div id="how" class="screen hidden" style="background:rgba(0,0,0,.9)">
+  <div class="panel">
+    <h2>遊び方</h2>
+    <p>町はずれの洋館に入ったひろしたち。扉は閉ざされ、仲間ともはぐれてしまった。屋敷を調べて鍵を集め、<b>玄関から脱出</b>しよう。</p>
+    <ul>
+      <li><b>PC</b>：クリックで視点固定 / WASD 移動 / Shift 走る / マウス 視点 / E・クリック 調べる・扉・隠れる / Esc 一時停止</li>
+      <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、手のボタンで調べる、走るボタンで走る。物を直接タップしても調べられます。</li>
+      <li>屋敷には<b>青い化け物</b>がいる。見つかったら全力で逃げろ。扉を抜けても追ってくる。</li>
+      <li><b>ロッカー</b>や<b>タンス</b>に隠れればやり過ごせる。ただし、隠れるところを見られていたら……。</li>
+      <li>ロッカーの中からは、すき間ごしに外が見える。息をひそめて、いなくなるのを待とう。</li>
+      <li>鍵を拾うたびに自動で記録されます。つかまっても「つづきから」で再開できます。</li>
+    </ul>
+    <div class="btns"><button class="mbtn" id="hBack">戻る</button></div>
+  </div>
+</div>
+
+<div id="pause" class="screen hidden">
+  <div class="panel" style="text-align:center">
+    <h2>一時停止</h2>
+    <p id="pauseInfo"></p>
+    <div class="menu" style="margin:0 auto">
+      <button class="mbtn primary" id="pResume">再開</button>
+      <button class="mbtn" id="pSettings">設定</button>
+      <button class="mbtn" id="pQuit">タイトルへ</button>
+    </div>
+  </div>
+</div>
+
+<div id="over" class="screen hidden">
+  <div class="big">GAME OVER</div>
+  <div id="overSub"></div>
+  <div class="btns" id="overBtns" style="opacity:0;transition:opacity 1s">
+    <button class="mbtn primary" id="oCont">つづきから</button>
+    <button class="mbtn" id="oTitle">タイトルへ</button>
+  </div>
+</div>
+
+<div id="end" class="screen hidden">
+  <div id="endText"></div>
+  <div id="endStats"></div>
+  <div class="btns" id="endBtns" style="opacity:0;transition:opacity 1s"><button class="mbtn primary" id="eTitle">タイトルへ</button></div>
+</div>
+
+<div id="modal" class="hidden"></div>
+</div>
+
+<script type="module">
