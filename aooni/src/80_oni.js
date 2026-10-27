@@ -6,69 +6,75 @@
    opens again and it comes in.
    ========================================================================= */
 function makeOniModel() {
-  const skin = new THREE.MeshStandardMaterial({ color: 0x8c86ee, roughness: 0.62, emissive: 0x1a1660, emissiveIntensity: 0.45 });
-  const skinD = new THREE.MeshStandardMaterial({ color: 0x6f68d8, roughness: 0.66, emissive: 0x120f4a, emissiveIntensity: 0.45 });
-  const lipM = new THREE.MeshStandardMaterial({ color: 0x6a5ec8, roughness: 0.5, emissive: 0x120f40, emissiveIntensity: 0.4 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.25, emissive: 0x9a9a9a, emissiveIntensity: 0.55 });
-  const iris = new THREE.MeshStandardMaterial({ color: 0x050407, roughness: 0.08, metalness: 0.1 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0x938fe4, roughness: 0.72, emissive: 0x15124a, emissiveIntensity: 0.32 });
+  const skinD = new THREE.MeshStandardMaterial({ color: 0x6d66c4, roughness: 0.75, emissive: 0x0e0b38, emissiveIntensity: 0.3 });
+  const socket = new THREE.MeshStandardMaterial({ color: 0x2e2766, roughness: 0.85 });
+  const lipM = new THREE.MeshStandardMaterial({ color: 0x7a6cc4, roughness: 0.55, emissive: 0x120f40, emissiveIntensity: 0.3 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xece8dc, roughness: 0.3, emissive: 0x6a6a64, emissiveIntensity: 0.5 });
+  const iris = new THREE.MeshStandardMaterial({ color: 0x030205, roughness: 0.05, metalness: 0.2 });
   const shine = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const mouthM = new THREE.MeshStandardMaterial({ color: 0x1a0610, roughness: 0.8 });
-  const S = (r, sx, sy, sz, m, x = 0, y = 0, z = 0, seg = 20) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.max(8, seg * 0.7 | 0)), m); o.scale.set(sx, sy, sz); o.position.set(x, y, z); o.castShadow = true; return o; };
+  const S = (r, sx, sy, sz, m, x = 0, y = 0, z = 0, seg = 20, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.max(8, seg * 0.7 | 0)), m); o.scale.set(sx, sy, sz); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = true; return o; };
   const C = (rt, rb, h, m, y) => { const g = new THREE.CylinderGeometry(rt, rb, h, 14); g.translate(0, -h / 2, 0); const o = new THREE.Mesh(g, m); o.position.y = y; o.castShadow = true; return o; };
   const root = new THREE.Group(), hips = new THREE.Group(); hips.position.y = 1.05; root.add(hips);
-  hips.add(S(1, 0.36, 0.24, 0.27, skin, 0, 0.02, 0));
+  hips.add(S(1, 0.38, 0.25, 0.28, skin, 0, 0.02, 0));
   const torso = new THREE.Group(); hips.add(torso);
-  torso.add(S(1, 0.38, 0.36, 0.3, skin, 0, 0.18, 0.03, 24));        // belly
-  torso.add(S(1, 0.44, 0.48, 0.33, skin, 0, 0.5, 0, 24));            // chest
-  torso.add(S(1, 0.52, 0.2, 0.32, skin, 0, 0.78, -0.02, 22));        // shoulders
-  torso.add(C(0.15, 0.18, 0.2, skin, 0.98));                         // neck
-  const head = new THREE.Group(); head.position.set(0, 0.92, 0.05); torso.add(head);
-  head.add(S(1, 0.46, 0.56, 0.44, skin, 0, 0.5, 0, 32));             // the huge bald head
-  head.add(S(1, 0.38, 0.26, 0.37, skin, 0, 0.18, 0.06, 24));         // cheeks and jaw
-  head.add(S(1, 0.2, 0.1, 0.16, skin, 0, 0.06, 0.2, 18));            // chin
-  head.add(S(1, 0.36, 0.08, 0.12, skinD, 0, 0.64, 0.34, 18));        // heavy brow
-  for (const s of [-1, 1]) head.add(S(1, 0.05, 0.13, 0.09, skinD, s * 0.46, 0.46, 0));   // ears
-  // the eyes: black irises almost filling them, the left (its left, +x) opened wider; they follow you
+  torso.add(S(1, 0.4, 0.36, 0.32, skin, 0, 0.18, 0.04, 24));        // belly
+  torso.add(S(1, 0.5, 0.5, 0.36, skin, 0, 0.5, 0, 24));             // chest
+  torso.add(S(1, 0.6, 0.22, 0.34, skin, 0, 0.78, -0.03, 22));       // broad shoulders
+  torso.add(C(0.17, 0.2, 0.2, skin, 0.98));                         // neck
+  const head = new THREE.Group(); head.position.set(0, 0.9, 0.06); torso.add(head);
+  head.add(S(1, 0.47, 0.6, 0.45, skin, 0, 0.55, -0.01, 32));        // the huge bald head
+  head.add(S(1, 0.37, 0.27, 0.37, skin, 0, 0.2, 0.05, 24));         // cheeks and jaw
+  head.add(S(1, 0.17, 0.11, 0.14, skin, 0, 0.05, 0.22, 18));        // chin
+  for (const s of [-1, 1]) {
+    head.add(S(1, 0.06, 0.14, 0.1, skinD, s * 0.47, 0.47, -0.01));   // ears
+    head.add(S(1, 0.15, 0.13, 0.07, socket, s * 0.16, 0.53, 0.35, 20));   // dark sockets
+    head.add(S(1, 0.18, 0.055, 0.1, skin, s * 0.16, 0.665, 0.37, 18, 0, 0, s * -0.28));   // heavy brows, angled down to the nose
+    head.add(S(1, 0.12, 0.028, 0.05, socket, s * 0.16, 0.435, 0.4, 14));                    // bags under the eyes
+    head.add(S(1, 0.03, 0.09, 0.03, skinD, s * 0.12, 0.22, 0.42, 10, 0, 0, s * 0.3));        // folds beside the mouth
+  }
+  // the eyes: black irises nearly filling them, the left (its left, +x) opened wider; they follow you
   const eyes = [];
   for (const s of [-1, 1]) {
-    const big = s > 0, e = new THREE.Group(); e.position.set(s * 0.165, 0.5, 0.35); head.add(e);
-    e.add(S(0.12, 1, big ? 1.0 : 0.72, 0.45, white, 0, 0, 0, 24));
+    const big = s > 0, e = new THREE.Group(); e.position.set(s * 0.16, 0.535, 0.38); head.add(e);
+    e.add(S(0.13, 1, big ? 0.88 : 0.62, 0.48, white, 0, 0, 0, 24));
     const piv = new THREE.Group(); e.add(piv);
-    piv.add(S(0.09, 1, big ? 1.0 : 0.72, 0.42, iris, 0, 0, 0.026, 20));
-    piv.add(S(0.014, 1, 1, 0.5, shine, 0.03, 0.03, 0.065, 8));
-    e.add(S(0.125, 1.04, 0.42, 0.5, skinD, 0, big ? 0.095 : 0.07, 0.005, 20));   // upper lid
+    piv.add(S(0.108, 1, big ? 0.86 : 0.6, 0.46, iris, 0, 0, 0.02, 22));
+    piv.add(S(0.016, 1, 1, 0.5, shine, 0.035, 0.03, 0.066, 8));
     eyes.push(piv);
   }
-  head.add(S(1, 0.075, 0.17, 0.085, skin, 0, 0.36, 0.42, 16));      // long, broad nose
-  head.add(S(1, 0.095, 0.075, 0.08, skinD, 0, 0.24, 0.46, 16));
-  for (const s of [-1, 1]) head.add(S(1, 0.022, 0.012, 0.015, mouthM, s * 0.035, 0.205, 0.5, 8));
-  const mouth = new THREE.Group(); mouth.position.set(0, 0.13, 0.42); head.add(mouth);
-  const upLip = S(1, 0.13, 0.028, 0.05, lipM, 0, 0.012, 0), loLip = S(1, 0.12, 0.038, 0.05, lipM, 0, -0.022, -0.004), inner = S(1, 0.13, 0.07, 0.03, mouthM, 0, -0.005, -0.016);
+  head.add(S(1, 0.05, 0.17, 0.06, skin, 0, 0.42, 0.44, 14, -0.25, 0, 0));    // the bridge of the nose
+  head.add(S(1, 0.075, 0.06, 0.07, skin, 0, 0.285, 0.5, 16));                // its tip
+  for (const s of [-1, 1]) { head.add(S(1, 0.04, 0.035, 0.04, skinD, s * 0.055, 0.275, 0.47, 10)); head.add(S(1, 0.016, 0.01, 0.012, mouthM, s * 0.03, 0.255, 0.51, 8)); }
+  const mouth = new THREE.Group(); mouth.position.set(0, 0.145, 0.425); head.add(mouth);
+  const upLip = S(1, 0.1, 0.024, 0.045, lipM, 0, 0.012, 0), loLip = S(1, 0.095, 0.034, 0.05, lipM, 0, -0.018, -0.003), inner = S(1, 0.11, 0.07, 0.03, mouthM, 0, -0.004, -0.016);
   inner.scale.y = 0.002; mouth.add(upLip, loLip, inner);
-  for (let i = -3; i <= 3; i++) { const t = S(1, 0.016, Math.abs(i) === 3 ? 0.04 : 0.022, 0.012, white, i * 0.032, 0.008, 0.012, 6); t.visible = false; mouth.add(t); }
+  for (const s of [-1, 1]) mouth.add(S(1, 0.012, 0.01, 0.01, socket, s * 0.1, -0.012, -0.004, 6));
+  for (let i = -3; i <= 3; i++) { const t = S(1, 0.014, Math.abs(i) === 3 ? 0.038 : 0.02, 0.012, white, i * 0.028, 0.006, 0.012, 6); t.visible = false; mouth.add(t); }
   const arms = [];
   for (const s of [-1, 1]) {
-    const sh = new THREE.Group(); sh.position.set(s * 0.52, 0.76, 0); torso.add(sh);
-    sh.add(S(1, 0.15, 0.15, 0.15, skin));
-    sh.add(C(0.11, 0.095, 0.66, skin, 0));
+    const sh = new THREE.Group(); sh.position.set(s * 0.6, 0.76, 0); torso.add(sh);
+    sh.add(S(1, 0.17, 0.17, 0.17, skin));
+    sh.add(C(0.13, 0.11, 0.66, skin, 0));
     const el = new THREE.Group(); el.position.y = -0.66; sh.add(el);
-    el.add(C(0.095, 0.08, 0.6, skin, 0));
-    const hand = new THREE.Group(); hand.position.y = -0.64; el.add(hand);
-    hand.add(S(1, 0.11, 0.15, 0.08, skinD, 0, -0.04, 0.01));
-    for (let f = 0; f < 4; f++) hand.add(S(1, 0.024, 0.07, 0.03, skinD, -0.06 + f * 0.04, -0.18, 0.02, 8));
+    el.add(C(0.11, 0.09, 0.62, skin, 0));
+    const hand = new THREE.Group(); hand.position.y = -0.66; el.add(hand);
+    hand.add(S(1, 0.13, 0.17, 0.1, skinD, 0, -0.04, 0.01));
+    for (let f = 0; f < 4; f++) hand.add(S(1, 0.03, 0.09, 0.035, skinD, -0.075 + f * 0.05, -0.21, 0.02, 8));
     arms.push({ sh, el, hand, s });
   }
   const legs = [];
   for (const s of [-1, 1]) {
-    const hp = new THREE.Group(); hp.position.set(s * 0.19, -0.02, 0); hips.add(hp);
-    hp.add(C(0.16, 0.12, 0.52, skin, 0));
+    const hp = new THREE.Group(); hp.position.set(s * 0.2, -0.02, 0); hips.add(hp);
+    hp.add(C(0.17, 0.13, 0.52, skin, 0));
     const kn = new THREE.Group(); kn.position.y = -0.52; hp.add(kn);
-    kn.add(C(0.115, 0.09, 0.47, skin, 0));
-    const ft = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.08, 0.32), skinD); ft.position.set(0, -0.48, 0.07); kn.add(ft);
+    kn.add(C(0.125, 0.1, 0.47, skin, 0));
+    const ft = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.34), skinD); ft.position.set(0, -0.48, 0.07); kn.add(ft);
     legs.push({ hp, kn, s });
   }
   root.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
-  return { root, hips, torso, head, eyes, mouth, upLip, loLip, inner, arms, legs, teeth: mouth.children.slice(3) };
+  return { root, hips, torso, head, eyes, mouth, upLip, loLip, inner, arms, legs, teeth: mouth.children.slice(5) };
 }
 
 const ESCAPE_T = 10;   // seconds out of its sight before it gives up (the original's chase timer)
@@ -398,18 +404,21 @@ GAME.caught = function (inHide) {
   const eye = camera.position.clone(), dir = new THREE.Vector3(), ground = h ? h.exitP.y : PLAYER.pos.y;
   if (inHide && h) dir.set(-Math.sin(h.yaw), 0, -Math.cos(h.yaw));
   else { dir.set(ONI.pos.x - eye.x, 0, ONI.pos.z - eye.z); if (dir.lengthSq() < 1e-4) dir.set(-Math.sin(PLAYER.yaw), 0, -Math.cos(PLAYER.yaw)); dir.normalize(); }
-  ONI.yaw = Math.atan2(-dir.x, -dir.z); ONI.bendT = 0.75; ONI.bend = 0.75;
-  const t0 = performance.now(), lk = new THREE.Vector3();
-  GAME.cine = { pos: eye, look: eye.clone().addScaledVector(dir, 1).setY(eye.y + 0.6) };
+  ONI.yaw = Math.atan2(-dir.x, -dir.z); ONI.bendT = 0.55; ONI.bend = 0.55;
+  const t0 = performance.now(), E = new THREE.Vector3();
+  ONI.pos.set(eye.x + dir.x * 2, ground, eye.z + dir.z * 2);
+  GAME.cine = { pos: eye, look: eye.clone().addScaledVector(dir, 1).setY(eye.y + 0.5) };
   SFX.oniCatch();
   animate(() => {
-    const k = (performance.now() - t0) / 1000, dist = lerp(2.2, 1.25, smoothstep(0, 0.3, k));
-    ONI.pos.set(eye.x + dir.x * dist, ground, eye.z + dir.z * dist);
+    const k = (performance.now() - t0) / 1000, dist = lerp(1.7, 0.78, smoothstep(0, 0.32, k));
     ONI.armsUp = smoothstep(0, 0.25, k); ONI.mouthT = smoothstep(0.05, 0.3, k);
     ONI.animate(1 / 60, 0);
-    ONI.m.head.localToWorld(lk.set(0, 0.45, 0.3));
-    GAME.cine.look.lerp(lk, 0.3);
-    POST.shake = k < 0.9 ? 0.7 : 0;
+    // slide it so that its eyes are `dist` in front of yours
+    ONI.m.head.localToWorld(E.set(0, 0.53, 0.38));
+    ONI.pos.x += eye.x + dir.x * dist - E.x; ONI.pos.z += eye.z + dir.z * dist - E.z; ONI.place();
+    ONI.m.head.localToWorld(E.set(0, 0.45, 0.38));
+    GAME.cine.look.lerp(E, 0.35);
+    POST.shake = k < 0.9 ? 0.6 : 0;
     if (k > 0.95 && !GAME._blk) { GAME._blk = true; $('fxBlack').style.transition = 'opacity .25s'; $('fxBlack').style.opacity = 1; }
     if (k > 1.7) { GAME._blk = false; ONI.mouthT = 0; ONI.armsUp = 0; UI.over(); return false; }
     return true;

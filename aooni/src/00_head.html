@@ -48,7 +48,7 @@
   #hint.on { opacity:1; }
   #place { position:absolute; left:50%; top:16px; transform:translateX(-50%); font-family:"Noto Serif JP",serif; font-size:16px; letter-spacing:.3em; color:rgba(220,228,255,.8);
     opacity:0; transition:opacity 1.2s; text-shadow:0 2px 4px #000; white-space:nowrap; }
-  #inv { position:absolute; left:calc(env(safe-area-inset-left) + 12px); top:calc(env(safe-area-inset-top) + 12px); display:flex; flex-direction:column; gap:4px; pointer-events:auto; }
+  #inv { position:absolute; left:calc(env(safe-area-inset-left) + 12px); top:calc(env(safe-area-inset-top) + 58px); display:flex; flex-direction:column; gap:4px; pointer-events:auto; }
   #inv .it { display:flex; align-items:center; gap:6px; font-size:14px; color:#e9ecf8; text-shadow:0 1px 3px #000, 0 0 2px #000; background:rgba(0,0,0,.35); border-radius:6px; padding:2px 8px 2px 4px; }
   #inv .it svg { width:22px; height:22px; filter:drop-shadow(0 1px 2px #000); }
   #inv .it.view { cursor:pointer; border:1px solid var(--line); }
@@ -183,16 +183,20 @@
 <div id="msg" class="hidden"><div id="msgName"></div><div id="msgBox"><div id="msgFace"></div><span id="msgText"></span><span id="msgNext">▼</span></div></div>
 
 <div id="title" class="screen">
-  <svg id="titleFace" viewBox="0 0 200 220" aria-hidden="true">
-    <defs><radialGradient id="tfS" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#7d8fff"/><stop offset=".6" stop-color="#4253d6"/><stop offset="1" stop-color="#1c2280"/></radialGradient></defs>
-    <path d="M100 6 C152 6 186 46 186 104 C186 168 150 214 100 214 C50 214 14 168 14 104 C14 46 48 6 100 6Z" fill="url(#tfS)"/>
-    <ellipse cx="68" cy="96" rx="27" ry="30" fill="#fff"/><ellipse cx="132" cy="96" rx="27" ry="30" fill="#fff"/>
-    <circle cx="72" cy="104" r="7" fill="#000"/><circle cx="128" cy="104" r="7" fill="#000"/>
-    <path d="M94 120 Q100 138 106 120" fill="none" stroke="#2a2f9a" stroke-width="5" stroke-linecap="round"/>
-    <path d="M52 160 Q100 178 148 160 Q100 196 52 160Z" fill="#2a2f9a"/><path d="M58 161 Q100 172 142 161" fill="none" stroke="#11145a" stroke-width="3"/>
+  <svg id="titleFace" viewBox="0 0 200 230" aria-hidden="true">
+    <defs><radialGradient id="tfS" cx="46%" cy="34%" r="72%"><stop offset="0" stop-color="#b4b0f4"/><stop offset=".55" stop-color="#8780d8"/><stop offset="1" stop-color="#3a3488"/></radialGradient></defs>
+    <path d="M100 4 C156 4 190 48 188 110 C186 176 150 226 100 226 C50 226 14 176 12 110 C10 48 44 4 100 4Z" fill="url(#tfS)"/>
+    <ellipse cx="66" cy="104" rx="30" ry="25" fill="#2e2766"/><ellipse cx="134" cy="104" rx="30" ry="25" fill="#2e2766"/>
+    <ellipse cx="66" cy="106" rx="25" ry="15" fill="#e8e4d8"/><ellipse cx="134" cy="105" rx="25" ry="21" fill="#e8e4d8"/>
+    <ellipse cx="67" cy="106" rx="20" ry="13" fill="#050308"/><ellipse cx="133" cy="105" rx="20" ry="18" fill="#050308"/>
+    <circle cx="74" cy="101" r="3.5" fill="#fff"/><circle cx="140" cy="98" r="4" fill="#fff"/>
+    <path d="M36 82 Q66 66 92 88 L88 92 Q64 76 38 88Z M164 82 Q134 66 108 88 L112 92 Q136 76 162 88Z" fill="#6d66c4"/>
+    <path d="M94 96 Q100 92 106 96 L112 150 Q100 160 88 150Z" fill="#9a94e6"/><ellipse cx="100" cy="152" rx="16" ry="10" fill="#7d76d0"/>
+    <ellipse cx="93" cy="155" rx="3" ry="2" fill="#1a0610"/><ellipse cx="107" cy="155" rx="3" ry="2" fill="#1a0610"/>
+    <path d="M80 180 Q100 174 120 180 Q100 192 80 180Z" fill="#6a5ec0"/><path d="M82 180 Q100 183 118 180" stroke="#2e2766" stroke-width="2.5" fill="none"/>
   </svg>
   <div class="logo">青鬼</div>
-  <div class="sublogo">3D　一人称版</div>
+  <div class="sublogo">3D　一人称版　―　本館</div>
   <div class="menu">
     <button class="mbtn primary" id="bNew">はじめから</button>
     <button class="mbtn" id="bCont">つづきから</button>
@@ -223,14 +227,14 @@
 <div id="how" class="screen hidden" style="background:rgba(0,0,0,.9)">
   <div class="panel">
     <h2>遊び方</h2>
-    <p>町はずれの洋館に入ったひろしたち。扉は閉ざされ、仲間ともはぐれてしまった。屋敷を調べて鍵を集め、<b>玄関から脱出</b>しよう。</p>
+    <p>町はずれの洋館に入ったひろしたち。玄関の扉は開かなくなり、仲間ともはぐれてしまった。屋敷を調べて謎を解き、先へ進もう。（原作 ver6.23 の本館を、マップどおりの広さで3Dにしています）</p>
     <ul>
-      <li><b>PC</b>：クリックで視点固定 / WASD 移動 / Shift 走る / マウス 視点 / E・クリック 調べる・扉・隠れる / Esc 一時停止</li>
-      <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、手のボタンで調べる、走るボタンで走る。物を直接タップしても調べられます。</li>
+      <li><b>PC</b>：クリックで視点固定 / WASD 移動 / Shift 走る / マウス 視点 / E・クリック 調べる・扉・隠れる / F・右クリック ライター / Esc 一時停止</li>
+      <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、手のボタンで調べる、走るボタンで走る、炎のボタンでライター。物を直接タップしても調べられます。</li>
       <li>屋敷には<b>青い化け物</b>がいる。見つかったら全力で逃げろ。扉を抜けても追ってくる。</li>
-      <li><b>ロッカー</b>や<b>タンス</b>に隠れればやり過ごせる。ただし、隠れるところを見られていたら……。</li>
-      <li>ロッカーの中からは、すき間ごしに外が見える。息をひそめて、いなくなるのを待とう。</li>
-      <li>鍵を拾うたびに自動で記録されます。つかまっても「つづきから」で再開できます。</li>
+      <li>部屋を移れば、追ってくるまでに少し時間がかせげる。しばらく見つからずにいれば、あきらめていなくなる。</li>
+      <li><b>クローゼット</b>に隠れればやり過ごせる。ただし、同じ部屋にいるときに隠れると見つかってしまう。</li>
+      <li>アイテムを拾うたびに自動で記録されます。つかまっても「つづきから」で再開できます。</li>
     </ul>
     <div class="btns"><button class="mbtn" id="hBack">戻る</button></div>
   </div>
