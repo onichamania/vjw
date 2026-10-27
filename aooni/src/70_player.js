@@ -11,10 +11,12 @@ const GAME = {
 const INPUT = { keys: {}, mdx: 0, mdy: 0, locked: false, noLock: false, drag: null, run: false, runLock: false, joy: { x: 0, y: 0, id: null, ox: 0, oy: 0 }, look: { id: null, x: 0, y: 0, sx: 0, sy: 0, t: 0, moved: 0 } };
 const KEYMAP = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
 addEventListener('keydown', e => {
+  if (UI._files) { if (/^(Escape|KeyX|Backspace)$/.test(e.code)) UI.closeFiles(); return; }
   if (GAME.state !== 'play') return;
   if (KEYMAP[e.code]) { INPUT.keys[KEYMAP[e.code]] = true; e.preventDefault(); }
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') INPUT.run = true;
   if (GAME.modal && GAME.modal.items) { UI.itemKey(e); e.preventDefault(); return; }
+  if (GAME.modal && GAME.modal.choice) { UI.choiceKey(e); e.preventDefault(); return; }
   if (GAME.modal) {
     if (GAME.modal.msg) { if (!e.repeat && /^(KeyE|Space|Enter|NumpadEnter|KeyZ)$/.test(e.code)) { UI.msgNext(); e.preventDefault(); } return; }
     if (e.code === 'Escape') UI.closeModal(); else if (GAME.modal.key) GAME.modal.key(e);
@@ -50,6 +52,7 @@ addEventListener('mouseup', e => {
   if (!d || INPUT.locked || GAME.state !== 'play' || d.moved > 6) return;
   if (d.msg) { if (GAME.modal && GAME.modal.msg) UI.msgNext(); return; }   // a click reads on; a drag looked round
   if (GAME.modal) return;
+  if (d.button === 0 && CHAIRS.held) { const p = toStage(e.clientX, e.clientY); GAME.tapAt(p.x, p.y); return; }   // the chair goes where you click
   if (d.button === 0 && !GAME.interact()) { const p = toStage(e.clientX, e.clientY); GAME.tapAt(p.x, p.y); }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -122,9 +125,9 @@ function setupTouch() {
 const WALK = 3.4, RUN = 5.6;
 const PLAYER = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0, pitch: 0, hidden: null, alive: true, bob: 0, stepAcc: 0, radius: 0.3, height: 1.65,
-  camY: 1.58, speed: 0, frozen: false, hideLook: { y: 0, p: 0 }, running: false,
+  camY: 1.58, speed: 0, frozen: false, hideLook: { y: 0, p: 0 }, running: false, onChair: null, chairFrom: null,
   reset(pos, yaw) {
-    this.pos.copy(pos); this.vel.set(0, 0, 0); this.yaw = yaw; this.pitch = 0; this.hidden = null;
+    this.pos.copy(pos); this.vel.set(0, 0, 0); this.yaw = yaw; this.pitch = 0; this.hidden = null; this.onChair = null; this.chairFrom = null;
     this.alive = true; this.camY = pos.y + 1.58; this.frozen = false;
   },
   update(dt) {
@@ -144,6 +147,7 @@ const PLAYER = {
     if (INPUT.keys.f) iz -= 1; if (INPUT.keys.b) iz += 1; if (INPUT.keys.l) ix -= 1; if (INPUT.keys.r) ix += 1;
     if (INPUT.joy.id !== null) { ix += INPUT.joy.x; iz += INPUT.joy.y; }
     const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
+    if (this.onChair) { this.speed = 0; this.vel.set(0, 0, 0); if (il > 0.3) stepDown(); return; }   // standing on a chair: a step in any direction gets you down
     this.running = INPUT.run || INPUT.runLock || (INPUT.joy.id !== null && Math.hypot(INPUT.joy.x, INPUT.joy.y) > 0.92);
     const sp = this.running ? RUN : WALK;
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
@@ -246,30 +250,36 @@ function targetIcon(t) {
   return 'hand';
 }
 GAME.updateTarget = function () {
-  TARGET = (PLAYER.alive && !GAME.modal && !GAME.cine && !PLAYER.hidden && !GAME.busy) ? findTarget() : null;
+  const free = PLAYER.alive && !GAME.modal && !GAME.cine && !PLAYER.hidden && !GAME.busy;
+  TARGET = free && !CHAIRS.held ? findTarget() : null;
   const pr = $('prompt'), ch = $('crosshair');
+  $('tLight').classList.toggle('hidden', !GAME.canLight());
+  $('tLight').classList.toggle('on', GAME.lighterOn);
   if (PLAYER.hidden && !GAME.modal) {
     pr.classList.add('on'); $('promptText').textContent = '出る'; ch.classList.remove('on');
     $('tUse').classList.add('ready'); setBtnIcon('tUse', 'hide');
     return;
   }
-  if (TARGET) { $('promptText').textContent = TARGET.prompt; pr.classList.add('on'); ch.classList.add('on'); }
-  else { pr.classList.remove('on'); ch.classList.remove('on'); }
-  $('tUse').classList.toggle('ready', !!TARGET); setBtnIcon('tUse', TARGET ? targetIcon(TARGET) : 'hand');
-  $('tLight').classList.toggle('hidden', !GAME.canLight());
-  $('tLight').classList.toggle('on', GAME.lighterOn);
+  // carrying a chair: the ring shows where it would go; standing on one: getting down
+  const say = CHAIRS.held && free ? (CHAIRS.ring && CHAIRS.ring.visible ? 'イスを置く' : null) : TARGET ? TARGET.prompt : PLAYER.onChair && free ? 'イスから降りる' : null;
+  if (say) { $('promptText').textContent = say; pr.classList.add('on'); ch.classList.add('on'); }
+  else { pr.classList.remove('on'); ch.classList.toggle('on', !!CHAIRS.held && free); }
+  $('tUse').classList.toggle('ready', !!say); setBtnIcon('tUse', TARGET ? targetIcon(TARGET) : 'hand');
 };
 GAME.interact = function () {
   if (!PLAYER.alive || GAME.modal || GAME.cine || GAME.busy) return false;
   if (PLAYER.hidden) { GAME.exitHide(); return true; }
-  if (!TARGET) return false;
+  if (CHAIRS.held) { placeChair(); return true; }
+  if (!TARGET) { if (PLAYER.onChair) { stepDown(); return true; } return false; }
   TARGET.ia.use();
   return true;
 };
 GAME.tapAt = function (x, y) {
   if (GAME.modal || GAME.cine || GAME.busy) return false;
   if (PLAYER.hidden) { GAME.exitHide(); return true; }
-  const t = findTarget(new THREE.Vector2(x / VW() * 2 - 1, -(y / VH()) * 2 + 1));
+  const ndc = new THREE.Vector2(x / VW() * 2 - 1, -(y / VH()) * 2 + 1);
+  if (CHAIRS.held) { placeChair(ndc); return true; }
+  const t = findTarget(ndc);
   if (t) t.ia.use();
   return !!t;
 };
@@ -309,21 +319,21 @@ GAME.doorPrompt = function (d) {
   return '開ける';
 };
 const LOCK_TALK = {
-  corB_lib: [['ひろし', '鍵がかかってる……。この部屋の鍵がどこかにあるはずだ。']],
-  cor2_kids: [['ひろし', '鍵がかかっている。']],
-  cor3_bed: [['ひろし', '鍵がかかっている。']],
+  corB_lib: [['', '鍵がかかっている。']],
+  cor2_kids: [['', '鍵がかかっている。']],
+  cor3_bed: [['', '鍵がかかっている。']],
 };
 GAME.useDoor = function (d) {
   if (GAME.busy || !PLAYER.alive) return;
   const hk = STORY.doorHook(d); if (hk) { hk.use(); return; }
-  if (d.kind === 'front') { SFX.locked(d.center); GAME.say(STORY.flags.frontTried ? [['ひろし', '……やっぱり開かない。']] : [['ひろし', '……あれ？　開かない。'], ['ひろし', '外から鍵をかけられたみたいだ……。']]); STORY.flags.frontTried = true; return; }
+  if (d.kind === 'front') { SFX.locked(d.center); GAME.say([['', '鍵がかかっている。']]); STORY.flags.frontTried = true; return; }
   if (d.kind === 'hidden') { STORY.event('greyWall'); return; }
-  if (d.kind === 'back') { SFX.locked(d.center); GAME.say(STORY.hasGot('knob') ? [['ひろし', 'ドアノブを外した扉だ。開きそうにない。']] : [['ひろし', '鍵がかかっている……。']]); return; }
-  if (d.kind === 'stuck' && !STORY.flags.pianoUnlocked) { SFX.locked(d.center); GAME.say([['ひろし', '……開かない。鍵はかかっていないのに、何かが引っかかっているみたいだ。']]); return; }
+  if (d.kind === 'back') { SFX.locked(d.center); GAME.say(STORY.hasGot('knob') ? [['', 'ドアノブが外れている。開かない。']] : STORY.flags.takuro ? [['', '鍵がかかっている。'], ['', 'ドアノブがネジで留めてある。']] : [['', '鍵がかかっている。']]); return; }
+  if (d.kind === 'stuck' && !STORY.flags.pianoUnlocked) { SFX.locked(d.center); GAME.say([['', '開かない。']]); return; }
   if (d.lock) {
     if (!STORY.has(d.lock)) {
       SFX.locked(d.center);
-      if (d.kind === 'basement') GAME.say([['ひろし', '「地下」と書いてある扉だ。鍵がかかっている。']]);
+      if (d.kind === 'basement') GAME.say([['', '鍵がかかっている。']]);
       else if (LOCK_TALK[d.id] && !d._talked) { d._talked = true; GAME.say(LOCK_TALK[d.id]); }
       else UI.hint('鍵がかかっている');
       return;
@@ -344,7 +354,7 @@ GAME.useDoor = function (d) {
 GAME.goThrough = function (d, opts = {}) {
   const p = d.to && MAN.doors[d.to];
   if (!p || GAME.busy) return;
-  GAME.busy = 1;
+  GAME.busy = 1; PLAYER.onChair = null;
   animateDoor(d); SFX.door(d.center, 1.0);
   GAME.fade(0.22, () => {
     PLAYER.pos.copy(p.front); PLAYER.camY = p.front.y + 1.58; PLAYER.yaw = p.yawIn; PLAYER.pitch = 0; PLAYER.vel.set(0, 0, 0);
@@ -397,13 +407,26 @@ GAME.toggleLighter = function () {
   GAME.lighterOn = !GAME.lighterOn; SFX.lighter();
 };
 const VIEW = {
-  g: new THREE.Group(), flame: null,
+  g: new THREE.Group(), flame: null, chair: new THREE.Group(), chairMats: [],
   init() {
+    // a chair held up in front of you (drawn over the room, back to front, so it never sinks into a wall)
+    camera.add(this.chair); this.chair.visible = false; this.chair.position.set(0.3, -0.74, -1.05); this.chair.rotation.set(0.42, -0.55, 0.1); this.chair.scale.setScalar(0.62);
+    const cm = new THREE.MeshStandardMaterial({ color: 0x8a5a32, roughness: 0.75, emissive: 0x3a2414, depthTest: false, depthWrite: false }); this.chairMats.push(cm);
+    const part = (w, h, d, x, y, z, ord) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cm); o.position.set(x, y, z); o.renderOrder = ord; this.chair.add(o); };
+    part(0.44, 0.5, 0.04, 0, 0.74, -0.2, 10);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) part(0.04, 0.46, 0.04, sx * 0.19, 0.23, sz * 0.19, sz < 0 ? 11 : 13);
+    part(0.44, 0.05, 0.44, 0, 0.46, 0, 12);
     camera.add(this.g); this.g.position.set(0.28, -0.27, -0.52);
     const m = makeItemMesh('lighter'); m.scale.setScalar(1.25); this.g.add(m);
     const fl = glowSprite(0xffb050, 0.06, 0.7); fl.position.set(0, 0.1, 0); m.add(fl); this.flame = fl;
     const core = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffe0a0 })); core.scale.y = 2.2; core.position.set(0, 0.095, 0); fl.add(core);
     m.traverse(o => { if (o.isMesh) o.renderOrder = 10; });
+  },
+  // take on the look of the chair you lift
+  holdChair(ch) {
+    let src = null; ch.g.traverse(o => { if (!src && o.isMesh) src = o.material; });
+    for (const m of this.chairMats) { if (src) { m.map = src.map || null; m.color.copy(src.color); } m.needsUpdate = true; }
+    this.chair.visible = true;
   },
   update(dt) {
     const on = GAME.lighterOn && !PLAYER.hidden && PLAYER.alive, b = PLAYER.bob, k = Math.min(1, PLAYER.speed / 4);
@@ -423,7 +446,7 @@ GAME.enterHide = function (h) {
   if (h.blockedUntil > GAME.time) return;
   ONI.onPlayerHide(h);
   h.enterT = GAME.time; h.from = camera.position.clone(); h.chased = ONI.on; h.outT = 0;
-  PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0;
+  PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0; PLAYER.onChair = null; dropChair();
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z); PLAYER.vel.set(0, 0, 0);
   GAME.lighterOn = false;

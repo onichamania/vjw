@@ -141,7 +141,7 @@ const ITEMS = {
   k_library: { name: '図書室の鍵', icon: 'key', color: '#d9b25a', desc: '１階・図書室の鍵。' },
   k_bedroom: { name: '寝室の鍵', icon: 'key', color: '#c9c9c9', desc: '３階・寝室の鍵。' },
   hanky: { name: 'ハンカチ', icon: 'cloth', desc: '白いハンカチ。汚れを拭き取るのに使えそうだ。' },
-  hankySoap: { name: 'ハンカチ（洗剤）', icon: 'clothSoap', desc: '洗剤を染み込ませたハンカチ。しつこい汚れも落とせそうだ。' },
+  hankySoap: { name: '洗剤をつけたハンカチ', icon: 'clothSoap', desc: '洗剤を染み込ませたハンカチ。しつこい汚れも落とせそうだ。' },
   driver: { name: '＋ドライバー', icon: 'driver', desc: 'プラスのドライバー。ネジを外せる。' },
   soap: { name: '洗剤', icon: 'soap', desc: '汚れ落としの洗剤。何かに染み込ませて使う。' },
   knob: { name: 'ドアノブ', icon: 'knob', desc: '屋根裏部屋の扉から外したドアノブ。' },
@@ -494,15 +494,25 @@ function interactBox(room, x, y, z, w, h, d, prompt, use, opt = {}) {
   return hit;
 }
 function examine(r, x, y, z, w, h, d, prompt, fn) { return interactBox(r, x, y, z, w, h, d, prompt, fn, { icon: 'eye' }); }
-// something that glints where an item lies
+// where something can be picked up: one small light, twinkling, as in the original
+let SPARKLE_TEX = null;
+function sparkleTex() {
+  if (SPARKLE_TEX) return SPARKLE_TEX;
+  const c = newCanvas(128, 128), g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 40);
+  gr.addColorStop(0, 'rgba(255,255,240,1)'); gr.addColorStop(0.25, 'rgba(255,240,180,.55)'); gr.addColorStop(1, 'rgba(255,220,140,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = '#fff';
+  for (const [w, l] of [[5, 60], [3, 34]]) for (let k = 0; k < (l > 40 ? 2 : 2); k++) { g.save(); g.translate(64, 64); g.rotate(k * Math.PI / 2 + (l > 40 ? 0 : Math.PI / 4)); g.beginPath(); g.moveTo(-l, 0); g.lineTo(0, -w); g.lineTo(l, 0); g.lineTo(0, w); g.closePath(); g.fill(); g.restore(); }
+  return (SPARKLE_TEX = toTex(c, true, false));
+}
 function shineAt(r, x, y, z, id, visible = true) {
-  const m = makeItemMesh(ITEMS[id].icon === 'key' ? 'key' : 'paper');
-  m.position.set(x, y, z); m.scale.setScalar(ITEMS[id].icon === 'key' ? 1.6 : 0.8); m.rotation.y = 0.7;
-  const glow = glowSprite(0xfff3c0, 0.3, 0.5); glow.position.y = 0.05; m.add(glow);
+  const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkleTex(), color: 0xfff6d8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  m.userData.ownMat = true; m.userData.phase = Math.random() * 6; m.position.set(x, y + 0.12, z); m.scale.setScalar(0.42);
   r.group.add(m); m.visible = visible;
-  MAN.props[id] = m;
+  MAN.props[id] = m; MAN.sparkles.push(m);
   return m;
 }
+function twinkle(t) { for (const s of MAN.sparkles) if (s.visible) { const k = 0.8 + 0.35 * Math.max(0, Math.sin(t * 4.2 + s.userData.phase)); s.scale.setScalar(0.42 * k); s.material.rotation = t * 0.9 + s.userData.phase; } }
 
 const FURNISH = {
   foyer(r) {
@@ -520,11 +530,9 @@ const FURNISH = {
     sh.box(0.8, 1.6, 0.36, MAT.trim, 0, 0.8, -0.02); sh.box(0.74, 1.5, 0.02, MAT.glass, 0, 0.82, 0.18);
     for (let i = 0; i < 3; i++) sh.box(0.74, 0.02, 0.3, MAT.glass, 0, 0.35 + i * 0.45, 0);
     sh.collide(-0.4, 0.4, 0, 1.6, -0.18, 0.18);
-    const bottle = new THREE.Group(), b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 10), std({ color: 0x3fa0e0, roughness: 0.3 })); b.position.y = 0.1; bottle.add(b);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.06, 8), AOM.white); cap.position.y = 0.23; bottle.add(cap);
-    bottle.position.copy(sh.pt(0.15, 0.81, 0)); r.group.add(bottle); MAN.props.soap = bottle;
+    const sp = sh.pt(0.15, 0.81, 0); shineAt(r, sp.x, sp.y, sp.z, 'soap');
     examine(r, cx(-5), 1.0, tm(1) + 0.3, 0.9, 1.6, 0.5, () => (STORY.hasGot('soap') ? null : '棚を調べる'), () => STORY.event('soap'));
-    examine(r, cx(-3), 0.5, cx(6), 0.6, 0.9, 0.7, () => 'トイレ', () => GAME.say([['ひろし', '……ふつうのトイレだ。']]));
+    examine(r, cx(-3), 0.5, cx(6), 0.6, 0.9, 0.7, () => 'トイレ', () => GAME.say([['', 'トイレだ。']]));
   },
   bath(r) {
     // left: the bath (pink tub, dark blue tiles); right: the washroom (washing machine, basin)
@@ -533,6 +541,7 @@ const FURNISH = {
     tub.box(0.95, 0.6, 2.05, AOM.pink, 0, 0.3, 0); tub.box(0.75, 0.04, 1.85, MAT.black, 0, 0.42, 0); tub.collide(-0.48, 0.48, 0, 0.6, -1.03, 1.03);
     const water = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.04, 1.84), new THREE.MeshStandardMaterial({ color: 0x5f7f92, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.8 }));
     water.position.copy(tub.pt(0, 0.56, 0)); water.userData.ownMat = true; r.group.add(water); MAN.tubWater = water;
+    const dp = tub.pt(0, 0.45, 0.3); shineAt(r, dp.x, dp.y, dp.z, 'driver', false);   // on the bottom, once the water is out
     const sw = new Frame(r, cx(-1), 0, tm(-9) + 0.12, 0); sw.cyl(0.015, 0.015, 1.2, MAT.steel, -0.2, 1.4, 0, 6); sw.cyl(0.06, 0.04, 0.05, MAT.steel, -0.2, 2.0, 0.05, 10, Math.PI / 2, 0, 0);
     sw.box(0.6, 0.8, 0.02, MAT.glass, 0.35, 1.6, 0);
     const wm = new Frame(r, cx(3), 0, tm(-9) + 0.4, 0);
@@ -541,7 +550,7 @@ const FURNISH = {
     sk.box(0.55, 0.8, 0.45, std({ color: 0xb8662a, roughness: 0.5 }), 0, 0.4, 0); sk.box(0.58, 0.08, 0.48, AOM.white, 0, 0.84, 0); sk.box(0.45, 0.6, 0.02, MAT.glass, 0, 1.45, -0.2);
     sk.collide(-0.28, 0.28, 0, 0.9, -0.24, 0.24);
     examine(r, cx(-2), 0.6, tm(-8), 1.0, 0.7, 2.1, () => (STORY.hasGot('driver') ? null : '浴槽を調べる'), () => STORY.event('tub'));
-    examine(r, cx(3), 0.6, tm(-9) + 0.4, 0.6, 1.0, 0.6, () => '洗濯機', () => GAME.say([['ひろし', '洗濯機だ。中はからっぽだ。']]));
+    examine(r, cx(3), 0.6, tm(-9) + 0.4, 0.6, 1.0, 0.6, () => '洗濯機', () => GAME.say([['', '洗濯機だ。中はからっぽだ。']]));
   },
   kitchen(r) {
     const ox = 34, oz = -6;
@@ -629,7 +638,7 @@ const FURNISH = {
     const t = new Frame(r, tm(ox + 6.5), 0, tm(oz + 3.5), 0); t.box(0.8, 0.05, 0.6, MAT.darkWood, 0, 0.72, 0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) t.box(0.05, 0.7, 0.05, MAT.darkWood, sx * 0.35, 0.35, sz * 0.25);
     t.collide(-0.4, 0.4, 0, 0.75, -0.3, 0.3);
     MAN.candle = addCandle(t, 0, 0.745, 0, r); MAN.candle.state = 'off'; MAN.candle.intensity = 2.4; MAN.candle.range = 9; MAN.candle.level = 0;
-    interactBox(r, tm(ox + 6.5), 0.9, tm(oz + 3.5), 0.5, 0.4, 0.5, () => (MAN.candle.state === 'on' ? null : 'ろうそくを調べる'), () => STORY.event('candle'), { icon: 'hand' });
+    interactBox(r, tm(ox + 6.5), 0.9, tm(oz + 3.5), 0.5, 0.4, 0.5, () => (MAN.candle.state === 'on' ? null : 'ろうそくを調べる'), () => STORY.event('candle'), { icon: 'hand', tag: 'candle' });
     addCrate(r, tm(ox + 8) - 0.2, tm(oz + 7) - 0.2, 0.7, 0.3); addCrate(r, tm(ox + 0.6), tm(oz + 6.8), 0.6, 0.9);
   },
   jail(r) {
@@ -690,9 +699,8 @@ const FURNISH = {
     addSimpleBed(r, tm(ox + 1), tm(oz + 1.2), { w: 0.95, blanket: std({ color: 0xd06a8a, roughness: 0.9 }) });
     // the tall shelf with the lighter oil on top, and the chair that can be pushed over to it
     addBookshelf(r, tm(ox + 6.5), tm(oz) + 0.3, 0, tm(1.5), 2.6, { mat: MAT.wood });
-    const oil = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.16, 10), std({ color: 0xd8b030, roughness: 0.4, metalness: 0.4 })); oil.position.set(tm(ox + 6.5), 2.72, tm(oz) + 0.3); r.group.add(oil); MAN.props.oil = oil;
-    const ch = MAN.kidsChair = addChairW(r, tm(ox + 3.5), tm(oz + 4), 0, MAT.wood);
-    r.addInteract(ch.g, { dist: 2.4, icon: 'hand', prompt: () => (ch.at ? null : 'イスを押す'), use: () => STORY.event('kidsChair') });
+    shineAt(r, tm(ox + 6.5), 2.62, tm(oz) + 0.3, 'oil');
+    chairInteract(MAN.kidsChair = addChairW(r, tm(ox + 3.5), tm(oz + 4), 0, MAT.wood), 'kids');
     examine(r, tm(ox + 6.5), 1.8, tm(oz) + 0.5, tm(1.5), 2.6, 0.6, () => (STORY.hasGot('oil') ? null : '棚の上を調べる'), () => STORY.event('kidsShelf'));
     addRug(r, tm(ox + 5), tm(oz + 5), tm(3), tm(2), 0, 5);
     for (let i = 0; i < 5; i++) box(r, 0.16, 0.16, 0.16, std({ color: [0xd04040, 0x3a70d0, 0xe0c040, 0x40a050, 0xa060c0][i], roughness: 0.6 }), tm(ox + 4.5) + i * 0.22, 0, tm(oz + 5.3) + (i % 2) * 0.2, i, false);
@@ -711,16 +719,16 @@ const FURNISH = {
     dk.box(1.6, 0.05, 0.75, MAT.wood, 0, 0.76, 0); dk.box(0.45, 0.72, 0.7, MAT.wood, 0.55, 0.36, 0); dk.box(0.04, 0.72, 0.7, MAT.wood, -0.78, 0.36, 0);
     dk.collide(-0.8, 0.8, 0.5, 0.8, -0.38, 0.38); dk.collide(0.32, 0.8, 0, 0.8, -0.38, 0.38);
     addTableLamp(r, dk, -0.5, 0.785, -0.15);
-    const ch = MAN.tkChair = addChairW(r, tm(ox + 4.5) - 0.25, tm(oz) + 1.25, Math.PI, MAT.wood);
-    r.addInteract(ch.g, { dist: 2.4, icon: 'hand', prompt: () => (ch.at ? null : 'イスを押す'), use: () => STORY.event('tkChair') });
+    chairInteract(MAN.tkChair = addChairW(r, tm(ox + 4.5) - 0.25, tm(oz) + 1.25, Math.PI, MAT.wood), 'tk');
+    interactBox(r, tm(ox + 4.5), 0.85, tm(oz) + 0.55, 1.6, 0.2, 0.75, () => '机を調べる', () => STORY.event('tkDesk'), { icon: 'eye' });
     shineAt(r, tm(ox + 4.5) - 0.3, 0.01, tm(oz) + 0.5, 'k_library', false);
-    interactBox(r, tm(ox + 4.5) - 0.3, 0.3, tm(oz) + 0.6, 0.7, 0.6, 0.6, () => (ch.at && !STORY.hasGot('k_library') ? '机の下を調べる' : null), () => STORY.event('libraryKey'), { icon: 'eye' });
+    interactBox(r, tm(ox + 4.5) - 0.3, 0.3, tm(oz) + 0.6, 0.7, 0.6, 0.6, () => (chairAway(MAN.tkChair) && !STORY.hasGot('k_library') ? '机の下を調べる' : null), () => STORY.event('libraryKey'), { icon: 'eye' });
     addBookshelf(r, tm(ox + 7.6), tm(oz) + 0.3, 0, tm(2), 2.4);
     addDresser(r, tm(ox + 2.3), tm(oz) + 0.35, 0, { w: 1.2, h: 0.9, d: 0.5, rows: 3, cols: 1, mat: MAT.wood });
     addSimpleBed(r, tm(ox + 8) + 0.2, tm(oz + 6));
     // the handkerchief turns up in front of the closet after the first chase
-    const hk = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.3), std({ color: 0xf4f4f0, roughness: 0.9, side: THREE.DoubleSide })); hk.rotation.x = -Math.PI / 2; hk.position.set(tm(ox) + 0.7, 0.012, tm(oz) + 1.6); hk.visible = false; r.group.add(hk); MAN.props.hanky = hk;
-    interactBox(r, tm(ox) + 0.7, 0.15, tm(oz) + 1.6, 0.5, 0.3, 0.5, () => (hk.visible && !STORY.hasGot('hanky') ? '白いものを拾う' : null), () => STORY.event('hanky'), { icon: 'hand' });
+    const hk = shineAt(r, tm(ox) + 0.7, 0.0, tm(oz) + 1.6, 'hanky', false);
+    interactBox(r, tm(ox) + 0.7, 0.15, tm(oz) + 1.6, 0.5, 0.3, 0.5, () => (hk.visible && !STORY.hasGot('hanky') ? '光っているものを拾う' : null), () => STORY.event('hanky'), { icon: 'hand' });
   },
   attic(r) {
     const ox = 11, oz = -12;
@@ -828,7 +836,7 @@ const nodePos = (n, out = new THREE.Vector3()) => out.set(cx(n.x), FLOORS[n.fl],
 /* ---------- build everything ---------- */
 function buildMansion() {
   aoMaterials();
-  Object.assign(MAN, { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), veils: [] });
+  Object.assign(MAN, { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), veils: [], sparkles: [], chairs: [] });
   AREAS.forEach((d, i) => makeArea(d, i));
   for (const s of STAIRS) buildStairs(s);
   for (const [fl, ax, az, bx, bz] of JOINS.concat(EDGES)) {

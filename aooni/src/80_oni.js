@@ -385,29 +385,80 @@ const ONI = {
   },
 };
 
-/* ---------- when it turns up on its own ---------- */
+/* ---------- when it turns up on its own ----------
+   Once it has chased you in the library it can turn up anywhere: after a door or a flight of stairs it
+   sometimes comes in behind you, or is already standing in the room; stay put long enough and it opens a door */
 const DIRECTOR = {
-  enabled: false, cool: 90,
-  reset() { this.enabled = false; this.cool = 90; },
+  enabled: false, cool: 45, idle: 0,
+  reset() { this.enabled = false; this.cool = 45; this.idle = 0; },
   onGone() {
-    this.cool = rng.range(80, 130);
+    this.cool = rng.range(35, 70); this.idle = 0;
     MUSIC.stop(2.5); GAME.chaseFx = 0;
-    if (PLAYER.alive && GAME.state === 'play') setTimeout(() => { if (!ONI.on && PLAYER.alive && GAME.state === 'play') UI.hint('……いなくなったみたいだ', 2400); }, 1600);
   },
-  update(dt) { if (this.enabled && !ONI.on && !GAME.modal) this.cool -= dt; },
-  // you went through a door: sometimes, a few seconds later, it comes through after you
+  // rooms where something else happens (or is still to happen): it does not turn up there by chance
+  quiet(r) {
+    const f = STORY.flags;
+    if (!r || r.id === 'hidden' || r.id === 'jail') return true;
+    return (r.id === 'library' && !f.glimpse) || (r.id === 'attic' && !f.takuro) || (r.id === 'piano' && !f.pianoChaseDone) || (r.id === 'tatami' && !f.tatamiChaseDone) || (r.id === 'kids' && !f.kidsChaseDone) || (r.id === 'takeshi' && !f.takeshiGone);
+  },
+  ready() { return this.enabled && !ONI.on && !STORY.busy && PLAYER.alive && !PLAYER.hidden && this.cool <= 0 && !this.quiet(GAME.room); },
+  update(dt) {
+    if (!this.enabled || ONI.on || GAME.modal) return;
+    this.cool -= dt;
+    if (this.cool > 0) return;
+    this.idle += dt;
+    if (this.idle > 28 && !GAME.busy && this.ready()) this.knock();
+  },
+  // you went through a door or up/down the stairs
   onPlayerMoved(from, to) {
-    if (!this.enabled || ONI.on || STORY.busy || this.cool > 0 || !from || !from.to || !to || !to.front) return;
-    if (rng.next() > 0.22) return;
+    this.idle = 0;
+    if (!from || !to || !this.ready()) return;
+    const k = rng.next();
+    if (k < 0.32) this.followIn(to);
+    else if (k < 0.47) this.ambush(GAME.room);
+  },
+  // a few seconds later it comes through after you
+  followIn(to) {
     this.cool = 999;
-    GAME.later(Math.max(rng.range(2.5, 4.5), hideGrace(to) - 1.0), () => { if (!ONI.on && PLAYER.alive && GAME.room === to.area && !STORY.busy) { SFX.oniStep(to.front, 0.8); ONI.enterVia(to, 1.0); } else this.cool = 30; });
+    const here = GAME.room, retry = () => { this.cool = 25; };
+    if (to.front) {
+      GAME.later(Math.max(rng.range(2.5, 4.5), hideGrace(to) - 1.0), () => { if (!ONI.on && PLAYER.alive && GAME.room === here && !STORY.busy) { SFX.oniStep(to.front, 0.8); ONI.enterVia(to, 1.0); } else retry(); });
+      return;
+    }
+    GAME.later(rng.range(2.6, 4.2), () => {   // up the stairs behind you, out of their dark end
+      if (ONI.on || !PLAYER.alive || GAME.room !== here || STORY.busy) { retry(); return; }
+      const a = stairPoint(to, 1 - 0.9 / to.len); ONI.spawn(a.x, a.y, a.z, to.dir === 'N' ? 0 : Math.PI, 'chase'); ONI.chaseT = 0; SFX.oniStep(a, 0.9); SFX.oniSpot();
+    });
+  },
+  // it is already standing in the room as you come in
+  ambush(r) {
+    const P = PLAYER.pos, ok = [];
+    for (const n of MAN.nodes) {
+      if (n.area !== r || n.blocked || n.stair) continue;
+      const q = nodePos(n), d = Math.hypot(q.x - P.x, q.z - P.z);
+      if (d > 6 && d < 22 && !WORLD.blocked(tmpV2.set(q.x, q.y + 1.5, q.z), tmpV3.set(P.x, P.y + 1.5, P.z))) ok.push(q);
+    }
+    if (!ok.length) return;
+    const q = ok[(rng.next() * ok.length) | 0];
+    this.cool = 999;
+    ONI.spawn(q.x, q.y, q.z, Math.atan2(P.x - q.x, P.z - q.z), 'appear'); ONI.appearFor = 1.2;
+    GAME.later(0.25, () => { if (ONI.on) { SFX.oniSpot(); POST.shake = 0.3; } });
+  },
+  // you have been in one place a while: it opens one of the doors of the room
+  knock() {
+    const P = PLAYER.pos, ds = MAN.doorList.filter(d => d.area === GAME.room && d.to && !GAME.doorShut(d) && Math.hypot(d.front.x - P.x, d.front.z - P.z) > 4.5);
+    if (!ds.length) { this.ambush(GAME.room); if (!ONI.on) this.cool = 20; return; }
+    const d = ds[(rng.next() * ds.length) | 0];
+    this.cool = 999; this.idle = 0;
+    SFX.oniStep(d.front, 0.7); GAME.later(0.6, () => SFX.oniStep(d.front, 0.85));
+    ONI.enterVia(d, 1.6);
   },
 };
 
 /* ---------- caught ---------- */
 GAME.caught = function (inHide) {
   if (!PLAYER.alive) return;
-  PLAYER.alive = false; GAME.caughtN = (GAME.caughtN || 0) + 1;
+  PLAYER.alive = false; GAME.caughtN = (GAME.caughtN || 0) + 1; dropChair();
   ONI.state = 'kill'; ONI.show(true); MUSIC.stop(0.2); GAME.chaseFx = 0; GAME.lighterOn = false;
   const h = PLAYER.hidden;
   if (h && h.doors) { h.doors.forEach(d => (d.visible = true)); animateHideDoors(h, 420, 1.7); SFX.closet(h.cam, false); }
