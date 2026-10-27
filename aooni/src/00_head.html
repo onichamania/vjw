@@ -57,15 +57,19 @@
   @keyframes tin { from { transform:translateX(30px); opacity:0; } to { transform:none; opacity:1; } }
   #fps { position:absolute; right:8px; bottom:6px; font-size:11px; color:#8f8; opacity:.7; }
 
-  /* ---------- message window (like the original's) ---------- */
-  #msg { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 18px); transform:translateX(-50%); width:min(760px,94vw); z-index:5; pointer-events:auto; cursor:pointer; }
-  #msgBox { background:linear-gradient(180deg, rgba(24,30,70,.92), rgba(8,10,30,.94)); border:3px solid #e8ecff; border-radius:8px; box-shadow:0 0 0 2px #0b0e24, 0 10px 30px rgba(0,0,0,.7);
-    padding:14px 20px 18px; min-height:96px; font-size:min(4.6vw,20px); line-height:1.65; color:#fff; white-space:pre-wrap; position:relative; }
-  #msgName { display:inline-block; background:rgba(8,10,30,.94); border:3px solid #e8ecff; border-bottom:0; border-radius:8px 8px 0 0; padding:3px 14px 2px; font-size:15px; color:#bfd0ff; margin-left:12px; }
+  /* ---------- message window, after the original's: a black box with a white frame, the name above, the face on the left ---------- */
+  #msg { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 14px); transform:translateX(-50%); width:min(780px,95vw); z-index:5; pointer-events:auto; cursor:pointer; }
+  #msgName { display:inline-block; background:rgba(0,0,0,.82); border:2px solid #a8a8a8; border-radius:4px; padding:2px 12px; font-size:15px; color:#fff; margin:0 0 4px 6px; }
   #msgName:empty { display:none; }
-  #msgNext { position:absolute; right:14px; bottom:6px; font-size:14px; color:#cfd8ff; animation:bob 1s infinite; }
+  #msgBox { position:relative; background:rgba(0,0,0,.8); border:2px solid #f2f2f2; border-radius:6px; box-shadow:0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.6);
+    padding:14px 22px 20px; min-height:122px; font-size:min(4.4vw,20px); line-height:1.7; color:#fff; white-space:pre-wrap; }
+  #msgBox.face { padding-left:136px; }
+  #msgFace { position:absolute; left:14px; top:12px; width:104px; height:104px; display:none; }
+  #msgBox.face #msgFace { display:block; }
+  #msgFace svg { width:100%; height:100%; display:block; }
+  #msgNext { position:absolute; right:12px; bottom:4px; font-size:13px; color:#fff; animation:bob 1s infinite; }
   @keyframes bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
-  body.short #msgBox { min-height:70px; padding:8px 14px 12px; font-size:16px; }
+  body.short #msgBox { min-height:84px; padding:8px 14px 12px; font-size:16px; } body.short #msgBox.face { padding-left:96px; } body.short #msgFace { width:72px; height:72px; left:10px; top:8px; }
 
   /* ---------- touch ---------- */
   #touch { position:fixed; inset:0; pointer-events:none; z-index:1; }
@@ -81,6 +85,8 @@
   #tUse.ready { opacity:1; box-shadow:0 0 16px rgba(200,210,255,.4); }
   #tRun { right:118px; bottom:92px; width:70px; height:70px; }
   #tRun.on { background:rgba(60,70,140,.9); }
+  #tLight { right:30px; bottom:246px; width:58px; height:58px; }
+  #tLight.on { background:rgba(120,70,20,.85); box-shadow:0 0 16px rgba(255,170,80,.5); }
   #tPause { right:16px; top:16px; width:44px; height:44px; border-width:3px; border-radius:12px; }
   #tPause svg { width:56%; height:56%; }
 
@@ -122,25 +128,21 @@
   #endStats { font-size:15px; color:#9fb0e6; letter-spacing:.06em; margin:18px 0; text-align:center; line-height:1.8; opacity:0; transition:opacity 1s; }
   .btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
 
-  /* ---------- modal: piano / sheet music ---------- */
+  /* ---------- modal: the safe, the piano keys ---------- */
   #modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:6; overflow-y:auto; touch-action:pan-y; }
   #modal > * { margin:auto; flex-shrink:0; }
   .close { position:absolute; right:10px; top:6px; background:none; border:0; font-size:26px; cursor:pointer; color:inherit; }
-  .sheet { background:#efe6cf; color:#2a2216; border-radius:4px; padding:18px 22px; width:min(560px,94vw); box-shadow:0 20px 60px #000; position:relative; font-family:"Noto Serif JP",serif; }
-  .sheet h3 { margin:0 0 6px; font-size:17px; letter-spacing:.1em; }
-  .sheet svg { width:100%; height:auto; display:block; }
-  .sheet .note { font-family:var(--ui); font-size:13px; color:#5a4a30; margin-top:6px; }
-  .piano { background:#141414; border:2px solid #3a3a3a; border-radius:12px; padding:14px 16px 18px; width:min(620px,96vw); position:relative; color:#ddd; text-align:center; }
-  .piano .staffs { background:#efe6cf; border-radius:6px; padding:4px 8px; margin-bottom:12px; }
-  .piano .staffs svg { width:100%; height:auto; display:block; }
-  .keys { position:relative; display:flex; height:min(150px,28vh); user-select:none; }
-  .keys .w { flex:1; background:linear-gradient(#fff,#e8e8e8); border:1px solid #333; border-radius:0 0 6px 6px; display:flex; align-items:flex-end; justify-content:center;
-    padding-bottom:8px; font-size:14px; color:#333; cursor:pointer; }
-  .keys .w.down { background:linear-gradient(#cfd8ff,#aab8ff); }
-  .keys .b { position:absolute; top:0; width:7%; height:58%; background:linear-gradient(#333,#000); border-radius:0 0 4px 4px; margin-left:-3.5%; cursor:pointer; z-index:1; }
-  .keys .b.down { background:#445; }
-  .piano .msgline { font-size:13px; color:#aab; margin-top:10px; }
-  body.short .piano .staffs { margin-bottom:6px; } body.short .keys { height:22vh; }
+  .msgline { font-size:14px; color:#cfd3e0; margin:8px 0; line-height:1.6; }
+  .safe { background:#1a1b1e; border:3px solid #55585e; border-radius:12px; padding:20px 22px; width:min(460px,94vw); position:relative; color:#ddd; text-align:center; }
+  .dials { display:flex; gap:10px; justify-content:center; margin:14px 0; transform:rotate(180deg); background:#0a0a0a; padding:12px; border-radius:8px; border:2px solid #444; }
+  .dial { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .dial button { width:52px; height:34px; background:#2c2e33; border:1px solid #666; color:#ddd; border-radius:6px; font-size:16px; cursor:pointer; }
+  .dial .dd { width:52px; height:64px; display:grid; place-items:center; background:#050505; color:#f2f2f2; font:700 44px/1 "Courier New",monospace; border-radius:4px; letter-spacing:0; }
+  .pkeys { background:#101010; border:2px solid #333; border-radius:12px; padding:18px 16px; width:min(640px,96vw); position:relative; color:#ddd; text-align:center; }
+  .pkrow { display:flex; height:min(190px,32vh); }
+  .pk { flex:1; background:linear-gradient(#fff,#e6e6e6); border:1px solid #333; border-radius:0 0 6px 6px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:16px; position:relative; }
+  .pk:nth-child(7n+1)::after, .pk:nth-child(7n+2)::after, .pk:nth-child(7n+4)::after, .pk:nth-child(7n+5)::after, .pk:nth-child(7n+6)::after { content:""; position:absolute; right:-28%; top:0; width:56%; height:58%; background:#111; z-index:1; border-radius:0 0 3px 3px; }
+  .pk b { font:400 36px/1 "Courier New",monospace; color:#8a1010; position:relative; z-index:2; }
   #rot { position:fixed; left:0; top:0; width:100%; height:100%; transform-origin:0 0; overflow:hidden; }
 </style>
 <script type="importmap">
@@ -174,10 +176,11 @@
   <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
   <button id="tUse" class="tbtn" aria-label="調べる"></button>
   <button id="tRun" class="tbtn" aria-label="走る"></button>
+  <button id="tLight" class="tbtn hidden" aria-label="ライター"></button>
   <button id="tPause" class="tbtn" aria-label="一時停止"></button>
 </div>
 
-<div id="msg" class="hidden"><div id="msgName"></div><div id="msgBox"><span id="msgText"></span><span id="msgNext">▼</span></div></div>
+<div id="msg" class="hidden"><div id="msgName"></div><div id="msgBox"><div id="msgFace"></div><span id="msgText"></span><span id="msgNext">▼</span></div></div>
 
 <div id="title" class="screen">
   <svg id="titleFace" viewBox="0 0 200 220" aria-hidden="true">

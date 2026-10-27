@@ -96,8 +96,9 @@ const LIGHTS = {
   update(dt, t) {
     const cand = [];
     const cp = GAME.camPos;
+    const here = GAME.room && GAME.room.joined;   // only the room you are in (and those open to it) can light you
     for (const r of WORLD.rooms) {
-      for (const f of r.fixtures) { fixtureTick(f, t, dt); if (f.level > 0.01) cand.push(f); }
+      for (const f of r.fixtures) { fixtureTick(f, t, dt); if (f.level > 0.01 && (!here || here.has(r))) cand.push(f); }
     }
     for (const f of WORLD.dyn) { if (f.level == null) f.level = 1; if (f.level * f.intensity > 0.01) cand.push(f); }
     for (const f of cand) {
