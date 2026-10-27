@@ -119,10 +119,24 @@ const ONI = {
   despawn(quiet = false) {
     const was = this.on;
     this.on = false; this.state = 'off'; this.transit = null; this.script = null;
-    if (this.m) this.show(false);
+    if (this.m) { this.show(false); this.setLook(null); }
     if (was && !quiet) DIRECTOR.onGone();
   },
   place() { const m = this.m; m.root.position.copy(this.pos); m.root.rotation.y = this.yaw; },
+  // what Mika became: the same blue body, with her brown bob on that huge head
+  setLook(look) {
+    this.init();
+    if (look === 'mika' && !this.m.hair) {
+      const hm = new THREE.MeshStandardMaterial({ color: 0x5a2e18, roughness: 0.6 }), hair = new THREE.Group();
+      const S = (sx, sy, sz, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(1, 22, 16), hm); o.scale.set(sx, sy, sz); o.position.set(x, y, z); o.castShadow = true; hair.add(o); };
+      S(0.5, 0.42, 0.47, 0, 0.68, -0.05); S(0.49, 0.2, 0.36, 0, 0.83, 0.12);
+      for (const s of [-1, 1]) S(0.14, 0.42, 0.3, s * 0.42, 0.42, 0.02);
+      S(0.46, 0.36, 0.2, 0, 0.36, -0.3);
+      this.m.head.add(hair); this.m.hair = hair; hair.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+    }
+    if (this.m.hair) this.m.hair.visible = look === 'mika';
+    this.look = look;
+  },
   sameSpace() { const a = this.room(), b = GAME.room; return a && b && b.joined.has(a) && Math.abs(this.pos.y - PLAYER.pos.y) < 3; },
   canSee(cone = false) {
     if (!PLAYER.alive || PLAYER.hidden || this.state === 'transit' || !this.sameSpace()) return false;
@@ -320,6 +334,12 @@ const ONI = {
         return 0;
       }
       case 'call': st.fn(); next(); return 0;
+      case 'rise': {   // up out of the floor
+        if (st.base == null) { st.base = this.pos.y; SFX.push(this.pos.clone().setY(this.pos.y + 0.3)); }
+        this.wait += dt; const k = smoothstep(0, 1, this.wait / st.d); this.pos.y = st.base - 3.3 * (1 - k); this.place();
+        if (this.wait > st.d) { this.pos.y = st.base; next(); }
+        return 0;
+      }
       case 'gone': this.despawn(true); if (st.fn) st.fn(); return 0;
       default: next(); return 0;
     }
@@ -458,7 +478,7 @@ const DIRECTOR = {
 /* ---------- caught ---------- */
 GAME.caught = function (inHide) {
   if (!PLAYER.alive) return;
-  PLAYER.alive = false; GAME.caughtN = (GAME.caughtN || 0) + 1; dropChair();
+  PLAYER.alive = false; GAME.caughtN = (GAME.caughtN || 0) + 1; dropChair(); stopPush();
   ONI.state = 'kill'; ONI.show(true); MUSIC.stop(0.2); GAME.chaseFx = 0; GAME.lighterOn = false;
   const h = PLAYER.hidden;
   if (h && h.doors) { h.doors.forEach(d => (d.visible = true)); animateHideDoors(h, 420, 1.7); SFX.closet(h.cam, false); }

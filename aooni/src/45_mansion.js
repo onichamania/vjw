@@ -8,7 +8,8 @@
    Tile coordinates: x east, z south; each floor sits at its own height.
    ========================================================================= */
 const T = 1.7, WALL_H = 4.2, DR_H = 2.7, DW = 1.45, WT = 0.16;   // DW: the width of a doorway
-const FLOORS = { F1: 0, F2: 40, F3: 80 };
+// the main building's three floors, its basement, and (each on a level of its own) the annexes and the way between them
+const FLOORS = { F1: 0, F2: 40, F3: 80, B1: -40, A1: 120, A2: 160, A3: 200, AB: 240, K: 280, S1: 320, S2: 360, SB: 400 };
 const cx = x => (x + 0.5) * T;             // centre of tile x (or z)
 const tm = v => v * T;                      // tiles -> metres
 const MAN = { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), nodes: [], veils: [] };
@@ -43,6 +44,16 @@ function aoMaterials() {
   AOM.rug = std({ ...genNoiseSurface(S / 2, 0xc9bb98, 0.06, 10, 0.3), roughness: 1 }, 2);
   AOM.knob = std({ color: 0xd8b84a, metalness: 0.9, roughness: 0.3, envMap: ENV, envMapIntensity: 0.9 });
   AOM.veil = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, fog: false });
+  // the basement, the annexes, the way between them
+  AOM.wallStone = std({ ...genNoiseSurface(S / 2, 0x9c9a90, 0.08, 7, 0.45), roughness: 0.95 }, 2);
+  AOM.floorMoss = std({ ...genStoneBlocks(S, 0x4a5238, 8, 6), roughness: 0.95 }, 1.6);
+  AOM.wallBlue = std({ ...genNoiseSurface(S / 2, 0x7d8498, 0.08, 6, 0.5), roughness: 0.92 }, 2);
+  AOM.floorBlood = std({ ...genWoodFloor(S, 0x561616, 8, 11), roughness: 0.9, normalScale: new THREE.Vector2(0.6, 0.6) }, 2.2);
+  AOM.wallStain = std({ ...genNoiseSurface(S / 2, 0xc2b08a, 0.16, 5, 0.7), roughness: 0.95 }, 2);
+  AOM.floorOlive = std({ ...genWoodFloor(S, 0x464a2c, 8, 13), roughness: 0.95, normalScale: new THREE.Vector2(0.6, 0.6) }, 2.2);
+  AOM.wallWhiteB = std({ ...genNoiseSurface(S / 2, 0xeeeeea, 0.03, 6, 0.2), roughness: 0.85 }, 2);
+  AOM.floorPath = std({ ...genStoneBlocks(S, 0x6c6a62, 6, 15), roughness: 0.95 }, 1.4);
+  AOM.hedge = std({ ...genNoiseSurface(S / 2, 0x1d3a1f, 0.25, 9, 0.8), roughness: 1 }, 1.4);
   AOM.ready = true;
 }
 function tatamiTex() {
@@ -183,7 +194,7 @@ function floorAndCeiling(r) {
       F.box(w, 0.1, d, MAT.darkWood, mx, -0.05, mz);
     } else F.box(w, 0.1, d, fm, mx, -0.05, mz);
     r.addFloor(tm(c[0]), tm(c[0] + c[2]), tm(c[1]), tm(c[1] + c[3]), 0);
-    F.box(w, 0.12, d, MAT.ceiling, mx, WALL_H + 0.06, mz);
+    if (!r.def.outdoor) F.box(w, 0.12, d, MAT.ceiling, mx, WALL_H + 0.06, mz);
   }
 }
 // walls on every tile edge where the floor stops (or meets another room that isn't joined to it)
@@ -237,7 +248,7 @@ function edgeFrame(x, z, side) {
 function buildDoor(def) {
   const cell = MAN.grid.get(gkey(def.fl, def.x, def.z)), r = cell.area;
   const { px, pz, ry, into } = edgeFrame(def.x, def.z, def.side);
-  const F = new Frame(r, px, 0, pz, ry), wm = def.kind === 'hidden' ? AOM.wallGrey : AOM[r.def.wall] || MAT.plaster;
+  const F = new Frame(r, px, 0, pz, ry), wm = def.kind === 'hidden' ? AOM.wallGrey : AOM[r.def.wall] || MAT.plaster, disguised = /^hidden/.test(def.kind || '');
   const door = { id: def.id, def, area: r, fl: def.fl, x: def.x, z: def.z, side: def.side, lock: def.lock || null, kind: def.kind || 'door', to: def.to, F };
   // the wall above the doorway and beside it (the tile is wider than a door)
   F.box(T, WALL_H - DR_H, WT, wm, 0, (DR_H + WALL_H) / 2, WT / 2);
@@ -267,7 +278,7 @@ function buildDoor(def) {
     const ball = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), AOM.knob); ball.position.z = fz * 0.065; k.add(ball);
   }
   Object.assign(door, { piv, leaf, knobs, trims, panels });
-  if (door.kind === 'hidden') { leaf.material = AOM.wallGrey; knobs.forEach(k => (k.visible = false)); trims.visible = false; panels.forEach(p => (p.visible = false)); }
+  if (disguised) { leaf.material = wm; knobs.forEach(k => (k.visible = false)); trims.visible = false; panels.forEach(p => (p.visible = false)); }
   door.front = new THREE.Vector3(cx(def.x) + into.x * 0.12, FLOORS[def.fl], cx(def.z) + into.z * 0.12);
   door.center = new THREE.Vector3(px, FLOORS[def.fl] + 1.2, pz);
   door.yawIn = Math.atan2(-into.x, -into.z);         // a camera with this yaw looks into the room
@@ -381,11 +392,13 @@ function movable(r, x, z, w, d, h) {
     add(geo, mat, px, py, pz) { const o = new THREE.Mesh(geo, mat); o.position.set(px, py, pz); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; },
     slide(nx, nz, dur = 500) {
       const fx = g.position.x, fz = g.position.z, t0 = performance.now();
-      col.lx0 = nx - w / 2; col.lx1 = nx + w / 2; col.lz0 = nz - d / 2; col.lz1 = nz + d / 2; r._colliderWorld(col);
-      SFX.push && SFX.push(new THREE.Vector3(nx, r.y + 0.5, nz));
+      col.lx0 = nx - w / 2; col.lx1 = nx + w / 2; col.lz0 = nz - d / 2; col.lz1 = nz + d / 2; this.r._colliderWorld(col);
+      SFX.push && SFX.push(new THREE.Vector3(nx, this.r.y + 0.5, nz));
       animate(() => { const k = Math.min(1, (performance.now() - t0) / dur); g.position.x = lerp(fx, nx, smoothstep(0, 1, k)); g.position.z = lerp(fz, nz, smoothstep(0, 1, k)); return k < 1; });
     },
-    place(nx, nz) { g.position.x = nx; g.position.z = nz; col.lx0 = nx - w / 2; col.lx1 = nx + w / 2; col.lz0 = nz - d / 2; col.lz1 = nz + d / 2; r._colliderWorld(col); },
+    place(nx, nz) { g.position.x = nx; g.position.z = nz; col.lx0 = nx - w / 2; col.lx1 = nx + w / 2; col.lz0 = nz - d / 2; col.lz1 = nz + d / 2; this.r._colliderWorld(col); },
+    // carried (or pushed) into another room: it belongs to that room now
+    moveTo(room) { if (room === this.r) return; const i = this.r.colliders.indexOf(col); if (i >= 0) this.r.colliders.splice(i, 1); room.colliders.push(col); room.group.add(g); this.r = room; room._colliderWorld(col); },
   };
 }
 // a tall two-door wardrobe (the original's closet): front is local +z
@@ -818,6 +831,7 @@ function navPath(from, to, opts = {}) {
     if (i === to.i) break;
     for (const e of MAN.nodes[i].e) {
       if (e.door && (opts.noDoors || GAME.doorShut(e.door))) continue;
+      if (e.stair && e.stair.shut) continue;   // stairs still hidden
       const nd = d + e.w;
       if (nd < dist[e.n.i]) { dist[e.n.i] = nd; prev[e.n.i] = i; via[e.n.i] = e; push(nd, e.n.i); }
     }
@@ -842,7 +856,7 @@ const nodePos = (n, out = new THREE.Vector3()) => out.set(cx(n.x), FLOORS[n.fl],
 /* ---------- build everything ---------- */
 function buildMansion() {
   aoMaterials();
-  Object.assign(MAN, { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), veils: [], sparkles: [], chairs: [] });
+  Object.assign(MAN, { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), veils: [], sparkles: [], chairs: [], shownFl: null });
   AREAS.forEach((d, i) => makeArea(d, i));
   for (const s of STAIRS) buildStairs(s);
   for (const [fl, ax, az, bx, bz] of JOINS.concat(EDGES)) {
@@ -871,3 +885,5 @@ function buildMansion() {
   WORLD.roomAt = p => { const c = cellOf(p); return c ? c.area : null; };
   buildNav();
 }
+// only the floor you are on is drawn (the others are out of sight: black stairwell ends and doors are between)
+function showFloor(fl) { if (MAN.shownFl === fl) return; MAN.shownFl = fl; for (const r of MAN.list) r.group.visible = r.fl === fl; }

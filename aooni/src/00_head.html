@@ -175,6 +175,11 @@
   .pk { flex:1; background:linear-gradient(#fff,#e6e6e6); border:1px solid #333; border-radius:0 0 6px 6px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:16px; position:relative; }
   .pk:nth-child(7n+1)::after, .pk:nth-child(7n+2)::after, .pk:nth-child(7n+4)::after, .pk:nth-child(7n+5)::after, .pk:nth-child(7n+6)::after { content:""; position:absolute; right:-28%; top:0; width:56%; height:58%; background:#111; z-index:1; border-radius:0 0 3px 3px; }
   .pk b { font:400 36px/1 "Courier New",monospace; color:#8a1010; position:relative; z-index:2; }
+  .safe.view { padding-top:48px; }
+  .vimg { display:block; max-width:100%; max-height:52vh; margin:0 auto; border-radius:6px; image-rendering:auto; }
+  .vbox { margin:8px 0; }
+  .bkpage { background:#f3ead2; color:#3a2a1a; border-radius:8px; min-height:180px; padding:22px 18px; display:flex; align-items:center; justify-content:center; text-align:center; box-shadow:inset 0 0 30px rgba(120,80,30,.25); }
+  .bk { font-size:18px; line-height:2; font-family:"Noto Serif JP",serif; } .bk b { font-size:24px; }
   #rot { position:fixed; left:0; top:0; width:100%; height:100%; transform-origin:0 0; overflow:hidden; }
 </style>
 <script type="importmap">
@@ -231,7 +236,7 @@
     <path d="M80 180 Q100 174 120 180 Q100 192 80 180Z" fill="#6a5ec0"/><path d="M82 180 Q100 183 118 180" stroke="#2e2766" stroke-width="2.5" fill="none"/>
   </svg>
   <div class="logo">青鬼</div>
-  <div class="sublogo">3D　一人称版　―　本館</div>
+  <div class="sublogo">3D　一人称版</div>
   <div class="menu">
     <button class="mbtn primary" id="bNew">はじめから</button>
     <button class="mbtn" id="bCont">つづきから</button>
@@ -262,7 +267,7 @@
 <div id="how" class="screen hidden" style="background:rgba(0,0,0,.9)">
   <div class="panel">
     <h2>遊び方</h2>
-    <p>町はずれの洋館に入ったひろしたち。玄関の扉は開かなくなり、仲間ともはぐれてしまった。屋敷を調べて謎を解き、先へ進もう。（原作 ver6.23 の本館を、マップどおりの間取りで3Dにしています）</p>
+    <p>町はずれの洋館に入ったひろしたち。玄関の扉は開かなくなり、仲間ともはぐれてしまった。屋敷を調べて謎を解き、脱出を目指そう。（原作 ver6.23 の本館・地下・第１別館・回廊・第２別館を、マップどおりの間取りで3Dにしています）</p>
     <ul>
       <li><b>PC</b>：クリックで視点固定 / WASD 移動 / Shift 走る / マウス 視点 / E・クリック 調べる・扉・隠れる / F・右クリック ライター / Esc 一時停止</li>
       <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、手のボタンで調べる、走るボタンで走る、炎のボタンでライター。物を直接タップしても調べられます。</li>
@@ -270,6 +275,7 @@
       <li>屋敷には<b>青い化け物</b>がいる。見つかったら全力で逃げろ。扉を抜けても追ってくる。</li>
       <li>部屋を移れば、追ってくるまでに少し時間がかせげる。しばらく見つからずにいれば、あきらめていなくなる。</li>
       <li><b>クローゼット</b>に隠れればやり過ごせる。ただし、同じ部屋にいるときに隠れると見つかってしまう。</li>
+      <li>イスは「持ち上げる」で運べて、置いた場所で「イスに乗る」と高い所に手が届く。像などの重い物は押して運ぶ。</li>
       <li>アイテム欄か一時停止の<b>「セーブ」</b>で、３つのファイルに記録できる（追われている間はできない）。アイテムを拾ったときなどにも自動で記録される。つかまっても「つづきから」で再開できる。</li>
     </ul>
     <div class="btns"><button class="mbtn" id="hBack">戻る</button></div>

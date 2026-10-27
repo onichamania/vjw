@@ -124,6 +124,7 @@ const STORY = {
   // something used from the item screen: on another thing you carry (the only things you put together by hand),
   // or on what you were facing when you opened it
   useItem(id, t) {
+    if (STORY.useItem2 && STORY.useItem2(id, t)) return;   // the basement and the annexes
     const has = x => this.has(x), f = this.flags, ia = t && t.ia, tag = ia && ia.tag, door = ia && ia.ref;
     const say = l => GAME.say(l.map(x => (typeof x === 'string' ? ['', x] : x)));
     switch (id) {
@@ -156,7 +157,7 @@ const STORY = {
   },
   save() { store.set('save', this.snapshot()); },   // the autosave
   saveTo(k) { store.set(k, this.snapshot()); },
-  event(name) { if (EVENTS[name]) EVENTS[name](); },
+  event(name, ...a) { if (EVENTS[name]) EVENTS[name](...a); },
   // doors with something special about them
   doorHook(d) {
     const f = this.flags;
@@ -255,6 +256,7 @@ const EVENTS = {
     if (f.tatamiChase && !f.tatamiChaseDone) { f.tatamiChaseDone = true; STORY.save(); }
     if (f.kidsChase && !f.kidsChaseDone) { f.kidsChaseDone = true; STORY.save(); }
     if (f.jailScene && !f.jailDone) { f.jailDone = true; STORY.save(); }
+    for (const k of CHASES) if (f[k] && !f[k + 'Done']) { f[k + 'Done'] = true; STORY.save(); }
   },
   hanky() { GAME.take('hanky', MAN.props.hanky); },
   tub() {
@@ -431,7 +433,7 @@ const EVENTS = {
   },
   downstairs() {
     if (!STORY.flags.kidsChaseDone) { GAME.say([['', '先に、悲鳴の聞こえた子供部屋へ行こう。']]); return; }
-    GAME.chapterEnd();
+    GAME.goThrough(MAN.doors.corC_base);
   },
 };
 /* ---------- chairs: lift one, put it down where you point, climb on it to reach high places ---------- */
@@ -442,7 +444,7 @@ function chairInteract(ch, key) {
 }
 const chairAway = ch => !!ch && Math.hypot(ch.g.position.x - ch.home.x, ch.g.position.z - ch.home.z) > 0.6;
 function liftChair(ch) {
-  CHAIRS.held = ch; CHAIRS.from = { x: ch.g.position.x, z: ch.g.position.z };
+  CHAIRS.held = ch; CHAIRS.from = { x: ch.g.position.x, z: ch.g.position.z, r: ch.r };
   ch.g.visible = false; ch.col.on = false; SFX.push(ch.g.position.clone().setY(ch.r.y + 0.4)); VIEW.holdChair(ch);
   UI.hint(IS_TOUCH ? 'イスを置きたい場所をタップ' : 'イスを置きたい床をクリック（E でも置ける）', 3200);
 }
@@ -469,11 +471,11 @@ function placeChair(ndc) {
 }
 function putChair(ch, x, z) {
   ch.place(x, z); ch.g.visible = true; ch.col.on = true; CHAIRS.held = null; VIEW.chair.visible = false;
-  const f = STORY.flags; f.chairs = f.chairs || {}; f.chairs[ch.key] = [+x.toFixed(2), +z.toFixed(2)];
+  const f = STORY.flags; f.chairs = f.chairs || {}; f.chairs[ch.key] = [+x.toFixed(2), +z.toFixed(2), ch.r.id];
   if (ch.key === 'tk' && MAN.props.k_library) MAN.props.k_library.visible = chairAway(ch) && !STORY.hasGot('k_library');
 }
-// carrying it out of the room (or being caught with it): it goes back where it was
-function dropChair() { if (CHAIRS.held) putChair(CHAIRS.held, CHAIRS.from.x, CHAIRS.from.z); }
+// being caught with it (or hiding): it goes back where it was
+function dropChair() { const ch = CHAIRS.held; if (ch) { ch.moveTo(CHAIRS.from.r); putChair(ch, CHAIRS.from.x, CHAIRS.from.z); } }
 function climbChair(ch) {
   PLAYER.onChair = ch; PLAYER.chairFrom = PLAYER.pos.clone();
   PLAYER.pos.set(ch.g.position.x, ch.r.y + 0.47, ch.g.position.z); PLAYER.vel.set(0, 0, 0); SFX.step('wood', 0.3);
@@ -496,11 +498,38 @@ function chairAim() {
   CHAIRS.ring.visible = !!p; if (p) CHAIRS.ring.position.set(p.x, p.y + 0.02, p.z);
 }
 
+/* ---------- something heavy you push along in front of you (the statue) ---------- */
+const PUSH = { obj: null, t: 0 };
+const CHASES = [];   // the later scripted chases (their flag gets a ...Done when it is over)
+const BUILT_HOOKS = [];   // run once the house is built, on every start
+// a dark room stays dark until its own light (a candle) burns
+function roomDark(r) { return !!r && r.dark && !(r.lightFx && r.lightFx.state === 'on'); }
+const ROOM_HOOKS = [], STATE_HOOKS = [], TICK_HOOKS = [];
+function startPush(m) { PUSH.obj = m; m.col.on = false; UI.hint(IS_TOUCH ? '押して運ぶ（手のボタンで手を離す）' : '押して運ぶ（E で手を離す）', 3000); SFX.push(m.g.position.clone().setY(m.r.y + 0.5)); }
+function stopPush() {
+  const m = PUSH.obj; if (!m) return;
+  PUSH.obj = null; m.place(m.g.position.x, m.g.position.z); m.col.on = true;
+  const f = STORY.flags; f.pushed = f.pushed || {}; f.pushed[m.key] = [+m.g.position.x.toFixed(2), +m.g.position.z.toFixed(2), m.r.id];
+}
+const pushAt = (p, yaw, k = 1.05) => tmpV2.set(p.x - Math.sin(yaw) * k, p.y, p.z - Math.cos(yaw) * k);
+// is there room for it where you are about to walk it?
+function pushRoom(np, yaw) {
+  const q = pushAt(np, yaw), a = q.clone();
+  WORLD.collide(q, 0.36, np.y, 1.6);
+  return Math.hypot(q.x - a.x, q.z - a.z) < 0.02 && WORLD.groundAt(a.x, a.z, np.y + 0.5) !== null;
+}
+function pushFollow(dt) {
+  const m = PUSH.obj; if (!m) return;
+  const q = pushAt(PLAYER.pos, PLAYER.yaw);
+  m.g.position.x = q.x; m.g.position.z = q.z; m.g.position.y = 0; m.g.rotation.y = PLAYER.yaw;
+  if (PLAYER.speed > 0.3 && (PUSH.t += dt) > 0.7) { PUSH.t = 0; SFX.push(q.clone().setY(PLAYER.pos.y + 0.4)); }
+}
+
 // the hidden room's candle: once it burns it lights every corner of the room
 function candleUp() { const c = MAN.candle; c.state = 'on'; c.intensity = 14; c.range = 24; }
 function openFusuma(a, b) { [a, b].forEach((i, k) => { const p = MAN.fusuma[i], t0 = performance.now(), dx = (k === 0 ? -1 : 1) * 0.9; animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = p.userData.home.x + dx * u; return u < 1; }); }); SFX.slide && SFX.slide(MAN.fusuma[a].position.clone()); }
 function closeFusuma(a, b) { [a, b].forEach(i => { const p = MAN.fusuma[i], x0 = p.position.x, t0 = performance.now(); animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = lerp(x0, p.userData.home.x, u); return u < 1; }); }); }
-function showHiddenDoor(d, knob) { d.leaf.material = AOM.door; d.trims.visible = true; d.panels.forEach(p => (p.visible = true)); d.knobs.forEach(k => (k.visible = knob)); if (MAN.greyCover) MAN.greyCover.visible = false; }
+function showHiddenDoor(d, knob) { d.leaf.material = AOM.door; d.trims.visible = true; d.panels.forEach(p => (p.visible = true)); d.knobs.forEach(k => (k.visible = knob)); if (MAN.greyCover && d.id === 'corT_hid') MAN.greyCover.visible = false; }
 SFX.slide = pos => { if (!AU.ok) return; AU.burst({ pos, dur: 0.35, a: 0.03, f: 1400, q: 0.6, vol: 0.25, rev: 0.25 }); AU.burst({ pos, t0: AU.t + 0.33, dur: 0.05, f: 500, q: 1, vol: 0.3 }); };
 
 /* =========================================================================
@@ -516,6 +545,22 @@ const ITEM_SVG = {
   knob: () => '<svg viewBox="0 0 40 40"><circle cx="20" cy="18" r="9" fill="#d8b84a"/><rect x="17" y="26" width="6" height="8" fill="#a88a2a"/></svg>',
   oil: () => '<svg viewBox="0 0 40 40"><rect x="12" y="12" width="16" height="22" rx="2" fill="#d8b030"/><rect x="17" y="6" width="6" height="7" fill="#888"/></svg>',
   lighter: () => ICONS.lighter,
+  bit: () => '<svg viewBox="0 0 40 40"><path d="M12 20h20" stroke="#b8bcc4" stroke-width="4"/><path d="M30 15v10" stroke="#b8bcc4" stroke-width="3"/><rect x="6" y="17" width="7" height="6" fill="#888"/></svg>',
+  driverM: () => '<svg viewBox="0 0 40 40"><rect x="6" y="16" width="12" height="8" rx="3" fill="#2a6ad2"/><path d="M18 20h16" stroke="#b8bcc4" stroke-width="3"/><path d="M33 17v6" stroke="#b8bcc4" stroke-width="2"/></svg>',
+  doll: () => '<svg viewBox="0 0 40 40"><path d="M12 36 L28 36 L20 18Z" fill="#8a1c2a"/><circle cx="20" cy="13" r="7" fill="#f0dcc8"/><path d="M13 12 Q20 2 27 12" fill="#2a1a12"/><circle cx="17.5" cy="14" r="1.2"/><circle cx="22.5" cy="14" r="1.2"/></svg>',
+  dollHead: () => '<svg viewBox="0 0 40 40"><circle cx="20" cy="22" r="11" fill="#f0dcc8"/><path d="M9 20 Q20 4 31 20" fill="#2a1a12"/><circle cx="16" cy="23" r="2.3" fill="#d02020"/><circle cx="24" cy="23" r="2.3" fill="#2040d0"/></svg>',
+  bulb: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="16" rx="9" ry="11" fill="#fff4c0" stroke="#c8b060" stroke-width="2"/><rect x="15" y="26" width="10" height="8" fill="#a88a3a"/></svg>',
+  stoneR: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="21" rx="10" ry="8" fill="#d02020"/><ellipse cx="17" cy="18" rx="3" ry="2" fill="#ff9a9a"/></svg>',
+  stoneB: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="21" rx="10" ry="8" fill="#2040d0"/><ellipse cx="17" cy="18" rx="3" ry="2" fill="#9ab0ff"/></svg>',
+  book: () => '<svg viewBox="0 0 40 40"><rect x="9" y="7" width="22" height="27" rx="2" fill="#c84a3a"/><rect x="12" y="11" width="16" height="8" fill="#f0e0b0"/></svg>',
+  bookmark: () => '<svg viewBox="0 0 40 40"><rect x="13" y="5" width="14" height="30" fill="#efe6d0" stroke="#999" stroke-width="1.5"/><rect x="14" y="7" width="12" height="6" fill="#d02020" opacity=".6"/><rect x="14" y="14" width="12" height="6" fill="#2040d0" opacity=".6"/><rect x="14" y="21" width="12" height="6" fill="#20a040" opacity=".6"/><rect x="14" y="28" width="12" height="5" fill="#e8c818" opacity=".6"/></svg>',
+  disc: () => '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#e8c818"/><path d="M20 20 L20 6 A14 14 0 0 1 32 13Z" fill="#d02020"/><path d="M20 20 L32 27 A14 14 0 0 1 20 34Z" fill="#2040d0"/><circle cx="20" cy="20" r="6" fill="#d8d2c0"/></svg>',
+  vinegar: () => '<svg viewBox="0 0 40 40"><rect x="13" y="12" width="14" height="23" rx="3" fill="#c8b070" opacity=".85"/><rect x="16" y="5" width="8" height="8" fill="#5a3a20"/></svg>',
+  rod: () => '<svg viewBox="0 0 40 40"><path d="M8 32 L32 8" stroke="#b8bcc4" stroke-width="5" stroke-linecap="round"/></svg>',
+  dice: () => '<svg viewBox="0 0 40 40"><rect x="8" y="8" width="24" height="24" rx="4" fill="#f4f0e6" stroke="#888" stroke-width="1.5"/><circle cx="14" cy="14" r="2.3" fill="#111"/><circle cx="20" cy="20" r="2.3" fill="#111"/><circle cx="26" cy="26" r="2.3" fill="#111"/></svg>',
+  stick: () => '<svg viewBox="0 0 40 40"><path d="M6 34 L34 6" stroke="#8a6a3a" stroke-width="4" stroke-linecap="round"/></svg>',
+  ladder: () => '<svg viewBox="0 0 40 40"><path d="M13 4 L13 36 M27 4 L27 36" stroke="#8a7a5a" stroke-width="2.5"/><path d="M13 10h14M13 17h14M13 24h14M13 31h14" stroke="#a88a5a" stroke-width="3"/></svg>',
+  piece: () => '<svg viewBox="0 0 40 40"><path d="M9 11h8a4 4 0 1 1 6 0h8v8a4 4 0 1 1 0 6v8H9Z" fill="#2a50b0" stroke="#9ab0ff" stroke-width="1.5"/></svg>',
 };
 const UI = {
   show(id, on = true) { $(id).classList.toggle('hidden', !on); },
@@ -531,26 +576,32 @@ const UI = {
   items() {
     if (GAME.state !== 'play' || GAME.modal || GAME.cine || GAME.busy || !PLAYER.alive || PLAYER.hidden) return;
     GAME.itemTarget = TARGET; GAME.modal = { items: true };
-    UI._isel = clamp(UI._isel || 0, 0, Math.max(0, STORY.inv.length - 1));
+    UI._isel = clamp(UI._isel || 0, 0, Math.max(0, UI.itemRows().length - 1));
     releaseLock();
     UI.show('items'); UI.drawItems(); SFX.click && SFX.click();
   },
+  // what you carry, things of the same name together (the three blue pieces are one row, "×3")
+  itemRows() {
+    const rows = [];
+    for (const id of STORY.inv) { const nm = UI.itemName(id), r = rows.find(x => x.nm === nm); if (r) r.n++; else rows.push({ id, nm, n: 1 }); }
+    return rows;
+  },
   drawItems() {
-    const list = $('iList'); list.innerHTML = '';
-    if (!STORY.inv.length) list.innerHTML = '<div class="iempty">何も持っていない。</div>';
-    STORY.inv.forEach((id, i) => {
-      const d = ITEMS[id], b = document.createElement('button'); b.className = 'irow' + (i === UI._isel ? ' sel' : '');
-      b.innerHTML = (ITEM_SVG[d.icon] ? ITEM_SVG[d.icon](d.color || '#e7c264') : '') + `<span class="nm">${UI.itemName(id)}</span><span class="ct">:  1</span>`;
+    const list = $('iList'), rows = UI.itemRows(); list.innerHTML = '';
+    if (!rows.length) list.innerHTML = '<div class="iempty">何も持っていない。</div>';
+    rows.forEach((row, i) => {
+      const d = ITEMS[row.id], b = document.createElement('button'); b.className = 'irow' + (i === UI._isel ? ' sel' : '');
+      b.innerHTML = (ITEM_SVG[d.icon] ? ITEM_SVG[d.icon](d.color || '#e7c264') : '') + `<span class="nm">${row.nm}</span><span class="ct">:  ${row.n}</span>`;
       b.onclick = () => { if (UI._isel === i) UI.useItem(); else { UI._isel = i; UI.drawItems(); } };   // tap to choose, tap again to use
       list.appendChild(b);
     });
-    const id = STORY.inv[UI._isel];
-    $('iHelp').textContent = id ? UI.itemDesc(id) : ''; $('iUse').disabled = !id;
+    const row = rows[UI._isel];
+    $('iHelp').textContent = row ? UI.itemDesc(row.id) : ''; $('iUse').disabled = !row;
   },
   closeItems() { UI.show('items', false); if (GAME.modal && GAME.modal.items) GAME.modal = null; if (!IS_TOUCH && GAME.state === 'play' && PLAYER.alive) requestLock(); },
-  useItem() { const id = STORY.inv[UI._isel]; if (!id) return; UI.closeItems(); STORY.useItem(id, GAME.itemTarget); },
+  useItem() { const row = UI.itemRows()[UI._isel]; if (!row) return; UI.closeItems(); STORY.useItem(row.id, GAME.itemTarget); },
   itemKey(e) {
-    const n = STORY.inv.length, k = e.code;
+    const n = UI.itemRows().length, k = e.code;
     if (/^(Escape|KeyX|KeyI|Tab|Backspace)$/.test(k)) { UI.closeItems(); return; }
     if (/^(Enter|NumpadEnter|Space|KeyE|KeyZ)$/.test(k)) { if (!e.repeat) UI.useItem(); return; }
     const d = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -2, ArrowDown: 2, KeyA: -1, KeyD: 1, KeyW: -2, KeyS: 2 }[k];
@@ -671,6 +722,29 @@ const UI = {
   },
   loadSlot(s) { UI.show('files', false); UI._files = null; GAME.start(s); },
   closeFiles() { const F = UI._files; UI._files = null; UI.show('files', false); if (F && F.back) F.back(); },
+  // dials for a number (a safe, a door's keypad)
+  dials({ msg, n = 4, code, figs = '', onOpen, fail = '開かない……。' }) {
+    const v = Array(n).fill(0);
+    const m = UI.openModal(`<div class="safe"><button class="close" data-close>×</button><div class="msgline">${msg}</div>${figs}
+      <div class="dials">${v.map((_, i) => `<div class="dial"><button data-u="${i}">▲</button><div class="dd" id="sd${i}">0</div><button data-d="${i}">▼</button></div>`).join('')}</div>
+      <div class="btns"><button class="mbtn primary" id="sfOpen">決定</button><button class="mbtn" data-close>やめる</button></div><div class="msgline" id="sfMsg"></div></div>`);
+    const draw = () => v.forEach((d, i) => ($('sd' + i).textContent = d));
+    m.querySelectorAll('[data-u]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.u; v[i] = (v[i] + 1) % 10; draw(); SFX.click && SFX.click(); }));
+    m.querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.d; v[i] = (v[i] + 9) % 10; draw(); SFX.click && SFX.click(); }));
+    $('sfOpen').onclick = () => { if (v.join('') === String(code)) { UI.closeModal(); onOpen(); return; } SFX.locked(PLAYER.pos.clone().setY(PLAYER.pos.y + 1)); $('sfMsg').textContent = fail; };
+  },
+  // something to look at close up: a picture, a scrap of paper, a thing you carry
+  view(html, msg = '', done = null) {
+    UI.openModal(`<div class="safe view"><button class="close" data-close>×</button>${html}<div class="msgline">${msg}</div><div class="btns"><button class="mbtn primary" data-close>閉じる</button></div></div>`, { onClose: done });
+  },
+  // a book, page after page
+  book(pages, done) {
+    let i = 0;
+    const m = UI.openModal(`<div class="safe view"><button class="close" data-close>×</button><div id="bkPage" class="bkpage"></div><div class="btns"><button class="mbtn primary" id="bkNext">次のページ</button><button class="mbtn" data-close>閉じる</button></div></div>`, { onClose: () => { if (i >= pages.length - 1 && done) done(); } });
+    const show = () => { $('bkPage').innerHTML = pages[i]; $('bkNext').textContent = i >= pages.length - 1 ? '閉じる' : '次のページ'; };
+    $('bkNext').onclick = () => { if (i >= pages.length - 1) { UI.closeModal(); return; } i++; show(); SFX.paper && SFX.paper(); };
+    show(); void m;
+  },
   pause() {
     if (GAME.state !== 'play' || GAME.paused || !PLAYER.alive || GAME.modal || GAME.cine || GAME.busy || !$('pause').classList.contains('hidden')) return;
     GAME.paused = true; UI.show('pause'); $('pSave').disabled = ONI.on || STORY.busy;
@@ -685,7 +759,7 @@ const UI = {
     UI.show('title');
     $('bCont').disabled = !UI.anySave();
     MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
-    GAME.room = null; ONI.reset(); CAST.hideAll(); UI._msg = null; UI._choice = null; $('msgChs').innerHTML = ''; CHAIRS.held = null; VIEW.chair.visible = false; GAME.modal = null; GAME.cine = null; GAME.busy = 0; GAME.lighterOn = false;
+    GAME.room = null; ONI.reset(); CAST.hideAll(); UI._msg = null; UI._choice = null; $('msgChs').innerHTML = ''; CHAIRS.held = null; PUSH.obj = null; VIEW.chair.visible = false; GAME.modal = null; GAME.cine = null; GAME.busy = 0; GAME.lighterOn = false;
     $('fxBlack').style.transition = 'opacity .6s'; $('fxBlack').style.opacity = 0;
   },
   over() {
@@ -727,7 +801,8 @@ function applyState() {
   for (const id of STORY.unlocked) { const d = MAN.doors[id]; if (d) { d.lock = null; const p = d.to && MAN.doors[d.to]; if (p) p.lock = null; } }
   if (f.tkChair && !(f.chairs && f.chairs.tk)) MAN.tkChair.place(MAN.tkChair.g.position.x + T, MAN.tkChair.g.position.z);   // (a save from when chairs were pushed)
   if (f.kidsChair && !(f.chairs && f.chairs.kids)) MAN.kidsChair.place(tm(13.5), tm(-13) + 1.1);
-  if (f.chairs) for (const ch of MAN.chairs) { const q = f.chairs[ch.key]; if (q) ch.place(q[0], q[1]); }
+  if (f.chairs) for (const ch of MAN.chairs) { const q = f.chairs[ch.key]; if (q) { if (q[2] && MAN.areas[q[2]]) ch.moveTo(MAN.areas[q[2]]); ch.place(q[0], q[1]); } }
+  for (const fn of STATE_HOOKS) fn(f);
   MAN.props.k_library.visible = chairAway(MAN.tkChair) && !STORY.hasGot('k_library');
   if (f.tubDrained && !STORY.hasGot('driver')) MAN.props.driver.visible = true;
   if (f.bookMoved) { MAN.props.greenBook.position.x -= 0.35; if (!STORY.hasGot('k_bedroom')) MAN.props.k_bedroom.visible = true; }
@@ -744,7 +819,7 @@ function applyState() {
   if (f.candle) candleUp();
   if (f.kidsChase) MAN.blood.visible = true;
   if (f.jailShelf) { MAN.jailShelf.at = 1; MAN.jailShelf.place(MAN.jailShelf.g.position.x + tm(2), MAN.jailShelf.g.position.z); }
-  for (const k of ['pianoChase', 'tatamiChase', 'kidsChase']) if (f[k]) f[k + 'Done'] = true;   // a chase you were caught in counts as over
+  for (const k of ['pianoChase', 'tatamiChase', 'kidsChase', ...CHASES]) if (f[k]) f[k + 'Done'] = true;   // a chase you were caught in counts as over
   if (f.jailScene) f.jailDone = true;
   buildNav();
 }
@@ -760,10 +835,11 @@ GAME.start = async function (save = null) {
   rng = new RNG((Math.random() * 2 ** 31) | 0);
   ONI.reset(); WORLD.reset(); PARTICLES.clear(); MUSIC.stop(0.3); CAST.hideAll();
   STORY.reset(); DIRECTOR.reset(); GAME.timers = []; GAME.modal = null; GAME.cine = null; GAME.paused = false; GAME.chaseFx = 0; GAME.busy = 0; GAME.lighterOn = false; UI._msg = null; UI._choice = null;
-  CHAIRS.held = null; VIEW.chair.visible = false; $('msgChs').innerHTML = '';
+  CHAIRS.held = null; PUSH.obj = null; VIEW.chair.visible = false; $('msgChs').innerHTML = '';
   GAME.time = 0; WORLD.time = 0; GAME.caughtN = 0; GAME.room = null; GAME.stairLock = null;
   POST.shake = 0; POST.flash = 0;
   buildMansion();
+  MAN.areas.hidden.lightFx = MAN.candle;
   ONI.init();
   LIGHTS.init();
   const sp = MAN.areas.foyer.spawn;
@@ -771,12 +847,13 @@ GAME.start = async function (save = null) {
   if (save) {
     STORY.inv = save.inv.slice(); STORY.got = save.got.slice(); STORY.unlocked = save.unlocked.slice(); STORY.flags = JSON.parse(JSON.stringify(save.flags));
     if (!STORY.flags.code || String(STORY.flags.code.piano).length !== 3) STORY.flags.code = newCode();   // a save from before the 6.23 keys
+    for (const fn of BUILT_HOOKS) fn();
     applyState();
     PLAYER.reset(new THREE.Vector3(save.pos[0], save.pos[1], save.pos[2]), save.pos[3]);
     GAME.time = save.time || 0; GAME.caughtN = save.caught || 0;
     DIRECTOR.enabled = !!STORY.flags.libChase; DIRECTOR.cool = 30;
-  } else STORY.flags.code = newCode();
-  GAME.room = WORLD.roomAt(PLAYER.pos);
+  } else { STORY.flags.code = newCode(); for (const fn of BUILT_HOOKS) fn(); }
+  GAME.room = WORLD.roomAt(PLAYER.pos); if (GAME.room) showFloor(GAME.room.fl);
   UI.inv();
   $('fxBlack').style.transition = 'none'; $('fxBlack').style.opacity = 1; $('fxHide').style.opacity = 0;
   UI.show('hud'); UI.show('touch', IS_TOUCH);
@@ -822,7 +899,10 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
   if (!r) return;
   if (!quiet) UI.place(r.name);
   const f = STORY.flags;
-  if (CHAIRS.held && r !== CHAIRS.held.r) dropChair();   // a chair stays in its own room
+  if (CHAIRS.held && r !== CHAIRS.held.r) CHAIRS.held.moveTo(r);   // you carry it with you
+  if (PUSH.obj && r !== PUSH.obj.r) PUSH.obj.moveTo(r);
+  showFloor(r.fl);
+  for (const fn of ROOM_HOOKS) if (fn(r, via, quiet) === false) return;
   // the others are gone once you come back from the dining room
   if (r.id === 'kitchen') { CAST.hide('takuro'); CAST.hide('mika'); CAST.hide('takeshi'); f.friendsLeft = true; }
   if (r.id === 'foyer' && f.friendsLeft && !f.friendsGone && f.plateLook) { f.friendsGone = true; STORY.save(); }   // the others are gone; nothing is said
@@ -837,24 +917,25 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
     if (!f.basementOpen) { const m = r.mikaAt, c = CAST.place('mika', m.x, FLOORS.F2, m.z, m.yaw); if (!c.m.userData.ia) { c.m.userData.ia = { dist: 2.5, prompt: () => (CAST.list.mika.dead ? null : 'みかに話しかける'), use: () => EVENTS.mika() }; c.m.traverse(o => { if (o.isMesh) o.userData.iaRoot = c.m; }); r.interactables.push(c.m); } }
     else if (!f.kidsChase) { CAST.hide('mika'); EVENTS.kidsChase(); }
     else { const m = r.mikaDown; CAST.lie('mika', m.x, FLOORS.F2, m.z, m.yaw); MAN.blood.visible = true; }
-  } else CAST.hide('mika');
+  } else if (r.id !== 'big') CAST.hide('mika');
   // Takeshi's closet: nothing to see until it rattles, as you go to the desk
   if (r.id === 'takeshi') { const h = MAN.tkCloset; h.prompt = () => (STORY.flags.takeshiGone ? 'クローゼットに隠れる' : STORY.flags.tkRattle ? 'クローゼットを調べる' : null); h.use = () => (STORY.flags.takeshiGone ? GAME.enterHide(h) : EVENTS.takeshiCloset()); }
-  if (r.dark && !GAME.lighterOn && !quiet && MAN.candle.state !== 'on') GAME.later(0.3, () => UI.hint('真っ暗で、何も見えない', 2600));
+  if (roomDark(r) && !GAME.lighterOn && !quiet) GAME.later(0.3, () => UI.hint('真っ暗で、何も見えない', 2600));
   void via;
 };
-GAME.chapterEnd = function () {
+// up the last stairs and out: the end
+GAME.ending = function () {
   if (GAME.state !== 'play') return;
   GAME.state = 'ending'; PLAYER.frozen = true; ONI.despawn(true); MUSIC.stop(1.5);
   releaseLock();
-  SFX.door(MAN.doors.corC_base.center, 1.0);
+  SFX.door(PLAYER.pos.clone().setY(PLAYER.pos.y + 1.5), 1.0);
   $('fxBlack').style.transition = 'opacity 1.5s'; $('fxBlack').style.opacity = 1;
   const play = GAME.time, caught = GAME.caughtN || 0;
   store.set('cleared', (store.get('cleared', 0) || 0) + 1);
   setTimeout(() => {
     UI.show('hud', false); UI.show('touch', false); UI.show('end');
     if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
-    const lines = ['ひろしは、暗い地下への階段を降りていった。', 'たけし、たくろう、みか……。みんなは、無事なのだろうか。', '本館　―　おしまい', '（地下・別館は、またいつか。）'];
+    const lines = ['階段を上りきると、外の冷たい空気が流れこんできた。', 'ひろしとたくろうは、ふり返らずに走った。', '洋館は、夜の闇の中に黙って立っていた。', '― 脱出 ―'];
     const box = $('endText'); box.innerHTML = '';
     lines.forEach((l, i) => { const p = document.createElement('div'); p.className = 'gl'; p.textContent = l; box.appendChild(p); setTimeout(() => p.classList.add('on'), 600 + i * 1900); });
     $('endStats').innerHTML = `プレイ時間 ${Math.floor(play / 60)}分${String(Math.floor(play % 60)).padStart(2, '0')}秒　/　つかまった回数 ${caught}回`;
@@ -890,7 +971,8 @@ function update(dt) {
     const hd = PLAYER.hidden;
     if (hd && hd.chased && !GAME.modal) { if (!ONI.on) { hd.outT = (hd.outT || 0) + dt; if (hd.outT > 1.2) { hd.chased = false; GAME.exitHide(); } } else hd.outT = 0; }
     for (const rm of WORLD.rooms) for (const fn of rm.updaters) fn(dt, GAME.time);
-    twinkle(GAME.time);
+    twinkle(GAME.time); pushFollow(dt);
+    for (const fn of TICK_HOOKS) fn(dt);
     const wasOn = ONI.on;
     ONI.update(dt);
     if (wasOn && !ONI.on) EVENTS.afterChase();
@@ -909,8 +991,8 @@ function update(dt) {
   GAME.updateTarget();
   $('fxChase').style.opacity = GAME.chaseFx ? 1 : 0;
   $('fxHide').classList.toggle('dark', !!PLAYER.hidden && ONI.on);
-  const dark = GAME.room && GAME.room.dark && MAN.candle && MAN.candle.state !== 'on';
-  const candleLit = GAME.room && GAME.room.id === 'hidden' && MAN.candle && MAN.candle.state === 'on';   // the candle fills the room with its light
+  const dark = roomDark(GAME.room);
+  const candleLit = GAME.room && GAME.room.lightFx && GAME.room.lightFx.state === 'on';   // a lit candle fills its room with light
   hemi.intensity = damp(hemi.intensity, dark ? 0.02 : candleLit ? 0.6 : 0.26, 3, dt); hemi.color.setHex(candleLit ? 0xffc890 : 0xa4accc); hemi.groundColor.setHex(0x1a1410);
   scene.fog.color.setHex(0x040406); scene.fog.density = 0.026;
   $('fxVeil').style.opacity = GAME.state === 'play' && !PLAYER.hidden ? veilDark(camera.position, PLAYER.pos.y).toFixed(3) : 0;   // walking into a black screen edge
@@ -971,4 +1053,4 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
-window.__AO = { GAME, STORY, ONI, DIRECTOR, MAN, CHAIRS, chairSpot, chairAway, VIEW, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };
+window.__AO = { GAME, STORY, ONI, DIRECTOR, MAN, CHAIRS, PUSH, ITEMS, chairSpot, chairAway, VIEW, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };

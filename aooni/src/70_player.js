@@ -149,7 +149,7 @@ const PLAYER = {
     const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
     if (this.onChair) { this.speed = 0; this.vel.set(0, 0, 0); if (il > 0.3) stepDown(); return; }   // standing on a chair: a step in any direction gets you down
     this.running = INPUT.run || INPUT.runLock || (INPUT.joy.id !== null && Math.hypot(INPUT.joy.x, INPUT.joy.y) > 0.92);
-    const sp = this.running ? RUN : WALK;
+    const sp = PUSH.obj ? WALK * 0.5 : this.running ? RUN : WALK;   // pushing something heavy, you go slowly
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
     const tx = (ix * c + iz * s) * sp, tz = (-ix * s + iz * c) * sp;
     this.vel.x = damp(this.vel.x, tx, 12, dt); this.vel.z = damp(this.vel.z, tz, 12, dt);
@@ -158,6 +158,7 @@ const PLAYER = {
     let g = WORLD.groundAt(np.x, np.z, this.pos.y);
     if (g === null) { np.x = this.pos.x; np.z = this.pos.z; g = WORLD.groundAt(np.x, np.z, this.pos.y); }   // never walk off the floor
     if (g !== null) np.y = g;
+    if (PUSH.obj && !pushRoom(np, this.yaw)) { np.x = this.pos.x; np.z = this.pos.z; np.y = this.pos.y; }   // what you push is up against something
     const moved = Math.hypot(np.x - this.pos.x, np.z - this.pos.z);
     this.pos.copy(np);
     this.speed = moved / Math.max(dt, 1e-4);
@@ -213,7 +214,7 @@ function wallBetween(a, b) {
 }
 function findTarget(ndc) {
   raycaster.setFromCamera(ndc || _center, camera);
-  raycaster.far = 3.2;
+  raycaster.far = 9;   // (each thing says how near you must be)
   const hits = raycaster.intersectObjects(interactables(), true);
   for (const h of hits) {
     let o = h.object; while (o && !o.userData.ia) o = o.userData.iaRoot || o.parent;
@@ -251,7 +252,8 @@ function targetIcon(t) {
 }
 GAME.updateTarget = function () {
   const free = PLAYER.alive && !GAME.modal && !GAME.cine && !PLAYER.hidden && !GAME.busy;
-  TARGET = free && !CHAIRS.held ? findTarget() : null;
+  TARGET = free ? findTarget() : null;
+  if (TARGET && (CHAIRS.held || PUSH.obj) && !TARGET.ia.door) TARGET = null;   // with your hands full, only doors
   const pr = $('prompt'), ch = $('crosshair');
   $('tLight').classList.toggle('hidden', !GAME.canLight());
   $('tLight').classList.toggle('on', GAME.lighterOn);
@@ -261,7 +263,7 @@ GAME.updateTarget = function () {
     return;
   }
   // carrying a chair: the ring shows where it would go; standing on one: getting down
-  const say = CHAIRS.held && free ? (CHAIRS.ring && CHAIRS.ring.visible ? 'イスを置く' : null) : TARGET ? TARGET.prompt : PLAYER.onChair && free ? 'イスから降りる' : null;
+  const say = TARGET ? TARGET.prompt : CHAIRS.held && free ? (CHAIRS.ring && CHAIRS.ring.visible ? 'イスを置く' : null) : PUSH.obj && free ? '手を離す' : PLAYER.onChair && free ? 'イスから降りる' : null;
   if (say) { $('promptText').textContent = say; pr.classList.add('on'); ch.classList.add('on'); }
   else { pr.classList.remove('on'); ch.classList.toggle('on', !!CHAIRS.held && free); }
   $('tUse').classList.toggle('ready', !!say); setBtnIcon('tUse', TARGET ? targetIcon(TARGET) : 'hand');
@@ -269,7 +271,8 @@ GAME.updateTarget = function () {
 GAME.interact = function () {
   if (!PLAYER.alive || GAME.modal || GAME.cine || GAME.busy) return false;
   if (PLAYER.hidden) { GAME.exitHide(); return true; }
-  if (CHAIRS.held) { placeChair(); return true; }
+  if (CHAIRS.held && !TARGET) { placeChair(); return true; }
+  if (PUSH.obj && !TARGET) { stopPush(); return true; }
   if (!TARGET) { if (PLAYER.onChair) { stepDown(); return true; } return false; }
   TARGET.ia.use();
   return true;
@@ -278,7 +281,10 @@ GAME.tapAt = function (x, y) {
   if (GAME.modal || GAME.cine || GAME.busy) return false;
   if (PLAYER.hidden) { GAME.exitHide(); return true; }
   const ndc = new THREE.Vector2(x / VW() * 2 - 1, -(y / VH()) * 2 + 1);
+  const t0 = (CHAIRS.held || PUSH.obj) ? findTarget(ndc) : null;
+  if (t0 && t0.ia.door) { t0.ia.use(); return true; }
   if (CHAIRS.held) { placeChair(ndc); return true; }
+  if (PUSH.obj) { stopPush(); return true; }
   const t = findTarget(ndc);
   if (t) t.ia.use();
   return !!t;
@@ -295,6 +301,7 @@ GAME.take = function (id, mesh, after) {
 
 /* ---------- doors: going through one is a change of map, as in the original ---------- */
 GAME.doorShut = function (d) {   // a door the oni can't use either
+  if (STORY.doorShut2 && STORY.doorShut2(d)) return true;
   if (d.kind === 'front' || d.kind === 'basement' || d.kind === 'back') return true;
   if (d.lock) return true;
   if (d.kind === 'hidden' && !STORY.flags.knobOn) return true;
@@ -384,6 +391,7 @@ GAME.checkMoves = function () {
     const left = (1 - stairS(s, p)) * s.len;   // metres to its dark end
     if (GAME.stairLock === s) { if (left > 1.7) GAME.stairLock = null; continue; }
     if (left < 0.62) {
+      if (!s.to) { STORY.event('escape'); return; }   // the last stairs: up and out
       const t = MAN.stairs[s.to], a = stairPoint(t, 1 - 0.95 / t.len);
       const turn = (t.dir === 'S' ? 0 : Math.PI) - (s.dir === 'N' ? 0 : Math.PI);
       PLAYER.pos.copy(a); PLAYER.camY = a.y + 1.58; PLAYER.yaw += turn;
@@ -446,7 +454,7 @@ GAME.enterHide = function (h) {
   if (h.blockedUntil > GAME.time) return;
   ONI.onPlayerHide(h);
   h.enterT = GAME.time; h.from = camera.position.clone(); h.chased = ONI.on; h.outT = 0;
-  PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0; PLAYER.onChair = null; dropChair();
+  PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0; PLAYER.onChair = null; dropChair(); stopPush();
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z); PLAYER.vel.set(0, 0, 0);
   GAME.lighterOn = false;
