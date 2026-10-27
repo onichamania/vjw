@@ -64,7 +64,7 @@ function drawHome(){fillIcons($('menu'));const r=rankOf(RPts());$('rankEmb').inn
   $('ppN').textContent=numTxt(pp());$('coins').textContent=numTxt(coins());$('gemN').textContent=numTxt(gems());$('adminTag').style.display=ADMIN?'block':'none';
   $('hLv').textContent=playerLv();$('hAv').innerHTML=pic(LS('gr-icon','')&&BT[LS('gr-icon','')]?LS('gr-icon',''):PICK);$('hNm').textContent=myName();
   const ups=owned().filter(canUp).length;$('upN').textContent=ADMIN?'':ups||'';$('bufN').textContent=bufFree()?'1':'';
-  const nd=+LS('gr-sd',0);$('dropSm').textContent=nd>0?'スタードロップ ×'+nd:'スタードロップ';$('dropBtn').classList.toggle('has',nd>0);
+  drawDropBtns();
   const B2=bp(),t=bpTier(B2);$('passSm').textContent='Tier '+t+(B2.prem?'　ブロスタパス+':'');$('passXpT').textContent=t>=BP_T?'MAX':(B2.xp%BP_XP)+'/'+BP_XP;$('passXpB').style.width=(t>=BP_T?100:(B2.xp%BP_XP)/BP_XP*100)+'%';
   $('qN').textContent=questReady()||'';$('hPow').textContent=level(PICK);const ko=kitOwn(PICK);$('kitN').textContent='';$('hKit').querySelector('i').innerHTML=myKit(PICK).gad>=0?ICON.gadget:myKit(PICK).sp>=0?ICON.spow:ICON.gadget;
   const rooms=NET.st==='ok'?netRooms().filter(r=>r.st==='wait'&&!r.mine).length:0;$('onN').textContent=rooms||'';
@@ -94,7 +94,7 @@ function drawChar(){if(!$('charScr').classList.contains('on'))return;if($('charS
       `<div class="bt">${own?`<span class="tro"><i data-ic="trophy">${ICON.trophy}</i><b class="tx">${trophies(id)}</b></span>`:`<span class="tro">${ICON.lock.replace('<svg','<svg style="width:2.2em;height:2.2em"')}<b class="tx">${rd?'🏆'+rd.t:'ドロップ'}</b></span>`}</div>`+
       `<div class="strip"><span class="pwc">${own?lv:'?'}</span><i class="k${o.gad.length?'':' no'}">${ICON.gadget}</i><i class="k${o.sp.length?'':' no'}">${ICON.spow}</i><i class="k${o.hyper?'':' no'}">${ICON.hyper}</i></div>${own&&canUp(id)&&!ADMIN?'<span class="up">↑</span>':''}${fv.includes(id)?'<span class="lk">❤</span>':''}</div>`)});
   h.innerHTML=html.join('');
-  h.querySelectorAll('.bcard').forEach(d=>d.onclick=()=>{const id=d.dataset.id;if(!isOwned(id)){const rd=ROAD.find(r=>r.char===id);note(rd?'トロフィー '+rd.t+' で仲間になります（スタードロップからも出ます）':'スタードロップから出ます',2.5);return}
+  h.querySelectorAll('.bcard').forEach(d=>d.onclick=()=>{const id=d.dataset.id;if(!isOwned(id)){SFX.gem();crPop(id);return}
     SFX.gem();CVIEW=id;$('charScr').classList.add('det');LOBBY.userData.det=true;lobbyModel(id);lobbyEmote();drawDetail(id)})}
 function openChars(){CVIEW=null;hideScreens();const c=$('charScr');c.classList.add('on');$('menu').classList.add('on');$('menu').style.visibility='hidden';fillIcons(c);drawChar()}
 function openDetail(id){openChars();CVIEW=id;$('charScr').classList.add('det');LOBBY.userData.det=true;lobbyModel(id);drawDetail(id)}
@@ -143,10 +143,10 @@ function statPop(id){const B=BT[id],lv=level(id),k=LVM(lv),st=(t,v,w)=>`<div${w?
 // スキン
 function skinPop(id){const cur=skinOf(id).id,own=skinsOwned(id);
   dPop(`<h3 class="tx">${BT[id].name}のスキン</h3><div class="skGrid">`+SKINS[id].map(S2=>{const has=own.includes(S2.id);return `<button class="skC${S2.id===cur?' on':''}" data-sk="${S2.id}"><span class="art">${pic(id,S2.id==='base'?null:S2)}</span><b class="tx">${S2.name}</b><span class="pr">`+
-    (S2.id===cur?'<b class="tx" style="color:#7dff6a">使用中</b>':has?'<b class="tx">使う</b>':S2.pass?'<b class="tx">パス限定</b>':`<i>${ICON.gem}</i><b class="tx">${S2.gem}</b>`)+`</span></button>`}).join('')+`</div>`);
+    (S2.id===cur?'<b class="tx" style="color:#7dff6a">使用中</b>':has?'<b class="tx">使う</b>':S2.pass?'<b class="tx">パス限定</b>':`<i>${ICON.gem}</i><b class="tx">${S2.gem}</b>`+(S2.bl?`<i>${ICON.bling}</i><b class="tx">${S2.bl}</b>`:''))+`</span>`+(S2.t>=0?`<em class="skR" style="--rc:${DRAR[S2.t].c}">${DRAR[S2.t].n}</em>`:'')+`</button>`}).join('')+`</div><p class="skHave"><i>${ICON.gem}</i><b class="tx">${numTxt(gems())}</b><i>${ICON.bling}</i><b class="tx">${numTxt(bl())}</b>　ブリングがあればブリングで買います</p>`);
   $('dPop').querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{const S2=SKINS[id].find(s=>s.id===b.dataset.sk),has=own.includes(S2.id);
     if(has){LSset('gr-skin-'+id,S2.id);lobbyModel(id);lobbyEmote();skinPop(id);drawDetail(id);return}if(S2.pass){note('ブロスタパスの報酬でもらえます',2.2);return}
-    if(gems()<S2.gem){note('ジェムが足りません',1.6);return}addGems(-S2.gem);const o=own.slice();o.push(S2.id);JS('gr-sk-'+id,o);LSset('gr-skin-'+id,S2.id);SFX.superReady();lobbyModel(id);lobbyEmote();confetti(VW()/2,VH()*.5,40);skinPop(id);drawDetail(id)})}
+    if(S2.bl&&bl()>=S2.bl)addBl(-S2.bl);else if(gems()>=S2.gem)addGems(-S2.gem);else{note('ジェム（またはブリング）が足りません',1.8);return}const o=own.slice();o.push(S2.id);JS('gr-sk-'+id,o);LSset('gr-skin-'+id,S2.id);SFX.superReady();lobbyModel(id);lobbyEmote();confetti(VW()/2,VH()*.5,40);skinPop(id);drawDetail(id)})}
 // ================= 起動時のボタン =================
 function showMenu(){if(!isOwned(PICK)){PICK='rico';LSset('gr-pick',PICK)}G.state='menu';document.body.classList.remove('playing','br');hideScreens();$('menu').classList.add('on');lobbyModel();drawHome()}
 $('goBtn').addEventListener('click',()=>{if(PMODE==='ranked'){openRanked();return}startMatch()});
@@ -164,10 +164,6 @@ $('skinBtn').addEventListener('click',()=>{openDetail(PICK);setTimeout(()=>skinP
 $('slotL').addEventListener('click',()=>openNet());$('slotR').addEventListener('click',()=>openNet());$('onBtn').addEventListener('click',()=>openNet());
 $('roadPill').addEventListener('click',()=>openRoad());$('rankPill').addEventListener('click',()=>openRanked());$('passBtn').addEventListener('click',()=>openPass());
 $('questBtn').addEventListener('click',()=>openQuests());$('profBtn').addEventListener('click',()=>openProfile());$('bufBtn').addEventListener('click',()=>openBuffy());$('shopBtn').addEventListener('click',()=>openShop());
-$('dropBtn').addEventListener('click',()=>{if(+LS('gr-sd',0)<=0){note('スタードロップは勝利・トロフィーロード・パスでもらえます',2.4);return}openDrop();drawHome()});$('dropStar').addEventListener('click',tapDrop);
-const dropClose=()=>{$('dropScr').classList.remove('on');dropState=null;lobbyModel();drawHome()};$('dropOk').addEventListener('click',e=>{e.stopPropagation();dropClose()});
-$('dropScr').addEventListener('click',e=>{if(dropState&&dropState.phase==='done'&&e.target.id!=='dropStar')dropClose()});
-$('unOk').addEventListener('click',()=>{nextPop();drawHome();lobbyModel()});
 document.querySelectorAll('[data-home]').forEach(b=>b.addEventListener('click',()=>backHome()));document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>backHome()));
 // 設定（歯車）
 $('homeSet').addEventListener('click',()=>{$('setName').value=LS('gr-name','');$('setScr').classList.add('on');fillIcons($('setScr'))});$('setClose').addEventListener('click',()=>{$('setScr').classList.remove('on');drawHome()});

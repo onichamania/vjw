@@ -1,6 +1,6 @@
 // ---- 見た目：丸い体と大きな頭、キャラごとの頭・武器（SK=スキン、form=ランランの姿） ----
 const G_leg=new THREE.CylinderGeometry(.13,.15,.5,8),G_body=new THREE.CylinderGeometry(.36,.46,.72,14),G_head=new THREE.SphereGeometry(.42,18,14),G_eye=new THREE.SphereGeometry(.085,10,8),G_pup=new THREE.SphereGeometry(.045,8,6),G_hand=new THREE.SphereGeometry(.13,10,8);
-function mkModel(bt,ringCol,isMe,SK,form){SK=SK||{};const B=BT[bt],g=new THREE.Group(),mats=[];const mm=(hex,o)=>{const m=M(hex,o);mats.push(m);return m};const HC=h=>SK.hair||h;
+function mkModel(bt,ringCol,isMe,SK,form){SK=SK||{};const B=BT[bt],g=new THREE.Group(),mats=[];const mm=(hex,o)=>{const gl=hex===SK.body&&SK.glowB||hex===SK.hair&&SK.glowH;if(gl&&!(o&&o.emissive))o=Object.assign({},o,{emissive:gl});const m=M(hex,o);mats.push(m);return m};const HC=h=>SK.hair||h;
   const robot=bt==='kachiko'||bt==='piko'||bt==='soda'||bt==='yotaka'||bt==='tarubo';
   const skin=mm(robot?0xc7ccd6:bt==='vlad'?0xd8e0ea:bt==='gantetsu'?0x9fb8a8:bt==='sabo'?0x5cb83a:0xffd2a8),body=mm(SK.body||B.col),dark=mm(0x2b2d36),white=mm(0xffffff),metal=mm(0x9aa3b5);
   const add=(geo,mat,x,y,z,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(par||g).add(m);return m};

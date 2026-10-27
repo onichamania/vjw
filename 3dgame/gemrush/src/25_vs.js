@@ -27,9 +27,9 @@ function showResult(){G.state='result';document.body.classList.remove('playing')
   const t1=Math.max(0,t0+d);LSset('gr-tr-'+PICK,t1);addCoins(c);if(!G.friendly)statAdd(won,G.mode==='br'?'br':G.rule);
   if(G.ranked){const h=J('gr-rh',[]);h.push(G.win===0?'w':G.win===1?'l':'d');JS('gr-rh',h.slice(-20))}
   const msgs=G.friendly?[]:questAdd({win:won?1:0,kills:u.kills,gems:u.gemsGot,dmg:u.dmg,sup:u.supUsed||0,top3:G.mode==='br'&&G.place<=3?1:0,cube:u.cubes||0,ranked:G.ranked?1:0,play:1,tro:Math.max(0,d),heal:Math.round(u.healed||0),mode:G.ranked?'ranked':G.mode==='br'?'br':G.rule});
-  const xp=G.friendly?0:G.mode==='br'?[90,76,64,54,46,40,34,30,26,22][G.place-1]:(G.win===0?60:G.win===-1?40:30)+Math.min(50,u.kills*6),up=addXP(xp);
-  const day=new Date().toDateString(),dw=J('gr-dw',{day:'',n:0});if(dw.day!==day){dw.day=day;dw.n=0}let gotDrop=false;if(won&&!G.friendly&&dw.n<3){dw.n++;LSset('gr-sd',+LS('gr-sd',0)+1);gotDrop=true}JS('gr-dw',dw);
-  html+=`<div style="margin-top:4px;font-weight:900">🎟 パスXP +${xp}${up?'　<span style="color:#ffd84d">Tier '+bpTier(bp())+' に到達！</span>':''}</div>`+(gotDrop?`<div style="font-weight:900;color:#ffd84d">⭐ 今日の勝利ボーナス：スタードロップ ×1（${dw.n}/3）</div>`:'');
+  const xp=G.friendly?0:G.mode==='br'?[90,76,64,54,46,40,34,30,26,22][G.place-1]:(G.win===0?60:G.win===-1?40:30)+Math.min(50,u.kills*6),dbl=Math.min(xp,xpd());if(dbl)addXpd(-dbl);const up=addXP(xp+dbl);
+  const day=new Date().toDateString(),dw=J('gr-dw',{day:'',n:0});if(dw.day!==day){dw.day=day;dw.n=0}let gotDrop=false;if(won&&!G.friendly&&dw.n<4){dw.n++;addDrop(dw.n<4?'starr':'chaos');gotDrop=true}JS('gr-dw',dw);
+  html+=`<div style="margin-top:4px;font-weight:900">🎟 パスXP +${xp}${dbl?'　<span style="color:#7fd0ff">XPダブラー +'+dbl+'</span>':''}${up?'　<span style="color:#ffd84d">Tier '+bpTier(bp())+' に到達！</span>':''}</div>`+(gotDrop?`<div style="font-weight:900;color:#ffd84d">⭐ 今日の勝利ボーナス：${dw.n<4?'スタードロップ':'カオスドロップ'} ×1（${dw.n}/4）</div>`:'');
   $('rTitle').textContent=title;$('rTitle').className=cls;$('result').classList.toggle('lose',cls==='lose');
   $('againBtn').innerHTML='<span class="tx">もう一度</span>';$('againBtn').disabled=false;$('toMenu').innerHTML='<span class="tx">終了</span>';$('againBtn').style.display=G.rule==='training'?'none':'';
   {const sub=v=>'⚔'+v.kills+(G.rule==='gem'?'　💎'+v.gemsGot:''),row=(t,cl)=>`<div class="vsRow ${cl}">`+G.units.filter(v=>!v.dummy&&v.team===t).map((v,i)=>vsCard(v,{star:v===star,sub:sub(v),d:.15+i*.08})).join('')+'</div>';

@@ -130,27 +130,94 @@ h1 em{font-style:italic;color:var(--gem)}
 #pause .box button{display:block;width:100%;height:42px;border-radius:12px;background:#1a1f2c;color:#fff;font-weight:900;margin-top:8px}
 #load{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:var(--bg);font-size:14px;letter-spacing:.2em;color:#aab}
 .scr.dim{background:#070b16e6;z-index:6}
-#dropScr{background:radial-gradient(circle at 50% 45%,var(--dc,#5fb8ff) 0,#0a0f1e 62%);z-index:8;overflow:hidden;padding:0}
-.drays{position:absolute;left:50%;top:45%;width:260vmax;height:260vmax;margin:-130vmax 0 0 -130vmax;background:repeating-conic-gradient(from 0deg,#ffffff2e 0 7deg,transparent 7deg 18deg);animation:rays 14s linear infinite;-webkit-mask:radial-gradient(circle,#000 0,transparent 55%);mask:radial-gradient(circle,#000 0,transparent 55%)}
 @keyframes rays{to{transform:rotate(360deg)}}
-.dwrap{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
-.drar{font-size:clamp(26px,6vmin,44px);font-weight:900;font-style:italic;letter-spacing:.04em;text-shadow:0 4px 0 #0008,0 0 24px currentColor}
-.drar.pop{animation:rpop .45s cubic-bezier(.2,1.8,.4,1)}@keyframes rpop{0%{transform:scale(2.2);opacity:0}100%{transform:scale(1);opacity:1}}
-.dstar{width:min(50vmin,250px);height:min(50vmin,250px);cursor:pointer;transition:filter .3s}.dstar svg{width:100%;height:100%;display:block}
-.dstar.enter{animation:dIn .7s cubic-bezier(.3,1.5,.5,1)}@keyframes dIn{0%{transform:translateY(-110vh) rotate(-30deg) scale(.5)}100%{transform:none}}
-.dstar.idle{animation:dIdle 1.4s ease-in-out infinite}@keyframes dIdle{50%{transform:translateY(-8px) scale(1.03)}}
-.dstar.hit{animation:dHit .28s}@keyframes dHit{0%{transform:scale(1)}30%{transform:scale(.86,1.12) rotate(-6deg)}60%{transform:scale(1.12,.9) rotate(5deg)}100%{transform:scale(1)}}
-.dstar.up{animation:dUp .5s}@keyframes dUp{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(12deg);filter:brightness(2.4)}100%{transform:scale(1)}}
-.dstar.open{animation:dOpen .75s ease-in forwards}@keyframes dOpen{0%{transform:scale(1)}60%{transform:scale(1.25) rotate(540deg);filter:brightness(2)}100%{transform:scale(2.6) rotate(900deg);opacity:0;filter:brightness(5)}}
-.dtap{font-size:18px;font-weight:900;color:#fff;text-shadow:0 2px 8px #000;animation:blink 1s steps(1) infinite}
-.dcard{display:none;flex-direction:column;align-items:center;gap:6px;background:#0b1224e6;border:4px solid var(--dc,#5fb8ff);border-radius:20px;padding:16px 26px;box-shadow:0 0 40px var(--dc,#5fb8ff)}
-.dcard.show{display:flex;animation:cardIn .55s cubic-bezier(.2,1.6,.4,1)}@keyframes cardIn{0%{transform:translateY(40px) scale(.4);opacity:0}100%{transform:none;opacity:1}}
-.dcard b{font-size:20px}.dicon{font-size:64px;line-height:1}.dicon svg{width:120px;height:120px}
-#dropOk{display:none;margin-top:8px}
-#dropFx{position:absolute;inset:0;pointer-events:none}#dropFx i{position:absolute;left:50%;top:45%;width:12px;height:12px;border-radius:50%;background:var(--pc);box-shadow:0 0 12px var(--pc);animation:spark .8s ease-out forwards}
+@keyframes rpop{0%{transform:scale(2.2);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes dIdle{50%{transform:translateY(-8px) scale(1.03)}}
 @keyframes spark{to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
-#dropFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}#dropFlash.go{animation:flash .6s ease-out}@keyframes flash{0%{opacity:.95}100%{opacity:0}}
-.unpic{width:min(40vmin,200px);margin:10px auto;animation:pulse 1s infinite}.unpic svg{width:100%}
+@keyframes sdBlink{50%{opacity:.35}}
+/* ===== スタードロップ・カオスドロップ ===== */
+#dropScr{z-index:9;padding:0;overflow:hidden;cursor:pointer;user-select:none;-webkit-user-select:none;background:var(--d2);--d0:#a8ff6a;--d1:#2fbf3a;--d2:#0b4a1a;--dg:#3fc35a}
+#dropScr .dBg{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,var(--d0) 0,var(--d1) 32%,var(--d2) 100%)}
+#dropScr.chaos .dBg{background:radial-gradient(circle at 50% 50%,var(--d0) 0,var(--d1) 24%,var(--d2) 74%,var(--d3) 100%)}
+#dropScr .dRays{position:absolute;left:50%;top:50%;width:300vmax;height:300vmax;margin:-150vmax 0 0 -150vmax;background:repeating-conic-gradient(from 0deg,#ffffff26 0 5deg,#0000 5deg 15deg);animation:rays 40s linear infinite;-webkit-mask:radial-gradient(circle,#000 0,#0000 40%);mask:radial-gradient(circle,#000 0,#0000 40%);pointer-events:none}
+.dStreaks{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.dStreaks i{position:absolute;left:50%;top:50%;width:calc(var(--u)*.6);height:calc(var(--u)*16);margin-left:calc(var(--u)*-.3);border-radius:99px;background:linear-gradient(#fff0,#fffe);transform-origin:50% 0;opacity:0;animation:sdStreak var(--sd) linear infinite;animation-delay:var(--dl)}
+#dropScr.chaos .dStreaks i{background:linear-gradient(#fff0,var(--d0))}
+@keyframes sdStreak{0%{transform:rotate(var(--a)) translateY(calc(var(--u)*14)) scaleY(.2);opacity:0}20%{opacity:.85}100%{transform:rotate(var(--a)) translateY(calc(var(--u)*115)) scaleY(1.5);opacity:0}}
+.dGlow{position:absolute;left:50%;top:50%;width:calc(var(--u)*80);height:calc(var(--u)*80);margin:calc(var(--u)*-40) 0 0 calc(var(--u)*-40);border-radius:50%;background:radial-gradient(circle,#fffd 0,#fff7 22%,#fff0 62%);animation:sdGlow 2.2s ease-in-out infinite;pointer-events:none}
+@keyframes sdGlow{50%{transform:scale(1.12);opacity:.8}}
+.sdRarL{position:absolute;left:0;right:0;top:calc(var(--st) + var(--u)*6);text-align:center;font-size:calc(var(--u)*8);font-style:italic;letter-spacing:.03em;transform:skewX(-6deg);filter:drop-shadow(0 0 calc(var(--u)*2) var(--rc));pointer-events:none}
+.sdRarL.pop{animation:sdRar .5s cubic-bezier(.2,1.8,.4,1)}@keyframes sdRar{0%{transform:skewX(-6deg) scale(2.4);opacity:0}100%{transform:skewX(-6deg) scale(1);opacity:1}}
+.dStage{position:absolute;left:0;right:0;top:calc(var(--u)*17);bottom:calc(var(--u)*17);display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:calc(var(--u)*2) calc(var(--u)*3);--sz:calc(var(--u)*50);pointer-events:none}
+.dStage.n2{--sz:calc(var(--u)*40)}.dStage.n4{--sz:calc(var(--u)*30);max-width:calc(var(--u)*70);margin:0 auto}.dStage.n8{--sz:calc(var(--u)*25);max-width:calc(var(--u)*120);margin:0 auto}
+.dDrop{width:var(--sz);height:var(--sz);filter:drop-shadow(0 0 calc(var(--u)*3) var(--dg))}.dDrop svg{width:100%;height:100%;display:block}
+.dDrop.sIn{animation:sdIn .8s cubic-bezier(.25,1.45,.5,1) both}@keyframes sdIn{0%{transform:translateY(80vh) rotate(-50deg) scale(.3)}100%{transform:none}}
+.dDrop.sIdle{animation:sdIdle 1.6s ease-in-out infinite}@keyframes sdIdle{50%{transform:translateY(calc(var(--u)*-1.6)) rotate(-3deg) scale(1.03)}}
+.dDrop.sHit{animation:sdHit .32s}@keyframes sdHit{30%{transform:scale(.84,1.14) rotate(-7deg)}60%{transform:scale(1.14,.88) rotate(6deg)}100%{transform:none}}
+.dDrop.sUp{animation:sdUp .5s cubic-bezier(.2,1.6,.4,1)}@keyframes sdUp{0%{transform:scale(1.5) rotate(-14deg);filter:brightness(3)}100%{transform:none;filter:none}}
+.dDrop.sSpl{animation:sdSpl .6s cubic-bezier(.2,1.6,.4,1) both}@keyframes sdSpl{0%{transform:scale(.15);filter:brightness(3);opacity:0}100%{transform:none;filter:none;opacity:1}}
+.dDrop.sShake{animation:sdShake .75s ease-in both}@keyframes sdShake{0%{transform:none}20%{transform:translate(-1.5%,1%) rotate(-4deg) scale(1.04)}40%{transform:translate(2%,-1%) rotate(5deg) scale(1.08)}60%{transform:translate(-2.5%,1%) rotate(-6deg) scale(1.13);filter:brightness(1.4)}80%{transform:translate(3%,-1%) rotate(7deg) scale(1.18);filter:brightness(1.8)}100%{transform:scale(1.24);filter:brightness(2.4)}}
+.dDrop.sOpen{animation:sdOpen .42s ease-in forwards}@keyframes sdOpen{0%{transform:scale(1.24);filter:brightness(2.4)}100%{transform:scale(2.6) rotate(25deg);opacity:0;filter:brightness(6)}}
+.dHint{position:absolute;left:0;right:0;bottom:calc(var(--sb) + var(--u)*5);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*1.2);pointer-events:none}
+.dHint b{font-size:calc(var(--u)*4.6);animation:sdTap 1s ease-in-out infinite}@keyframes sdTap{50%{transform:scale(1.1)}}
+.dPips{display:flex;gap:calc(var(--u)*1.4)}.dPips i{width:calc(var(--u)*3.2);height:calc(var(--u)*3.2);border-radius:50%;background:#fff;border:calc(var(--u)*.45) solid #000;box-shadow:0 0 calc(var(--u)*1.4) #fff;transition:.2s}
+.dPips i.off{background:#0007;box-shadow:none;transform:scale(.8)}.dPips i.g{animation:sdPip .6s ease-out}@keyframes sdPip{0%{transform:scale(1.8);background:var(--d0)}}
+#dFx{position:absolute;inset:0;pointer-events:none}#dFx i{position:absolute;left:50%;top:50%;border-radius:50%;background:var(--pc);box-shadow:0 0 12px var(--pc);animation:spark .9s ease-out forwards}
+#dFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}#dFlash.fl{animation:sdFlash .55s ease-out}@keyframes sdFlash{0%{opacity:var(--fo,.9)}100%{opacity:0}}
+#dFloat{position:absolute;left:0;right:0;top:42%;text-align:center;font-size:calc(var(--u)*13);font-style:italic;opacity:0;pointer-events:none}#dFloat.fl{animation:sdFloat 1s ease-out}@keyframes sdFloat{0%{transform:scale(2.4);opacity:0}25%{transform:scale(1);opacity:1}75%{opacity:1}100%{transform:translateY(calc(var(--u)*-8));opacity:0}}
+.dRew{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*1);pointer-events:none}
+.dRew.on{display:flex}
+.dRew .rwSun{position:absolute;left:50%;top:50%;width:calc(var(--u)*120);height:calc(var(--u)*120);margin:calc(var(--u)*-64) 0 0 calc(var(--u)*-60);background:repeating-conic-gradient(#fff5 0 8deg,#fff0 8deg 22deg);border-radius:50%;-webkit-mask:radial-gradient(circle,#000 10%,#0000 62%);mask:radial-gradient(circle,#000 10%,#0000 62%);animation:rays 14s linear infinite}
+.rwTitle{position:relative;font-size:calc(var(--u)*7);font-style:italic;transform:skewX(-6deg)}
+.rwArt{position:relative;width:calc(var(--u)*42);height:calc(var(--u)*38);display:grid;place-items:center}
+.dRew.on .rwTitle{animation:sdRar .5s cubic-bezier(.2,1.8,.4,1)}.dRew.on .rwArt{animation:sdArt .6s cubic-bezier(.2,1.6,.4,1)}@keyframes sdArt{0%{transform:scale(.2) translateY(calc(var(--u)*20));opacity:0}100%{transform:none;opacity:1}}
+.rwAmt{position:relative;font-size:calc(var(--u)*10);font-style:italic;line-height:1;transform:skewX(-6deg)}
+.rwSub{position:relative;font-size:calc(var(--u)*3.4)}
+.rwNote{position:relative;font-size:calc(var(--u)*2.4);font-weight:800;color:#fff;background:#0008;border-radius:99px;padding:calc(var(--u)*.6) calc(var(--u)*2)}
+.rwTap{position:absolute;bottom:calc(var(--sb) + var(--u)*4);font-size:calc(var(--u)*3);animation:sdBlink 1.2s ease-in-out infinite}
+.rwCnt{position:absolute;right:calc(var(--sr) + var(--u)*4);top:calc(var(--st) + var(--u)*4);font-size:calc(var(--u)*4.4)}
+.pile{position:relative;width:100%;height:100%;display:block}.pile i{position:absolute;width:42%;height:42%;margin:-21% 0 0 -21%;transform:rotate(var(--r));animation:sdCoin .5s cubic-bezier(.2,1.6,.4,1) both;filter:drop-shadow(0 calc(var(--u)*.6) 0 #0006)}
+.pile i svg{width:100%;height:100%}@keyframes sdCoin{0%{transform:translateY(calc(var(--u)*-30)) rotate(var(--r)) scale(.4);opacity:0}100%{transform:rotate(var(--r));opacity:1}}
+.one{width:80%;height:80%;display:grid;place-items:center}.one svg{width:100%;height:100%}.one.pic img,.one.pic svg{width:100%;height:100%;object-fit:contain}
+.kitA{position:relative;width:80%;height:80%;display:block}.kitA>i{position:absolute;inset:0}.kitA>i svg{width:100%;height:100%}.kitA .pb{position:absolute;right:-6%;bottom:-6%;width:46%;height:46%;border-radius:50%;overflow:hidden;background:#0007;border:calc(var(--u)*.5) solid #000}.kitA .pb img,.kitA .pb svg{width:100%;height:100%;object-fit:cover}
+.pinA{position:relative;display:block;width:calc(var(--u)*12);height:calc(var(--u)*12);border-radius:50%;background:var(--pr);border:calc(var(--u)*.5) solid #000;overflow:hidden;flex:none}.pinA.big{width:calc(var(--u)*30);height:calc(var(--u)*30)}
+.pinA .pf{position:absolute;inset:7%;border-radius:50%;overflow:hidden;background:#5fb2ff}.pinA .pf svg{width:100%;height:100%}.pinA b{position:absolute;right:0;bottom:-4%;font-size:calc(var(--u)*4.6);line-height:1}.pinA.big b{font-size:calc(var(--u)*11)}.pinA b.gg{font-size:calc(var(--u)*3.6);color:#ffe24a}.pinA.big b.gg{font-size:calc(var(--u)*8)}
+.sprA{position:relative;display:block;width:calc(var(--u)*30);height:calc(var(--u)*30)}.sprA>svg{position:absolute;inset:0;width:100%;height:100%}.sprA .pf{position:absolute;inset:18%}.sprA .pf svg{width:100%;height:100%}
+.icoA{display:block;width:calc(var(--u)*28);height:calc(var(--u)*28);border-radius:calc(var(--u)*2);border:calc(var(--u)*.7) solid #000;background:var(--rc);overflow:hidden;box-shadow:inset 0 0 0 calc(var(--u)*.6) #fff8}.icoA img,.icoA svg{width:100%;height:100%;object-fit:cover}
+.dSum{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*3);background:#0006;cursor:default}
+.dSum.on{display:flex}.sumT{font-size:calc(var(--u)*6);font-style:italic}
+.sumG{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(var(--u)*1.6);max-width:min(96vw,calc(var(--u)*130))}
+.sT{width:calc(var(--u)*24);height:calc(var(--u)*26);background:#fff2;border:calc(var(--u)*.5) solid #000;border-radius:calc(var(--u)*1.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*.6);animation:sdSpl .5s cubic-bezier(.2,1.6,.4,1) both}
+.sT .sA{width:calc(var(--u)*16);height:calc(var(--u)*16);display:grid;place-items:center}.sT .sA .one{width:100%;height:100%}
+.sT .sA .pinA,.sT .sA .sprA,.sT .sA .icoA,.sT .sA .kitA{width:calc(var(--u)*15);height:calc(var(--u)*15)}.sT .sA .pinA b{font-size:calc(var(--u)*5)}.sT b{font-size:calc(var(--u)*3)}
+.sumB{display:flex;gap:calc(var(--u)*3)}.sumB .go{font-size:calc(var(--u)*3.4)}
+/* ===== 新キャラ入手（後ろは3Dのロビーをレア度の色の背景にして使う） ===== */
+#unlockScr{z-index:10;padding:0;overflow:hidden;background:none;--rc:#ffc21a}
+body.unl .scr.on:not(#unlockScr){visibility:hidden!important}
+.unR{position:absolute;left:47%;right:calc(var(--sr) + var(--u)*4);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1.2)}
+.unNew{font-size:calc(var(--u)*7.6);font-style:italic;color:#ffe24a;transform:rotate(-4deg) skewX(-8deg);transform-origin:left;animation:unIn .55s .25s cubic-bezier(.2,1.6,.4,1) both}
+.unBan{position:relative;background:#0b0b12;background:linear-gradient(100deg,color-mix(in srgb,var(--rc) 55%,#000),color-mix(in srgb,var(--rc) 30%,#000));padding:calc(var(--u)*.8) calc(var(--u)*7) calc(var(--u)*.8) calc(var(--u)*2.4);transform:skewX(-10deg);box-shadow:calc(var(--u)*1) calc(var(--u)*1) 0 #0006;animation:unIn .55s .38s cubic-bezier(.2,1.6,.4,1) both;max-width:100%}
+.unBan::after{content:'';position:absolute;right:calc(var(--u)*1.4);top:18%;bottom:18%;width:calc(var(--u)*2.4);background:var(--rc);box-shadow:calc(var(--u)*-1.5) 0 0 var(--rc)}
+.unBan b{display:block;font-size:calc(var(--u)*8.6);transform:skewX(10deg);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unRole{font-size:calc(var(--u)*3.4);margin-left:calc(var(--u)*2);animation:unIn .5s .48s both}
+.unCnt{font-size:calc(var(--u)*3.2);margin-left:calc(var(--u)*2);animation:unIn .5s .55s both}.unCnt span{color:var(--rc)}
+.unDesc{max-width:calc(var(--u)*80);font-size:calc(var(--u)*2.9);font-weight:800;line-height:1.45;color:#fff;text-shadow:0 0 calc(var(--u)*.5) #000,0 calc(var(--u)*.3) 0 #000;margin:calc(var(--u)*1) 0 0 calc(var(--u)*2);animation:unIn .5s .62s both}
+.unDesc b{color:#ffe24a}
+.unBtns{display:flex;gap:calc(var(--u)*2.4);margin:calc(var(--u)*2) 0 0 calc(var(--u)*2);animation:unIn .5s .72s both}.unBtns .go{min-width:calc(var(--u)*22);font-size:calc(var(--u)*3.8)}
+@keyframes unIn{0%{transform:translateX(calc(var(--u)*40));opacity:0}100%{opacity:1}}
+.unPic{position:absolute;left:8%;top:50%;width:min(36%,calc(var(--u)*56));transform:translateY(-50%);display:none}#unlockScr.gen .unPic{display:block;animation:sdSpl .6s cubic-bezier(.2,1.6,.4,1) both}.unPic svg,.unPic img{width:100%;height:auto;display:block}
+body.port .dStage{--sz:calc(var(--u)*78)}body.port .dStage.n2{--sz:calc(var(--u)*44)}body.port .dStage.n4{--sz:calc(var(--u)*42);max-width:calc(var(--u)*92)}body.port .dStage.n8{--sz:calc(var(--u)*38);max-width:calc(var(--u)*84)}
+body.port .rwArt{width:calc(var(--u)*70);height:calc(var(--u)*62)}body.port .pinA.big,body.port .sprA,body.port .icoA{width:calc(var(--u)*50);height:calc(var(--u)*50)}
+body.port .unR{left:5%;right:5%;top:auto;bottom:calc(var(--sb) + var(--u)*5);transform:none;align-items:center;text-align:center}
+body.port .unRole,body.port .unCnt,body.port .unDesc,body.port .unBtns{margin-left:0}body.port .unNew{transform-origin:center}
+body.port .unPic{left:50%;top:6%;width:60%;transform:translateX(-50%)}
+.crPop{display:flex;gap:calc(var(--u)*3);align-items:center}.crPop .art{width:calc(var(--u)*26);height:calc(var(--u)*26);border-radius:calc(var(--u)*1.4);background:var(--rc);border:calc(var(--u)*.5) solid #000;overflow:hidden;flex:none}.crPop .art img,.crPop .art svg{width:100%;height:100%;object-fit:cover}
+.crPop .rar{font-size:calc(var(--u)*3.4);color:var(--rc)}.crPop p{margin:calc(var(--u)*1) 0;font-size:calc(var(--u)*2.6);font-weight:800}.crPop .have{display:flex;align-items:center;gap:calc(var(--u)*.8)}.crPop .have i,.crPop .go i{width:calc(var(--u)*4);height:calc(var(--u)*4);display:inline-block;vertical-align:middle}
+.crPop .go{display:inline-flex;align-items:center;gap:calc(var(--u)*1);font-size:calc(var(--u)*3.2)}
+.skC .skR{position:absolute;right:calc(var(--u)*.6);top:calc(var(--u)*.6);font-style:normal;font-size:calc(var(--u)*2);font-weight:900;color:#fff;background:var(--rc);border:calc(var(--u)*.3) solid #000;border-radius:calc(var(--u)*.8);padding:0 calc(var(--u)*.8)}
+.skHave{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*.8);font-size:calc(var(--u)*2.4);font-weight:800;margin:calc(var(--u)*1.6) 0 0}.skHave i{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6);display:inline-block}
+.pfCol h4{margin-bottom:calc(var(--u)*1.2)}.pfC{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*1.2)}.pfC span{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*.3)}.pfC i{width:calc(var(--u)*5);height:calc(var(--u)*5)}.pfC small{font-size:calc(var(--u)*2.1);color:#e8d0ff}.pfC b{font-size:calc(var(--u)*3.2)}
+.hDrop.c{bottom:calc(var(--sb) + var(--u)*27.4)}.hDrop.c{background:linear-gradient(#3a2a7a,#1f1446)}
 .card.locked{filter:grayscale(1) brightness(.6)}.card .lk{position:absolute;left:0;right:0;top:34px;text-align:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000}
 .skins{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.skins button{padding:5px 9px;border-radius:9px;background:#ffffff1f;font-size:11.5px;font-weight:800}.skins button.on{background:var(--gold);color:#2b1c00}.skins button.no{opacity:.6}
 #boot{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#3a2466 0,#0b0f1e 70%);overflow:hidden}
@@ -209,6 +276,7 @@ body.spec #rot canvas{filter:saturate(.6) brightness(.9)}
 #pinTray small{font-size:11px;font-weight:900}
 .pin{position:absolute;left:0;top:0;pointer-events:none;z-index:2}
 .pinB{position:absolute;left:0;bottom:44px;transform:translateX(-50%);animation:pinBob 1.1s ease-in-out .55s infinite}
+.pinA.fill{width:100%;height:100%;border-width:4px}.pinA.fill b{font-size:26px}.pinA.fill b.gg{font-size:20px}#pinTray .pinA.fill{width:66px;height:66px}
 .pinI{width:62px;height:62px;animation:pinIn .6s cubic-bezier(.25,1.7,.45,1) both;transform-origin:50% 90%}.pinI svg{width:100%;height:100%;display:block}
 @keyframes pinIn{0%{transform:scale(0) rotate(-25deg) translateY(20px)}45%{transform:scale(1.28) rotate(9deg) translateY(-6px)}65%{transform:scale(.88) rotate(-5deg)}82%{transform:scale(1.07) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
 @keyframes pinBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
@@ -362,7 +430,7 @@ i.pwc{width:2.1em;height:2.1em;font-size:.8em;vertical-align:-.45em}
 .mNew.on{display:flex}
 .hGo{width:calc(var(--u)*42);height:calc(var(--u)*13.4);padding:0;font-size:calc(var(--u)*6.6);font-style:italic;letter-spacing:.12em;border-radius:calc(var(--u)*1.2) calc(var(--u)*1.2) calc(var(--u)*1.2) calc(var(--u)*1.2)}
 .hGo .tx{-webkit-text-stroke:calc(var(--u)*.5) #000;text-shadow:0 calc(var(--u)*.6) 0 #000}
-@media (max-aspect-ratio:13/10){.hSlot,.hHang{display:none}.hMode{width:calc(var(--u)*44)}.hGo{width:calc(var(--u)*30)}.hCol.R{top:auto;bottom:calc(var(--sb) + var(--u)*28)}.hDrop{bottom:calc(var(--sb) + var(--u)*20)}}
+@media (max-aspect-ratio:13/10){.hSlot,.hHang{display:none}.hMode{width:calc(var(--u)*44)}.hGo{width:calc(var(--u)*30)}.hCol.R{top:auto;bottom:calc(var(--sb) + var(--u)*28)}.hDrop{bottom:calc(var(--sb) + var(--u)*20)}.hDrop.c{bottom:calc(var(--sb) + var(--u)*28)}}
 /* ================= 共通の画面（上の帯・戻る・ホーム） ================= */
 .scr.bs{padding:0;overflow:hidden;background:#1d5fd8;z-index:6}
 .scr.bs.blue{background:radial-gradient(ellipse at 50% 0,#2f7df0 0,#1a56c8 60%,#13409c 100%)}
@@ -470,7 +538,7 @@ i.pwc{width:2.1em;height:2.1em;font-size:.8em;vertical-align:-.45em}
 .skC .art{position:absolute;inset:0 0 calc(var(--u)*6) 0;display:grid;place-items:end center}.skC .art svg,.skC .art img{height:96%}
 .skC b{position:absolute;left:0;right:0;bottom:calc(var(--u)*6.2);font-size:calc(var(--u)*2.6);text-align:center}
 .skC .pr{position:absolute;left:0;right:0;bottom:0;height:calc(var(--u)*6);background:#1a1d28;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*.6);font-size:calc(var(--u)*2.8)}
-.skC .pr i{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6)}.skC.on{outline:calc(var(--u)*.6) solid #3fdc5a}.skC .ck{position:absolute;left:calc(var(--u)*.6);top:calc(var(--u)*.6);width:calc(var(--u)*5);height:calc(var(--u)*5)}
+.skC .pr i{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6)}.skC .pr b{position:static;font-size:calc(var(--u)*2.8)}.skC .pr i+b{margin-right:calc(var(--u)*.8)}.skC.on{outline:calc(var(--u)*.6) solid #3fdc5a}.skC .ck{position:absolute;left:calc(var(--u)*.6);top:calc(var(--u)*.6);width:calc(var(--u)*5);height:calc(var(--u)*5)}
 /* ================= モード選択 ================= */
 .mGrid{position:absolute;left:0;right:0;top:calc(var(--u)*12);bottom:calc(var(--u)*10);overflow-x:auto;overflow-y:hidden;display:grid;grid-auto-flow:column;grid-template-rows:1fr 1fr;grid-auto-columns:calc(var(--u)*52);gap:calc(var(--u)*2.6) calc(var(--u)*2.4);padding:calc(var(--u)*1.6) calc(var(--sr) + var(--u)*3) calc(var(--u)*1.6) calc(var(--sl) + var(--u)*3)}
 .mCard{position:relative;display:flex;flex-direction:column;text-align:left;border:calc(var(--u)*.45) solid #0b0910;border-radius:calc(var(--u)*1);overflow:hidden;background:#0b0c12;box-shadow:0 calc(var(--u)*.7) 0 #0009;transform:skewX(-3deg)}
@@ -681,7 +749,7 @@ body.port .hTopR{top:calc(var(--st) + var(--u)*16);flex-wrap:wrap;justify-conten
 body.port .hCol.L{top:calc(var(--st) + var(--u)*33)}body.port .hCol.R{top:calc(var(--st) + var(--u)*33)}
 body.port .hSlot,body.port .hHang{display:none}body.port .hMidTop{top:calc(var(--st) + var(--u)*26)}
 body.port .hBotR{flex-direction:column;align-items:stretch}body.port .hMode{width:calc(var(--u)*62)}body.port .hGo{width:calc(var(--u)*62);height:calc(var(--u)*12)}
-body.port .hBotL{bottom:calc(var(--sb) + var(--u)*32)}body.port .hDrop{bottom:calc(var(--sb) + var(--u)*50)}
+body.port .hBotL{bottom:calc(var(--sb) + var(--u)*32)}body.port .hDrop{bottom:calc(var(--sb) + var(--u)*50)}body.port .hDrop.c{bottom:calc(var(--sb) + var(--u)*58)}
 body.port .dL{width:auto;right:calc(var(--u)*2);bottom:auto}body.port .dDesc{max-height:calc(var(--u)*22)}body.port .dBtns,body.port .dAct{position:fixed;left:calc(var(--u)*2);bottom:calc(var(--u)*3)}body.port .dBtns{bottom:calc(var(--u)*17)}
 body.port .dR{top:auto;bottom:calc(var(--u)*3);width:calc(var(--u)*48)}
 /* ================= 試合のHUD（本家の配置と見た目） ================= */
@@ -755,6 +823,7 @@ body.br #brSurv{display:block}
   <button class="bp hSide" id="charBtn"><i data-ic="brawlers"></i><b class="tx">キャラクター</b><em class="bdg" id="upN"></em></button>
  </div>
  <div class="hCol R"><button class="bp hSide" id="onBtn"><i data-ic="online"></i><b class="tx">オンライン</b><em class="bdg g" id="onN"></em></button></div>
+ <button class="bp hDrop c" id="cdropBtn" style="display:none"><i data-ic="chaos"></i><span class="tx" id="cdropSm">0</span></button>
  <button class="bp hDrop" id="dropBtn"><i data-ic="star"></i><span class="tx" id="dropSm">0</span></button>
  <div class="hBotL">
   <button class="bp hPass" id="passBtn"><span class="pTk"><i data-ic="pass"></i></span><span class="pXp"><small class="tx" id="passSm">Tier 0</small><span class="xpB"><i class="xpI">XP</i><s><u id="passXpB"></u></s><b class="tx" id="passXpT">0/300</b></span></span></button>
@@ -785,8 +854,8 @@ body.br #brSurv{display:block}
    <div class="dAct"><button class="go yel" id="dSel"><span class="tx">選択</span></button><button class="go blu" id="dTry"><span class="tx">試す</span></button></div>
   </div>
   <div class="dR" id="detail"></div>
-  <div class="dPop" id="dPop"></div>
  </div>
+ <div class="dPop" id="dPop"></div>
 </div>
 <div class="scr bs blue" id="modeScr">
  <div class="bsTop"><button class="bsBack" id="modeClose"><i data-ic="back"></i></button><h2 class="bsT tx" id="modeTitle">トロフィーゲームモード</h2><button class="bsHome" data-home><i data-ic="home"></i></button></div>
@@ -843,8 +912,14 @@ body.br #brSurv{display:block}
   </div>
  </div>
 </div>
-<div class="scr" id="dropScr"><div class="drays" id="dropRays"></div><div class="dwrap"><div id="dropRar" class="drar">レア</div><div id="dropStar" class="dstar"></div><div id="dropTap" class="dtap">タップ！</div><div id="dropCard" class="dcard"><div id="dropIcon" class="dicon"></div><b id="dropMsg"></b></div><button class="go" id="dropOk">OK</button></div><div id="dropFx"></div><div id="dropFlash"></div></div>
-<div class="scr dim" id="unlockScr"><div class="wrap" style="padding-top:8vh"><div id="unTitle" class="st2 tx" style="color:#ffd84d;font-size:34px">新しいキャラ！</div><div id="unPic" class="unpic"></div><div id="unSub" class="st2 tx"></div><button class="go yel" id="unOk"><span class="tx">やった！</span></button></div></div>
+<div class="scr" id="dropScr"><div class="dBg"></div><div class="dRays"></div><div class="dStreaks" id="dStreaks"></div><div class="dGlow"></div>
+ <div id="sdRar" class="sdRarL tx">レア</div><div id="dStage" class="dStage"></div><div id="dFloat" class="tx"></div>
+ <div id="dHint" class="dHint"><b class="tx" id="dHintT">タップ！</b><span class="dPips" id="dPips"></span></div>
+ <div id="dRew" class="dRew"><div class="rwSun"></div><div class="rwCnt tx" id="rwCnt"></div><div class="rwTitle tx" id="rwTitle"></div><div class="rwArt" id="rwArt"></div><div class="rwAmt tx" id="rwAmt"></div><div class="rwSub tx" id="rwSub"></div><div class="rwNote" id="rwNote"></div><div class="rwTap tx">タップして次へ</div></div>
+ <div id="dSum" class="dSum"><div class="sumT tx">獲得したもの</div><div class="sumG" id="sumG"></div><div class="sumB"><button class="go blu" id="sumNext"><span class="tx">次を開ける</span></button><button class="go yel" id="sumOk"><span class="tx">OK</span></button></div></div>
+ <div id="dFx"></div><div id="dFlash"></div></div>
+<div class="scr" id="unlockScr"><div class="unPic" id="unPic"></div><div class="unR"><div class="unNew tx" id="unNew">新キャラクター！</div><div class="unBan"><b class="tx" id="unName"></b></div><div class="unRole tx" id="unRole"></div><div class="unCnt tx" id="unCnt"></div><div class="unDesc" id="unDesc"></div>
+ <div class="unBtns"><button class="go grn" id="unOk"><span class="tx">OK</span></button><button class="go blu" id="unSel"><span class="tx">選択</span></button></div></div></div>
 <div class="scr" id="result"><div class="wrap">
  <div id="rTitle">勝利！</div><div id="rTeam"></div><div id="rSub" class="sub"></div>
  <div class="stats" id="rStats"></div><br>
@@ -1466,7 +1541,7 @@ const BUF={
 const BUFCOST={pp:2000,coins:1000},BUFNAME={gad:'ガジェットバフィー',sp:'スターパワーバフィー',hyper:'ハイパーバフィー'};
 // ---- 見た目：丸い体と大きな頭、キャラごとの頭・武器（SK=スキン、form=ランランの姿） ----
 const G_leg=new THREE.CylinderGeometry(.13,.15,.5,8),G_body=new THREE.CylinderGeometry(.36,.46,.72,14),G_head=new THREE.SphereGeometry(.42,18,14),G_eye=new THREE.SphereGeometry(.085,10,8),G_pup=new THREE.SphereGeometry(.045,8,6),G_hand=new THREE.SphereGeometry(.13,10,8);
-function mkModel(bt,ringCol,isMe,SK,form){SK=SK||{};const B=BT[bt],g=new THREE.Group(),mats=[];const mm=(hex,o)=>{const m=M(hex,o);mats.push(m);return m};const HC=h=>SK.hair||h;
+function mkModel(bt,ringCol,isMe,SK,form){SK=SK||{};const B=BT[bt],g=new THREE.Group(),mats=[];const mm=(hex,o)=>{const gl=hex===SK.body&&SK.glowB||hex===SK.hair&&SK.glowH;if(gl&&!(o&&o.emissive))o=Object.assign({},o,{emissive:gl});const m=M(hex,o);mats.push(m);return m};const HC=h=>SK.hair||h;
   const robot=bt==='kachiko'||bt==='piko'||bt==='soda'||bt==='yotaka'||bt==='tarubo';
   const skin=mm(robot?0xc7ccd6:bt==='vlad'?0xd8e0ea:bt==='gantetsu'?0x9fb8a8:bt==='sabo'?0x5cb83a:0xffd2a8),body=mm(SK.body||B.col),dark=mm(0x2b2d36),white=mm(0xffffff),metal=mm(0x9aa3b5);
   const add=(geo,mat,x,y,z,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(par||g).add(m);return m};
@@ -2944,7 +3019,7 @@ function tutStep(dt){const M2=G.M,u=G.me;if(M2.doneT>0){M2.doneT-=dt;if(M2.doneT
   const ok=M2.step===0?Math.hypot(u.x-M2.goal[0],u.z-M2.goal[1])<1.8:M2.step===1?M2.d&&M2.d.dead:M2.step===2?M2.d&&M2.d.dead&&(u.supUsed||0)>M2.sup0:M2.step===3?u.inBush:M2.step===4?u.gems>=3:false;
   if(M2.step===2&&M2.d&&!M2.d.dead&&u.sup<1&&(u.supUsed||0)<=M2.sup0)u.sup=1;
   if(ok){M2.doneT=1.1;big('OK！',.9,'#8fe39a');burst(u.x,1.5,u.z,20,[1,.9,.4],5,.6,.6,true)}}
-function tutFinish(){G.over=true;tutMarker(null);LSset('gr-tut','1');const first=!LS('gr-tutrw','');if(first){LSset('gr-tutrw','1');addCoins(200);LSset('gr-sd',+LS('gr-sd',0)+1)}
+function tutFinish(){G.over=true;tutMarker(null);LSset('gr-tut','1');const first=!LS('gr-tutrw','');if(first){LSset('gr-tutrw','1');addCoins(200);addDrop('starr')}
   big('チュートリアル完了！',2.2,'#ffd84d');$('tutText').textContent=first?'ごほうび：🪙200 とスタードロップ！ ホームで開けよう':'おつかれさま！';SFX.end(true);setTimeout(()=>{document.body.classList.remove('tut');clearMatch();showMenu()},2600)}
 
 // ================= 集める・ふやす（キャラ解放・トロフィーロード・スタードロップ・スキン・バトルパス） =================
@@ -2955,66 +3030,143 @@ let ADMIN=LS('gr-admin','0')==='1';
 function owned(){return ADMIN?BT_IDS.slice():ownedReal()}
 function ownedReal(){let o=J('gr-own',null);if(!o){o=['rico'];for(const id of BT_IDS)if(!o.includes(id)&&(+LS('gr-tr-'+id,0)>0||+LS('gr-lv-'+id,1)>1))o.push(id);JS('gr-own',o)}return o}
 const isOwned=id=>owned().includes(id);
-function unlockChar(id){const o=ownedReal();if(o.includes(id))return false;o.push(id);JS('gr-own',o);popUnlock('新しいキャラ！',BT[id].name+'（'+BT[id].role+'）',portrait(id));return true}
-// ---- スキン ----
-const SKINS={};for(const id of BT_IDS)SKINS[id]=[{id:'base',name:'ノーマル',rar:0},{id:'shadow',name:'シャドウ',rar:1,body:0x2b2d45,hair:0x8a5cff,gem:29},{id:'gold',name:'ゴールド',rar:2,body:0xffc53d,hair:0xfff1a0,crown:1,gem:79},{id:'s1',name:'シーズン1',rar:3,body:0x1fb5a8,hair:0xff5fa2,cape:1,pass:1}];
-const SKRAR=['','スーパーレア','エピック','パス限定'];
+function unlockChar(id){const o=ownedReal();if(o.includes(id))return false;o.push(id);JS('gr-own',o);unlockShow({kind:'char',id});return true}
+// ---- スキン（本家のレア度：レア29・スーパーレア79・ハイパーレア149・ウルトラレア199・レジェンドレア299ジェム。ブリングでも買える）----
+function hueRot(hex,deg){let r=(hex>>16&255)/255,g=(hex>>8&255)/255,b=(hex&255)/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;let h=0,s2=0;
+  if(d){s2=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6}h=(h+deg/360)%1;s2=Math.max(s2,.55);
+  const f=n=>{const k=(n+h*12)%12,a=s2*Math.min(l,1-l);return Math.round((l-a*Math.max(-1,Math.min(k-3,9-k,1)))*255)};return f(0)<<16|f(8)<<8|f(4)}
+const SKINS={};for(const id of BT_IDS)SKINS[id]=[{id:'base',name:'ノーマル',t:-1},{id:'color',name:'トロピカル',t:0,body:hueRot(BT[id].col,150),gem:29,bl:1000},
+  {id:'shadow',name:'シャドウ',t:1,body:0x2b2d45,hair:0x8a5cff,gem:79,bl:2750},{id:'gold',name:'ゴールド',t:2,body:0xffc53d,hair:0xfff1a0,crown:1,gem:149,bl:5000},
+  {id:'neon',name:'ネオン',t:3,body:0x1b1640,hair:0xff3df0,glowH:0xb0108a,glowB:0x14062a,gem:199},{id:'diamond',name:'ダイヤモンド',t:4,body:0x9ff0ff,hair:0xffffff,crown:1,glowB:0x13607a,gem:299},
+  {id:'s1',name:'シーズン1',t:-2,body:0x1fb5a8,hair:0xff5fa2,cape:1,pass:1}];
+const skinById=(id,sk)=>SKINS[id].find(k=>k.id===sk)||SKINS[id][0];
 const skinsOwned=id=>J('gr-sk-'+id,['base']),skinOf=id=>{const s=LS('gr-skin-'+id,'base');return SKINS[id].find(k=>k.id===s&&skinsOwned(id).includes(k.id))||SKINS[id][0]};
-function giveSkin(id,sk){const o=skinsOwned(id);if(o.includes(sk))return false;o.push(sk);JS('gr-sk-'+id,o);const S2=SKINS[id].find(k=>k.id===sk);popUnlock('新しいスキン！',BT[id].name+'「'+S2.name+'」',portrait(id,S2));return true}
+function giveSkin(id,sk){const o=skinsOwned(id);if(o.includes(sk))return false;o.push(sk);JS('gr-sk-'+id,o);unlockShow({kind:'skin',id,sk});return true}
 // ---- トロフィーロード（合計トロフィーで順番に受け取る）----
 // キャラ解放の段（合計トロフィー）。早く仲間が増えるように低めにしてある
 const ROAD_CHARS=[['yuki',5],['jack',15],['gai',30],['jet',45],['riki',60],['goro',80],['carlo',100],['kachiko',120],['mimi',140],['piko',165],['kagerou',190],['ranran',215],['yotaka',240],['vlad',270],['soda',300],['sumire',325],['tarubo',350],['hatsue',380],['gantetsu',410],['ayame',440],['shinobu',475],['sabo',510],
   ['ricochet',545],['gus',580],['bibi',615],['bo',650],['emz',690],['colette',730],['griff',770],['ash',810],['angelo',850],['shade',890],['max',935],['chuck',980],['gigi',1025],['janet',1070],['squeak',1115],['fang',1160],['rt',1210],['alli',1260],['meg',1310],['amber',1360]];
-const ROAD=[];{const gifts=[{pp:100},{coins:200},{drop:1},{pp:150},{gems:10},{coins:250},{drop:1},{pp:200},{coins:300},{skin:1},{drop:2},{pp:250},{gems:15},{coins:400},{drop:2},{pp:300}];
+const ROAD=[];{const gifts=[{pp:100},{coins:200},{drop:1},{pp:150},{gems:10},{coins:250},{drop:1},{pp:200},{coins:300},{skin:1},{cdrop:1},{pp:250},{gems:15},{coins:400},{drop:2},{pp:300}];
   ROAD_CHARS.forEach(([id,t],i)=>{if(!BT[id])return;ROAD.push({t,char:id});const nx=ROAD_CHARS[i+1];ROAD.push(Object.assign({t:nx?Math.round((t+nx[1])/2):t+20},gifts[i%gifts.length]))});
-  const last=ROAD[ROAD.length-1].t;for(let t=last+40,k=0;t<=last+2400;t+=60,k++)ROAD.push([{t,pp:100},{t,coins:200},{t,drop:1},{t,gems:10}][k%4])}
+  const last=ROAD[ROAD.length-1].t;for(let t=last+40,k=0;t<=last+2400;t+=60,k++)ROAD.push([{t,pp:100},{t,coins:200},{t,drop:1},{t,gems:10},{t,pp:100},{t,coins:200},{t,drop:1},{t,cdrop:1}][k%8])}
 const roadGot=()=>+LS('gr-road2',0);
 try{const o=ownedReal();let ch=false;for(let i=0;i<Math.min(roadGot(),ROAD.length);i++){const r=ROAD[i];if(r.char&&!o.includes(r.char)){o.push(r.char);ch=true}}if(ch)JS('gr-own',o)}catch(e){}
-const rewardTxt=(r,sep)=>[r.char&&BT[r.char].name+' 解放',r.pskin&&BT[r.pskin].name+'の限定スキン',r.skin&&'スキン',r.drop&&'スタードロップ×'+r.drop,r.coins&&'コイン '+r.coins,r.pp&&'パワーポイント '+r.pp,r.gems&&'ジェム '+r.gems,r.buf&&'バフィー',r.xp&&'パスXP '+r.xp].filter(Boolean).join(sep||' + ');
+const rewardTxt=(r,sep)=>[r.char&&BT[r.char].name+' 解放',r.pskin&&BT[r.pskin].name+'の限定スキン',r.skin&&'スキン',r.drop&&'スタードロップ×'+r.drop,r.cdrop&&'カオスドロップ×'+r.cdrop,r.cr&&'クレジット '+r.cr,r.bl&&'ブリング '+r.bl,r.coins&&'コイン '+r.coins,r.pp&&'パワーポイント '+r.pp,r.gems&&'ジェム '+r.gems,r.buf&&'バフィー',r.xp&&'パスXP '+r.xp].filter(Boolean).join(sep||' + ');
 // 報酬のアイコン（いちばん大きいものを1つ）と数
-function rewardIcon(r){if(r.char)return{ic:pic(r.char),n:'',char:1};if(r.pskin||r.skin)return{ic:pic(r.pskin||PICK,r.pskin?SKINS[r.pskin][3]:SKINS[PICK][1]),n:'スキン'};if(r.drop)return{ic:ICON.star,n:r.drop>1?'×'+r.drop:''};if(r.gems)return{ic:ICON.gem,n:r.gems};if(r.pp)return{ic:ICON.pp,n:r.pp};if(r.coins)return{ic:ICON.coin,n:r.coins};if(r.buf)return{ic:ICON.buffy,n:''};if(r.xp)return{ic:ICON.pass,n:r.xp};return{ic:ICON.box,n:''}}
-function giveReward(r){if(r.char){if(!unlockChar(r.char))addCoins(200)}if(r.coins)addCoins(r.coins);if(r.pp)addPP(r.pp);if(r.gems)addGems(r.gems);if(r.drop)LSset('gr-sd',+LS('gr-sd',0)+r.drop);
-  if(r.skin){const c=owned().filter(id=>skinsOwned(id).length<3);const id=c.length?c[Math.floor(Math.random()*c.length)]:null;if(id){const sk=skinsOwned(id).includes('shadow')?'gold':'shadow';giveSkin(id,sk)}else addCoins(300)}
+function rewardIcon(r){if(r.char)return{ic:pic(r.char),n:'',char:1};if(r.pskin||r.skin)return{ic:pic(r.pskin||PICK,r.pskin?skinById(r.pskin,'s1'):skinById(PICK,'shadow')),n:'スキン'};if(r.cdrop)return{ic:ICON.chaos,n:r.cdrop>1?'×'+r.cdrop:''};if(r.drop)return{ic:ICON.star,n:r.drop>1?'×'+r.drop:''};if(r.cr)return{ic:ICON.credit,n:r.cr};if(r.bl)return{ic:ICON.bling,n:r.bl};if(r.gems)return{ic:ICON.gem,n:r.gems};if(r.pp)return{ic:ICON.pp,n:r.pp};if(r.coins)return{ic:ICON.coin,n:r.coins};if(r.buf)return{ic:ICON.buffy,n:''};if(r.xp)return{ic:ICON.pass,n:r.xp};return{ic:ICON.box,n:''}}
+function giveReward(r){if(r.char){if(!unlockChar(r.char))addCoins(200)}if(r.coins)addCoins(r.coins);if(r.pp)addPP(r.pp);if(r.gems)addGems(r.gems);if(r.drop)addDrop('starr',r.drop);if(r.cdrop)addDrop('chaos',r.cdrop);if(r.cr)addCr(r.cr);if(r.bl)addBl(r.bl);
+  if(r.skin){const L=['color','shadow','gold'],c=ownedReal().filter(id=>L.some(k=>!skinsOwned(id).includes(k)));const id=c.length?c[Math.floor(Math.random()*c.length)]:null;if(id)giveSkin(id,L.find(k=>!skinsOwned(id).includes(k)));else addCoins(300)}
   if(r.pskin){if(!giveSkin(r.pskin,'s1'))addCoins(300)}if(r.xp)addXP(r.xp)}
 function claimRoad(){const i=roadGot(),r=ROAD[i];if(!r||totalTr()<r.t)return;LSset('gr-road2',i+1);giveReward(r);SFX.superReady();drawRoad();drawHome()}
-// ---- スタードロップ ----
-const DROP=[{name:'レア',col:'#3fc35a'},{name:'スーパーレア',col:'#2f8cff'},{name:'ハイパーレア',col:'#b04cf5'},{name:'ウルトラレア',col:'#ff3d55'},{name:'レジェンドレア',col:'#ffd21f'}];
-let dropState=null;
-function starSvg(col){return `<svg viewBox="0 0 100 100"><defs><radialGradient id="sg" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".35" stop-color="${col}"/><stop offset="1" stop-color="${col}" stop-opacity=".85"/></radialGradient></defs>
-  <path d="M50 3 63 35 97 37 71 59 80 95 50 75 20 95 29 59 3 37 37 35Z" fill="url(#sg)" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M50 16 58 38 80 39 63 53 69 76 50 63 31 76 37 53 20 39 42 38Z" fill="#ffffff30"/><circle cx="38" cy="30" r="6" fill="#fff" opacity=".7"/></svg>`}
-function sparks(col,n){const fx=$('dropFx');for(let i=0;i<n;i++){const e=document.createElement('i'),a=Math.random()*TAU,d=120+Math.random()*220;e.style.setProperty('--x',Math.cos(a)*d+'px');e.style.setProperty('--y',Math.sin(a)*d+'px');e.style.setProperty('--pc',col);e.style.animationDelay=Math.random()*.1+'s';fx.appendChild(e);setTimeout(()=>e.remove(),950)}}
-function anim(el,cls){el.classList.remove('enter','idle','hit','up','open');void el.offsetWidth;el.classList.add(cls)}
-function openDrop(){const n=+LS('gr-sd',0);if(n<=0)return;LSset('gr-sd',n-1);const x=Math.random();const r0=x<.5?0:x<.78?1:x<.93?2:x<.98?3:4;dropState={r:r0,taps:0,phase:'tap'};
-  $('dropScr').classList.add('on');$('dropStar').style.display='';$('dropCard').classList.remove('show');$('dropOk').style.display='none';$('dropTap').style.display='';drawDrop(false);anim($('dropStar'),'enter');setTimeout(()=>dropState&&dropState.phase==='tap'&&anim($('dropStar'),'idle'),720);tn(200,.5,.12,'sine',600)}
-function drawDrop(pop){const d=dropState,D=DROP[d.r];$('dropScr').style.setProperty('--dc',D.col);$('dropStar').innerHTML=starSvg(D.col);$('dropStar').style.filter=`drop-shadow(0 0 ${16+d.r*10}px ${D.col})`;
-  const rr2=$('dropRar');rr2.textContent=D.name;rr2.style.color=D.col;if(pop){rr2.classList.remove('pop');void rr2.offsetWidth;rr2.classList.add('pop')}
-  $('dropTap').textContent=d.phase==='tap'?(d.taps<3?'タップ！（あと'+(3-d.taps)+'回）':'タップして開ける！'):''}
-function tapDrop(){const d=dropState;if(!d||d.phase!=='tap')return;const st=$('dropStar');
-  if(d.taps<3){d.taps++;if(d.r<4&&Math.random()<.36){d.r++;anim(st,'up');sparks(DROP[d.r].col,26);drawDrop(true);[523,659,784,988,1318].slice(0,d.r+1).forEach((f,i)=>tn(f,.18,.14,'triangle',0,i*.05));G.shake=0}
-    else{anim(st,'hit');sparks('#ffffff',8);drawDrop(false);tn(300+d.taps*80,.1,.12,'square')}setTimeout(()=>d.phase==='tap'&&anim(st,'idle'),520);return}
-  d.phase='open';$('dropTap').style.display='none';anim(st,'open');tn(400,.7,.14,'sawtooth',1600);
-  setTimeout(()=>{$('dropFlash').classList.remove('go');void $('dropFlash').offsetWidth;$('dropFlash').classList.add('go');sparks(DROP[d.r].col,40);nz(.4,.3,3000);
-    $('dropStar').style.display='none';const res=dropReward(d.r);$('dropIcon').innerHTML=res.icon;$('dropMsg').textContent=res.msg;$('dropCard').classList.add('show');$('dropOk').style.display='inline-block';SFX.end(true);d.phase='done'},720)}
-function dropReward(r){const locked=BT_IDS.filter(id=>!isOwned(id)),ownSk=owned().filter(id=>skinsOwned(id).length<3);
-  if(r>=3&&locked.length&&Math.random()<(r===4?1:.5)){const id=locked[Math.floor(Math.random()*locked.length)];const o=ownedReal();o.push(id);JS('gr-own',o);return{icon:pic(id),msg:'新キャラ「'+BT[id].name+'」！'}}
-  if(r>=2&&ownSk.length&&Math.random()<(r===2?.35:.55)){const id=ownSk[Math.floor(Math.random()*ownSk.length)],sk=skinsOwned(id).includes('shadow')?'gold':'shadow';const o=skinsOwned(id);o.push(sk);JS('gr-sk-'+id,o);const S2=SKINS[id].find(k=>k.id===sk);return{icon:pic(id,S2),msg:BT[id].name+'のスキン「'+S2.name+'」'}}
-  const k=Math.random();
-  if(k<.38){const n=[25,50,100,250,500][r]+Math.floor(Math.random()*10);addPP(n);return{icon:ICON.pp,msg:'パワーポイント '+n}}
-  if(k<.48){const n=[2,5,10,25,50][r];addGems(n);return{icon:ICON.gem,msg:'ジェム '+n}}
-  if(k<.58&&r<=1){const x=r?150:60;addXP(x);return{icon:ICON.pass,msg:'パスXP +'+x}}
-  const c=[50,100,200,500,1000][r]+Math.floor(Math.random()*30);addCoins(c);return{icon:ICON.coin,msg:'コイン '+c}}
 // ---- ブロスタパス（30段・無料と有料。有料はジェムで買う）----
 const BP_T=30,BP_XP=300,BP_COST=169,BP_SEASON=1+Math.floor((Date.now()/864e5-20300)/56);
 const bp=()=>J('gr-bp',{xp:0,f:[],p:[],prem:false}),bpSave=b=>JS('gr-bp',b),bpTier=b=>Math.min(BP_T,Math.floor(b.xp/BP_XP));
 // 本家のパスのような報酬：コイン・パワーポイント・スタードロップ・ジェム、ところどころにスキンとバフィー
 function bpReward(i,prem){if(!prem){const c=[{coins:300},{pp:150},{drop:1},{coins:400},{gems:10}][i%5];const r=Object.assign({},c);if(i===10||i===20)r.skin=1;if(i===30)Object.assign(r,{drop:5,coins:1500,skin:1});return r}
-  const c=[{coins:500},{pp:300},{drop:2},{gems:20},{coins:800},{pp:500}][i%6];const r=Object.assign({},c);if(i===1)Object.assign(r,{pskin:PICK});if(i===15)Object.assign(r,{buf:1});if(i===30)Object.assign(r,{pskin:BT_IDS[(BT_IDS.indexOf(PICK)+1)%BT_IDS.length],coins:2500,drop:5});return r}
+  const c=[{coins:500},{pp:300},{drop:2},{gems:20},{coins:800},{pp:500}][i%6];const r=Object.assign({},c);if(i%5===4)r.cdrop=1;if(i===1)Object.assign(r,{pskin:PICK});if(i===15)Object.assign(r,{buf:1});if(i===30)Object.assign(r,{pskin:BT_IDS[(BT_IDS.indexOf(PICK)+1)%BT_IDS.length],coins:2500,drop:5,cdrop:3});return r}
 function addXP(x){const b=bp();const t0=bpTier(b);b.xp+=x;bpSave(b);return bpTier(b)>t0}
 function bpClaim(i,prem){const b=bp();if(bpTier(b)<i)return;const L=prem?b.p:b.f;if(L.includes(i)||prem&&!b.prem)return;L.push(i);bpSave(b);const r=bpReward(i,prem);if(r.buf){const g=freeBuffy();if(!g)addCoins(1000)}giveReward(r);SFX.gem();drawPass();drawHome()}
 function bpBuy(){const b=bp();if(b.prem)return;if(gems()<BP_COST){note('ジェムが足りません（'+BP_COST+'）',2);return}addGems(-BP_COST);b.prem=true;bpSave(b);SFX.superReady();try{fxSlam('ブロスタパス+','#ffd23f','プレミアムの報酬がもらえる！');confetti(VW()/2,VH()*.5,60)}catch(e){}drawPass();drawHome()}
-// ---- 画面 ----
-function popUnlock(title,sub,svg){UNQ.push({title,sub,svg});if(!$('unlockScr').classList.contains('on'))nextPop()}
-const UNQ=[];function nextPop(){const p=UNQ.shift();if(!p){$('unlockScr').classList.remove('on');return}$('unTitle').textContent=p.title;$('unSub').textContent=p.sub;$('unPic').innerHTML=p.svg;$('unlockScr').classList.add('on');SFX.end(true)}
+// ================= スタードロップ・カオスドロップ（本家の確率と中身）・クレジット・ブリング・ピンなど =================
+// レア度：0レア 1スーパーレア 2ハイパーレア 3ウルトラレア 4レジェンドレア 5ウルトラ（カオスドロップだけ）
+const DRAR=[{n:'レア',c:'#3fc35a',bg:['#a8ff6a','#2fbf3a','#0b4a1a']},{n:'スーパーレア',c:'#2f8cff',bg:['#8fe8ff','#1f7ae8','#0a1f6a']},
+  {n:'ハイパーレア',c:'#b04cf5',bg:['#ffa8ff','#a53aee','#3a0f7a']},{n:'ウルトラレア',c:'#ff3d55',bg:['#ffb08a','#ef2f45','#6a0a1f']},
+  {n:'レジェンドレア',c:'#ffc21a',bg:['#fffad0','#ffc21a','#c86a00']},{n:'ウルトラ',c:'#ffe8fa',bg:['#fffef0','#ffe08a','#ff8ac8','#ff7a4a']}];
+// 本家の公式の確率（Supercellサポート「Starr Drop Chances」「Chaos Drop Chances」）
+const SD_RAR=[50,28,15,5,2],CD_RAR=[0,52,28,12,6,2],CD_SPLIT=[[1,70],[2,20],[4,8],[8,2]];
+const SD_TAB=[
+  [[2.33,{bl:20}],[41.86,{coins:50}],[2.33,{cr:10}],[32.56,{pp:25}],[20.93,{xpd:100}]],
+  [[3.31,{bl:50}],[42.38,{coins:100}],[3.31,{cr:30}],[33.11,{pp:50}],[13.25,{xpd:100}],[3.31,{pin:0}],[1.32,{spray:1}]],
+  [[21.05,{coins:200}],[5.26,{cr:150}],[21.05,{pp:100}],[10.53,{xpd:100}],[5.26,{skin:0}],[15.79,{pin:0}],[5.26,{pin:1}],[15.79,{spray:1}]],
+  [[11.11,{coins:500}],[7.41,{cr:150}],[22.22,{pp:200}],[10.37,{brawler:'エピック'}],[2.96,{brawler:'ミシック'}],[1.48,{skin:1}],[7.41,{pin:1}],[3.70,{pin:2}],[18.52,{kit:'gad'}],[7.41,{spray:1}],[7.41,{icon:1}]],
+  [[18.29,{brawler:'エピック'}],[6.10,{brawler:'ミシック'}],[2.44,{brawler:'レジェンダリー'}],[12.20,{skin:2}],[42.68,{kit:'sp'}],[18.29,{kit:'hyper'}]]];
+const CD_TAB=[null,
+  [[51.61,{coins:100}],[40.32,{pp:50}],[4.03,{cr:30}],[4.03,{bl:50}]],
+  [[40,{coins:200}],[40,{pp:100}],[10,{cr:150}],[10,{skin:0}]],
+  [[15,{coins:500}],[25,{kit:'gad'}],[30,{pp:200}],[10,{cr:150}],[14,{brawler:'エピック'}],[4,{brawler:'ミシック'}],[2,{skin:1}]],
+  [[42.68,{kit:'sp'}],[18.29,{kit:'hyper'}],[18.29,{brawler:'エピック'}],[6.10,{brawler:'ミシック'}],[2.44,{brawler:'レジェンダリー'}],[12.20,{skin:2}]],
+  [[26.74,{kit:'hyper'}],[26.74,{brawler:'ミシック'}],[10.70,{brawler:'レジェンダリー'}],[0.53,{brawler:'ウルトラレジェンダリー'}],[5.35,{skin:2}],[2.14,{skin:3}],[1.07,{skin:4}],[26.74,{buffy:1}]]];
+// もう持っているときの代わり（本家の「フォールバック報酬」）
+const FB_BRAWL={'エピック':500,'ミシック':1000,'レジェンダリー':1000,'ウルトラレジェンダリー':1500},FB_SKIN=[100,200,500,500,1000],FB_KIT={gad:500,sp:1000,hyper:1000};
+// クレジットでキャラを解放（本家のスターロードと同じ値段）
+const CR_COST={'レア':160,'スーパーレア':430,'エピック':925,'ミシック':1900,'レジェンダリー':3800};
+// ---- 新しい通貨：クレジット・ブリング・XPダブラー ----
+const cr=()=>+LS('gr-cr',0),addCr=n=>LSset('gr-cr',Math.max(0,cr()+n)),bl=()=>+LS('gr-bl',0),addBl=n=>LSset('gr-bl',Math.max(0,bl()+n)),xpd=()=>+LS('gr-xpd',0),addXpd=n=>LSset('gr-xpd',Math.max(0,xpd()+n));
+const dropN=t=>+LS(t==='chaos'?'gr-cd':'gr-sd',0),addDrop=(t,n)=>LSset(t==='chaos'?'gr-cd':'gr-sd',Math.max(0,dropN(t)+(n==null?1:n)));
+// ---- ピン（キャラごとに ノーマル5・レア2・ハイパーレア1）・スプレー・プレイヤーアイコン ----
+const PINK=[{n:'ハッピー',e:'😄',t:0},{n:'かなしい',e:'😢',t:0},{n:'おこ',e:'😠',t:0},{n:'ありがとう',e:'🙏',t:0},{n:'GG',e:'GG',t:0},{n:'わはは',e:'🤣',t:1},{n:'ドヤ',e:'😎',t:1},{n:'スペシャル',e:'⭐',t:2}];
+const PINT=['ノーマル','レア','ハイパーレア'];
+const pinsOf=id=>J('gr-pins',{})[id]||[],sprays=()=>J('gr-spr',[]),picons=()=>J('gr-ico',[]);
+function addPin(id,i){const P=J('gr-pins',{});(P[id]=P[id]||[]).push(i);JS('gr-pins',P)}
+function pinArt(id,i,big){const p=PINK[i],ring=['#ffffff','#5fb8ff','#c264ff'][p.t];
+  return `<span class="pinA${big?' big':''}" style="--pr:${ring}"><span class="pf">${portrait(id)}</span><b class="${p.e==='GG'?'gg tx':''}">${p.e}</b></span>`}
+function sprayArt(id){return `<span class="sprA" style="--rc:${RARC[BT[id].rar]}"><svg viewBox="0 0 100 100"><path d="M50 4c9 8 20 2 26 12s-2 18 8 26 10 22 0 30-22 4-30 14-22 6-30-4-4-22-14-30S2 38 12 30s20-4 22-16S41-4 50 4z" fill="var(--rc)" stroke="#000" stroke-width="4"/></svg><span class="pf">${portrait(id)}</span></span>`}
+function iconArt(id){return `<span class="icoA" style="--rc:${RARC[BT[id].rar]}">${pic(id)}</span>`}
+// ---- アイコン（スタードロップ・カオスドロップ・クレジット・ブリング・XPダブラー） ----
+function starrSvg(r){const C=100,Y=106,pts=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,R=i%2?47:94;pts.push([C+Math.cos(a)*R,Y+Math.sin(a)*R])}
+  let fac='';for(let i=0;i<10;i++){const a=pts[i],b=pts[(i+1)%10],m=Math.atan2((a[1]+b[1])/2-Y,(a[0]+b[0])/2-C),k=(Math.cos(m+2.3)+1)/2;
+    fac+=`<path d="M${C} ${Y}L${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}Z" fill="${k>.62?'#ffe45a':k>.3?'#ffc21a':'#f09a12'}"/>`}
+  const P='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
+  const face=[`<ellipse cx="86" cy="98" rx="7" ry="10"/><ellipse cx="114" cy="98" rx="7" ry="10"/><path d="M82 113Q100 136 118 113Z"/>`,
+    `<ellipse cx="86" cy="97" rx="7.5" ry="10.5"/><ellipse cx="114" cy="97" rx="7.5" ry="10.5"/><circle cx="88.5" cy="93" r="2.6" fill="#fff"/><circle cx="116.5" cy="93" r="2.6" fill="#fff"/><path d="M80 111Q100 140 120 111Z"/>`,
+    `<path d="M78 100Q86 88 94 100M106 100Q114 88 122 100" stroke="#16110a" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M82 112Q100 134 118 112Z"/>`,
+    `<ellipse cx="86" cy="96" rx="8" ry="10"/><ellipse cx="114" cy="96" rx="8" ry="10"/><circle cx="88.5" cy="92" r="2.8" fill="#fff"/><circle cx="116.5" cy="92" r="2.8" fill="#fff"/><ellipse cx="100" cy="121" rx="8" ry="10"/>`,
+    `<path d="M86 86l3.4 7 7.6 1-5.5 5.3 1.3 7.6-6.8-3.6-6.8 3.6 1.3-7.6-5.5-5.3 7.6-1zM114 86l3.4 7 7.6 1-5.5 5.3 1.3 7.6-6.8-3.6-6.8 3.6 1.3-7.6-5.5-5.3 7.6-1z" fill="#16110a"/><path d="M79 112Q100 142 121 112Z"/><path d="M90 124Q100 132 110 124Q100 120 90 124Z" fill="#ff6a7a"/>`][Math.min(4,r||0)];
+  return `<svg viewBox="0 0 200 200"><path d="${P}" fill="#000" transform="translate(0 6)" opacity=".35"/>${fac}<path d="${P}" fill="none" stroke="#16110a" stroke-width="7" stroke-linejoin="round"/>`+
+    `<circle cx="100" cy="106" r="38" fill="#ffcf2e" stroke="#16110a" stroke-width="6"/><path d="M68 100a32 32 0 0 1 52-26" stroke="#fff6b0" stroke-width="6" fill="none" stroke-linecap="round" opacity=".8"/>`+
+    `<g fill="#16110a">${face}</g><ellipse cx="94" cy="44" rx="4.5" ry="12" fill="#fff" opacity=".8" transform="rotate(22 94 44)"/><ellipse cx="44" cy="74" rx="9" ry="4" fill="#fff" opacity=".55" transform="rotate(-8 44 74)"/></svg>`}
+// カオスドロップの色（スーパーレア〜ウルトラ）：星・中の玉・目
+const CPAL=[null,['#0f4a8a','#1f6ad0','#07234a','#5fe8ff','#2a9aff'],['#4a157a','#7a2ac0','#22073a','#ff7af0','#c03aff'],['#6a0f22','#b0203a','#33050f','#ff8a7a','#ff3a4a'],['#9a5a00','#e0a020','#4a2a00','#fff36a','#ffb020'],['#aab4d8','#eef2ff','#6a74a0','#9ae8ff','#58c8ff']];
+function chaosSvg(r){r=clamp(r||1,1,5);const [s1,s2,s3,eye,glow]=CPAL[r],C=100,pts=[];for(let i=0;i<12;i++){const a=-Math.PI/2+i*Math.PI/6,R=i%2?66:96;pts.push([C+Math.cos(a)*R,C+Math.sin(a)*R])}
+  let fac='';for(let i=0;i<12;i++){const a=pts[i],b=pts[(i+1)%12],m=Math.atan2((a[1]+b[1])/2-C,(a[0]+b[0])/2-C),k=(Math.cos(m+2.3)+1)/2;
+    fac+=`<path d="M${C} ${C}L${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}Z" fill="${k>.62?s2:k>.3?s1:s3}"/>`}
+  const P='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
+  return `<svg viewBox="0 0 200 200"><path d="${P}" fill="#000" transform="translate(0 6)" opacity=".35"/>${fac}<path d="${P}" fill="none" stroke="#0a0a12" stroke-width="7" stroke-linejoin="round"/>`+
+    `<circle cx="100" cy="100" r="50" fill="${s3}"/><circle cx="96" cy="96" r="45" fill="${s1}"/><circle cx="90" cy="88" r="32" fill="${s2}" opacity=".6"/><circle cx="100" cy="100" r="50" fill="none" stroke="#0a0a12" stroke-width="7"/>`+
+    `<g stroke="#0a0a12" stroke-width="3" stroke-linejoin="round"><path d="M60 92l-12-10 4 12-10 4 14 4z" fill="#ffe35a"/><path d="M140 92l12-10-4 12 10 4-14 4z" fill="#ffe35a"/>`+
+    `<path d="M60 92Q78 92 95 104Q82 118 66 108Z" fill="${eye}"/><path d="M140 92Q122 92 105 104Q118 118 134 108Z" fill="${eye}"/></g>`+
+    `<circle cx="80" cy="104" r="5" fill="${s3}"/><circle cx="120" cy="104" r="5" fill="${s3}"/><path d="M62 84L94 96M138 84L106 96" stroke="#0a0a12" stroke-width="6" stroke-linecap="round"/>`+
+    `<path d="M84 126Q100 136 116 126" stroke="${eye}" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="80" cy="72" rx="12" ry="7" fill="#fff" opacity=".7" transform="rotate(-25 80 72)"/>`+
+    `<circle cx="100" cy="100" r="50" fill="none" stroke="${glow}" stroke-width="2" opacity=".6"/></svg>`}
+Object.assign(ICON,{star:starrSvg(0),chaos:chaosSvg(1),
+  credit:SVG(`<circle cx="32" cy="33" r="25" fill="#7a3df0" ${OL}/><circle cx="32" cy="31" r="19" fill="#a46aff"/><path d="M32 17l4 9 10 1-7.5 6.8 2.2 9.7L32 38.4l-8.7 5.1 2.2-9.7L18 27l10-1z" fill="#fff" stroke="#16131d" stroke-width="2.5" stroke-linejoin="round"/>`),
+  bling:SVG(`<path d="M32 6l20 18-20 34L12 24z" fill="#ffd21f" ${OL}/><path d="M12 24h40L32 58z" fill="#ffb514"/><path d="M22 24l10-18 10 18z" fill="#fff3a0"/><path d="M12 24h40" stroke="#16131d" stroke-width="3"/><path d="M50 6l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff"/>`),
+  xpd:SVG(`<rect x="6" y="14" width="52" height="38" rx="10" fill="#2f8cff" ${OL}/><rect x="10" y="18" width="44" height="14" rx="6" fill="#6fc0ff"/><text x="32" y="44" text-anchor="middle" font-size="22" font-weight="900" fill="#fff" stroke="#16131d" stroke-width="3" paint-order="stroke" font-family="Lilita One,sans-serif">XP×2</text>`),
+  pin:SVG(`<circle cx="32" cy="32" r="24" fill="#ffd84d" ${OL}/><circle cx="25" cy="28" r="3.6" fill="#16131d"/><circle cx="39" cy="28" r="3.6" fill="#16131d"/><path d="M22 38q10 9 20 0" stroke="#16131d" stroke-width="3.4" fill="none" stroke-linecap="round"/>`),
+  spray:SVG(`<rect x="20" y="20" width="24" height="38" rx="6" fill="#ff5fa2" ${OL}/><rect x="26" y="8" width="12" height="12" rx="3" fill="#c8ccd8" ${OL}/><circle cx="48" cy="12" r="3" fill="#ff5fa2"/><circle cx="54" cy="18" r="2.4" fill="#ff5fa2"/><circle cx="52" cy="6" r="2" fill="#ff5fa2"/><rect x="24" y="30" width="16" height="12" rx="3" fill="#fff"/>`),
+  picon:SVG(`<rect x="8" y="8" width="48" height="48" rx="8" fill="#2fbf4a" ${OL}/><circle cx="32" cy="27" r="9" fill="#fff"/><path d="M16 52c2-10 8-14 16-14s14 4 16 14z" fill="#fff"/>`)});
+// ---- 抽選 ----
+const pickW=w=>{let x=Math.random()*w.reduce((s,v)=>s+v,0);for(let i=0;i<w.length;i++){x-=w[i];if(x<0&&w[i]>0)return i}let i=w.length-1;while(i>0&&!w[i])i--;return i};
+const pickR=L=>L[Math.floor(Math.random()*L.length)];
+const rollTab=T=>T[pickW(T.map(e=>e[0]))][1];
+// スタードロップ：最後のレア度を本家の確率で先に決め、4回のタップのどこで上がるかを割りふる（同じタップに重なると一気に上がる）
+function planStarr(){const fin=pickW(SD_RAR),at=[];for(let i=0;i<fin;i++)at.push(i&&Math.random()<.4?at[i-1]:1+Math.floor(Math.random()*4));at.sort((a,b)=>a-b);return{fin,at}}
+// カオスドロップ：最後のレア度と分かれる数を本家の確率で決め、「ランクアップ」「分裂」を順番にならべる（1回ごとに3回の猶予が戻る）
+function planChaos(){const fin=pickW(CD_RAR),sp=CD_SPLIT[pickW(CD_SPLIT.map(e=>e[1]))][0],ev=[];for(let i=1;i<fin;i++)ev.push('u');for(let n=1;n<sp;n*=2)ev.push('s');
+  for(let i=ev.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ev[i],ev[j]]=[ev[j],ev[i]]}return{fin,sp,ev}}
+// ---- 中身を渡す（本当のセーブに書く。管理者モードでも、ふだんのセーブの持ち物で判定）----
+const realLv=id=>clamp(+LS('gr-lv-'+id,1)||1,1,MAXLV),realKit=id=>{const o=J('gr-ko-'+id,{gad:[],sp:[],hyper:false});o.gad=o.gad||[];o.sp=o.sp||[];return o};
+const KITN={gad:'ガジェット',sp:'スターパワー',hyper:'ハイパーチャージ'};
+function grantCur(r,note){const k=Object.keys(r)[0],n=r[k];({coins:addCoins,pp:addPP,cr:addCr,bl:addBl,xpd:addXpd})[k](n);
+  return{k,n,note:note||'',title:{coins:'コイン',pp:'パワーポイント',cr:'クレジット',bl:'ブリング',xpd:'XPダブラー'}[k],ic:ICON[{coins:'coin',pp:'pp',cr:'credit',bl:'bling',xpd:'xpd'}[k]]}}
+function grantDrop(S){const own=ownedReal();
+  if(S.brawler){const c=BT_IDS.filter(id=>BT[id].rar===S.brawler&&!own.includes(id));
+    if(!c.length)return grantCur({cr:FB_BRAWL[S.brawler]},(S.brawler==='ウルトラレジェンダリー'?'ウルトラレジェンドレア':RARN[S.brawler])+'キャラのかわり');
+    const id=pickR(c);own.push(id);JS('gr-own',own);return{k:'char',id,title:'新キャラクター！',show:{kind:'char',id}}}
+  if(S.skin!=null){const c=[];for(const id of own)for(const s of SKINS[id])if(s.t===S.skin&&!skinsOwned(id).includes(s.id))c.push([id,s]);
+    if(!c.length)return grantCur({bl:FB_SKIN[S.skin]},DRAR[S.skin].n+'スキンのかわり');
+    const [id,s]=pickR(c),o=skinsOwned(id);o.push(s.id);JS('gr-sk-'+id,o);return{k:'skin',id,sk:s.id,title:'新しいスキン！',show:{kind:'skin',id,sk:s.id}}}
+  if(S.pin!=null){const c=[];for(const id of own)PINK.forEach((p,i)=>{if(p.t===S.pin&&!pinsOf(id).includes(i))c.push([id,i])});
+    if(!c.length)return grantCur({bl:50},PINT[S.pin]+'ピンのかわり');const [id,i]=pickR(c);addPin(id,i);return{k:'pin',id,i,title:PINT[S.pin]+'ピン',sub:BT[id].name+'「'+PINK[i].n+'」'}}
+  if(S.spray){const sp=sprays(),c=own.filter(id=>!sp.includes(id));if(!c.length)return grantCur({bl:50},'スプレーのかわり');const id=pickR(c);sp.push(id);JS('gr-spr',sp);return{k:'spray',id,title:'スプレー',sub:BT[id].name+'のスプレー'}}
+  if(S.icon){const ic=picons(),c=own.filter(id=>!ic.includes(id));if(!c.length)return grantCur({bl:50},'プレイヤーアイコンのかわり');const id=pickR(c);ic.push(id);JS('gr-ico',ic);return{k:'icon',id,title:'プレイヤーアイコン',sub:BT[id].name}}
+  if(S.kit){const K=S.kit,c=[];for(const id of own){if(realLv(id)<KITLV[K])continue;const o=realKit(id);if(K==='hyper'){if(!o.hyper)c.push([id,0])}else BT[id][K].forEach((x,i)=>{if(!o[K].includes(i))c.push([id,i])})}
+    if(!c.length)return grantCur({coins:FB_KIT[K]},KITN[K]+'のかわり');const [id,i]=pickR(c),o=realKit(id);if(K==='hyper')o.hyper=true;else o[K].push(i);JS('gr-ko-'+id,o);
+    if(K!=='hyper'){const e=kitEq(id);if(e[K]<0){e[K]=i;JS('gr-ke-'+id,e)}}
+    return{k:'kit',K,id,i,title:KITN[K],sub:K==='hyper'?BT[id].hyper.name:BT[id][K][i].name}}
+  if(S.buffy){const c=[];for(const id of own)if(BUF[id]){const b=J('gr-bf-'+id,{});for(const k of['gad','sp','hyper'])if(!b[k])c.push([id,k])}
+    if(!c.length)return grantCur({pp:1000},'バフィーのかわり');const [id,k]=pickR(c);giveBuffy(id,k);return{k:'buf',id,bk:k,title:'バフィー！',show:{kind:'buf',id,k}}}
+  return grantCur(S)}
 // ================= ガジェット・スターパワー・ギア・ハイパーチャージ（キャラごとに買って装備） =================
 const kitOwn=id=>{if(ADMIN)return{gad:[0,1],sp:[0,1],hyper:true};const o=J('gr-ko-'+id,{gad:[],sp:[],hyper:false});o.gad=o.gad||[];o.sp=o.sp||[];return o},kitEq=id=>J('gr-ke-'+id,{gad:-1,sp:-1});
 // バフィー：買うと自動で装備（本家と同じく3つ全部つけられる）。最初の1つは無料。本家でバフィーがあるキャラだけ
@@ -3226,7 +3378,7 @@ function startTutorial(){clearMatch();G.rule='tutorial';G.mode='team';G.ranked=f
   for(const u of G.units)mkLabel(u);G.M={};ZOOM=1;camP.set(G.me.x,0,G.me.z);tutSetup()}
 const botKit=(b,lv)=>({gad:lv>=7?Math.floor(Math.random()*2):-1,sp:lv>=9?Math.floor(Math.random()*2):-1,gears:[],hyper:lv>=11,
   buf:BUF[b]?{gad:lv>=9&&Math.random()<.35,sp:lv>=10&&Math.random()<.35,hyper:lv>=11&&Math.random()<.5}:{}});
-const botSkin=b=>Math.random()<.25?SKINS[b][1+Math.floor(Math.random()*3)]:null;
+const botSkin=b=>{if(Math.random()>=.25)return null;const L=SKINS[b].filter(k=>k.id!=='base'&&!k.pass);return L[Math.floor(Math.random()*L.length)]};
 function startMatch(mode){initAudio();if(!isOwned(PICK))PICK='rico';mode=mode||PMODE;if(!MODES[mode])mode='gem';document.body.classList.toggle('tut',mode==='tutorial');if(mode==='tutorial'){startTutorial();return}clearMatch();const ranked=mode==='ranked',rule=ranked?RANKED_MODES[Math.floor(Math.random()*RANKED_MODES.length)]:mode,rules=rule==='br'?'br':'gem';
   // ガチバトルはモードもマップもランダム、ほかはいまのマップ（時間で入れかわる）
   const ids=mapsOf(rule),mid=ranked?ids[Math.floor(Math.random()*ids.length)]:curMap(rule).id;G.friendly=false;
@@ -3274,9 +3426,9 @@ function showResult(){G.state='result';document.body.classList.remove('playing')
   const t1=Math.max(0,t0+d);LSset('gr-tr-'+PICK,t1);addCoins(c);if(!G.friendly)statAdd(won,G.mode==='br'?'br':G.rule);
   if(G.ranked){const h=J('gr-rh',[]);h.push(G.win===0?'w':G.win===1?'l':'d');JS('gr-rh',h.slice(-20))}
   const msgs=G.friendly?[]:questAdd({win:won?1:0,kills:u.kills,gems:u.gemsGot,dmg:u.dmg,sup:u.supUsed||0,top3:G.mode==='br'&&G.place<=3?1:0,cube:u.cubes||0,ranked:G.ranked?1:0,play:1,tro:Math.max(0,d),heal:Math.round(u.healed||0),mode:G.ranked?'ranked':G.mode==='br'?'br':G.rule});
-  const xp=G.friendly?0:G.mode==='br'?[90,76,64,54,46,40,34,30,26,22][G.place-1]:(G.win===0?60:G.win===-1?40:30)+Math.min(50,u.kills*6),up=addXP(xp);
-  const day=new Date().toDateString(),dw=J('gr-dw',{day:'',n:0});if(dw.day!==day){dw.day=day;dw.n=0}let gotDrop=false;if(won&&!G.friendly&&dw.n<3){dw.n++;LSset('gr-sd',+LS('gr-sd',0)+1);gotDrop=true}JS('gr-dw',dw);
-  html+=`<div style="margin-top:4px;font-weight:900">🎟 パスXP +${xp}${up?'　<span style="color:#ffd84d">Tier '+bpTier(bp())+' に到達！</span>':''}</div>`+(gotDrop?`<div style="font-weight:900;color:#ffd84d">⭐ 今日の勝利ボーナス：スタードロップ ×1（${dw.n}/3）</div>`:'');
+  const xp=G.friendly?0:G.mode==='br'?[90,76,64,54,46,40,34,30,26,22][G.place-1]:(G.win===0?60:G.win===-1?40:30)+Math.min(50,u.kills*6),dbl=Math.min(xp,xpd());if(dbl)addXpd(-dbl);const up=addXP(xp+dbl);
+  const day=new Date().toDateString(),dw=J('gr-dw',{day:'',n:0});if(dw.day!==day){dw.day=day;dw.n=0}let gotDrop=false;if(won&&!G.friendly&&dw.n<4){dw.n++;addDrop(dw.n<4?'starr':'chaos');gotDrop=true}JS('gr-dw',dw);
+  html+=`<div style="margin-top:4px;font-weight:900">🎟 パスXP +${xp}${dbl?'　<span style="color:#7fd0ff">XPダブラー +'+dbl+'</span>':''}${up?'　<span style="color:#ffd84d">Tier '+bpTier(bp())+' に到達！</span>':''}</div>`+(gotDrop?`<div style="font-weight:900;color:#ffd84d">⭐ 今日の勝利ボーナス：${dw.n<4?'スタードロップ':'カオスドロップ'} ×1（${dw.n}/4）</div>`:'');
   $('rTitle').textContent=title;$('rTitle').className=cls;$('result').classList.toggle('lose',cls==='lose');
   $('againBtn').innerHTML='<span class="tx">もう一度</span>';$('againBtn').disabled=false;$('toMenu').innerHTML='<span class="tx">終了</span>';$('againBtn').style.display=G.rule==='training'?'none':'';
   {const sub=v=>'⚔'+v.kills+(G.rule==='gem'?'　💎'+v.gemsGot:''),row=(t,cl)=>`<div class="vsRow ${cl}">`+G.units.filter(v=>!v.dummy&&v.team===t).map((v,i)=>vsCard(v,{star:v===star,sub:sub(v),d:.15+i*.08})).join('')+'</div>';
@@ -3352,7 +3504,7 @@ function drawHome(){fillIcons($('menu'));const r=rankOf(RPts());$('rankEmb').inn
   $('ppN').textContent=numTxt(pp());$('coins').textContent=numTxt(coins());$('gemN').textContent=numTxt(gems());$('adminTag').style.display=ADMIN?'block':'none';
   $('hLv').textContent=playerLv();$('hAv').innerHTML=pic(LS('gr-icon','')&&BT[LS('gr-icon','')]?LS('gr-icon',''):PICK);$('hNm').textContent=myName();
   const ups=owned().filter(canUp).length;$('upN').textContent=ADMIN?'':ups||'';$('bufN').textContent=bufFree()?'1':'';
-  const nd=+LS('gr-sd',0);$('dropSm').textContent=nd>0?'スタードロップ ×'+nd:'スタードロップ';$('dropBtn').classList.toggle('has',nd>0);
+  drawDropBtns();
   const B2=bp(),t=bpTier(B2);$('passSm').textContent='Tier '+t+(B2.prem?'　ブロスタパス+':'');$('passXpT').textContent=t>=BP_T?'MAX':(B2.xp%BP_XP)+'/'+BP_XP;$('passXpB').style.width=(t>=BP_T?100:(B2.xp%BP_XP)/BP_XP*100)+'%';
   $('qN').textContent=questReady()||'';$('hPow').textContent=level(PICK);const ko=kitOwn(PICK);$('kitN').textContent='';$('hKit').querySelector('i').innerHTML=myKit(PICK).gad>=0?ICON.gadget:myKit(PICK).sp>=0?ICON.spow:ICON.gadget;
   const rooms=NET.st==='ok'?netRooms().filter(r=>r.st==='wait'&&!r.mine).length:0;$('onN').textContent=rooms||'';
@@ -3382,7 +3534,7 @@ function drawChar(){if(!$('charScr').classList.contains('on'))return;if($('charS
       `<div class="bt">${own?`<span class="tro"><i data-ic="trophy">${ICON.trophy}</i><b class="tx">${trophies(id)}</b></span>`:`<span class="tro">${ICON.lock.replace('<svg','<svg style="width:2.2em;height:2.2em"')}<b class="tx">${rd?'🏆'+rd.t:'ドロップ'}</b></span>`}</div>`+
       `<div class="strip"><span class="pwc">${own?lv:'?'}</span><i class="k${o.gad.length?'':' no'}">${ICON.gadget}</i><i class="k${o.sp.length?'':' no'}">${ICON.spow}</i><i class="k${o.hyper?'':' no'}">${ICON.hyper}</i></div>${own&&canUp(id)&&!ADMIN?'<span class="up">↑</span>':''}${fv.includes(id)?'<span class="lk">❤</span>':''}</div>`)});
   h.innerHTML=html.join('');
-  h.querySelectorAll('.bcard').forEach(d=>d.onclick=()=>{const id=d.dataset.id;if(!isOwned(id)){const rd=ROAD.find(r=>r.char===id);note(rd?'トロフィー '+rd.t+' で仲間になります（スタードロップからも出ます）':'スタードロップから出ます',2.5);return}
+  h.querySelectorAll('.bcard').forEach(d=>d.onclick=()=>{const id=d.dataset.id;if(!isOwned(id)){SFX.gem();crPop(id);return}
     SFX.gem();CVIEW=id;$('charScr').classList.add('det');LOBBY.userData.det=true;lobbyModel(id);lobbyEmote();drawDetail(id)})}
 function openChars(){CVIEW=null;hideScreens();const c=$('charScr');c.classList.add('on');$('menu').classList.add('on');$('menu').style.visibility='hidden';fillIcons(c);drawChar()}
 function openDetail(id){openChars();CVIEW=id;$('charScr').classList.add('det');LOBBY.userData.det=true;lobbyModel(id);drawDetail(id)}
@@ -3431,10 +3583,10 @@ function statPop(id){const B=BT[id],lv=level(id),k=LVM(lv),st=(t,v,w)=>`<div${w?
 // スキン
 function skinPop(id){const cur=skinOf(id).id,own=skinsOwned(id);
   dPop(`<h3 class="tx">${BT[id].name}のスキン</h3><div class="skGrid">`+SKINS[id].map(S2=>{const has=own.includes(S2.id);return `<button class="skC${S2.id===cur?' on':''}" data-sk="${S2.id}"><span class="art">${pic(id,S2.id==='base'?null:S2)}</span><b class="tx">${S2.name}</b><span class="pr">`+
-    (S2.id===cur?'<b class="tx" style="color:#7dff6a">使用中</b>':has?'<b class="tx">使う</b>':S2.pass?'<b class="tx">パス限定</b>':`<i>${ICON.gem}</i><b class="tx">${S2.gem}</b>`)+`</span></button>`}).join('')+`</div>`);
+    (S2.id===cur?'<b class="tx" style="color:#7dff6a">使用中</b>':has?'<b class="tx">使う</b>':S2.pass?'<b class="tx">パス限定</b>':`<i>${ICON.gem}</i><b class="tx">${S2.gem}</b>`+(S2.bl?`<i>${ICON.bling}</i><b class="tx">${S2.bl}</b>`:''))+`</span>`+(S2.t>=0?`<em class="skR" style="--rc:${DRAR[S2.t].c}">${DRAR[S2.t].n}</em>`:'')+`</button>`}).join('')+`</div><p class="skHave"><i>${ICON.gem}</i><b class="tx">${numTxt(gems())}</b><i>${ICON.bling}</i><b class="tx">${numTxt(bl())}</b>　ブリングがあればブリングで買います</p>`);
   $('dPop').querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{const S2=SKINS[id].find(s=>s.id===b.dataset.sk),has=own.includes(S2.id);
     if(has){LSset('gr-skin-'+id,S2.id);lobbyModel(id);lobbyEmote();skinPop(id);drawDetail(id);return}if(S2.pass){note('ブロスタパスの報酬でもらえます',2.2);return}
-    if(gems()<S2.gem){note('ジェムが足りません',1.6);return}addGems(-S2.gem);const o=own.slice();o.push(S2.id);JS('gr-sk-'+id,o);LSset('gr-skin-'+id,S2.id);SFX.superReady();lobbyModel(id);lobbyEmote();confetti(VW()/2,VH()*.5,40);skinPop(id);drawDetail(id)})}
+    if(S2.bl&&bl()>=S2.bl)addBl(-S2.bl);else if(gems()>=S2.gem)addGems(-S2.gem);else{note('ジェム（またはブリング）が足りません',1.8);return}const o=own.slice();o.push(S2.id);JS('gr-sk-'+id,o);LSset('gr-skin-'+id,S2.id);SFX.superReady();lobbyModel(id);lobbyEmote();confetti(VW()/2,VH()*.5,40);skinPop(id);drawDetail(id)})}
 // ================= 起動時のボタン =================
 function showMenu(){if(!isOwned(PICK)){PICK='rico';LSset('gr-pick',PICK)}G.state='menu';document.body.classList.remove('playing','br');hideScreens();$('menu').classList.add('on');lobbyModel();drawHome()}
 $('goBtn').addEventListener('click',()=>{if(PMODE==='ranked'){openRanked();return}startMatch()});
@@ -3452,10 +3604,6 @@ $('skinBtn').addEventListener('click',()=>{openDetail(PICK);setTimeout(()=>skinP
 $('slotL').addEventListener('click',()=>openNet());$('slotR').addEventListener('click',()=>openNet());$('onBtn').addEventListener('click',()=>openNet());
 $('roadPill').addEventListener('click',()=>openRoad());$('rankPill').addEventListener('click',()=>openRanked());$('passBtn').addEventListener('click',()=>openPass());
 $('questBtn').addEventListener('click',()=>openQuests());$('profBtn').addEventListener('click',()=>openProfile());$('bufBtn').addEventListener('click',()=>openBuffy());$('shopBtn').addEventListener('click',()=>openShop());
-$('dropBtn').addEventListener('click',()=>{if(+LS('gr-sd',0)<=0){note('スタードロップは勝利・トロフィーロード・パスでもらえます',2.4);return}openDrop();drawHome()});$('dropStar').addEventListener('click',tapDrop);
-const dropClose=()=>{$('dropScr').classList.remove('on');dropState=null;lobbyModel();drawHome()};$('dropOk').addEventListener('click',e=>{e.stopPropagation();dropClose()});
-$('dropScr').addEventListener('click',e=>{if(dropState&&dropState.phase==='done'&&e.target.id!=='dropStar')dropClose()});
-$('unOk').addEventListener('click',()=>{nextPop();drawHome();lobbyModel()});
 document.querySelectorAll('[data-home]').forEach(b=>b.addEventListener('click',()=>backHome()));document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>backHome()));
 // 設定（歯車）
 $('homeSet').addEventListener('click',()=>{$('setName').value=LS('gr-name','');$('setScr').classList.add('on');fillIcons($('setScr'))});$('setClose').addEventListener('click',()=>{$('setScr').classList.remove('on');drawHome()});
@@ -3561,7 +3709,7 @@ function drawPass(scroll){const b=bp(),t=bpTier(b),h=$('passList'),day=Date.now(
   $('passSeason').textContent='シーズン'+BP_SEASON;$('passLeft').textContent='残り '+leftTxt(left);$('passGems').textContent=numTxt(gems());
   $('passXPT').textContent=t>=BP_T?'MAX':(b.xp%BP_XP)+'/'+BP_XP;$('passXP').style.width=(t>=BP_T?100:(b.xp%BP_XP)/BP_XP*100)+'%';$('passTier').textContent=t;
   const sb=BT_IDS[(BP_SEASON*7)%BT_IDS.length];
-  $('psL').innerHTML=`<div class="art">${pic(sb,SKINS[sb][3])}</div>`+(b.prem?`<div class="pst tx">✔ ブロスタパス+有効</div>`:`<button class="go yel" id="passBuy"><span class="tx">ブロスタパス+</span><i>${ICON.gem}</i><span class="tx">${BP_COST}</span></button>`)+`<small class="tx" style="font-size:calc(var(--u)*2.4)">Tier ${t} / ${BP_T}</small>`;
+  $('psL').innerHTML=`<div class="art">${pic(sb,skinById(sb,'s1'))}</div>`+(b.prem?`<div class="pst tx">✔ ブロスタパス+有効</div>`:`<button class="go yel" id="passBuy"><span class="tx">ブロスタパス+</span><i>${ICON.gem}</i><span class="tx">${BP_COST}</span></button>`)+`<small class="tx" style="font-size:calc(var(--u)*2.4)">Tier ${t} / ${BP_T}</small>`;
   const pb=$('passBuy');if(pb)pb.onclick=bpBuy;
   const cell=(i,prem)=>{const r=bpReward(i,prem),L=prem?b.p:b.f,got=L.includes(i),can=i<=t&&!got&&(!prem||b.prem),ri=rewardIcon(r);
     return `<button class="psR${prem?'':' fr'}${got?' got':''}${can?' can':''}" data-i="${i}" data-p="${prem?1:0}"><span class="ri">${r.buf?ICON.buffy:ri.ic}</span><b class="tx">${r.buf?'バフィー':r.char?BT[r.char].name:ri.n||rewardTxt(r).split(' + ')[0]}</b>${got?`<i class="ck">${ICON.check}</i>`:''}${prem&&!b.prem?`<i class="lk">${ICON.lock}</i>`:''}</button>`};
@@ -3590,7 +3738,10 @@ function drawProfile(){const icon=LS('gr-icon','')&&BT[LS('gr-icon','')]?LS('gr-
     `<div class="pfBox"><h4 class="tx"><span>キャラクター</span><span>${own.length}/${BT_IDS.length}個入手済み</span></h4><div class="pfBr">${top.slice(0,10).map(id=>`<div style="--rc:${RARC[BT[id].rar]}">${pic(id)}<b class="tx">${trophies(id)}</b></div>`).join('')}</div></div>`+
     `<div class="pfBox pfSt"><div class="c"><h4 class="tx" style="margin:0">勝利数</h4><small>バトルロイヤル</small><span class="row"><i>${modeIcon('br')}</i><b class="tx">${s.wbr}</b></span><small>3対3 勝利数</small><span class="row"><i>${modeIcon('ranked')}</i><b class="tx">${s.w3}</b></span></div>`+
     `<div class="c"><h4 class="tx" style="margin:0">ガチバトル</h4><div style="display:flex;gap:calc(var(--u)*3)"><span class="c"><span class="emb">${emblem(rankOf(RPts()))}</span><small>現在</small><b class="tx">${RPts()}</b></span><span class="c"><span class="emb">${emblem(rankOf(best))}</span><small>最高</small><b class="tx">${best}</b></span></div></div></div>`+
-    `<div class="pfBox pfSt"><div class="c"><small>最大連勝</small><b class="tx">${s.best}</b></div><div class="c"><small>プレイした試合</small><b class="tx">${s.games}</b></div></div>`;
+    `<div class="pfBox pfSt"><div class="c"><small>最大連勝</small><b class="tx">${s.best}</b></div><div class="c"><small>プレイした試合</small><b class="tx">${s.games}</b></div></div>`+
+    `<div class="pfBox pfCol"><h4 class="tx">コレクション</h4><div class="pfC">`+[[ICON.credit,'クレジット',numTxt(cr())],[ICON.bling,'ブリング',numTxt(bl())],[ICON.xpd,'XPダブラー',numTxt(xpd())],
+      [ICON.pin,'ピン',BT_IDS.reduce((n,id)=>n+pinsOf(id).length,0)+'/'+BT_IDS.length*PINK.length],[ICON.spray,'スプレー',sprays().length+'/'+BT_IDS.length],[ICON.picon,'アイコン',picons().length+'/'+BT_IDS.length]]
+      .map(([ic,n,v])=>`<span><i>${ic}</i><small>${n}</small><b class="tx">${v}</b></span>`).join('')+`</div></div>`;
   $('pfAv').onclick=()=>{const L=own,i=L.indexOf(icon);const n=L[(i+1)%L.length];LSset('gr-icon',n);drawProfile();SFX.gem()}}
 $('pfName').addEventListener('change',e=>{LSset('gr-name',cleanName(e.target.value));drawProfile()});$('pfName').addEventListener('keydown',e=>e.stopPropagation());
 // ================= バフィー（3人ずつのセット・クレーンゲーム） =================
@@ -3600,7 +3751,7 @@ const bufName={gad:'ガジェットバフィー',sp:'スターバフィー',hype
 function openBuffy(id){openScr('bufScr');if(id){const i=BTRIOS.findIndex(t=>t.includes(id));if(i>=0){BTRIO=i;BSEL=[id,'gad']}}drawBuffy()}
 function trioGot(t){return t.reduce((s,id)=>s+['gad','sp','hyper'].filter(k=>bufOwn(id)[k]).length,0)}
 function giveBuffy(id,k){const b=J('gr-bf-'+id,{gad:false,sp:false,hyper:false});if(b[k])return false;b[k]=true;JS('gr-bf-'+id,b);return true}
-function freeBuffy(){const all=[];for(const id of Object.keys(BUF))for(const k of['gad','sp','hyper'])if(!J('gr-bf-'+id,{})[k])all.push([id,k]);if(!all.length)return null;const [id,k]=all[Math.floor(Math.random()*all.length)];giveBuffy(id,k);popUnlock('バフィー！',BT[id].name+'の'+bufName[k],pic(id));return[id,k]}
+function freeBuffy(){const all=[];for(const id of Object.keys(BUF))for(const k of['gad','sp','hyper'])if(!J('gr-bf-'+id,{})[k])all.push([id,k]);if(!all.length)return null;const [id,k]=all[Math.floor(Math.random()*all.length)];giveBuffy(id,k);unlockShow({kind:'buf',id,k});return[id,k]}
 function drawBuffy(){const t=BTRIOS[BTRIO]||BTRIOS[0];if(!BSEL||!t.includes(BSEL[0]))BSEL=[t[0],'gad'];$('bfPP').textContent=numTxt(pp());$('bfCoin').textContent=numTxt(coins());
   $('bfList').innerHTML=BTRIOS.map((tr,i)=>`<button class="bp bfTrio${i===BTRIO?' on':''}" data-t="${i}">${tr.map(id=>`<span>${pic(id)}${trioGot([id])===3?`<i>${ICON.check}</i>`:''}</span>`).join('')}</button>`).join('');
   $('bfList').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{BTRIO=+b.dataset.t;BSEL=null;SFX.gem();drawBuffy()});
@@ -3631,12 +3782,13 @@ function drawShop(){const S=shopDay(),day=Math.floor(Date.now()/864e5);$('shPP')
   it('デイリーディール','free',{name:'無料ギフト',r:gift,cost:null,cl:'g',ic:gift.ic,amt:(gift.pp||gift.coins||gift.drop),tag:'無料'});
   it('デイリーディール','d1',{name:'パワーポイント',r:{pp:200},cost:{coins:300},cl:'p',ic:ICON.pp,amt:200,tag:'お得'});
   it('デイリーディール','d2',{name:'スタードロップ',r:{drop:2},cost:{gems:19},cl:'v',ic:ICON.star,amt:2});
+  it('デイリーディール','d3',{name:'カオスドロップ',r:{cdrop:1},cost:{gems:29},cl:'v',ic:ICON.chaos,amt:1,tag:'NEW'});
   // 資源
   it('資源','c1',{name:'コイン',r:{coins:300},cost:{gems:30},cl:'y',ic:ICON.coin,amt:300,many:1});it('資源','c2',{name:'コイン',r:{coins:1200},cost:{gems:99},cl:'y',ic:ICON.coin,amt:1200,many:1});
   it('資源','p1',{name:'パワーポイント',r:{pp:250},cost:{gems:25},cl:'p',ic:ICON.pp,amt:250,many:1});it('資源','p2',{name:'パワーポイント',r:{pp:1000},cost:{gems:89},cl:'p',ic:ICON.pp,amt:1000,many:1});
-  it('資源','s1',{name:'スタードロップ',r:{drop:5},cost:{gems:45},cl:'v',ic:ICON.star,amt:5,many:1});it('資源','g1',{name:'ジェム',r:{gems:10},cost:{coins:500},cl:'g',ic:ICON.gem,amt:10,many:1});
+  it('資源','s1',{name:'スタードロップ',r:{drop:5},cost:{gems:45},cl:'v',ic:ICON.star,amt:5,many:1});it('資源','s2',{name:'カオスドロップ',r:{cdrop:3},cost:{gems:79},cl:'v',ic:ICON.chaos,amt:3,many:1});it('資源','b1',{name:'ブリング',r:{bl:500},cost:{gems:49},cl:'y',ic:ICON.bling,amt:500,many:1});it('資源','g1',{name:'ジェム',r:{gems:10},cost:{coins:500},cl:'g',ic:ICON.gem,amt:10,many:1});
   // スキン（持っているキャラのまだ持っていないスキン、毎日6つ）
-  const sk=[];for(const id of owned())for(const s of SKINS[id])if(s.gem&&!skinsOwned(id).includes(s.id))sk.push([id,s]);sk.sort((a,b)=>hash2(BT_IDS.indexOf(a[0])+day,a[1].rar)-hash2(BT_IDS.indexOf(b[0])+day,b[1].rar));
+  const sk=[];for(const id of owned())for(const s of SKINS[id])if(s.gem&&!skinsOwned(id).includes(s.id))sk.push([id,s]);sk.sort((a,b)=>hash2(BT_IDS.indexOf(a[0])+day,a[1].t)-hash2(BT_IDS.indexOf(b[0])+day,b[1].t));
   for(const [id,s] of sk.slice(0,6))it('スキン','sk-'+id+'-'+s.id,{name:BT[id].name+'\n'+s.name,skin:[id,s.id],cost:{gems:s.gem},cl:'',ic:pic(id,s),amt:'',once:1});
   if(!bp().prem)it('ブロスタパス','bp',{name:'ブロスタパス+',cost:{gems:BP_COST},cl:'y',ic:ICON.pass,amt:'',pass:1});
   const secs=[...new Set(items.map(i=>i.sec))];
@@ -3654,6 +3806,129 @@ function startTraining(id){initAudio();if(!isOwned(id))id=PICK;clearMatch();G.ru
   G.me=mkUnit(id,0,true,'あなた',[0,HALFZ-8],level(id),skinOf(id),myKit(id));G.units.push(G.me);
   [[-6,-2],[0,-6],[6,-2]].forEach(([x,z],i)=>{const d=mkUnit(['riki','gai','jack'][i],1,false,'まと',[x,z],level(id),null);d.dummy=true;G.units.push(d)});
   for(const u of G.units)mkLabel(u);G.M={};ZOOM=1;camP.set(G.me.x,0,G.me.z);G._vsNote='トレーニング場：ポーズ（Ⅱ）からいつでも終われます';note(G._vsNote,3)}
+// ================= ドロップを開ける画面（スタードロップ：4回タップ／カオスドロップ：3回の猶予・分裂）と新キャラ入手 =================
+let DS=null;
+function dropSetRar(r,pop){const D=DRAR[r],sc=$('dropScr');sc.style.setProperty('--d0',D.bg[0]);sc.style.setProperty('--d1',D.bg[1]);sc.style.setProperty('--d2',D.bg[2]);sc.style.setProperty('--d3',D.bg[3]||'#05030c');sc.style.setProperty('--dg',D.c);
+  const e=$('sdRar');e.textContent=D.n;e.style.setProperty('--rc',D.c);if(pop){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop')}}
+function dropDraw(cls){const n=DS.n,st=$('dStage');st.className='dStage n'+n;const svg=DS.type==='chaos'?chaosSvg(DS.r):starrSvg(DS.r);
+  st.innerHTML=Array.from({length:n},(_,i)=>`<div class="dDrop ${cls}" style="animation-delay:${cls==='sSpl'?i*.04:0}s">${svg}</div>`).join('')}
+function dropAnim(cls){for(const e of $('dStage').children){e.classList.remove('sIn','sIdle','sHit','sUp','sSpl','sShake','sOpen');void e.offsetWidth;e.classList.add(cls)}}
+function dropPips(glow){const d=DS,max=d.type==='chaos'?3:4,left=max-(d.type==='chaos'?d.wt:d.taps);
+  $('dPips').innerHTML=Array.from({length:max},(_,i)=>`<i class="${i<left?(glow?'g':''):'off'}"></i>`).join('');$('dHintT').textContent=left>0?'タップ！':'オープン！'}
+function dropSparks(col,n,big){const fx=$('dFx'),R=VH()/100;for(let i=0;i<n;i++){const e=document.createElement('i'),a=Math.random()*TAU,dd=(big?30:18+Math.random()*10)*R*(0.6+Math.random()*.8);
+    e.style.cssText=`--x:${Math.cos(a)*dd}px;--y:${Math.sin(a)*dd}px;--pc:${col};animation-delay:${Math.random()*.08}s;width:${big?1.6:1.1}vmin;height:${big?1.6:1.1}vmin`;fx.appendChild(e);setTimeout(()=>e.remove(),1000)}}
+function dropFlash(o){const f=$('dFlash');f.style.setProperty('--fo',o||.9);f.classList.remove('fl');void f.offsetWidth;f.classList.add('fl')}
+function dropFloat(t){const e=$('dFloat');e.textContent=t;e.classList.remove('fl');void e.offsetWidth;e.classList.add('fl')}
+function dropStreaks(){const h=$('dStreaks');if(h.childElementCount)return;let s='';for(let i=0;i<34;i++)s+=`<i style="--a:${(i*137.5%360).toFixed(1)}deg;--sd:${(0.9+(i*7%10)/12).toFixed(2)}s;--dl:${(-(i*0.37)%1.6).toFixed(2)}s"></i>`;h.innerHTML=s}
+function openDrop(type){type=type==='chaos'?'chaos':'starr';if(DS||dropN(type)<=0)return;addDrop(type,-1);const P=type==='chaos'?planChaos():planStarr();
+  DS={type,r:type==='chaos'?1:0,n:1,taps:0,wt:0,nextAt:1+Math.floor(Math.random()*3),ev:P.ev?P.ev.slice():null,P,busy:true,phase:'in',rew:[],ri:0};
+  const sc=$('dropScr');sc.classList.add('on');sc.classList.toggle('chaos',type==='chaos');$('dRew').classList.remove('on');$('dSum').classList.remove('on');$('dHint').style.display='';$('sdRar').style.display='';
+  dropStreaks();dropSetRar(DS.r,true);dropDraw('sIn');dropPips();tn(160,.6,.12,'sine',700);nz(.5,.12,900,'bandpass');
+  const d0=DS;setTimeout(()=>{if(DS!==d0||d0.phase!=='in')return;d0.phase='tap';dropAnim('sIdle');dropFree(d0)},820)}
+// レア度が上がる（k段。スタードロップは1回のタップで一気に何段も上がることがある）
+function dropUp(k,cb){const d=DS;let i=0;const one=()=>{if(DS!==d)return;d.r++;const D=DRAR[d.r];dropFlash(.85);dropSetRar(d.r,true);dropDraw('sUp');dropSparks(D.c,26+d.r*6);dropSparks('#ffffff',10);
+    [523,659,784,1047,1319].slice(0,2+Math.min(3,d.r)).forEach((f,j)=>tn(f*(1+i*.12),.2,.14,'triangle',0,j*.05));nz(.25,.12,2400,'highpass');
+    if(++i<k)setTimeout(one,300);else setTimeout(cb,520)};one()}
+// 分裂（カオスドロップ）：2つ・4つ・8つ
+function dropSplit(cb){const d=DS;dropAnim('sShake');tn(300,.35,.1,'sawtooth',900);
+  setTimeout(()=>{if(DS!==d)return;d.n*=2;dropFlash(.9);dropDraw('sSpl');dropFloat('×'+d.n);dropSparks(DRAR[d.r].c,34);dropSparks('#ffffff',14);tn(1100,.14,.14,'square',500);tn(660,.3,.12,'triangle',1320,.08);nz(.3,.18,3000)},380);
+  setTimeout(cb,1000)}
+function dropHit(){dropAnim('sHit');dropSparks('#ffffff',7);const d=DS,k=d.type==='chaos'?d.wt:d.taps;tn(300+k*70,.09,.13,'square');nz(.06,.08,1800)}
+function dropFree(d){if(DS!==d)return;d.busy=false;if(d.q&&d.phase==='tap'){d.q=0;setTimeout(tapDrop,60)}}
+function tapDrop(){const d=DS;if(!d)return;if(d.busy){if(d.phase==='tap'||d.phase==='in')d.q=1;return}if(d.phase==='rew'){d.ri++;revealStep();return}if(d.phase!=='tap')return;
+  if(d.type==='starr'){d.taps++;const k=d.P.at.filter(t=>t===d.taps).length;dropPips();d.busy=true;
+    const after=()=>{if(DS!==d)return;if(d.taps>=4){d.phase='open';d.q=0;setTimeout(dropOpen,350)}else{dropAnim('sIdle');dropFree(d)}};
+    if(k)dropUp(k,after);else{dropHit();setTimeout(after,200)}return}
+  d.wt++;d.busy=true;
+  if(d.ev.length&&d.wt>=d.nextAt){const e=d.ev.shift();d.wt=0;d.nextAt=1+Math.floor(Math.random()*3);dropPips();
+    const done=()=>{if(DS!==d)return;dropPips(true);dropAnim('sIdle');dropFree(d)};if(e==='u')dropUp(1,done);else dropSplit(done);return}
+  dropHit();dropPips();if(d.wt>=3){d.phase='open';d.q=0;setTimeout(dropOpen,450)}else setTimeout(()=>{if(DS!==d)return;dropAnim('sIdle');dropFree(d)},200)}
+function dropOpen(){const d=DS;if(!d)return;d.phase='open';d.busy=true;$('dHint').style.display='none';dropAnim('sShake');tn(180,.75,.12,'sawtooth',1400);nz(.7,.1,600,'bandpass',2);
+  // 中身はここで決めて、すぐにセーブへ入れる（途中で閉じても無くならない）
+  const T=d.type==='chaos'?CD_TAB[d.r]:SD_TAB[d.r],cf=coinFx;coinFx=()=>{};try{for(let i=0;i<d.n;i++)d.rew.push(grantDrop(rollTab(T)))}finally{coinFx=cf}
+  setTimeout(()=>{if(DS!==d)return;dropFlash(1);dropAnim('sOpen');dropSparks(DRAR[d.r].c,50,1);dropSparks('#ffffff',24,1);nz(.5,.3,3000);tn(880,.4,.14,'triangle',1760);
+    setTimeout(()=>{if(DS!==d)return;$('dStage').innerHTML='';$('sdRar').style.display='none';d.phase='rew';d.ri=0;revealStep()},420)},760)}
+// ---- 中身の見せ方 ----
+function pileArt(ic,n){const c=n>=1000?11:n>=500?9:n>=200?7:n>=100?5:n>=50?4:3,P=[[50,58],[36,64],[64,64],[44,44],[58,44],[24,72],[76,72],[50,30],[30,50],[70,50],[50,76]].slice(0,c).sort((a,b)=>a[1]-b[1]);
+  return `<span class="pile">${P.map(([x,y],i)=>`<i style="left:${x}%;top:${y}%;--r:${(i*47%34)-17}deg;animation-delay:${.05+i*.035}s">${ic}</i>`).join('')}</span>`}
+function rewArt(R,small){switch(R.k){case 'coins':case 'pp':case 'cr':case 'bl':return small?`<span class="one">${R.ic}</span>`:pileArt(R.ic,R.n);case 'xpd':return `<span class="one">${R.ic}</span>`;
+    case 'kit':return `<span class="kitA"><i>${ICON[R.K==='gad'?'gadget':R.K==='sp'?'spow':'hyper']}</i><span class="pb">${pic(R.id)}</span></span>`;
+    case 'buf':return `<span class="kitA"><i>${ICON.buffy}</i><span class="pb">${pic(R.id)}</span></span>`;
+    case 'pin':return pinArt(R.id,R.i,!small);case 'spray':return sprayArt(R.id);case 'icon':return iconArt(R.id);
+    case 'char':return `<span class="one pic">${pic(R.id)}</span>`;case 'skin':return `<span class="one pic">${pic(R.id,skinById(R.id,R.sk))}</span>`}return ''}
+const rewAmt=R=>R.n?'x'+numTxt(R.n):'';
+const rewShort=R=>rewAmt(R)||({char:BT[R.id]&&BT[R.id].name,skin:R.sk&&skinById(R.id,R.sk).name,kit:{gad:'ガジェット',sp:'スターパワー',hyper:'ハイパー'}[R.K],buf:'バフィー',pin:'ピン',spray:'スプレー',icon:'アイコン'})[R.k]||R.title;
+function revealStep(){const d=DS;if(!d)return;const R=d.rew[d.ri];if(!R){dropSummary();return}
+  if(R.show){$('dRew').classList.remove('on');d.busy=true;unlockShow(Object.assign({},R.show,{done:()=>{if(DS!==d)return;d.busy=false;d.ri++;revealStep()}}));return}
+  const w=$('dRew');$('rwCnt').textContent=d.n>1?(d.ri+1)+'/'+d.n:'';$('rwTitle').textContent=R.title;$('rwArt').innerHTML=rewArt(R);$('rwAmt').textContent=rewAmt(R);
+  $('rwSub').textContent=R.sub||'';$('rwNote').textContent=R.note?R.note+'（すでに持っているため）':'';$('rwNote').style.display=R.note?'':'none';
+  w.classList.remove('on');void w.offsetWidth;w.classList.add('on');d.busy=true;setTimeout(()=>{if(DS===d)d.busy=false},420);
+  if(R.n){const el=$('rwAmt'),t0=performance.now(),N=R.n;const f=()=>{const k=Math.min(1,(performance.now()-t0)/600);el.textContent='x'+numTxt(Math.round(N*k*k*(3-2*k)));if(k<1&&DS===d)requestAnimationFrame(f)};requestAnimationFrame(f)}
+  SFX.gem();tn(660,.12,.12,'triangle',990,.05);if(R.k==='kit'||R.k==='pin'||R.k==='spray'||R.k==='icon')SFX.superReady()}
+function dropSummary(){const d=DS;$('dRew').classList.remove('on');const more=dropN(d.type);
+  if(d.rew.length<=1&&!more){dropClose();return}
+  $('sumG').className='sumG n'+Math.min(8,d.rew.length);$('sumG').innerHTML=d.rew.map((R,i)=>`<div class="sT" style="animation-delay:${i*.05}s"><span class="sA">${rewArt(R,1)}</span><b class="tx">${rewShort(R)}</b></div>`).join('');
+  $('sumNext').style.display=more?'':'none';$('sumNext').innerHTML=`<span class="tx">次を開ける（あと${more}）</span>`;$('dSum').classList.add('on');d.phase='sum';d.busy=false;fillIcons($('dSum'))}
+function dropClose(){$('dropScr').classList.remove('on','chaos');$('dSum').classList.remove('on');$('dRew').classList.remove('on');DS=null;lobbyModel();drawHome()}
+function drawDropBtns(){const ns=dropN('starr'),nc=dropN('chaos');$('dropSm').textContent=ns>0?'スタードロップ ×'+ns:'スタードロップ';$('dropBtn').classList.toggle('has',ns>0);
+  $('cdropSm').textContent='カオスドロップ ×'+nc;$('cdropBtn').style.display=nc>0?'':'none'}
+$('dropScr').addEventListener('click',e=>{if(e.target.closest('button'))return;tapDrop()});
+$('sumOk').addEventListener('click',e=>{e.stopPropagation();dropClose()});
+$('sumNext').addEventListener('click',e=>{e.stopPropagation();const t=DS&&DS.type;DS=null;$('dSum').classList.remove('on');openDrop(t)});
+$('dropBtn').addEventListener('click',()=>{if(dropN('starr')<=0){note('スタードロップは勝利ボーナス・トロフィーロード・パス・ショップでもらえます',2.6);return}openDrop('starr')});
+$('cdropBtn').addEventListener('click',()=>openDrop('chaos'));
+addEventListener('keydown',e=>{if(e.repeat)return;if(DS&&(e.code==='Space'||e.code==='Enter')&&!$('unlockScr').classList.contains('on')){e.preventDefault();if(DS.phase==='sum')dropClose();else tapDrop()}});
+// ================= 新キャラ・新スキン・バフィーの入手（本家風：レア度の色の背景・キャラが飛びこんでくる・名前の帯・説明） =================
+const UNQ=[];let UNL=null,UNL3=null;
+function popUnlock(title,sub,svg){unlockShow({kind:'gen',title,sub,svg})}
+function unlockShow(it){UNQ.push(it);if(!UNL)nextPop()}
+function unl3d(){if(UNL3)return UNL3;const g=new THREE.Group();g.position.set(0,0,-6);LOBBY.add(g);
+  const bgM=new THREE.MeshBasicMaterial({color:0xffffff}),bg=new THREE.Mesh(new THREE.PlaneGeometry(46,28),bgM);g.add(bg);
+  const rayT=ctex(512,512,(c,w,h)=>{c.translate(w/2,h/2);for(let i=0;i<16;i++){c.rotate(TAU/16);const gr=c.createLinearGradient(0,0,0,-w/2);gr.addColorStop(0,'rgba(255,255,255,.34)');gr.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=gr;c.beginPath();c.moveTo(0,0);c.lineTo(-38,-w/2);c.lineTo(38,-w/2);c.fill()}});
+  const ray=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshBasicMaterial({map:rayT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));ray.position.z=.05;g.add(ray);
+  g.visible=false;UNL3={g,bg,bgM,ray,tex:{}};return UNL3}
+function unlTex(col){const U=unl3d();if(U.tex[col])return U.tex[col];
+  U.tex[col]=ctex(640,384,(c,w,h)=>{const gr=c.createRadialGradient(w*.5,h*.5,10,w*.5,h*.5,w*.62);gr.addColorStop(0,'#fff');gr.addColorStop(.1,col);gr.addColorStop(1,col);c.fillStyle=gr;c.fillRect(0,0,w,h);
+    c.fillStyle='rgba(0,0,0,.22)';c.fillRect(0,0,w,h);const g2=c.createRadialGradient(w*.5,h*.5,10,w*.5,h*.5,w*.36);g2.addColorStop(0,'rgba(255,255,255,.75)');g2.addColorStop(.45,'rgba(255,255,255,.18)');g2.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g2;c.fillRect(0,0,w,h);
+    c.fillStyle='rgba(0,0,0,.07)';for(let y=20;y<h;y+=58)for(let x=(y/58%2)*34+14;x<w;x+=68){c.beginPath();c.arc(x,y,13,Math.PI,0);c.lineTo(x+13,y+8);c.lineTo(x+7,y+8);c.lineTo(x+7,y+15);c.lineTo(x-7,y+15);c.lineTo(x-7,y+8);c.lineTo(x-13,y+8);c.fill()}});return U.tex[col]}
+function unlModel(id,SK){if(lobbyChar)scene.remove(lobbyChar.g);lobbyChar=mkModel(id,0xffd84d,false,SK&&SK.id!=='base'?SK:null);lobbyChar.g.remove(lobbyChar.shield);if(lobbyChar.ringM)lobbyChar.ringM.visible=false;
+  lobbyChar.g.position.set(0,0,LZ);lobbyId='unl';emoteT=0}
+function nextPop(){const prev=UNL;if(prev&&prev.done){const f=prev.done;prev.done=null;UNL=null;f();if(UNL)return}
+  const it=UNQ.shift();if(!it){unlockEnd();return}UNL=it;it.t0=performance.now();
+  const B=BT[it.id],isGen=it.kind==='gen',sk=it.kind==='skin'?skinById(it.id,it.sk):null;
+  const col=isGen?'#ffc21a':sk?DRAR[Math.max(0,sk.t)].c:it.kind==='buf'?'#e84fc0':RARC[B.rar]||'#62c8ff';
+  document.body.classList.add('unl');const sc=$('unlockScr');sc.style.setProperty('--rc',col);sc.classList.remove('on','gen');void sc.offsetWidth;sc.classList.add('on');sc.classList.toggle('gen',isGen);
+  const U=unl3d();U.bgM.map=unlTex(col);U.bgM.needsUpdate=true;
+  if(!isGen)unlModel(it.id,sk||(it.kind==='char'?null:skinOf(it.id)));
+  let nw,nm,role,cnt,desc,sel=null;
+  if(it.kind==='char'){const L=BT_IDS.filter(x=>BT[x].rar===B.rar),k=L.filter(x=>ownedReal().includes(x)).length;nw='新キャラクター！';nm=B.name;role=B.role;
+    cnt=`${k}/${L.length} <span>${RARN[B.rar]||B.rar}</span>キャラクター`;desc=B.desc.replace(/\{([\d.]+)\}/g,(_,n)=>Math.round(+n))+(B.trait?'<br><b>特性：</b>'+B.trait:'');sel='選択'}
+  else if(it.kind==='skin'){const own=skinsOwned(it.id).length;nw='新しいスキン！';nm=sk.name+' '+B.name;role=B.name+'のスキン';cnt=`<span>${sk.t>=0?DRAR[sk.t].n:'パス限定'}</span>スキン（${own}/${SKINS[it.id].length}）`;desc=B.name+'の「'+sk.name+'」スキンを手に入れました！';sel='つける'}
+  else if(it.kind==='buf'){nw='バフィー！';nm=bufName[it.k];role=B.name;const X=BUF[it.id],lv=level(it.id);cnt=`${['gad','sp','hyper'].filter(x=>J('gr-bf-'+it.id,{})[x]).length}/3 <span>バフィー</span>`;
+    desc=it.k==='hyper'?`ハイパーチャージが2秒長くなる<br>${fmtLv(X.hyper,lv)}`:B[it.k].map((g,i)=>`<b>${g.name}</b>：${fmtLv(X[it.k][i],lv)}`).join('<br>')}
+  else{nw=it.title;nm=it.sub;role='';cnt='';desc=''}
+  $('unNew').textContent=nw;$('unName').textContent=nm;$('unName').style.fontSize='calc(var(--u)*'+Math.max(4.4,Math.min(8.6,52/Math.max(1,nm.length))).toFixed(2)+')';$('unRole').textContent=role;$('unCnt').innerHTML=cnt;$('unDesc').innerHTML=desc;$('unPic').innerHTML=isGen?it.svg:'';
+  $('unSel').style.display=sel?'':'none';$('unSel').innerHTML=`<span class="tx">${sel||''}</span>`;
+  SFX.lvup();nz(.4,.2,1800,'bandpass');setTimeout(()=>{if(UNL===it){confetti(VW()*.3,VH()*.55,60);setTimeout(()=>confetti(VW()*.7,VH()*.4,40),260)}},420)}
+function unlockEnd(){UNL=null;document.body.classList.remove('unl');$('unlockScr').classList.remove('on');if(UNL3)UNL3.g.visible=false;if(LOBBY.userData.hid){for(const [o,v] of LOBBY.userData.hid)o.visible=v;LOBBY.userData.hid=null}
+  lobbyId='';const det=$('charScr').classList.contains('det');lobbyModel(det?CVIEW:undefined);if(det)drawDetail(CVIEW);if($('charScr').classList.contains('on')&&!det)drawChar();drawHome()}
+$('unOk').addEventListener('click',e=>{e.stopPropagation();nextPop()});
+$('unSel').addEventListener('click',e=>{e.stopPropagation();const it=UNL;if(!it)return;if(it.kind==='char'){PICK=it.id;LSset('gr-pick',it.id)}else if(it.kind==='skin')LSset('gr-skin-'+it.id,it.sk);SFX.superReady();nextPop()});
+// 3D：背景をレア度の色にして、キャラが上から飛びこんでくる
+const _updLobby=updLobby;updLobby=function(dt){_updLobby(dt);const it=UNL;if(!it||!UNL3)return;
+  if(!LOBBY.userData.hid){LOBBY.userData.hid=LOBBY.children.map(o=>[o,o.visible])}for(const o of LOBBY.children)o.visible=o===UNL3.g;
+  const asp=VW()/VH(),port=asp<1,x0=port?0:-1.28*Math.min(asp,2.2),y0=port?1.7:-.55,sc=port?1.25:1.5,t=(performance.now()-it.t0)/1000;
+  const bx=x0*1.58,by=2.5+(y0+2-2.5)*1.58;UNL3.ray.position.set(bx,by,.05);UNL3.bg.position.set(bx,by,0);UNL3.ray.rotation.z=-t*.25;UNL3.ray.scale.setScalar(port?.8:1);const ry=port?0:.4;
+  const c=lobbyChar;if(!c||it.kind==='gen'){if(c)c.g.visible=false;return}c.g.visible=true;
+  if(t<.42){const k=t/.42;c.g.position.set(x0,y0+(1-k*k)*7,LZ);c.g.rotation.y=ry-(1-k)*TAU*1.5;c.g.scale.set(sc,sc,sc)}
+  else if(t<.78){const k=(t-.42)/.36,sq=Math.sin(k*Math.PI)*.16;c.g.position.set(x0,y0,LZ);c.g.rotation.y=ry;c.g.scale.set(sc*(1+sq),sc*(1-sq),sc*(1+sq))}
+  else{const k=t-.78;c.g.position.set(x0,y0+Math.abs(Math.sin(k*2.2))*.06,LZ);c.g.rotation.y=ry+Math.sin(k*.9)*.22;c.g.scale.set(sc,sc,sc);c.torso.position.y=.5+Math.sin(k*2.4)*.04;c.hR.position.y=.4+Math.sin(k*2.4)*.05}};
+// ---- クレジットでキャラを解放 ----
+function crPop(id){const B=BT[id],cost=CR_COST[B.rar],rd=ROAD.find(r=>r.char===id),ok=cost&&cr()>=cost;
+  dPop(`<h3 class="tx">${B.name}</h3><div class="crPop" style="--rc:${RARC[B.rar]}"><span class="art">${pic(id)}</span><div><b class="tx rar">${RARN[B.rar]}・${B.role}</b>`+
+    `<p>${rd?'トロフィーロード（合計トロフィー '+rd.t+'）・':''}スタードロップ・カオスドロップからも出ます</p><p class="have"><i>${ICON.credit}</i><b class="tx">${numTxt(cr())}</b> クレジット</p>`+
+    (cost?`<button class="go ${ok?'grn':'blu'}" id="crBuy" ${ok?'':'disabled'}><span class="tx">解放する</span><i>${ICON.credit}</i><b class="tx">${cost}</b></button>`:'')+`</div></div>`);
+  const b=$('crBuy');if(b)b.onclick=()=>{if(cr()<cost)return;addCr(-cost);$('dPop').classList.remove('on');unlockChar(id);drawChar()}}
 // ================= 毎フレームの処理 =================
 const camP=new THREE.Vector3();
 // 本家のカメラ：60度の見下ろし・ほぼ平行投影。横16:9で約25マスが見える（それより横長は左右に黒い帯）
@@ -3818,7 +4093,7 @@ function gemFx(u){dmgNum(u,'+1 💎','gem');tn(880+Math.min(u.gems,12)*80,.1,.14
 // パワーアップ
 const _upgrade=upgrade;upgrade=function(id){const l0=level(id);_upgrade(id);if(level(id)>l0){fxSlam('パワー '+level(id)+'！','#b58cff','体力と攻撃力アップ');confetti(VW()*.27,VH()*.55,60);SFX.lvup()}};
 // キャラ解放・ランクアップ
-const _nextPop=nextPop;nextPop=function(){_nextPop();if($('unlockScr').classList.contains('on')){confetti(VW()/2,VH()*.45,70);setTimeout(()=>confetti(VW()*.3,VH()*.5,40),300);setTimeout(()=>confetti(VW()*.7,VH()*.5,40),500);SFX.lvup()}};
+
 // 結果画面：数字がカウントアップ、勝ったら紙ふぶき
 const _showResult=showResult;showResult=function(){_showResult();const t=$('rTitle');t.classList.remove('slam');void t.offsetWidth;t.classList.add('slam');
   const win=t.className.includes('win');if(win){fxFlash('#fff6b0',.35,.5);confetti(VW()/2,VH()*.25,80);setTimeout(()=>confetti(VW()*.2,VH()*.3,50),350);setTimeout(()=>confetti(VW()*.8,VH()*.3,50),650)}
@@ -3875,6 +4150,12 @@ $('pinBtn').innerHTML=`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42"
 addEventListener('keydown',e=>{if(e.repeat||G.state!=='play'||paused)return;if(e.code==='Digit1')usePin('like');else if(e.code==='Digit2')usePin('bad');else if(e.code==='KeyT')$('pinTray').classList.toggle('on')});
 const _step3=step;step=function(dt){_step3(dt);specTick(dt);updPins(dt)};
 window.__A={shoot,explode,setForm,canSwim,collide,cell,tx,tz,cx,cz,supReady,chargeStart,streamStart,streamStop,BLOMBS,killUnit,curAtk,curSup,atkRange,supRange,maxAmmo,fmtLv,bufRed,scMul,myPosts,rtLegs,inWater,LVM,walkable,los,grid:()=>GRID,bushes:()=>BUSH,unitSpeed,dmgMul,reloadOf,HYP,BUF,myKit,kitAct,bufOwn,mkUnit,hyperOn,drawChar,openChars,mkLabel,hurt:(...a)=>hurt(...a),SPEC,usePin,specNext,autoAttack,setPick:id=>{PICK=id},gadget,hyperGo,superAtk2:superAtk,buildArenaTest:id=>{buildArena(id)},rankOf,RPts,quests,questAdd,drawHome,MAPS,aiAct,buildArena,coins,level,upgrade,trophies,LSset,showMenu,G,BT,me,startMatch,step,attack,superAtk,autoAttack,cam,scene,renderer,teamGems,visibleTo,astar,MAP,GRID,endMatch,setZoom:z=>ZOOM=z,K,STK};
+// ================= ドロップで集めたキャラのピン（試合中のピンの箱に、使っているキャラの分を足す） =================
+const _pinSvg=pinSvg;pinSvg=function(k){const p=PINS[k];return p&&p.bt?pinArt(p.bt,p.i).replace('class="pinA"','class="pinA fill"'):_pinSvg(k)};
+function pinTrayFill(){const tr=$('pinTray');tr.querySelectorAll('[data-bp]').forEach(b=>b.remove());const u=G.me;if(!u)return;
+  for(const i of pinsOf(u.bt).slice().sort((a,b)=>a-b).slice(0,4)){const k='b-'+u.bt+'-'+i;PINS[k]={name:PINK[i].n,bt:u.bt,i};
+    const b=document.createElement('button');b.dataset.bp=k;b.innerHTML=pinSvg(k)+`<small>${PINK[i].n}</small>`;b.addEventListener('click',e=>{e.stopPropagation();usePin(k)});tr.appendChild(b)}}
+$('pinBtn').addEventListener('click',()=>{if($('pinTray').classList.contains('on'))pinTrayFill()});
 // ================= オンライン募集・対戦（アーティファクトの room。presence だけで同期する） =================
 // ・ロビー（room 本体）の presence に {gr:{n,c,f,r,np,st}} を出して「募集中の部屋」の一覧にする（ホストだけ）
 // ・部屋は room.join('gr-xxxxxx')。閲覧者はイベントを送れないので presence だけで同期する。presence は 4KiB までなので試合の様子は整数につめて送る
@@ -4135,7 +4416,7 @@ $('netChar').addEventListener('click',()=>{$('netScr').classList.remove('on');NE
 setInterval(()=>{if(NET.game&&!NET.on)netSend();if(!NET.on)netRender()},1000);
 addEventListener('pagehide',()=>{try{NET.gunsub.forEach(u=>u());NET.unsub.forEach(u=>u());if(NET.game)NET.game.leave().catch(()=>{});if(NET.room)NET.room.presence({gr:null}).catch(()=>{})}catch(e){}});
 // テスト用
-Object.assign(window.__A,{attack,superAtk,gadget,hyperGo,streamStart,chargeStart,openChars,openDetail,kitPop,statPop,skinPop,openModes,openRanked,openRoad,openPass,openQuests,openProfile,openBuffy,openShop,openNet,startTraining,NET,PIC,PICQ,netSnap,netApplySnap,netStartLocal,netState,camDist,addPP,addGems,pp,gems,clawGo,BTRIOS,mapImg,curMap,ROAD,bp,addXP,quests,squests,stats,HALFX:()=>HALFX,HALFZ:()=>HALFZ});
+Object.assign(window.__A,{attack,superAtk,gadget,hyperGo,streamStart,chargeStart,openChars,openDetail,kitPop,statPop,skinPop,openModes,openRanked,openRoad,openPass,openQuests,openProfile,openBuffy,openShop,openNet,startTraining,NET,PIC,PICQ,netSnap,netApplySnap,netStartLocal,netState,camDist,addPP,addGems,pp,gems,clawGo,BTRIOS,mapImg,curMap,ROAD,bp,addXP,quests,squests,stats,HALFX:()=>HALFX,HALFZ:()=>HALFZ,openDrop,tapDrop,planStarr,planChaos,grantDrop,rollTab,SD_TAB,CD_TAB,dropN,addDrop,unlockShow,nextPop,crPop,cr,bl,xpd,addCr,DS:()=>DS,UNL:()=>UNL,SKINS,skinsOwned,pinsOf,sprays,picons,drawProfile,unlockChar,giveSkin,freeBuffy,dropClose,claimRoad});
 })();
 </script>
 </body></html>

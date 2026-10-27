@@ -66,7 +66,7 @@ function drawPass(scroll){const b=bp(),t=bpTier(b),h=$('passList'),day=Date.now(
   $('passSeason').textContent='シーズン'+BP_SEASON;$('passLeft').textContent='残り '+leftTxt(left);$('passGems').textContent=numTxt(gems());
   $('passXPT').textContent=t>=BP_T?'MAX':(b.xp%BP_XP)+'/'+BP_XP;$('passXP').style.width=(t>=BP_T?100:(b.xp%BP_XP)/BP_XP*100)+'%';$('passTier').textContent=t;
   const sb=BT_IDS[(BP_SEASON*7)%BT_IDS.length];
-  $('psL').innerHTML=`<div class="art">${pic(sb,SKINS[sb][3])}</div>`+(b.prem?`<div class="pst tx">✔ ブロスタパス+有効</div>`:`<button class="go yel" id="passBuy"><span class="tx">ブロスタパス+</span><i>${ICON.gem}</i><span class="tx">${BP_COST}</span></button>`)+`<small class="tx" style="font-size:calc(var(--u)*2.4)">Tier ${t} / ${BP_T}</small>`;
+  $('psL').innerHTML=`<div class="art">${pic(sb,skinById(sb,'s1'))}</div>`+(b.prem?`<div class="pst tx">✔ ブロスタパス+有効</div>`:`<button class="go yel" id="passBuy"><span class="tx">ブロスタパス+</span><i>${ICON.gem}</i><span class="tx">${BP_COST}</span></button>`)+`<small class="tx" style="font-size:calc(var(--u)*2.4)">Tier ${t} / ${BP_T}</small>`;
   const pb=$('passBuy');if(pb)pb.onclick=bpBuy;
   const cell=(i,prem)=>{const r=bpReward(i,prem),L=prem?b.p:b.f,got=L.includes(i),can=i<=t&&!got&&(!prem||b.prem),ri=rewardIcon(r);
     return `<button class="psR${prem?'':' fr'}${got?' got':''}${can?' can':''}" data-i="${i}" data-p="${prem?1:0}"><span class="ri">${r.buf?ICON.buffy:ri.ic}</span><b class="tx">${r.buf?'バフィー':r.char?BT[r.char].name:ri.n||rewardTxt(r).split(' + ')[0]}</b>${got?`<i class="ck">${ICON.check}</i>`:''}${prem&&!b.prem?`<i class="lk">${ICON.lock}</i>`:''}</button>`};
@@ -95,7 +95,10 @@ function drawProfile(){const icon=LS('gr-icon','')&&BT[LS('gr-icon','')]?LS('gr-
     `<div class="pfBox"><h4 class="tx"><span>キャラクター</span><span>${own.length}/${BT_IDS.length}個入手済み</span></h4><div class="pfBr">${top.slice(0,10).map(id=>`<div style="--rc:${RARC[BT[id].rar]}">${pic(id)}<b class="tx">${trophies(id)}</b></div>`).join('')}</div></div>`+
     `<div class="pfBox pfSt"><div class="c"><h4 class="tx" style="margin:0">勝利数</h4><small>バトルロイヤル</small><span class="row"><i>${modeIcon('br')}</i><b class="tx">${s.wbr}</b></span><small>3対3 勝利数</small><span class="row"><i>${modeIcon('ranked')}</i><b class="tx">${s.w3}</b></span></div>`+
     `<div class="c"><h4 class="tx" style="margin:0">ガチバトル</h4><div style="display:flex;gap:calc(var(--u)*3)"><span class="c"><span class="emb">${emblem(rankOf(RPts()))}</span><small>現在</small><b class="tx">${RPts()}</b></span><span class="c"><span class="emb">${emblem(rankOf(best))}</span><small>最高</small><b class="tx">${best}</b></span></div></div></div>`+
-    `<div class="pfBox pfSt"><div class="c"><small>最大連勝</small><b class="tx">${s.best}</b></div><div class="c"><small>プレイした試合</small><b class="tx">${s.games}</b></div></div>`;
+    `<div class="pfBox pfSt"><div class="c"><small>最大連勝</small><b class="tx">${s.best}</b></div><div class="c"><small>プレイした試合</small><b class="tx">${s.games}</b></div></div>`+
+    `<div class="pfBox pfCol"><h4 class="tx">コレクション</h4><div class="pfC">`+[[ICON.credit,'クレジット',numTxt(cr())],[ICON.bling,'ブリング',numTxt(bl())],[ICON.xpd,'XPダブラー',numTxt(xpd())],
+      [ICON.pin,'ピン',BT_IDS.reduce((n,id)=>n+pinsOf(id).length,0)+'/'+BT_IDS.length*PINK.length],[ICON.spray,'スプレー',sprays().length+'/'+BT_IDS.length],[ICON.picon,'アイコン',picons().length+'/'+BT_IDS.length]]
+      .map(([ic,n,v])=>`<span><i>${ic}</i><small>${n}</small><b class="tx">${v}</b></span>`).join('')+`</div></div>`;
   $('pfAv').onclick=()=>{const L=own,i=L.indexOf(icon);const n=L[(i+1)%L.length];LSset('gr-icon',n);drawProfile();SFX.gem()}}
 $('pfName').addEventListener('change',e=>{LSset('gr-name',cleanName(e.target.value));drawProfile()});$('pfName').addEventListener('keydown',e=>e.stopPropagation());
 // ================= バフィー（3人ずつのセット・クレーンゲーム） =================
@@ -105,7 +108,7 @@ const bufName={gad:'ガジェットバフィー',sp:'スターバフィー',hype
 function openBuffy(id){openScr('bufScr');if(id){const i=BTRIOS.findIndex(t=>t.includes(id));if(i>=0){BTRIO=i;BSEL=[id,'gad']}}drawBuffy()}
 function trioGot(t){return t.reduce((s,id)=>s+['gad','sp','hyper'].filter(k=>bufOwn(id)[k]).length,0)}
 function giveBuffy(id,k){const b=J('gr-bf-'+id,{gad:false,sp:false,hyper:false});if(b[k])return false;b[k]=true;JS('gr-bf-'+id,b);return true}
-function freeBuffy(){const all=[];for(const id of Object.keys(BUF))for(const k of['gad','sp','hyper'])if(!J('gr-bf-'+id,{})[k])all.push([id,k]);if(!all.length)return null;const [id,k]=all[Math.floor(Math.random()*all.length)];giveBuffy(id,k);popUnlock('バフィー！',BT[id].name+'の'+bufName[k],pic(id));return[id,k]}
+function freeBuffy(){const all=[];for(const id of Object.keys(BUF))for(const k of['gad','sp','hyper'])if(!J('gr-bf-'+id,{})[k])all.push([id,k]);if(!all.length)return null;const [id,k]=all[Math.floor(Math.random()*all.length)];giveBuffy(id,k);unlockShow({kind:'buf',id,k});return[id,k]}
 function drawBuffy(){const t=BTRIOS[BTRIO]||BTRIOS[0];if(!BSEL||!t.includes(BSEL[0]))BSEL=[t[0],'gad'];$('bfPP').textContent=numTxt(pp());$('bfCoin').textContent=numTxt(coins());
   $('bfList').innerHTML=BTRIOS.map((tr,i)=>`<button class="bp bfTrio${i===BTRIO?' on':''}" data-t="${i}">${tr.map(id=>`<span>${pic(id)}${trioGot([id])===3?`<i>${ICON.check}</i>`:''}</span>`).join('')}</button>`).join('');
   $('bfList').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{BTRIO=+b.dataset.t;BSEL=null;SFX.gem();drawBuffy()});
@@ -136,12 +139,13 @@ function drawShop(){const S=shopDay(),day=Math.floor(Date.now()/864e5);$('shPP')
   it('デイリーディール','free',{name:'無料ギフト',r:gift,cost:null,cl:'g',ic:gift.ic,amt:(gift.pp||gift.coins||gift.drop),tag:'無料'});
   it('デイリーディール','d1',{name:'パワーポイント',r:{pp:200},cost:{coins:300},cl:'p',ic:ICON.pp,amt:200,tag:'お得'});
   it('デイリーディール','d2',{name:'スタードロップ',r:{drop:2},cost:{gems:19},cl:'v',ic:ICON.star,amt:2});
+  it('デイリーディール','d3',{name:'カオスドロップ',r:{cdrop:1},cost:{gems:29},cl:'v',ic:ICON.chaos,amt:1,tag:'NEW'});
   // 資源
   it('資源','c1',{name:'コイン',r:{coins:300},cost:{gems:30},cl:'y',ic:ICON.coin,amt:300,many:1});it('資源','c2',{name:'コイン',r:{coins:1200},cost:{gems:99},cl:'y',ic:ICON.coin,amt:1200,many:1});
   it('資源','p1',{name:'パワーポイント',r:{pp:250},cost:{gems:25},cl:'p',ic:ICON.pp,amt:250,many:1});it('資源','p2',{name:'パワーポイント',r:{pp:1000},cost:{gems:89},cl:'p',ic:ICON.pp,amt:1000,many:1});
-  it('資源','s1',{name:'スタードロップ',r:{drop:5},cost:{gems:45},cl:'v',ic:ICON.star,amt:5,many:1});it('資源','g1',{name:'ジェム',r:{gems:10},cost:{coins:500},cl:'g',ic:ICON.gem,amt:10,many:1});
+  it('資源','s1',{name:'スタードロップ',r:{drop:5},cost:{gems:45},cl:'v',ic:ICON.star,amt:5,many:1});it('資源','s2',{name:'カオスドロップ',r:{cdrop:3},cost:{gems:79},cl:'v',ic:ICON.chaos,amt:3,many:1});it('資源','b1',{name:'ブリング',r:{bl:500},cost:{gems:49},cl:'y',ic:ICON.bling,amt:500,many:1});it('資源','g1',{name:'ジェム',r:{gems:10},cost:{coins:500},cl:'g',ic:ICON.gem,amt:10,many:1});
   // スキン（持っているキャラのまだ持っていないスキン、毎日6つ）
-  const sk=[];for(const id of owned())for(const s of SKINS[id])if(s.gem&&!skinsOwned(id).includes(s.id))sk.push([id,s]);sk.sort((a,b)=>hash2(BT_IDS.indexOf(a[0])+day,a[1].rar)-hash2(BT_IDS.indexOf(b[0])+day,b[1].rar));
+  const sk=[];for(const id of owned())for(const s of SKINS[id])if(s.gem&&!skinsOwned(id).includes(s.id))sk.push([id,s]);sk.sort((a,b)=>hash2(BT_IDS.indexOf(a[0])+day,a[1].t)-hash2(BT_IDS.indexOf(b[0])+day,b[1].t));
   for(const [id,s] of sk.slice(0,6))it('スキン','sk-'+id+'-'+s.id,{name:BT[id].name+'\n'+s.name,skin:[id,s.id],cost:{gems:s.gem},cl:'',ic:pic(id,s),amt:'',once:1});
   if(!bp().prem)it('ブロスタパス','bp',{name:'ブロスタパス+',cost:{gems:BP_COST},cl:'y',ic:ICON.pass,amt:'',pass:1});
   const secs=[...new Set(items.map(i=>i.sec))];

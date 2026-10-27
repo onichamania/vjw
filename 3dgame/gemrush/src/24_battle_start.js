@@ -6,7 +6,7 @@ function startTutorial(){clearMatch();G.rule='tutorial';G.mode='team';G.ranked=f
   for(const u of G.units)mkLabel(u);G.M={};ZOOM=1;camP.set(G.me.x,0,G.me.z);tutSetup()}
 const botKit=(b,lv)=>({gad:lv>=7?Math.floor(Math.random()*2):-1,sp:lv>=9?Math.floor(Math.random()*2):-1,gears:[],hyper:lv>=11,
   buf:BUF[b]?{gad:lv>=9&&Math.random()<.35,sp:lv>=10&&Math.random()<.35,hyper:lv>=11&&Math.random()<.5}:{}});
-const botSkin=b=>Math.random()<.25?SKINS[b][1+Math.floor(Math.random()*3)]:null;
+const botSkin=b=>{if(Math.random()>=.25)return null;const L=SKINS[b].filter(k=>k.id!=='base'&&!k.pass);return L[Math.floor(Math.random()*L.length)]};
 function startMatch(mode){initAudio();if(!isOwned(PICK))PICK='rico';mode=mode||PMODE;if(!MODES[mode])mode='gem';document.body.classList.toggle('tut',mode==='tutorial');if(mode==='tutorial'){startTutorial();return}clearMatch();const ranked=mode==='ranked',rule=ranked?RANKED_MODES[Math.floor(Math.random()*RANKED_MODES.length)]:mode,rules=rule==='br'?'br':'gem';
   // ガチバトルはモードもマップもランダム、ほかはいまのマップ（時間で入れかわる）
   const ids=mapsOf(rule),mid=ranked?ids[Math.floor(Math.random()*ids.length)]:curMap(rule).id;G.friendly=false;

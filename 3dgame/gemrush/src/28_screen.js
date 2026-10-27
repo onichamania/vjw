@@ -67,7 +67,7 @@ function gemFx(u){dmgNum(u,'+1 💎','gem');tn(880+Math.min(u.gems,12)*80,.1,.14
 // パワーアップ
 const _upgrade=upgrade;upgrade=function(id){const l0=level(id);_upgrade(id);if(level(id)>l0){fxSlam('パワー '+level(id)+'！','#b58cff','体力と攻撃力アップ');confetti(VW()*.27,VH()*.55,60);SFX.lvup()}};
 // キャラ解放・ランクアップ
-const _nextPop=nextPop;nextPop=function(){_nextPop();if($('unlockScr').classList.contains('on')){confetti(VW()/2,VH()*.45,70);setTimeout(()=>confetti(VW()*.3,VH()*.5,40),300);setTimeout(()=>confetti(VW()*.7,VH()*.5,40),500);SFX.lvup()}};
+
 // 結果画面：数字がカウントアップ、勝ったら紙ふぶき
 const _showResult=showResult;showResult=function(){_showResult();const t=$('rTitle');t.classList.remove('slam');void t.offsetWidth;t.classList.add('slam');
   const win=t.className.includes('win');if(win){fxFlash('#fff6b0',.35,.5);confetti(VW()/2,VH()*.25,80);setTimeout(()=>confetti(VW()*.2,VH()*.3,50),350);setTimeout(()=>confetti(VW()*.8,VH()*.3,50),650)}

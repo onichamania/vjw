@@ -130,27 +130,94 @@ h1 em{font-style:italic;color:var(--gem)}
 #pause .box button{display:block;width:100%;height:42px;border-radius:12px;background:#1a1f2c;color:#fff;font-weight:900;margin-top:8px}
 #load{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:var(--bg);font-size:14px;letter-spacing:.2em;color:#aab}
 .scr.dim{background:#070b16e6;z-index:6}
-#dropScr{background:radial-gradient(circle at 50% 45%,var(--dc,#5fb8ff) 0,#0a0f1e 62%);z-index:8;overflow:hidden;padding:0}
-.drays{position:absolute;left:50%;top:45%;width:260vmax;height:260vmax;margin:-130vmax 0 0 -130vmax;background:repeating-conic-gradient(from 0deg,#ffffff2e 0 7deg,transparent 7deg 18deg);animation:rays 14s linear infinite;-webkit-mask:radial-gradient(circle,#000 0,transparent 55%);mask:radial-gradient(circle,#000 0,transparent 55%)}
 @keyframes rays{to{transform:rotate(360deg)}}
-.dwrap{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
-.drar{font-size:clamp(26px,6vmin,44px);font-weight:900;font-style:italic;letter-spacing:.04em;text-shadow:0 4px 0 #0008,0 0 24px currentColor}
-.drar.pop{animation:rpop .45s cubic-bezier(.2,1.8,.4,1)}@keyframes rpop{0%{transform:scale(2.2);opacity:0}100%{transform:scale(1);opacity:1}}
-.dstar{width:min(50vmin,250px);height:min(50vmin,250px);cursor:pointer;transition:filter .3s}.dstar svg{width:100%;height:100%;display:block}
-.dstar.enter{animation:dIn .7s cubic-bezier(.3,1.5,.5,1)}@keyframes dIn{0%{transform:translateY(-110vh) rotate(-30deg) scale(.5)}100%{transform:none}}
-.dstar.idle{animation:dIdle 1.4s ease-in-out infinite}@keyframes dIdle{50%{transform:translateY(-8px) scale(1.03)}}
-.dstar.hit{animation:dHit .28s}@keyframes dHit{0%{transform:scale(1)}30%{transform:scale(.86,1.12) rotate(-6deg)}60%{transform:scale(1.12,.9) rotate(5deg)}100%{transform:scale(1)}}
-.dstar.up{animation:dUp .5s}@keyframes dUp{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(12deg);filter:brightness(2.4)}100%{transform:scale(1)}}
-.dstar.open{animation:dOpen .75s ease-in forwards}@keyframes dOpen{0%{transform:scale(1)}60%{transform:scale(1.25) rotate(540deg);filter:brightness(2)}100%{transform:scale(2.6) rotate(900deg);opacity:0;filter:brightness(5)}}
-.dtap{font-size:18px;font-weight:900;color:#fff;text-shadow:0 2px 8px #000;animation:blink 1s steps(1) infinite}
-.dcard{display:none;flex-direction:column;align-items:center;gap:6px;background:#0b1224e6;border:4px solid var(--dc,#5fb8ff);border-radius:20px;padding:16px 26px;box-shadow:0 0 40px var(--dc,#5fb8ff)}
-.dcard.show{display:flex;animation:cardIn .55s cubic-bezier(.2,1.6,.4,1)}@keyframes cardIn{0%{transform:translateY(40px) scale(.4);opacity:0}100%{transform:none;opacity:1}}
-.dcard b{font-size:20px}.dicon{font-size:64px;line-height:1}.dicon svg{width:120px;height:120px}
-#dropOk{display:none;margin-top:8px}
-#dropFx{position:absolute;inset:0;pointer-events:none}#dropFx i{position:absolute;left:50%;top:45%;width:12px;height:12px;border-radius:50%;background:var(--pc);box-shadow:0 0 12px var(--pc);animation:spark .8s ease-out forwards}
+@keyframes rpop{0%{transform:scale(2.2);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes dIdle{50%{transform:translateY(-8px) scale(1.03)}}
 @keyframes spark{to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
-#dropFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}#dropFlash.go{animation:flash .6s ease-out}@keyframes flash{0%{opacity:.95}100%{opacity:0}}
-.unpic{width:min(40vmin,200px);margin:10px auto;animation:pulse 1s infinite}.unpic svg{width:100%}
+@keyframes sdBlink{50%{opacity:.35}}
+/* ===== スタードロップ・カオスドロップ ===== */
+#dropScr{z-index:9;padding:0;overflow:hidden;cursor:pointer;user-select:none;-webkit-user-select:none;background:var(--d2);--d0:#a8ff6a;--d1:#2fbf3a;--d2:#0b4a1a;--dg:#3fc35a}
+#dropScr .dBg{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,var(--d0) 0,var(--d1) 32%,var(--d2) 100%)}
+#dropScr.chaos .dBg{background:radial-gradient(circle at 50% 50%,var(--d0) 0,var(--d1) 24%,var(--d2) 74%,var(--d3) 100%)}
+#dropScr .dRays{position:absolute;left:50%;top:50%;width:300vmax;height:300vmax;margin:-150vmax 0 0 -150vmax;background:repeating-conic-gradient(from 0deg,#ffffff26 0 5deg,#0000 5deg 15deg);animation:rays 40s linear infinite;-webkit-mask:radial-gradient(circle,#000 0,#0000 40%);mask:radial-gradient(circle,#000 0,#0000 40%);pointer-events:none}
+.dStreaks{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.dStreaks i{position:absolute;left:50%;top:50%;width:calc(var(--u)*.6);height:calc(var(--u)*16);margin-left:calc(var(--u)*-.3);border-radius:99px;background:linear-gradient(#fff0,#fffe);transform-origin:50% 0;opacity:0;animation:sdStreak var(--sd) linear infinite;animation-delay:var(--dl)}
+#dropScr.chaos .dStreaks i{background:linear-gradient(#fff0,var(--d0))}
+@keyframes sdStreak{0%{transform:rotate(var(--a)) translateY(calc(var(--u)*14)) scaleY(.2);opacity:0}20%{opacity:.85}100%{transform:rotate(var(--a)) translateY(calc(var(--u)*115)) scaleY(1.5);opacity:0}}
+.dGlow{position:absolute;left:50%;top:50%;width:calc(var(--u)*80);height:calc(var(--u)*80);margin:calc(var(--u)*-40) 0 0 calc(var(--u)*-40);border-radius:50%;background:radial-gradient(circle,#fffd 0,#fff7 22%,#fff0 62%);animation:sdGlow 2.2s ease-in-out infinite;pointer-events:none}
+@keyframes sdGlow{50%{transform:scale(1.12);opacity:.8}}
+.sdRarL{position:absolute;left:0;right:0;top:calc(var(--st) + var(--u)*6);text-align:center;font-size:calc(var(--u)*8);font-style:italic;letter-spacing:.03em;transform:skewX(-6deg);filter:drop-shadow(0 0 calc(var(--u)*2) var(--rc));pointer-events:none}
+.sdRarL.pop{animation:sdRar .5s cubic-bezier(.2,1.8,.4,1)}@keyframes sdRar{0%{transform:skewX(-6deg) scale(2.4);opacity:0}100%{transform:skewX(-6deg) scale(1);opacity:1}}
+.dStage{position:absolute;left:0;right:0;top:calc(var(--u)*17);bottom:calc(var(--u)*17);display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:calc(var(--u)*2) calc(var(--u)*3);--sz:calc(var(--u)*50);pointer-events:none}
+.dStage.n2{--sz:calc(var(--u)*40)}.dStage.n4{--sz:calc(var(--u)*30);max-width:calc(var(--u)*70);margin:0 auto}.dStage.n8{--sz:calc(var(--u)*25);max-width:calc(var(--u)*120);margin:0 auto}
+.dDrop{width:var(--sz);height:var(--sz);filter:drop-shadow(0 0 calc(var(--u)*3) var(--dg))}.dDrop svg{width:100%;height:100%;display:block}
+.dDrop.sIn{animation:sdIn .8s cubic-bezier(.25,1.45,.5,1) both}@keyframes sdIn{0%{transform:translateY(80vh) rotate(-50deg) scale(.3)}100%{transform:none}}
+.dDrop.sIdle{animation:sdIdle 1.6s ease-in-out infinite}@keyframes sdIdle{50%{transform:translateY(calc(var(--u)*-1.6)) rotate(-3deg) scale(1.03)}}
+.dDrop.sHit{animation:sdHit .32s}@keyframes sdHit{30%{transform:scale(.84,1.14) rotate(-7deg)}60%{transform:scale(1.14,.88) rotate(6deg)}100%{transform:none}}
+.dDrop.sUp{animation:sdUp .5s cubic-bezier(.2,1.6,.4,1)}@keyframes sdUp{0%{transform:scale(1.5) rotate(-14deg);filter:brightness(3)}100%{transform:none;filter:none}}
+.dDrop.sSpl{animation:sdSpl .6s cubic-bezier(.2,1.6,.4,1) both}@keyframes sdSpl{0%{transform:scale(.15);filter:brightness(3);opacity:0}100%{transform:none;filter:none;opacity:1}}
+.dDrop.sShake{animation:sdShake .75s ease-in both}@keyframes sdShake{0%{transform:none}20%{transform:translate(-1.5%,1%) rotate(-4deg) scale(1.04)}40%{transform:translate(2%,-1%) rotate(5deg) scale(1.08)}60%{transform:translate(-2.5%,1%) rotate(-6deg) scale(1.13);filter:brightness(1.4)}80%{transform:translate(3%,-1%) rotate(7deg) scale(1.18);filter:brightness(1.8)}100%{transform:scale(1.24);filter:brightness(2.4)}}
+.dDrop.sOpen{animation:sdOpen .42s ease-in forwards}@keyframes sdOpen{0%{transform:scale(1.24);filter:brightness(2.4)}100%{transform:scale(2.6) rotate(25deg);opacity:0;filter:brightness(6)}}
+.dHint{position:absolute;left:0;right:0;bottom:calc(var(--sb) + var(--u)*5);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*1.2);pointer-events:none}
+.dHint b{font-size:calc(var(--u)*4.6);animation:sdTap 1s ease-in-out infinite}@keyframes sdTap{50%{transform:scale(1.1)}}
+.dPips{display:flex;gap:calc(var(--u)*1.4)}.dPips i{width:calc(var(--u)*3.2);height:calc(var(--u)*3.2);border-radius:50%;background:#fff;border:calc(var(--u)*.45) solid #000;box-shadow:0 0 calc(var(--u)*1.4) #fff;transition:.2s}
+.dPips i.off{background:#0007;box-shadow:none;transform:scale(.8)}.dPips i.g{animation:sdPip .6s ease-out}@keyframes sdPip{0%{transform:scale(1.8);background:var(--d0)}}
+#dFx{position:absolute;inset:0;pointer-events:none}#dFx i{position:absolute;left:50%;top:50%;border-radius:50%;background:var(--pc);box-shadow:0 0 12px var(--pc);animation:spark .9s ease-out forwards}
+#dFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}#dFlash.fl{animation:sdFlash .55s ease-out}@keyframes sdFlash{0%{opacity:var(--fo,.9)}100%{opacity:0}}
+#dFloat{position:absolute;left:0;right:0;top:42%;text-align:center;font-size:calc(var(--u)*13);font-style:italic;opacity:0;pointer-events:none}#dFloat.fl{animation:sdFloat 1s ease-out}@keyframes sdFloat{0%{transform:scale(2.4);opacity:0}25%{transform:scale(1);opacity:1}75%{opacity:1}100%{transform:translateY(calc(var(--u)*-8));opacity:0}}
+.dRew{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*1);pointer-events:none}
+.dRew.on{display:flex}
+.dRew .rwSun{position:absolute;left:50%;top:50%;width:calc(var(--u)*120);height:calc(var(--u)*120);margin:calc(var(--u)*-64) 0 0 calc(var(--u)*-60);background:repeating-conic-gradient(#fff5 0 8deg,#fff0 8deg 22deg);border-radius:50%;-webkit-mask:radial-gradient(circle,#000 10%,#0000 62%);mask:radial-gradient(circle,#000 10%,#0000 62%);animation:rays 14s linear infinite}
+.rwTitle{position:relative;font-size:calc(var(--u)*7);font-style:italic;transform:skewX(-6deg)}
+.rwArt{position:relative;width:calc(var(--u)*42);height:calc(var(--u)*38);display:grid;place-items:center}
+.dRew.on .rwTitle{animation:sdRar .5s cubic-bezier(.2,1.8,.4,1)}.dRew.on .rwArt{animation:sdArt .6s cubic-bezier(.2,1.6,.4,1)}@keyframes sdArt{0%{transform:scale(.2) translateY(calc(var(--u)*20));opacity:0}100%{transform:none;opacity:1}}
+.rwAmt{position:relative;font-size:calc(var(--u)*10);font-style:italic;line-height:1;transform:skewX(-6deg)}
+.rwSub{position:relative;font-size:calc(var(--u)*3.4)}
+.rwNote{position:relative;font-size:calc(var(--u)*2.4);font-weight:800;color:#fff;background:#0008;border-radius:99px;padding:calc(var(--u)*.6) calc(var(--u)*2)}
+.rwTap{position:absolute;bottom:calc(var(--sb) + var(--u)*4);font-size:calc(var(--u)*3);animation:sdBlink 1.2s ease-in-out infinite}
+.rwCnt{position:absolute;right:calc(var(--sr) + var(--u)*4);top:calc(var(--st) + var(--u)*4);font-size:calc(var(--u)*4.4)}
+.pile{position:relative;width:100%;height:100%;display:block}.pile i{position:absolute;width:42%;height:42%;margin:-21% 0 0 -21%;transform:rotate(var(--r));animation:sdCoin .5s cubic-bezier(.2,1.6,.4,1) both;filter:drop-shadow(0 calc(var(--u)*.6) 0 #0006)}
+.pile i svg{width:100%;height:100%}@keyframes sdCoin{0%{transform:translateY(calc(var(--u)*-30)) rotate(var(--r)) scale(.4);opacity:0}100%{transform:rotate(var(--r));opacity:1}}
+.one{width:80%;height:80%;display:grid;place-items:center}.one svg{width:100%;height:100%}.one.pic img,.one.pic svg{width:100%;height:100%;object-fit:contain}
+.kitA{position:relative;width:80%;height:80%;display:block}.kitA>i{position:absolute;inset:0}.kitA>i svg{width:100%;height:100%}.kitA .pb{position:absolute;right:-6%;bottom:-6%;width:46%;height:46%;border-radius:50%;overflow:hidden;background:#0007;border:calc(var(--u)*.5) solid #000}.kitA .pb img,.kitA .pb svg{width:100%;height:100%;object-fit:cover}
+.pinA{position:relative;display:block;width:calc(var(--u)*12);height:calc(var(--u)*12);border-radius:50%;background:var(--pr);border:calc(var(--u)*.5) solid #000;overflow:hidden;flex:none}.pinA.big{width:calc(var(--u)*30);height:calc(var(--u)*30)}
+.pinA .pf{position:absolute;inset:7%;border-radius:50%;overflow:hidden;background:#5fb2ff}.pinA .pf svg{width:100%;height:100%}.pinA b{position:absolute;right:0;bottom:-4%;font-size:calc(var(--u)*4.6);line-height:1}.pinA.big b{font-size:calc(var(--u)*11)}.pinA b.gg{font-size:calc(var(--u)*3.6);color:#ffe24a}.pinA.big b.gg{font-size:calc(var(--u)*8)}
+.sprA{position:relative;display:block;width:calc(var(--u)*30);height:calc(var(--u)*30)}.sprA>svg{position:absolute;inset:0;width:100%;height:100%}.sprA .pf{position:absolute;inset:18%}.sprA .pf svg{width:100%;height:100%}
+.icoA{display:block;width:calc(var(--u)*28);height:calc(var(--u)*28);border-radius:calc(var(--u)*2);border:calc(var(--u)*.7) solid #000;background:var(--rc);overflow:hidden;box-shadow:inset 0 0 0 calc(var(--u)*.6) #fff8}.icoA img,.icoA svg{width:100%;height:100%;object-fit:cover}
+.dSum{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*3);background:#0006;cursor:default}
+.dSum.on{display:flex}.sumT{font-size:calc(var(--u)*6);font-style:italic}
+.sumG{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(var(--u)*1.6);max-width:min(96vw,calc(var(--u)*130))}
+.sT{width:calc(var(--u)*24);height:calc(var(--u)*26);background:#fff2;border:calc(var(--u)*.5) solid #000;border-radius:calc(var(--u)*1.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*.6);animation:sdSpl .5s cubic-bezier(.2,1.6,.4,1) both}
+.sT .sA{width:calc(var(--u)*16);height:calc(var(--u)*16);display:grid;place-items:center}.sT .sA .one{width:100%;height:100%}
+.sT .sA .pinA,.sT .sA .sprA,.sT .sA .icoA,.sT .sA .kitA{width:calc(var(--u)*15);height:calc(var(--u)*15)}.sT .sA .pinA b{font-size:calc(var(--u)*5)}.sT b{font-size:calc(var(--u)*3)}
+.sumB{display:flex;gap:calc(var(--u)*3)}.sumB .go{font-size:calc(var(--u)*3.4)}
+/* ===== 新キャラ入手（後ろは3Dのロビーをレア度の色の背景にして使う） ===== */
+#unlockScr{z-index:10;padding:0;overflow:hidden;background:none;--rc:#ffc21a}
+body.unl .scr.on:not(#unlockScr){visibility:hidden!important}
+.unR{position:absolute;left:47%;right:calc(var(--sr) + var(--u)*4);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*1.2)}
+.unNew{font-size:calc(var(--u)*7.6);font-style:italic;color:#ffe24a;transform:rotate(-4deg) skewX(-8deg);transform-origin:left;animation:unIn .55s .25s cubic-bezier(.2,1.6,.4,1) both}
+.unBan{position:relative;background:#0b0b12;background:linear-gradient(100deg,color-mix(in srgb,var(--rc) 55%,#000),color-mix(in srgb,var(--rc) 30%,#000));padding:calc(var(--u)*.8) calc(var(--u)*7) calc(var(--u)*.8) calc(var(--u)*2.4);transform:skewX(-10deg);box-shadow:calc(var(--u)*1) calc(var(--u)*1) 0 #0006;animation:unIn .55s .38s cubic-bezier(.2,1.6,.4,1) both;max-width:100%}
+.unBan::after{content:'';position:absolute;right:calc(var(--u)*1.4);top:18%;bottom:18%;width:calc(var(--u)*2.4);background:var(--rc);box-shadow:calc(var(--u)*-1.5) 0 0 var(--rc)}
+.unBan b{display:block;font-size:calc(var(--u)*8.6);transform:skewX(10deg);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unRole{font-size:calc(var(--u)*3.4);margin-left:calc(var(--u)*2);animation:unIn .5s .48s both}
+.unCnt{font-size:calc(var(--u)*3.2);margin-left:calc(var(--u)*2);animation:unIn .5s .55s both}.unCnt span{color:var(--rc)}
+.unDesc{max-width:calc(var(--u)*80);font-size:calc(var(--u)*2.9);font-weight:800;line-height:1.45;color:#fff;text-shadow:0 0 calc(var(--u)*.5) #000,0 calc(var(--u)*.3) 0 #000;margin:calc(var(--u)*1) 0 0 calc(var(--u)*2);animation:unIn .5s .62s both}
+.unDesc b{color:#ffe24a}
+.unBtns{display:flex;gap:calc(var(--u)*2.4);margin:calc(var(--u)*2) 0 0 calc(var(--u)*2);animation:unIn .5s .72s both}.unBtns .go{min-width:calc(var(--u)*22);font-size:calc(var(--u)*3.8)}
+@keyframes unIn{0%{transform:translateX(calc(var(--u)*40));opacity:0}100%{opacity:1}}
+.unPic{position:absolute;left:8%;top:50%;width:min(36%,calc(var(--u)*56));transform:translateY(-50%);display:none}#unlockScr.gen .unPic{display:block;animation:sdSpl .6s cubic-bezier(.2,1.6,.4,1) both}.unPic svg,.unPic img{width:100%;height:auto;display:block}
+body.port .dStage{--sz:calc(var(--u)*78)}body.port .dStage.n2{--sz:calc(var(--u)*44)}body.port .dStage.n4{--sz:calc(var(--u)*42);max-width:calc(var(--u)*92)}body.port .dStage.n8{--sz:calc(var(--u)*38);max-width:calc(var(--u)*84)}
+body.port .rwArt{width:calc(var(--u)*70);height:calc(var(--u)*62)}body.port .pinA.big,body.port .sprA,body.port .icoA{width:calc(var(--u)*50);height:calc(var(--u)*50)}
+body.port .unR{left:5%;right:5%;top:auto;bottom:calc(var(--sb) + var(--u)*5);transform:none;align-items:center;text-align:center}
+body.port .unRole,body.port .unCnt,body.port .unDesc,body.port .unBtns{margin-left:0}body.port .unNew{transform-origin:center}
+body.port .unPic{left:50%;top:6%;width:60%;transform:translateX(-50%)}
+.crPop{display:flex;gap:calc(var(--u)*3);align-items:center}.crPop .art{width:calc(var(--u)*26);height:calc(var(--u)*26);border-radius:calc(var(--u)*1.4);background:var(--rc);border:calc(var(--u)*.5) solid #000;overflow:hidden;flex:none}.crPop .art img,.crPop .art svg{width:100%;height:100%;object-fit:cover}
+.crPop .rar{font-size:calc(var(--u)*3.4);color:var(--rc)}.crPop p{margin:calc(var(--u)*1) 0;font-size:calc(var(--u)*2.6);font-weight:800}.crPop .have{display:flex;align-items:center;gap:calc(var(--u)*.8)}.crPop .have i,.crPop .go i{width:calc(var(--u)*4);height:calc(var(--u)*4);display:inline-block;vertical-align:middle}
+.crPop .go{display:inline-flex;align-items:center;gap:calc(var(--u)*1);font-size:calc(var(--u)*3.2)}
+.skC .skR{position:absolute;right:calc(var(--u)*.6);top:calc(var(--u)*.6);font-style:normal;font-size:calc(var(--u)*2);font-weight:900;color:#fff;background:var(--rc);border:calc(var(--u)*.3) solid #000;border-radius:calc(var(--u)*.8);padding:0 calc(var(--u)*.8)}
+.skHave{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*.8);font-size:calc(var(--u)*2.4);font-weight:800;margin:calc(var(--u)*1.6) 0 0}.skHave i{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6);display:inline-block}
+.pfCol h4{margin-bottom:calc(var(--u)*1.2)}.pfC{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*1.2)}.pfC span{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*.3)}.pfC i{width:calc(var(--u)*5);height:calc(var(--u)*5)}.pfC small{font-size:calc(var(--u)*2.1);color:#e8d0ff}.pfC b{font-size:calc(var(--u)*3.2)}
+.hDrop.c{bottom:calc(var(--sb) + var(--u)*27.4)}.hDrop.c{background:linear-gradient(#3a2a7a,#1f1446)}
 .card.locked{filter:grayscale(1) brightness(.6)}.card .lk{position:absolute;left:0;right:0;top:34px;text-align:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000}
 .skins{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.skins button{padding:5px 9px;border-radius:9px;background:#ffffff1f;font-size:11.5px;font-weight:800}.skins button.on{background:var(--gold);color:#2b1c00}.skins button.no{opacity:.6}
 #boot{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#3a2466 0,#0b0f1e 70%);overflow:hidden}
@@ -209,6 +276,7 @@ body.spec #rot canvas{filter:saturate(.6) brightness(.9)}
 #pinTray small{font-size:11px;font-weight:900}
 .pin{position:absolute;left:0;top:0;pointer-events:none;z-index:2}
 .pinB{position:absolute;left:0;bottom:44px;transform:translateX(-50%);animation:pinBob 1.1s ease-in-out .55s infinite}
+.pinA.fill{width:100%;height:100%;border-width:4px}.pinA.fill b{font-size:26px}.pinA.fill b.gg{font-size:20px}#pinTray .pinA.fill{width:66px;height:66px}
 .pinI{width:62px;height:62px;animation:pinIn .6s cubic-bezier(.25,1.7,.45,1) both;transform-origin:50% 90%}.pinI svg{width:100%;height:100%;display:block}
 @keyframes pinIn{0%{transform:scale(0) rotate(-25deg) translateY(20px)}45%{transform:scale(1.28) rotate(9deg) translateY(-6px)}65%{transform:scale(.88) rotate(-5deg)}82%{transform:scale(1.07) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
 @keyframes pinBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
@@ -362,7 +430,7 @@ i.pwc{width:2.1em;height:2.1em;font-size:.8em;vertical-align:-.45em}
 .mNew.on{display:flex}
 .hGo{width:calc(var(--u)*42);height:calc(var(--u)*13.4);padding:0;font-size:calc(var(--u)*6.6);font-style:italic;letter-spacing:.12em;border-radius:calc(var(--u)*1.2) calc(var(--u)*1.2) calc(var(--u)*1.2) calc(var(--u)*1.2)}
 .hGo .tx{-webkit-text-stroke:calc(var(--u)*.5) #000;text-shadow:0 calc(var(--u)*.6) 0 #000}
-@media (max-aspect-ratio:13/10){.hSlot,.hHang{display:none}.hMode{width:calc(var(--u)*44)}.hGo{width:calc(var(--u)*30)}.hCol.R{top:auto;bottom:calc(var(--sb) + var(--u)*28)}.hDrop{bottom:calc(var(--sb) + var(--u)*20)}}
+@media (max-aspect-ratio:13/10){.hSlot,.hHang{display:none}.hMode{width:calc(var(--u)*44)}.hGo{width:calc(var(--u)*30)}.hCol.R{top:auto;bottom:calc(var(--sb) + var(--u)*28)}.hDrop{bottom:calc(var(--sb) + var(--u)*20)}.hDrop.c{bottom:calc(var(--sb) + var(--u)*28)}}
 /* ================= 共通の画面（上の帯・戻る・ホーム） ================= */
 .scr.bs{padding:0;overflow:hidden;background:#1d5fd8;z-index:6}
 .scr.bs.blue{background:radial-gradient(ellipse at 50% 0,#2f7df0 0,#1a56c8 60%,#13409c 100%)}
@@ -470,7 +538,7 @@ i.pwc{width:2.1em;height:2.1em;font-size:.8em;vertical-align:-.45em}
 .skC .art{position:absolute;inset:0 0 calc(var(--u)*6) 0;display:grid;place-items:end center}.skC .art svg,.skC .art img{height:96%}
 .skC b{position:absolute;left:0;right:0;bottom:calc(var(--u)*6.2);font-size:calc(var(--u)*2.6);text-align:center}
 .skC .pr{position:absolute;left:0;right:0;bottom:0;height:calc(var(--u)*6);background:#1a1d28;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*.6);font-size:calc(var(--u)*2.8)}
-.skC .pr i{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6)}.skC.on{outline:calc(var(--u)*.6) solid #3fdc5a}.skC .ck{position:absolute;left:calc(var(--u)*.6);top:calc(var(--u)*.6);width:calc(var(--u)*5);height:calc(var(--u)*5)}
+.skC .pr i{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6)}.skC .pr b{position:static;font-size:calc(var(--u)*2.8)}.skC .pr i+b{margin-right:calc(var(--u)*.8)}.skC.on{outline:calc(var(--u)*.6) solid #3fdc5a}.skC .ck{position:absolute;left:calc(var(--u)*.6);top:calc(var(--u)*.6);width:calc(var(--u)*5);height:calc(var(--u)*5)}
 /* ================= モード選択 ================= */
 .mGrid{position:absolute;left:0;right:0;top:calc(var(--u)*12);bottom:calc(var(--u)*10);overflow-x:auto;overflow-y:hidden;display:grid;grid-auto-flow:column;grid-template-rows:1fr 1fr;grid-auto-columns:calc(var(--u)*52);gap:calc(var(--u)*2.6) calc(var(--u)*2.4);padding:calc(var(--u)*1.6) calc(var(--sr) + var(--u)*3) calc(var(--u)*1.6) calc(var(--sl) + var(--u)*3)}
 .mCard{position:relative;display:flex;flex-direction:column;text-align:left;border:calc(var(--u)*.45) solid #0b0910;border-radius:calc(var(--u)*1);overflow:hidden;background:#0b0c12;box-shadow:0 calc(var(--u)*.7) 0 #0009;transform:skewX(-3deg)}
@@ -681,7 +749,7 @@ body.port .hTopR{top:calc(var(--st) + var(--u)*16);flex-wrap:wrap;justify-conten
 body.port .hCol.L{top:calc(var(--st) + var(--u)*33)}body.port .hCol.R{top:calc(var(--st) + var(--u)*33)}
 body.port .hSlot,body.port .hHang{display:none}body.port .hMidTop{top:calc(var(--st) + var(--u)*26)}
 body.port .hBotR{flex-direction:column;align-items:stretch}body.port .hMode{width:calc(var(--u)*62)}body.port .hGo{width:calc(var(--u)*62);height:calc(var(--u)*12)}
-body.port .hBotL{bottom:calc(var(--sb) + var(--u)*32)}body.port .hDrop{bottom:calc(var(--sb) + var(--u)*50)}
+body.port .hBotL{bottom:calc(var(--sb) + var(--u)*32)}body.port .hDrop{bottom:calc(var(--sb) + var(--u)*50)}body.port .hDrop.c{bottom:calc(var(--sb) + var(--u)*58)}
 body.port .dL{width:auto;right:calc(var(--u)*2);bottom:auto}body.port .dDesc{max-height:calc(var(--u)*22)}body.port .dBtns,body.port .dAct{position:fixed;left:calc(var(--u)*2);bottom:calc(var(--u)*3)}body.port .dBtns{bottom:calc(var(--u)*17)}
 body.port .dR{top:auto;bottom:calc(var(--u)*3);width:calc(var(--u)*48)}
 /* ================= 試合のHUD（本家の配置と見た目） ================= */
@@ -755,6 +823,7 @@ body.br #brSurv{display:block}
   <button class="bp hSide" id="charBtn"><i data-ic="brawlers"></i><b class="tx">キャラクター</b><em class="bdg" id="upN"></em></button>
  </div>
  <div class="hCol R"><button class="bp hSide" id="onBtn"><i data-ic="online"></i><b class="tx">オンライン</b><em class="bdg g" id="onN"></em></button></div>
+ <button class="bp hDrop c" id="cdropBtn" style="display:none"><i data-ic="chaos"></i><span class="tx" id="cdropSm">0</span></button>
  <button class="bp hDrop" id="dropBtn"><i data-ic="star"></i><span class="tx" id="dropSm">0</span></button>
  <div class="hBotL">
   <button class="bp hPass" id="passBtn"><span class="pTk"><i data-ic="pass"></i></span><span class="pXp"><small class="tx" id="passSm">Tier 0</small><span class="xpB"><i class="xpI">XP</i><s><u id="passXpB"></u></s><b class="tx" id="passXpT">0/300</b></span></span></button>
@@ -785,8 +854,8 @@ body.br #brSurv{display:block}
    <div class="dAct"><button class="go yel" id="dSel"><span class="tx">選択</span></button><button class="go blu" id="dTry"><span class="tx">試す</span></button></div>
   </div>
   <div class="dR" id="detail"></div>
-  <div class="dPop" id="dPop"></div>
  </div>
+ <div class="dPop" id="dPop"></div>
 </div>
 <div class="scr bs blue" id="modeScr">
  <div class="bsTop"><button class="bsBack" id="modeClose"><i data-ic="back"></i></button><h2 class="bsT tx" id="modeTitle">トロフィーゲームモード</h2><button class="bsHome" data-home><i data-ic="home"></i></button></div>
@@ -843,8 +912,14 @@ body.br #brSurv{display:block}
   </div>
  </div>
 </div>
-<div class="scr" id="dropScr"><div class="drays" id="dropRays"></div><div class="dwrap"><div id="dropRar" class="drar">レア</div><div id="dropStar" class="dstar"></div><div id="dropTap" class="dtap">タップ！</div><div id="dropCard" class="dcard"><div id="dropIcon" class="dicon"></div><b id="dropMsg"></b></div><button class="go" id="dropOk">OK</button></div><div id="dropFx"></div><div id="dropFlash"></div></div>
-<div class="scr dim" id="unlockScr"><div class="wrap" style="padding-top:8vh"><div id="unTitle" class="st2 tx" style="color:#ffd84d;font-size:34px">新しいキャラ！</div><div id="unPic" class="unpic"></div><div id="unSub" class="st2 tx"></div><button class="go yel" id="unOk"><span class="tx">やった！</span></button></div></div>
+<div class="scr" id="dropScr"><div class="dBg"></div><div class="dRays"></div><div class="dStreaks" id="dStreaks"></div><div class="dGlow"></div>
+ <div id="sdRar" class="sdRarL tx">レア</div><div id="dStage" class="dStage"></div><div id="dFloat" class="tx"></div>
+ <div id="dHint" class="dHint"><b class="tx" id="dHintT">タップ！</b><span class="dPips" id="dPips"></span></div>
+ <div id="dRew" class="dRew"><div class="rwSun"></div><div class="rwCnt tx" id="rwCnt"></div><div class="rwTitle tx" id="rwTitle"></div><div class="rwArt" id="rwArt"></div><div class="rwAmt tx" id="rwAmt"></div><div class="rwSub tx" id="rwSub"></div><div class="rwNote" id="rwNote"></div><div class="rwTap tx">タップして次へ</div></div>
+ <div id="dSum" class="dSum"><div class="sumT tx">獲得したもの</div><div class="sumG" id="sumG"></div><div class="sumB"><button class="go blu" id="sumNext"><span class="tx">次を開ける</span></button><button class="go yel" id="sumOk"><span class="tx">OK</span></button></div></div>
+ <div id="dFx"></div><div id="dFlash"></div></div>
+<div class="scr" id="unlockScr"><div class="unPic" id="unPic"></div><div class="unR"><div class="unNew tx" id="unNew">新キャラクター！</div><div class="unBan"><b class="tx" id="unName"></b></div><div class="unRole tx" id="unRole"></div><div class="unCnt tx" id="unCnt"></div><div class="unDesc" id="unDesc"></div>
+ <div class="unBtns"><button class="go grn" id="unOk"><span class="tx">OK</span></button><button class="go blu" id="unSel"><span class="tx">選択</span></button></div></div></div>
 <div class="scr" id="result"><div class="wrap">
  <div id="rTitle">勝利！</div><div id="rTeam"></div><div id="rSub" class="sub"></div>
  <div class="stats" id="rStats"></div><br>

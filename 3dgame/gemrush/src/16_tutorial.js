@@ -22,6 +22,6 @@ function tutStep(dt){const M2=G.M,u=G.me;if(M2.doneT>0){M2.doneT-=dt;if(M2.doneT
   const ok=M2.step===0?Math.hypot(u.x-M2.goal[0],u.z-M2.goal[1])<1.8:M2.step===1?M2.d&&M2.d.dead:M2.step===2?M2.d&&M2.d.dead&&(u.supUsed||0)>M2.sup0:M2.step===3?u.inBush:M2.step===4?u.gems>=3:false;
   if(M2.step===2&&M2.d&&!M2.d.dead&&u.sup<1&&(u.supUsed||0)<=M2.sup0)u.sup=1;
   if(ok){M2.doneT=1.1;big('OK！',.9,'#8fe39a');burst(u.x,1.5,u.z,20,[1,.9,.4],5,.6,.6,true)}}
-function tutFinish(){G.over=true;tutMarker(null);LSset('gr-tut','1');const first=!LS('gr-tutrw','');if(first){LSset('gr-tutrw','1');addCoins(200);LSset('gr-sd',+LS('gr-sd',0)+1)}
+function tutFinish(){G.over=true;tutMarker(null);LSset('gr-tut','1');const first=!LS('gr-tutrw','');if(first){LSset('gr-tutrw','1');addCoins(200);addDrop('starr')}
   big('チュートリアル完了！',2.2,'#ffd84d');$('tutText').textContent=first?'ごほうび：🪙200 とスタードロップ！ ホームで開けよう':'おつかれさま！';SFX.end(true);setTimeout(()=>{document.body.classList.remove('tut');clearMatch();showMenu()},2600)}
 
