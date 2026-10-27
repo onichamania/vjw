@@ -177,15 +177,20 @@ const EVENTS = {
     }
     GAME.take('k_bedroom', MAN.props.k_bedroom, () => EVENTS.libraryChase());
   },
-  // the first time you go into the library it walks across the far side of the room
+  // the first time you go into the library it walks across the middle of the room and away behind the shelves
+  // (it is already there as the screen comes back from black; you can't move, your eyes follow it)
   libraryGlimpse() {
-    const r = MAN.areas.library, [a, b] = r.oniGlimpse;
+    const r = MAN.areas.library, [a, ...rest] = r.oniGlimpse, at = r.glimpseAt;
     STORY.flags.glimpse = true; STORY.busy = true; PLAYER.frozen = true;
+    PLAYER.pos.set(at.x, FLOORS.F1, at.z); PLAYER.camY = FLOORS.F1 + 1.58; PLAYER.yaw = Math.atan2(at.x - a[0], at.z - a[1]); PLAYER.pitch = 0.05;   // a few steps in, facing it
     ONI.spawn(a[0], FLOORS.F1, a[1], -Math.PI / 2, 'script');
-    ONI.script = { i: 0, steps: [{ t: 'go', p: new THREE.Vector3(b[0], FLOORS.F1, b[1]), sp: 1.6 }, { t: 'gone' }], done: null };
-    ONI.script.steps[1].fn = () => { PLAYER.frozen = false; STORY.busy = false; GAME.later(0.5, () => GAME.say([['ひろし', '……今、何か……いなかったか……？']])); };
+    ONI.script = { i: 0, steps: [...rest.map(q => ({ t: 'go', p: new THREE.Vector3(q[0], FLOORS.F1, q[1]), sp: 2.8 })), { t: 'gone' }], done: null };
+    ONI.script.steps[rest.length].fn = () => { PLAYER.frozen = false; STORY.busy = false; GAME.later(0.5, () => GAME.say([['ひろし', '……今、何か……いなかったか……？']])); };
     const t0 = GAME.time;
-    animate(() => { if (!ONI.on || ONI.state !== 'script' || GAME.time - t0 > 9) return false; lookAtPoint(ONI.eye(), 0.05); return true; });
+    animate(() => {
+      if (!ONI.on || ONI.state !== 'script' || GAME.time - t0 > 16) { if (PLAYER.frozen && !ONI.on) PLAYER.frozen = false; return false; }
+      lookAtPoint(tmpV.copy(ONI.eye()).setY(ONI.eye().y - 0.4), 0.06); return true;
+    });
   },
   libraryChase() {
     const r = MAN.areas.library, [x, z] = r.oniSpawn;
@@ -255,7 +260,7 @@ const EVENTS = {
   },
   pianoShelf() {
     const dr = MAN.pianoDrawers; if (dr.at) return;
-    dr.at = 1; STORY.flags.pianoShelf = true; dr.slide(dr.g.position.x + 1.7, dr.g.position.z, 800);
+    dr.at = 1; STORY.flags.pianoShelf = true; dr.slide(dr.g.position.x + 2.1, dr.g.position.z, 800);
     GAME.later(0.9, () => GAME.say([['', '棚を動かした。'], ['ひろし', '……壁に金庫が埋めこまれている。']]));
   },
   piano() {
@@ -368,9 +373,9 @@ const EVENTS = {
     GAME.chapterEnd();
   },
 };
-function openFusuma(a, b) { [a, b].forEach((i, k) => { const p = MAN.fusuma[i], t0 = performance.now(), dx = (k === 0 ? -1 : 1) * 0.5; animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = p.userData.home.x + dx * u; return u < 1; }); }); SFX.slide && SFX.slide(MAN.fusuma[a].position.clone()); }
+function openFusuma(a, b) { [a, b].forEach((i, k) => { const p = MAN.fusuma[i], t0 = performance.now(), dx = (k === 0 ? -1 : 1) * 0.9; animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = p.userData.home.x + dx * u; return u < 1; }); }); SFX.slide && SFX.slide(MAN.fusuma[a].position.clone()); }
 function closeFusuma(a, b) { [a, b].forEach(i => { const p = MAN.fusuma[i], x0 = p.position.x, t0 = performance.now(); animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = lerp(x0, p.userData.home.x, u); return u < 1; }); }); }
-function showHiddenDoor(d, knob) { d.leaf.material = AOM.door; d.trims.visible = true; d.knobs.forEach(k => (k.visible = knob)); }
+function showHiddenDoor(d, knob) { d.leaf.material = AOM.door; d.trims.visible = true; d.panels.forEach(p => (p.visible = true)); d.knobs.forEach(k => (k.visible = knob)); if (MAN.greyCover) MAN.greyCover.visible = false; }
 SFX.slide = pos => { if (!AU.ok) return; AU.burst({ pos, dur: 0.35, a: 0.03, f: 1400, q: 0.6, vol: 0.25, rev: 0.25 }); AU.burst({ pos, t0: AU.t + 0.33, dur: 0.05, f: 500, q: 1, vol: 0.3 }); };
 
 /* =========================================================================
@@ -430,12 +435,14 @@ const UI = {
     GAME.modal = opts;
     if (document.pointerLockElement) document.exitPointerLock();
     m.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => UI.closeModal()));
+    m.onclick = e => { if (e.target === m) UI.closeModal(); };   // a tap on the dark around it closes it
     return m;
   },
   // the cleaned keys: the numbers in red
   pianoKeys() {
     const dg = STORY.flags.code.piano, keys = Array.from({ length: 14 }, (_, i) => `<div class="pk">${i >= 5 && i < 9 ? `<b>${dg[i - 5]}</b>` : ''}</div>`).join('');
-    UI.openModal(`<div class="pkeys"><button class="close" data-close>×</button><div class="pkrow">${keys}</div><div class="msgline">ふきとった鍵盤に、赤い数字が書かれている。</div></div>`);
+    const m = UI.openModal(`<div class="pkeys"><button class="close" data-close>×</button><div class="pkrow">${keys}</div><div class="msgline">ふきとった鍵盤に、赤い数字が書かれている。</div><div class="btns"><button class="mbtn primary" data-close>閉じる</button></div></div>`);
+    m.querySelector('.pkrow').addEventListener('click', () => UI.closeModal());   // it is only something to look at: a tap on the keys puts it away too
   },
   // the safe: mounted upside down; four dials
   safe() {
@@ -443,7 +450,7 @@ const UI = {
     let fails = 0;
     const m = UI.openModal(`<div class="safe"><button class="close" data-close>×</button><div class="msgline">壁に埋めこまれた金庫。……なぜか、さかさまに取りつけられている。</div>
       <div class="dials">${v.map((_, i) => `<div class="dial"><button data-u="${i}">▲</button><div class="dd" id="sd${i}">0</div><button data-d="${i}">▼</button></div>`).join('')}</div>
-      <div class="btns"><button class="mbtn primary" id="sfOpen">開ける</button></div><div class="msgline" id="sfMsg"></div></div>`);
+      <div class="btns"><button class="mbtn primary" id="sfOpen">開ける</button><button class="mbtn" data-close>やめる</button></div><div class="msgline" id="sfMsg"></div></div>`);
     const draw = () => v.forEach((d, i) => ($('sd' + i).textContent = d));
     m.querySelectorAll('[data-u]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.u; v[i] = (v[i] + 1) % 10; draw(); SFX.click && SFX.click(); }));
     m.querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.d; v[i] = (v[i] + 9) % 10; draw(); SFX.click && SFX.click(); }));
@@ -514,7 +521,7 @@ function applyState() {
   if (STORY.hasGot('soap')) MAN.props.soap.visible = false;
   if (STORY.hasGot('knob')) MAN.doors.attic.knobs.forEach(k => (k.visible = false));
   if (f.bedPushed) { MAN.leftBed.at = 1; MAN.leftBed.place(MAN.leftBed.g.position.x - T, MAN.leftBed.g.position.z); MAN.hole.visible = true; }
-  if (f.pianoShelf) { MAN.pianoDrawers.at = 1; MAN.pianoDrawers.place(MAN.pianoDrawers.g.position.x + 1.7, MAN.pianoDrawers.g.position.z); }
+  if (f.pianoShelf) { MAN.pianoDrawers.at = 1; MAN.pianoDrawers.place(MAN.pianoDrawers.g.position.x + 2.1, MAN.pianoDrawers.g.position.z); }
   if (f.pianoClean) MAN.pianoStain.visible = false;
   if (f.kidsChair) { MAN.kidsChair.at = 1; MAN.kidsChair.place(tm(13.5), tm(-13) + 1.1); }
   if (STORY.hasGot('oil')) MAN.props.oil.visible = false;
@@ -592,7 +599,7 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
   // the others are gone once you come back from the dining room
   if (r.id === 'kitchen') { CAST.hide('takuro'); CAST.hide('mika'); CAST.hide('takeshi'); f.friendsLeft = true; }
   if (r.id === 'foyer' && f.friendsLeft && !f.friendsGone && f.plateLook) { f.friendsGone = true; GAME.later(0.5, () => GAME.say([['ひろし', '……あれ？　みんなは？'], ['ひろし', 'どこへ行ったんだろう……。']], () => STORY.save())); }
-  if (r.id === 'library' && !f.glimpse && !quiet) GAME.later(0.4, () => EVENTS.libraryGlimpse());
+  if (r.id === 'library' && !f.glimpse && !quiet) EVENTS.libraryGlimpse();
   if (r.id === 'attic' && !f.takuro) EVENTS.takuroScene();
   if (r.id === 'kids') {
     if (!f.basementOpen) { const m = r.mikaAt, c = CAST.place('mika', m.x, FLOORS.F2, m.z, m.yaw); if (!c.m.userData.ia) { c.m.userData.ia = { dist: 2.5, prompt: () => 'みかに話しかける', use: () => EVENTS.mika() }; c.m.traverse(o => { if (o.isMesh) o.userData.iaRoot = c.m; }); r.interactables.push(c.m); } }
@@ -668,9 +675,11 @@ function update(dt) {
   LIGHTS.update(dt, GAME.time);
   GAME.updateTarget();
   $('fxChase').style.opacity = GAME.chaseFx ? 1 : 0;
+  $('fxHide').classList.toggle('dark', !!PLAYER.hidden && ONI.on);
   const dark = GAME.room && GAME.room.dark && MAN.candle && MAN.candle.state !== 'on';
   hemi.intensity = damp(hemi.intensity, dark ? 0.02 : 0.26, 3, dt); hemi.color.setHex(0xa4accc); hemi.groundColor.setHex(0x1a1410);
-  scene.fog.color.setHex(0x040406); scene.fog.density = 0.034;
+  scene.fog.color.setHex(0x040406); scene.fog.density = 0.026;
+  $('fxVeil').style.opacity = GAME.state === 'play' && !PLAYER.hidden ? veilDark(camera.position, PLAYER.pos.y).toFixed(3) : 0;   // walking into a black screen edge
   renderer.toneMappingExposure = BASE_EXPOSURE * SETTINGS.bright * (1 + POST.flash * 2.5);
   POST.flash = Math.max(0, POST.flash - dt * 2.2);
   if (gradePass) { const u = gradePass.uniforms; u.time.value = GAME.time; u.grain.value = 0.05; u.aberr.value = GAME.chaseFx ? 0.0025 : 0; u.desat.value = 0.1; u.warp.value = 0; }
@@ -719,4 +728,4 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
-window.__AO = { GAME, STORY, ONI, DIRECTOR, MAN, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, navPath, nearestNode, cellOf, stairPoint, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };
+window.__AO = { GAME, STORY, ONI, DIRECTOR, MAN, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };

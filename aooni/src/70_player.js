@@ -37,14 +37,16 @@ document.addEventListener('pointerlockerror', () => { if (!INPUT.noLock && GAME.
 canvas.addEventListener('mousedown', e => {
   if (GAME.state !== 'play' || IS_TOUCH) return;
   AU.resume();
-  if (GAME.modal) { if (GAME.modal.msg) UI.msgNext(); return; }
+  if (GAME.modal) { if (GAME.modal.msg) { if (INPUT.locked) UI.msgNext(); else INPUT.drag = { button: e.button, moved: 0, msg: true }; } return; }
   if (!INPUT.locked) { INPUT.drag = { button: e.button, moved: 0 }; requestLock(); return; }
   if (e.button === 0) GAME.interact();
   if (e.button === 2) GAME.toggleLighter();
 });
 addEventListener('mouseup', e => {
   const d = INPUT.drag; INPUT.drag = null;
-  if (!d || INPUT.locked || GAME.state !== 'play' || GAME.modal || d.moved > 6) return;
+  if (!d || INPUT.locked || GAME.state !== 'play' || d.moved > 6) return;
+  if (d.msg) { if (GAME.modal && GAME.modal.msg) UI.msgNext(); return; }   // a click reads on; a drag looked round
+  if (GAME.modal) return;
   if (d.button === 0 && !GAME.interact()) { const p = toStage(e.clientX, e.clientY); GAME.tapAt(p.x, p.y); }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -84,8 +86,7 @@ function setupTouch() {
   sz.addEventListener('touchmove', jm, { passive: false }); sz.addEventListener('touchend', je); sz.addEventListener('touchcancel', je);
   look.addEventListener('touchstart', e => {
     AU.resume();
-    if (GAME.modal && GAME.modal.msg) { UI.msgNext(); e.preventDefault(); return; }
-    const t = e.changedTouches[0], p = toStage(t.clientX, t.clientY); L.id = t.identifier; L.x = L.sx = p.x; L.y = L.sy = p.y; L.t = performance.now(); L.moved = 0;
+    const t = e.changedTouches[0], p = toStage(t.clientX, t.clientY); L.id = t.identifier; L.x = L.sx = p.x; L.y = L.sy = p.y; L.t = e.timeStamp; L.moved = 0;
     e.preventDefault();
   }, { passive: false });
   look.addEventListener('touchmove', e => {
@@ -98,7 +99,10 @@ function setupTouch() {
   const le = e => {
     for (const t of e.changedTouches) if (t.identifier === L.id) {
       L.id = null;
-      if (L.moved < 12 && performance.now() - L.t < 300) { const p = toStage(t.clientX, t.clientY); GAME.tapAt(p.x, p.y); }
+      if (L.moved < 12 && e.timeStamp - L.t < 350) {   // when the touches happened, not when a busy frame got to them
+        if (GAME.modal && GAME.modal.msg) UI.msgNext();   // in a conversation a drag looks round, a tap reads on
+        else { const p = toStage(t.clientX, t.clientY); GAME.tapAt(p.x, p.y); }
+      }
     }
   };
   look.addEventListener('touchend', le); look.addEventListener('touchcancel', le);
@@ -111,7 +115,7 @@ function setupTouch() {
 }
 
 /* ---------- player ---------- */
-const WALK = 3.0, RUN = 4.8;
+const WALK = 3.4, RUN = 5.6;
 const PLAYER = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0, pitch: 0, hidden: null, alive: true, bob: 0, stepAcc: 0, radius: 0.3, height: 1.65,
   camY: 1.58, speed: 0, frozen: false, hideLook: { y: 0, p: 0 }, running: false,
@@ -129,8 +133,9 @@ const PLAYER = {
       this.speed = 0; this.vel.set(0, 0, 0);
       return;
     }
+    const talking = GAME.modal && GAME.modal.msg;
+    if (this.alive && !this.frozen && !GAME.cine && !GAME.busy && (!GAME.modal || talking)) { this.yaw -= lookX * sens; this.pitch = clamp(this.pitch - lookY * sens, -1.45, 1.45); }
     if (!this.alive || this.frozen || GAME.modal || GAME.cine || GAME.busy) { this.speed = 0; this.vel.set(0, 0, 0); return; }
-    this.yaw -= lookX * sens; this.pitch = clamp(this.pitch - lookY * sens, -1.45, 1.45);
     let ix = 0, iz = 0;
     if (INPUT.keys.f) iz -= 1; if (INPUT.keys.b) iz += 1; if (INPUT.keys.l) ix -= 1; if (INPUT.keys.r) ix += 1;
     if (INPUT.joy.id !== null) { ix += INPUT.joy.x; iz += INPUT.joy.y; }
@@ -353,23 +358,23 @@ GAME.fade = function (sec, mid, done) {
     return false;
   });
 };
-// stairs and the hole: walk far enough along and you are on the other floor
+// stairs and the hole: walk into the dark at the end of a flight and you come out of the dark end of the
+// flight it leads to, still walking the same way (the black hides the jump, as a screen change does)
 GAME.checkMoves = function () {
   if (GAME.busy || !PLAYER.alive || PLAYER.hidden) return;
   const p = PLAYER.pos;
   for (const s of Object.values(MAN.stairs)) {
     if (!onStair(s, p)) continue;
-    if (GAME.stairLock === s) { if (stairS(s, p) < 0.45) GAME.stairLock = null; continue; }
-    if (stairS(s, p) > 0.62) {
-      const t = MAN.stairs[s.to];
-      GAME.busy = 1; SFX.step('wood', 0.3);
-      GAME.fade(0.25, () => {
-        const a = stairPoint(t, 0.5); PLAYER.pos.copy(a); PLAYER.camY = a.y + 1.58;
-        PLAYER.yaw = t.dir === 'N' ? 0 : Math.PI;  // facing back the way the flight came (toward its entry)
-        PLAYER.yaw += Math.PI; PLAYER.pitch = t.rise > 0 ? -0.25 : 0.15; PLAYER.vel.set(0, 0, 0);
-        GAME.stairLock = t; GAME.room = t.room; GAME.onEnterRoom(t.room, s);
-        ONI.onPlayerMoved(s, t);
-      }, () => { GAME.busy = 0; });
+    const left = (1 - stairS(s, p)) * s.len;   // metres to its dark end
+    if (GAME.stairLock === s) { if (left > 1.7) GAME.stairLock = null; continue; }
+    if (left < 0.62) {
+      const t = MAN.stairs[s.to], a = stairPoint(t, 1 - 0.95 / t.len);
+      const turn = (t.dir === 'S' ? 0 : Math.PI) - (s.dir === 'N' ? 0 : Math.PI);
+      PLAYER.pos.copy(a); PLAYER.camY = a.y + 1.58; PLAYER.yaw += turn;
+      if (turn) PLAYER.vel.applyAxisAngle(UP, turn);
+      SFX.step('wood', 0.3);
+      GAME.stairLock = t; GAME.room = t.room; GAME.onEnterRoom(t.room, s);
+      ONI.onPlayerMoved(s, t);
       return;
     }
   }
@@ -416,7 +421,7 @@ GAME.enterHide = function (h) {
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z); PLAYER.vel.set(0, 0, 0);
   GAME.lighterOn = false;
-  const fx = $('fxHide'); fx.className = 'fx closet';
+  const fx = $('fxHide'); fx.className = 'fx closet' + (ONI.on ? ' dark' : '');
   setTimeout(() => { if (PLAYER.hidden === h) fx.style.opacity = 1; }, 250);
   SFX.closet(h.cam, true); animateHideDoors(h);
   setTimeout(() => { if (PLAYER.hidden === h) h.doors.forEach(d => (d.visible = false)); }, 420);

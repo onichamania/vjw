@@ -77,7 +77,13 @@ function makeOniModel() {
   return { root, hips, torso, head, eyes, mouth, upLip, loLip, inner, arms, legs, teeth: mouth.children.slice(5) };
 }
 
-const ESCAPE_T = 10;   // seconds out of its sight before it gives up (the original's chase timer)
+// in a room with a closet: time to run from the door to it, and two seconds more, before it comes in after you
+function hideGrace(door) {
+  let best = Infinity;
+  for (const h of MAN.hides) if (door.area.joined.has(h.room)) best = Math.min(best, Math.hypot(h.exitP.x - door.front.x, h.exitP.z - door.front.z) * 1.15 / RUN);
+  return best === Infinity ? 0 : best + 2;
+}
+const ESCAPE_T = 14;   // seconds out of its sight before it gives up (the original's chase timer, longer for the bigger rooms)
 // iron bars between two points (it can see through them, but not reach)
 function barsBetween(a, b) {
   for (const c of WORLD.colliders(a, a.distanceTo(b) + 1)) if (c.tag === 'bars' && c.on && segBox(a.x, a.z, b.x, b.z, c.x0, c.z0, c.x1, c.z1)) return true;
@@ -121,7 +127,7 @@ const ONI = {
   canSee(cone = false) {
     if (!PLAYER.alive || PLAYER.hidden || this.state === 'transit' || !this.sameSpace()) return false;
     const p = PLAYER.pos, dx = p.x - this.pos.x, dz = p.z - this.pos.z, d = Math.hypot(dx, dz);
-    if (d > 30) return false;
+    if (d > 42) return false;
     if (cone && d > 1.5 && Math.abs(angDiff(this.yaw, Math.atan2(dx, dz))) > 1.3) return false;
     return !WORLD.blocked(this.eye().clone(), tmpV2.set(p.x, p.y + 1.5, p.z));
   },
@@ -199,11 +205,11 @@ const ONI = {
       animateDoor(d, 1.1, 600); SFX.door(d.center, 0.9);
       const playerThere = GAME.room === p.area;
       this.show(false); this.state = 'transit';
-      this.transit = { t: playerThere ? rng.range(1.6, 2.6) : 1.2, fn: () => { this.enterVia(p, 0, was, true); this.path = null; } };
+      this.transit = { t: playerThere ? Math.max(rng.range(1.6, 2.6), hideGrace(p)) : 1.2, fn: () => { this.enterVia(p, 0, was, true); this.path = null; } };
     } else {
       const s = MAN.stairs[v.stair.to];
       this.show(false); this.state = 'transit';
-      this.transit = { t: 1.6, fn: () => { const a = stairPoint(s, 0.55); this.spawn(a.x, a.y, a.z, s.dir === 'N' ? Math.PI : 0, was, true); SFX.oniStep(a, 0.9); } };
+      this.transit = { t: 1.6, fn: () => { const a = stairPoint(s, 1 - 0.9 / s.len); this.spawn(a.x, a.y, a.z, s.dir === 'N' ? 0 : Math.PI, was, true); SFX.oniStep(a, 0.9); } };   // out of the dark end of the flight
     }
     this.path = null;
   },
@@ -232,7 +238,7 @@ const ONI = {
       case 'chase': {
         this.chaseT += dt;
         if (!seen) this.lostT += dt;
-        sp = this.chaseT < 0.8 ? 3.2 : 4.3;
+        sp = this.chaseT < 0.8 ? RUN * 0.7 : RUN * 0.95;   // a little slower than you running
         if (this.sawHide) {
           const h = this.sawHide;
           if (P.hidden !== h) { this.sawHide = null; break; }
@@ -249,14 +255,14 @@ const ONI = {
       case 'search': {   // you hid where it could not see: it comes into the room, looks, peeks at a closet, goes
         this.lostT += dt;
         const h = this.inspect;
-        if (this.sub === 0) { sp = 3.0; if (this.followTo(h.room.spawnPt || nodePos(nearestNode(h.exitP), new THREE.Vector3()), sp, dt) || this.sameSpaceAs(h.exitP)) { this.sub = 1; this.wait = 0; } if (this.lostT > 30) this.toLeave(); }
+        if (this.sub === 0) { sp = 3.4; if (this.followTo(h.room.spawnPt || nodePos(nearestNode(h.exitP), new THREE.Vector3()), sp, dt) || this.sameSpaceAs(h.exitP)) { this.sub = 1; this.wait = 0; } if (this.lostT > 30) this.toLeave(); }
         else if (this.sub === 1) { this.wait += dt; this.yaw += Math.sin(this.wait * 2) * dt * 1.5; if (this.wait > 2.2) { this.sub = 2; this.wait = 0; } }
-        else if (this.sub === 2) { sp = 1.8; if (this.followTo(this.peekSpot(h), sp, dt)) { this.sub = 3; this.wait = 0; } this.wait += dt; if (this.wait > 12) this.toLeave(); }
+        else if (this.sub === 2) { sp = 2.0; if (this.followTo(this.peekSpot(h), sp, dt)) { this.sub = 3; this.wait = 0; } this.wait += dt; if (this.wait > 12) this.toLeave(); }
         else { this.wait += dt; this.yaw += clamp(angDiff(this.yaw, h.yaw), -3 * dt, 3 * dt); this.bendT = this.wait < 3.6 ? 1 : 0; this.alignPeek(h, dt); if (this.wait > 4.6) this.toLeave(); }
         break;
       }
       case 'leave': {
-        sp = 2.6; this.bendT = 0; this.wait += dt;
+        sp = 3.0; this.bendT = 0; this.wait += dt;
         if (!this.goal) this.goal = this.exitDoor();
         if (!this.goal) { this.despawn(); return; }
         if (this.followTo(this.goal.front, sp, dt) || this.wait > 20) {
@@ -388,7 +394,7 @@ const DIRECTOR = {
     if (!this.enabled || ONI.on || STORY.busy || this.cool > 0 || !from || !from.to || !to || !to.front) return;
     if (rng.next() > 0.22) return;
     this.cool = 999;
-    GAME.later(rng.range(2.5, 4.5), () => { if (!ONI.on && PLAYER.alive && GAME.room === to.area && !STORY.busy) { SFX.oniStep(to.front, 0.8); ONI.enterVia(to, 1.0); } else this.cool = 30; });
+    GAME.later(Math.max(rng.range(2.5, 4.5), hideGrace(to) - 1.0), () => { if (!ONI.on && PLAYER.alive && GAME.room === to.area && !STORY.busy) { SFX.oniStep(to.front, 0.8); ONI.enterVia(to, 1.0); } else this.cool = 30; });
   },
 };
 

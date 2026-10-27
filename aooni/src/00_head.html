@@ -29,8 +29,10 @@
   #fxHide { opacity:0; transition:opacity .35s; }
   #fxHide.closet { background:
       linear-gradient(90deg, #000 0%, #000 calc(50% - 12vw), rgba(0,0,0,.55) calc(50% - 7vw), rgba(0,0,0,0) calc(50% - 3vw), rgba(0,0,0,0) calc(50% + 3vw), rgba(0,0,0,.55) calc(50% + 7vw), #000 calc(50% + 12vw), #000 100%); }
+  #fxHide.closet.dark { background:#000; }   /* with it out there, you can't see a thing */
   #fxHide.bed { background:linear-gradient(180deg, #000 0%, #000 22%, rgba(0,0,0,.5) 34%, rgba(0,0,0,0) 44%, rgba(0,0,0,0) 86%, rgba(0,0,0,.7) 94%, #000 100%); }
   #fxBlack { background:#000; opacity:0; transition:opacity .6s; z-index:3; }
+  #fxVeil { background:#000; opacity:0; z-index:3; }
   #fxWhite { background:#fff; opacity:0; transition:opacity 1.6s; z-index:3; }
 
   /* ---------- HUD ---------- */
@@ -131,14 +133,14 @@
   /* ---------- modal: the safe, the piano keys ---------- */
   #modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:6; overflow-y:auto; touch-action:pan-y; }
   #modal > * { margin:auto; flex-shrink:0; }
-  .close { position:absolute; right:10px; top:6px; background:none; border:0; font-size:26px; cursor:pointer; color:inherit; }
+  .close { position:absolute; right:6px; top:4px; z-index:5; width:40px; height:40px; background:rgba(0,0,0,.55); border:1px solid #555; border-radius:50%; font-size:22px; line-height:1; cursor:pointer; color:#eee; }
   .msgline { font-size:14px; color:#cfd3e0; margin:8px 0; line-height:1.6; }
-  .safe { background:#1a1b1e; border:3px solid #55585e; border-radius:12px; padding:20px 22px; width:min(460px,94vw); position:relative; color:#ddd; text-align:center; }
+  .safe { background:#1a1b1e; border:3px solid #55585e; border-radius:12px; padding:46px 22px 20px; width:min(460px,94vw); position:relative; color:#ddd; text-align:center; }
   .dials { display:flex; gap:10px; justify-content:center; margin:14px 0; transform:rotate(180deg); background:#0a0a0a; padding:12px; border-radius:8px; border:2px solid #444; }
   .dial { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .dial button { width:52px; height:34px; background:#2c2e33; border:1px solid #666; color:#ddd; border-radius:6px; font-size:16px; cursor:pointer; }
   .dial .dd { width:52px; height:64px; display:grid; place-items:center; background:#050505; color:#f2f2f2; font:700 44px/1 "Courier New",monospace; border-radius:4px; letter-spacing:0; }
-  .pkeys { background:#101010; border:2px solid #333; border-radius:12px; padding:18px 16px; width:min(640px,96vw); position:relative; color:#ddd; text-align:center; }
+  .pkeys { background:#101010; border:2px solid #333; border-radius:12px; padding:50px 16px 16px; width:min(640px,96vw); position:relative; color:#ddd; text-align:center; }
   .pkrow { display:flex; height:min(190px,32vh); }
   .pk { flex:1; background:linear-gradient(#fff,#e6e6e6); border:1px solid #333; border-radius:0 0 6px 6px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:16px; position:relative; }
   .pk:nth-child(7n+1)::after, .pk:nth-child(7n+2)::after, .pk:nth-child(7n+4)::after, .pk:nth-child(7n+5)::after, .pk:nth-child(7n+6)::after { content:""; position:absolute; right:-28%; top:0; width:56%; height:58%; background:#111; z-index:1; border-radius:0 0 3px 3px; }
@@ -158,6 +160,7 @@
 <div id="fxVignette" class="fx"></div>
 <div id="fxChase" class="fx"></div>
 <div id="fxHide" class="fx"></div>
+<div id="fxVeil" class="fx"></div>
 <div id="fxBlack" class="fx"></div>
 <div id="fxWhite" class="fx"></div>
 
@@ -227,10 +230,11 @@
 <div id="how" class="screen hidden" style="background:rgba(0,0,0,.9)">
   <div class="panel">
     <h2>遊び方</h2>
-    <p>町はずれの洋館に入ったひろしたち。玄関の扉は開かなくなり、仲間ともはぐれてしまった。屋敷を調べて謎を解き、先へ進もう。（原作 ver6.23 の本館を、マップどおりの広さで3Dにしています）</p>
+    <p>町はずれの洋館に入ったひろしたち。玄関の扉は開かなくなり、仲間ともはぐれてしまった。屋敷を調べて謎を解き、先へ進もう。（原作 ver6.23 の本館を、マップどおりの間取りで3Dにしています）</p>
     <ul>
       <li><b>PC</b>：クリックで視点固定 / WASD 移動 / Shift 走る / マウス 視点 / E・クリック 調べる・扉・隠れる / F・右クリック ライター / Esc 一時停止</li>
       <li><b>スマホ</b>：左側ドラッグで移動、右側ドラッグで視点、手のボタンで調べる、走るボタンで走る、炎のボタンでライター。物を直接タップしても調べられます。</li>
+      <li>廊下の先や階段の先が<b>真っ黒</b>になっているところは、原作の画面の切れ目。そのまま黒の中へ進めば、次の場所に出られる。</li>
       <li>屋敷には<b>青い化け物</b>がいる。見つかったら全力で逃げろ。扉を抜けても追ってくる。</li>
       <li>部屋を移れば、追ってくるまでに少し時間がかせげる。しばらく見つからずにいれば、あきらめていなくなる。</li>
       <li><b>クローゼット</b>に隠れればやり過ごせる。ただし、同じ部屋にいるときに隠れると見つかってしまう。</li>

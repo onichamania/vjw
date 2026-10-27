@@ -1,16 +1,17 @@
 
 /* =========================================================================
-   The main building (本館) of Ao Oni ver6.23, rebuilt tile for tile. Every room keeps the size it has on
-   the original map: one tile is 1.1 m, the room one character takes up, so a 3-tile corridor is three
-   people wide. Rooms that join at the screen edge in the original are joined here too; doors and stairs
-   take you to the other side the way the original's map changes do.
+   The main building (本館) of Ao Oni ver6.23, rebuilt tile for tile. Every room keeps its shape on the
+   original map, drawn large: one tile is 1.7 m, so a 3-tile corridor is about five metres across.
+   Where the original changes screens at an edge, a black wall stands across the way: you can't see the
+   next part of the house until you walk into the dark. Doors and stairs take you to the other side the
+   way the original's map changes do.
    Tile coordinates: x east, z south; each floor sits at its own height.
    ========================================================================= */
-const T = 1.1, WALL_H = 3.6, DR_H = 2.45, WT = 0.14;
+const T = 1.7, WALL_H = 4.2, DR_H = 2.7, DW = 1.45, WT = 0.16;   // DW: the width of a doorway
 const FLOORS = { F1: 0, F2: 40, F3: 80 };
 const cx = x => (x + 0.5) * T;             // centre of tile x (or z)
 const tm = v => v * T;                      // tiles -> metres
-const MAN = { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), nodes: [] };
+const MAN = { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), nodes: [], veils: [] };
 const gkey = (fl, x, z) => fl + ':' + x + ',' + z;
 
 /* ---------- materials of this house ---------- */
@@ -37,9 +38,11 @@ function aoMaterials() {
   AOM.white = std({ color: 0xe9e7e1, roughness: 0.45 });
   AOM.grey = std({ color: 0x8d8f93, roughness: 0.75 });
   AOM.teal = std({ color: 0x6f9c90, roughness: 0.5 });
-  AOM.door = std({ color: 0x3a2214, roughness: 0.6 });
+  AOM.door = std({ color: 0x5e3520, roughness: 0.55 });
+  AOM.doorPanel = std({ color: 0x4c2a18, roughness: 0.6 });
   AOM.rug = std({ ...genNoiseSurface(S / 2, 0xc9bb98, 0.06, 10, 0.3), roughness: 1 }, 2);
   AOM.knob = std({ color: 0xd8b84a, metalness: 0.9, roughness: 0.3, envMap: ENV, envMapIntensity: 0.9 });
+  AOM.veil = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, fog: false });
   AOM.ready = true;
 }
 function tatamiTex() {
@@ -63,10 +66,10 @@ function fusumaTex() {
 const AREAS = [
   // 1F
   { id: 'toilet', name: 'トイレ', fl: 'F1', cells: [[-5, 1, 4, 1], [-5, 2, 3, 1], [-5, 3, 1, 2], [-5, 5, 3, 2]], wall: 'wallWhite', floor: 'genkan', lamps: [[-4, 1.5], [-4, 6]] },
-  { id: 'corA', name: '廊下', fl: 'F1', cells: [[0, 0, 10, 3], [-1, 1, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[2.5, 1.5], [7.5, 1.5]] },
+  { id: 'corA', name: '廊下', fl: 'F1', cells: [[0, 0, 10, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[2.5, 1.5], [7.5, 1.5]] },
   { id: 'foyer', name: '玄関', fl: 'F1', cells: [[10, 0, 13, 3], [14, -4, 3, 4], [13, 3, 7, 3], [16, 6, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[13, 1.5], [20, 1.5], [15.5, -2], [16.5, 4.5]] },
-  { id: 'corB', name: '廊下', fl: 'F1', cells: [[23, 0, 9, 3], [32, 1, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[25.5, 1.5], [30, 1.5]] },
-  { id: 'kitchen', name: '食堂', fl: 'F1', cells: [[34, -6, 8, 14], [33, 1, 1, 1]], wall: 'wallGreen', floor: 'floorRed', lamps: [[38, -3.5], [38, 1.5], [38, 5.5]] },
+  { id: 'corB', name: '廊下', fl: 'F1', cells: [[23, 0, 9, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[25.5, 1.5], [30, 1.5]] },
+  { id: 'kitchen', name: '食堂', fl: 'F1', cells: [[34, -6, 8, 14]], wall: 'wallGreen', floor: 'floorRed', lamps: [[38, -3.5], [38, 1.5], [38, 5.5]] },
   { id: 'bath', name: '浴室', fl: 'F1', cells: [[-2, -9, 3, 2], [1, -8, 1, 1], [2, -9, 3, 2], [3, -7, 1, 1]], wall: 'wallWhite', floor: 'vinyl', lamps: [[-0.5, -8], [3.5, -8]] },
   { id: 'library', name: '図書室', fl: 'F1', cells: [[17, -25, 16, 17], [30, -8, 3, 2], [31, -6, 1, 1]], wall: 'wallBeige', floor: 'floorWood', lamps: [[21, -21], [29, -21], [21, -13], [29, -13], [31.5, -7]] },
   { id: 'corC', name: '廊下', fl: 'F1', cells: [[0, -32, 11, 3]], wall: 'wallWhite', floor: 'floorWood', lamps: [[2.5, -30.5], [8, -30.5]] },
@@ -84,26 +87,32 @@ const AREAS = [
   { id: 'cor3', name: '3階 廊下', fl: 'F3', cells: [[14, 2, 2, 8], [13, 7, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[15, 4], [15, 8]] },
   { id: 'bed3', name: '寝室', fl: 'F3', cells: [[0, 4, 9, 8], [9, 8, 1, 1]], wall: 'wallWhite', floor: 'floorWood', lamps: [[4.5, 8]] },
 ];
-// stairs: a flight inside an area; dir is the way you walk along it from its entry, rise is up (+) or down (-)
+// stairs: a flight inside an area; dir is the way you walk along it from its entry, rise is up (+) or down (-).
+// Each runs on into the dark at its far end; walk into it and you come out of the dark end of the flight it leads to.
 const STAIRS = [
-  { id: 'st1up', fl: 'F1', area: 'foyer', r: [18, -6, 2, 6], dir: 'N', rise: 2.0, to: 'st2dn' },
-  { id: 'st2dn', fl: 'F2', area: 'cor2', r: [18, 4, 2, 6], dir: 'S', rise: -2.0, to: 'st1up' },
-  { id: 'st2up', fl: 'F2', area: 'cor2', r: [21, 6, 2, 6], dir: 'N', rise: 2.0, to: 'st3dn' },
-  { id: 'st3dn', fl: 'F3', area: 'cor3', r: [14, 10, 2, 5], dir: 'S', rise: -2.0, to: 'st2up' },
+  { id: 'st1up', fl: 'F1', area: 'foyer', r: [18, -6, 2, 6], dir: 'N', rise: 3.2, to: 'st2dn' },
+  { id: 'st2dn', fl: 'F2', area: 'cor2', r: [18, 4, 2, 6], dir: 'S', rise: -3.2, to: 'st1up' },
+  { id: 'st2up', fl: 'F2', area: 'cor2', r: [21, 6, 2, 6], dir: 'N', rise: 3.2, to: 'st3dn' },
+  { id: 'st3dn', fl: 'F3', area: 'cor3', r: [14, 10, 2, 5], dir: 'S', rise: -3.2, to: 'st2up' },
 ];
-// screen-edge joins of the original: walls between these neighbouring tiles are left open
+// rooms that are one screen in the original: the walls between these neighbouring tiles are left out
 const JOINS = [
-  ['F1', -2, 1, -1, 1],                                                 // toilet - corridor A
+  ...[12, 13, 14, 15, 16, 17].map(x => ['F1', x, -33, x, -32]),        // the tatami room opens onto the corridor below it
+];
+// the original's screen edges: open, but a black wall stands across the way (walk into it to go on)
+const EDGES = [
   ['F1', 9, 0, 10, 0], ['F1', 9, 1, 10, 1], ['F1', 9, 2, 10, 2],       // corridor A - foyer
   ['F1', 22, 0, 23, 0], ['F1', 22, 1, 23, 1], ['F1', 22, 2, 23, 2],    // foyer - corridor B
-  ['F1', 32, 1, 33, 1],                                                 // corridor B - dining room
   ['F1', 10, -32, 11, -32], ['F1', 10, -31, 11, -31], ['F1', 10, -30, 11, -30],   // corridor C - the corridor by the tatami room
-  ...[12, 13, 14, 15, 16, 17].map(x => ['F1', x, -33, x, -32]),        // the tatami room opens onto that corridor
 ];
 // doors: on tile (x, z), in its wall on `side`; `to` is the door you come out of
 const DOORDEFS = [
   { id: 'foyerN', fl: 'F1', x: 15, z: -4, side: 'N', to: 'corC' },
   { id: 'front', fl: 'F1', x: 16, z: 6, side: 'S', to: null, kind: 'front' },
+  { id: 'corA_wc', fl: 'F1', x: 0, z: 1, side: 'W', to: 'wc' },
+  { id: 'wc', fl: 'F1', x: -2, z: 1, side: 'E', to: 'corA_wc' },
+  { id: 'corB_din', fl: 'F1', x: 31, z: 1, side: 'E', to: 'din' },
+  { id: 'din', fl: 'F1', x: 34, z: 1, side: 'W', to: 'corB_din' },
   { id: 'corA_bath', fl: 'F1', x: 2, z: 0, side: 'N', to: 'bath' },
   { id: 'bath', fl: 'F1', x: 3, z: -7, side: 'S', to: 'corA_bath' },
   { id: 'corB_lib', fl: 'F1', x: 27, z: 0, side: 'N', to: 'lib', lock: 'k_library' },
@@ -162,10 +171,11 @@ function floorAndCeiling(r) {
   const F = new Frame(r, 0, 0, 0, 0), fm = AOM[r.def.floor] || MAT.floor;
   for (const c of r.def.cells) {
     const w = tm(c[2]), d = tm(c[3]), mx = tm(c[0]) + w / 2, mz = tm(c[1]) + d / 2;
-    if (r.def.floor === 'tatami') {   // tatami mats, two tiles by one, turned every other row
-      for (let j = 0; j < c[3]; j++) for (let i = 0; i < c[2]; i += 2) {
-        const g = new THREE.PlaneGeometry(tm(2) - 0.03, T - 0.03); g.rotateX(-Math.PI / 2);
-        F.geo(g, fm, tm(c[0] + i) + T, 0.003, tm(c[1] + j) + T / 2, 0, j % 2 ? Math.PI : 0, 0);
+    if (r.def.floor === 'tatami') {   // tatami mats, two to a tile, the pairs turned every other tile
+      for (let j = 0; j < c[3]; j++) for (let i = 0; i < c[2]; i++) for (const k of [-1, 1]) {
+        const g = new THREE.PlaneGeometry(T - 0.03, T / 2 - 0.03); g.rotateX(-Math.PI / 2);
+        const turn = (i + j) % 2, px = tm(c[0] + i) + T / 2, pz = tm(c[1] + j) + T / 2;
+        F.geo(g, fm, px + (turn ? k * T / 4 : 0), 0.003, pz + (turn ? 0 : k * T / 4), 0, turn ? Math.PI / 2 : 0, 0);
       }
       F.box(w, 0.1, d, MAT.darkWood, mx, -0.05, mz);
     } else F.box(w, 0.1, d, fm, mx, -0.05, mz);
@@ -183,32 +193,32 @@ function buildWalls(r) {
       if (nb && (nb.area === r || MAN.open.has(edgeKey(fl, cell.x, cell.z, side)))) continue;
       if (MAN.doorEdges.has(edgeKey(fl, cell.x, cell.z, side))) continue;
       const along = side === 'N' || side === 'S' ? cell.x : cell.z, line = side === 'N' ? cell.z : side === 'S' ? cell.z + 1 : side === 'W' ? cell.x : cell.x + 1;
-      const key = side + line;
+      const key = [side, line, cell.stair ? cell.stair.ceil : WALL_H, cell.stair ? 1 : 0].join('|');   // a stairwell's walls go up to its own ceiling
       if (!runs.has(key)) runs.set(key, []);
       runs.get(key).push(along);
     }
   }
   for (const [key, list] of runs) {
-    const side = key[0], line = +key.slice(1);
+    const [side, ln, tp, st] = key.split('|'), line = +ln, top = +tp, skirt = st === '0';
     list.sort((a, b) => a - b);
     let s = list[0], p = list[0];
-    for (let i = 1; i < list.length; i++) { if (list[i] === p + 1) { p = list[i]; continue; } wallRun(r, side, line, s, p + 1, wm); s = p = list[i]; }
-    wallRun(r, side, line, s, p + 1, wm);
+    for (let i = 1; i < list.length; i++) { if (list[i] === p + 1) { p = list[i]; continue; } wallRun(r, side, line, s, p + 1, wm, undefined, top, skirt); s = p = list[i]; }
+    wallRun(r, side, line, s, p + 1, wm, undefined, top, skirt);
   }
 }
 // one straight wall along a tile line, standing just inside the room, with a skirting board
-function wallRun(r, side, line, a, b, wm, y0 = -2.6, y1 = WALL_H) {
+function wallRun(r, side, line, a, b, wm, y0 = -3.8, y1 = WALL_H, skirt = true) {
   const len = tm(b - a), mid = tm(a) + len / 2, h = y1 - y0, inward = side === 'N' || side === 'W' ? 1 : -1;
   const F = new Frame(r, 0, 0, 0, 0);
   if (side === 'N' || side === 'S') {
     const z = tm(line) + inward * WT / 2;
     r.batch.add(boxGeo(len, h, WT, wm, tm(a), y0), wm, F._m(mid, (y0 + y1) / 2, z));
-    if (y0 < 0 && y1 > 0.2) F.box(len, 0.12, 0.03, MAT.trim, mid, 0.06, tm(line) + inward * (WT + 0.015));
+    if (skirt && y0 < 0 && y1 > 0.2) F.box(len, 0.12, 0.03, MAT.trim, mid, 0.06, tm(line) + inward * (WT + 0.015));
     r.addCollider(tm(a), tm(b), y0, y1, z - WT / 2, z + WT / 2, 'wall');
   } else {
     const x = tm(line) + inward * WT / 2;
     r.batch.add(boxGeo(WT, h, len, wm, tm(a), y0), wm, F._m(x, (y0 + y1) / 2, mid));
-    if (y0 < 0 && y1 > 0.2) F.box(0.03, 0.12, len, MAT.trim, tm(line) + inward * (WT + 0.015), 0.06, mid);
+    if (skirt && y0 < 0 && y1 > 0.2) F.box(0.03, 0.12, len, MAT.trim, tm(line) + inward * (WT + 0.015), 0.06, mid);
     r.addCollider(x - WT / 2, x + WT / 2, y0, y1, tm(a), tm(b), 'wall');
   }
 }
@@ -224,19 +234,37 @@ function edgeFrame(x, z, side) {
 function buildDoor(def) {
   const cell = MAN.grid.get(gkey(def.fl, def.x, def.z)), r = cell.area;
   const { px, pz, ry, into } = edgeFrame(def.x, def.z, def.side);
-  const F = new Frame(r, px, 0, pz, ry), wm = AOM[r.def.wall] || MAT.plaster;
+  const F = new Frame(r, px, 0, pz, ry), wm = def.kind === 'hidden' ? AOM.wallGrey : AOM[r.def.wall] || MAT.plaster;
   const door = { id: def.id, def, area: r, fl: def.fl, x: def.x, z: def.z, side: def.side, lock: def.lock || null, kind: def.kind || 'door', to: def.to, F };
+  // the wall above the doorway and beside it (the tile is wider than a door)
   F.box(T, WALL_H - DR_H, WT, wm, 0, (DR_H + WALL_H) / 2, WT / 2);
+  const side = (T - DW) / 2;
+  for (const sx of [-1, 1]) {
+    F.box(side, DR_H, WT, wm, sx * (DW / 2 + side / 2), DR_H / 2, WT / 2);
+    F.box(side, 0.12, 0.03, MAT.trim, sx * (DW / 2 + side / 2), 0.06, WT + 0.015);
+  }
+  // the casing round the opening, standing a little proud of the wall
   const trims = new THREE.Group(); F.dyn(trims, 0, 0, 0);
-  for (const sx of [-1, 1]) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.08, DR_H, 0.06), MAT.trim); t.position.set(sx * (T / 2 - 0.04), DR_H / 2, WT + 0.02); trims.add(t); }
-  const lt = new THREE.Mesh(new THREE.BoxGeometry(T, 0.08, 0.06), MAT.trim); lt.position.set(0, DR_H + 0.04, WT + 0.02); trims.add(lt);
-  const piv = new THREE.Group(); F.dyn(piv, -T / 2 + 0.08, 0, WT / 2); piv.userData.baseRy = piv.rotation.y;
-  const lw = T - 0.16;
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(lw, DR_H - 0.02, 0.07), AOM.door);
-  leaf.position.set(lw / 2, DR_H / 2, 0); leaf.castShadow = true; piv.add(leaf);
-  const knobs = [0.06, -0.06].map(kz => { const k = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), AOM.knob); k.position.set(lw - 0.1, 1.0, kz); piv.add(k); return k; });
-  Object.assign(door, { piv, leaf, knobs, trims });
-  if (door.kind === 'hidden') { leaf.material = AOM.wallGrey; knobs.forEach(k => (k.visible = false)); trims.visible = false; }
+  for (const sx of [-1, 1]) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.1, DR_H + 0.05, 0.05), MAT.trim); t.position.set(sx * (DW / 2 + 0.03), (DR_H + 0.05) / 2, WT + 0.02); trims.add(t); }
+  const lt = new THREE.Mesh(new THREE.BoxGeometry(DW + 0.26, 0.11, 0.06), MAT.trim); lt.position.set(0, DR_H + 0.08, WT + 0.025); trims.add(lt);
+  // the leaf, flush with the face of the wall: brown, four raised panels, a brass knob each side
+  const lw = DW - 0.06, lh = DR_H - 0.03, lt2 = 0.06, lz = WT - lt2 / 2;
+  const piv = new THREE.Group(); F.dyn(piv, -DW / 2 + 0.03, 0, lz); piv.userData.baseRy = piv.rotation.y;
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(lw, lh, lt2), AOM.door);
+  leaf.position.set(lw / 2, lh / 2 + 0.01, 0); leaf.castShadow = true; piv.add(leaf);
+  const panels = [];
+  for (const fz of [1, -1]) for (const [py, ph] of [[lh * 0.72, lh * 0.32], [lh * 0.3, lh * 0.42]]) for (const pxk of [0.27, 0.73]) {
+    const pn = new THREE.Mesh(new THREE.BoxGeometry(lw * 0.36, ph, 0.016), AOM.doorPanel); pn.position.set(lw * pxk, py, fz * (lt2 / 2 + 0.006)); piv.add(pn); panels.push(pn);
+  }
+  const knobs = [];
+  for (const fz of [1, -1]) {
+    const k = new THREE.Group(); k.position.set(lw - 0.12, 1.02, fz * (lt2 / 2)); piv.add(k); knobs.push(k);
+    const ro = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.012, 14), AOM.knob); ro.rotation.x = Math.PI / 2; ro.position.z = fz * 0.006; k.add(ro);
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.05, 8), AOM.knob); st.rotation.x = Math.PI / 2; st.position.z = fz * 0.03; k.add(st);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), AOM.knob); ball.position.z = fz * 0.065; k.add(ball);
+  }
+  Object.assign(door, { piv, leaf, knobs, trims, panels });
+  if (door.kind === 'hidden') { leaf.material = AOM.wallGrey; knobs.forEach(k => (k.visible = false)); trims.visible = false; panels.forEach(p => (p.visible = false)); }
   door.front = new THREE.Vector3(cx(def.x) + into.x * 0.12, FLOORS[def.fl], cx(def.z) + into.z * 0.12);
   door.center = new THREE.Vector3(px, FLOORS[def.fl] + 1.2, pz);
   door.yawIn = Math.atan2(-into.x, -into.z);         // a camera with this yaw looks into the room
@@ -258,34 +286,60 @@ function animateDoor(door, amt = 1.15, dur = 650) {
 
 /* ---------- stairs ---------- */
 function buildStairs(s) {
-  const r = MAN.areas[s.area], [x, z, w, h] = s.r, n = h * 3, F = new Frame(r, 0, 0, 0, 0);
-  const north = s.dir === 'N';
-  Object.assign(s, { entryZ: north ? z + h : z, farZ: north ? z : z + h, x0: x, x1: x + w, room: r });
+  const r = MAN.areas[s.area], [x, z, w, h] = s.r, n = h * 4, F = new Frame(r, 0, 0, 0, 0);
+  const north = s.dir === 'N', up = s.rise > 0, wm = AOM[r.def.wall] || MAT.plaster;
+  Object.assign(s, { entryZ: north ? z + h : z, farZ: north ? z : z + h, x0: x, x1: x + w, room: r, len: tm(h) });
+  s.ceil = up ? s.rise + 3.0 : WALL_H;   // a flight going up has its own, higher stairwell
   r.addFloor(tm(x), tm(x + w), tm(z), tm(z + h), 0, s.rise, 'z', tm(s.entryZ), tm(s.farZ));
-  const depth = tm(h) / n, wd = tm(w), mx = tm(x) + wd / 2;
+  const depth = tm(h) / n, wd = tm(w), mx = tm(x) + wd / 2, dirZ = north ? -1 : 1;
+  const sw = wd - 2 * WT + 0.02;   // the steps run between the walls (or banisters) either side, not into the same plane as them
   for (let i = 0; i < n; i++) {
-    const zz = tm(s.entryZ) + (north ? -1 : 1) * (i + 0.5) * depth, top = s.rise * (i + 1) / n;
-    if (s.rise > 0) F.box(wd, top, depth + 0.01, MAT.darkWood, mx, top / 2, zz);
-    else F.box(wd, 0.14, depth + 0.01, MAT.darkWood, mx, top - 0.07, zz);
-    F.box(wd, 0.025, 0.05, MAT.trim, mx, top + 0.01, zz + (north ? depth / 2 : -depth / 2));
+    const zz = tm(s.entryZ) + dirZ * (i + 0.5) * depth, top = s.rise * (i + 1) / n;
+    if (up) F.box(sw, top, depth + 0.01, MAT.darkWood, mx, top / 2, zz);
+    else F.box(sw, top - s.rise + 0.3, depth + 0.01, MAT.darkWood, mx, (top + s.rise - 0.3) / 2, zz);
+    F.box(sw, 0.025, 0.05, MAT.trim, mx, top + 0.01, zz - dirZ * depth / 2);
   }
   for (const [tx, tz] of cellsOf(s.r)) MAN.grid.set(gkey(s.fl, tx, tz), { area: r, x: tx, z: tz, fl: s.fl, stair: s, blocked: false });
-  // where the flight runs on into the dark: no ceiling over its far half, and blackness at its end
-  const half = Math.ceil(h / 2), vz = north ? z : z + h - half, fz = tm(s.farZ) + (north ? 0.16 : -0.16);
-  if (s.rise > 0) { F.box(wd, 0.05, tm(half), MAT.void, mx, WALL_H - 0.02, tm(vz) + tm(half) / 2); F.box(wd, WALL_H, 0.05, MAT.void, mx, WALL_H / 2, fz); }
-  else { F.box(wd, -s.rise + 0.6, 0.05, MAT.void, mx, (s.rise - 0.6) / 2, fz); F.box(wd, 0.05, tm(h), MAT.void, mx, s.rise - 0.6, tm(z) + tm(h) / 2); }
+  // the ceiling over the flight, and where a stairwell rises above the room, the wall over its mouth
+  F.box(wd, 0.12, tm(h), MAT.ceiling, mx, s.ceil + 0.06, tm(z) + tm(h) / 2);
+  if (s.ceil > WALL_H) F.box(wd, s.ceil - WALL_H, WT, wm, mx, (WALL_H + s.ceil) / 2, tm(s.entryZ) + dirZ * WT / 2);
+  // its far end runs on into the dark: a black way on, the width of the flight
+  const beyond = MAN.grid.get(gkey(s.fl, x, north ? z - 1 : z + h)), under = !up && beyond && beyond.area === r && !beyond.stair;
+  const vy0 = s.rise - 0.05, vy1 = up ? s.ceil - 0.35 : under ? -0.02 : s.rise + 2.9, vz = tm(s.farZ) - dirZ * (WT + 0.012);
+  addVeil(r, tm(x), vz, tm(x + w), vz, vy0, vy1);
+  F.box(wd, 0.12, 0.08, MAT.trim, mx, vy1 + 0.06, vz - dirZ * 0.04);
+  addBulb(r, mx, s.ceil, tm(s.entryZ) + dirZ * tm(h) * 0.45, { intensity: 3.4, range: 10, drop: 0.5 });
   MAN.stairs[s.id] = s;
 }
-// walls beside a flight where it runs next to open floor (a pit you can't step into, or a flight you can't climb onto from the side)
+// walls beside a flight where it runs next to open floor: a banister round a flight going down, a wall up to
+// the stairwell's ceiling beside one going up
 function stairRails(s) {
-  const r = s.room, lo = Math.min(0, s.rise) - 0.4, hi = Math.max(0, s.rise) + 1.0;
+  const r = s.room, up = s.rise > 0, lo = Math.min(0, s.rise) - 0.5, hi = up ? s.ceil : 1.0, mat = up ? AOM[r.def.wall] || MAT.plaster : MAT.trim;
   const [x, z, w, h] = s.r;
   for (let zz = z; zz < z + h; zz++) for (const [side, xx] of [['W', x], ['E', x + w - 1]]) {
     const [dx] = SIDE[side], nb = MAN.grid.get(gkey(s.fl, xx + dx, zz));
-    if (nb && nb.area === r && !nb.stair) wallRun(r, side, side === 'W' ? xx : xx + 1, zz, zz + 1, MAT.trim, lo, hi);
+    if (nb && nb.area === r && !nb.stair) wallRun(r, side, side === 'W' ? xx : xx + 1, zz, zz + 1, mat, lo, hi, false);
   }
   const fz = s.dir === 'N' ? z - 1 : z + h, nb = MAN.grid.get(gkey(s.fl, x, fz));
-  if (nb && nb.area === r && !nb.stair) wallRun(r, s.dir === 'N' ? 'N' : 'S', s.dir === 'N' ? z : z + h, x, x + w, MAT.trim, lo, hi);
+  if (nb && nb.area === r && !nb.stair) wallRun(r, s.dir === 'N' ? 'N' : 'S', s.dir === 'N' ? z : z + h, x, x + w, mat, lo, hi, false);
+}
+// the black that stands where the original's screen ends: you can't see past it, and walking into it takes you on
+function addVeil(r, ax, az, bx, bz, y0, y1) {
+  const len = Math.hypot(bx - ax, bz - az), m = new THREE.Mesh(new THREE.PlaneGeometry(len + 0.02, y1 - y0), AOM.veil);
+  m.position.set((ax + bx) / 2, (y0 + y1) / 2, (az + bz) / 2); m.rotation.y = Math.atan2(-(bz - az), bx - ax);
+  r.group.add(m);
+  MAN.veils.push({ ax, az, bx, bz, y0: r.y + y0, y1: r.y + y1 });
+}
+// how dark it is for eyes at p (feet at feetY) from being in, or right by, one of those
+function veilDark(p, feetY) {
+  let k = 0;
+  for (const v of MAN.veils) {
+    if (feetY < v.y0 - 0.4 || feetY > v.y1 - 0.5) continue;
+    const dx = v.bx - v.ax, dz = v.bz - v.az, t = clamp(((p.x - v.ax) * dx + (p.z - v.az) * dz) / (dx * dx + dz * dz), 0, 1);
+    const d = Math.hypot(p.x - (v.ax + dx * t), p.z - (v.az + dz * t));
+    k = Math.max(k, clamp(1 - (d - 0.5) / 1.5, 0, 1));
+  }
+  return k;
 }
 // how far along a flight a point is (0 at its entry, 1 at its far end), and the point at a given fraction
 function stairS(s, p) { return (p.z - tm(s.entryZ)) / (tm(s.farZ) - tm(s.entryZ)); }
@@ -355,27 +409,64 @@ function addChairW(r, x, z, ry, mat = AOM.white) {
   add(0.44, 0.5, 0.04, 0, 0.74, -0.2);
   return c;
 }
-// a grand piano (the keyboard faces local +z), with a stool
+// a grand piano: the keyboard faces local +z, the tail runs back to -z, and the lid is propped up on the curved side
+const PIANO_OUTLINE = [['m', -0.74, 0.3], ['l', 0.74, 0.3], ['l', 0.74, -0.15], ['q', 0.42, -0.45, 0.3, -0.95], ['q', 0.18, -1.55, -0.3, -1.58], ['q', -0.72, -1.6, -0.74, -1.2], ['l', -0.74, 0.3]];
+function pianoShape(dx = 0, k = 1, cz = -0.62) {   // (x, z) seen from above; shape y is -z
+  const sh = new THREE.Shape(), P = (x, z) => [(x * k) + dx, -(cz + (z - cz) * k)];
+  for (const [op, ...v] of PIANO_OUTLINE) {
+    if (op === 'm') sh.moveTo(...P(v[0], v[1])); else if (op === 'l') sh.lineTo(...P(v[0], v[1]));
+    else { const c = P(v[0], v[1]), e = P(v[2], v[3]); sh.quadraticCurveTo(c[0], c[1], e[0], e[1]); }
+  }
+  return sh;
+}
+function stringsTex() {
+  const c = newCanvas(256, 256), g = c.getContext('2d');
+  g.fillStyle = '#9c7c34'; g.fillRect(0, 0, 256, 256);
+  for (let x = 2; x < 256; x += 6) { g.fillStyle = 'rgba(235,225,200,.7)'; g.fillRect(x, 0, 1.2, 256); }
+  for (let i = 0; i < 9; i++) { g.fillStyle = 'rgba(40,28,10,.6)'; g.beginPath(); g.arc(30 + i * 26, 60 + (i % 3) * 60, 7, 0, TAU); g.fill(); }
+  return toTex(c, true, true);
+}
 function addPiano(room, x, z, ry) {
-  const F = new Frame(room, x, room.fy, z, ry), black = std({ color: 0x080808, roughness: 0.18, metalness: 0.2, envMap: ENV, envMapIntensity: 0.9 });
-  const shape = new THREE.Shape(); shape.moveTo(-0.75, 0.75); shape.lineTo(0.75, 0.75); shape.lineTo(0.75, -0.2); shape.quadraticCurveTo(0.7, -1.2, 0.05, -1.25); shape.quadraticCurveTo(-0.6, -1.3, -0.75, -0.6); shape.lineTo(-0.75, 0.75);
-  const body = new THREE.ExtrudeGeometry(shape, { depth: 0.32, bevelEnabled: false }); body.rotateX(-Math.PI / 2);
-  F.geo(body, black, 0, 0.62, 0);
-  const lid = new THREE.ExtrudeGeometry(shape, { depth: 0.02, bevelEnabled: false }); lid.rotateX(-Math.PI / 2);
-  F.geo(lid, black, 0, 0.96, -0.05, -0.55, 0, 0);
-  for (const [lx, lz] of [[-0.6, 0.6], [0.6, 0.6], [0, -1.05]]) F.cyl(0.05, 0.04, 0.62, black, lx, 0.31, lz, 10);
-  F.box(1.5, 0.08, 0.28, black, 0, 0.72, 0.86);
-  F.box(1.36, 0.03, 0.16, std({ color: 0xf2efe6, roughness: 0.3 }), 0, 0.775, 0.86);
-  for (let i = 0; i < 26; i++) if ([1, 2, 4, 5, 6].includes(i % 7)) F.box(0.022, 0.025, 0.09, black, -0.66 + i * 0.052 - 0.026, 0.795, 0.83);
-  F.box(1.2, 0.3, 0.02, black, 0, 0.98, 0.76, -0.2, 0, 0);
-  F.box(0.6, 0.05, 0.35, MAT.velvetRed, 0, 0.5, 1.45); for (const sx of [-1, 1]) for (const sz of [-1, 1]) F.box(0.04, 0.48, 0.04, black, sx * 0.26, 0.24, 1.45 + sz * 0.14);
-  F.collide(-0.78, 0.78, 0, 1.1, -1.3, 1.0);
+  const F = new Frame(room, x, 0, z, ry), black = std({ color: 0x070707, roughness: 0.16, metalness: 0.15, envMap: ENV, envMapIntensity: 1.0 });
+  const ivory = std({ color: 0xf3efe4, roughness: 0.35 }), dark = MAT.black;
+  // the case, and inside it the gold plate and strings
+  const body = new THREE.ExtrudeGeometry(pianoShape(), { depth: 0.3, bevelEnabled: false, curveSegments: 18 }); body.rotateX(-Math.PI / 2);
+  F.geo(body, black, 0, 0.64, 0);
+  const plate = new THREE.ShapeGeometry(pianoShape(0, 0.93), 18); plate.rotateX(-Math.PI / 2);
+  const tx = stringsTex(); tx.repeat.set(1.6, 1.6); room.textures.push(tx);
+  F.geo(plate, std({ map: tx, color: 0xffffff, metalness: 0.45, roughness: 0.45 }), 0, 0.945, 0);
+  // the lid: hinged along the straight side, held up by its stick
+  const lid = new THREE.ExtrudeGeometry(pianoShape(0.74), { depth: 0.025, bevelEnabled: false, curveSegments: 18 }); lid.rotateX(-Math.PI / 2);
+  const th = 0.6; F.geo(lid, black, -0.74, 0.945, 0, 0, 0, th);
+  const lx = -0.74 + 1.26 * Math.cos(th), ly = 0.945 + 1.26 * Math.sin(th), sx = 0.56, sy = 0.94;
+  F.cyl(0.012, 0.012, Math.hypot(lx - sx, ly - sy), black, (lx + sx) / 2, (ly + sy) / 2, -0.35, 6, 0, 0, Math.atan2(sx - lx, ly - sy));
+  // the keyboard in front of the case
+  F.box(1.56, 0.07, 0.34, black, 0, 0.665, 0.39);
+  F.box(1.36, 0.03, 0.16, ivory, 0, 0.71, 0.47);
+  for (let i = 1; i < 52; i++) F.box(0.002, 0.031, 0.16, dark, -0.68 + i * (1.36 / 52), 0.711, 0.47);
+  for (let i = 0; i < 51; i++) if ([0, 1, 3, 4, 5].includes(i % 7)) F.box(0.014, 0.022, 0.095, dark, -0.68 + (i + 1) * (1.36 / 52), 0.736, 0.432);
+  for (const sx2 of [-1, 1]) F.box(0.1, 0.12, 0.34, black, sx2 * 0.73, 0.7, 0.39);
+  F.box(1.46, 0.045, 0.02, black, 0, 0.675, 0.565);
+  F.box(1.36, 0.12, 0.03, black, 0, 0.77, 0.32, -0.2, 0, 0);
+  F.box(0.8, 0.3, 0.02, black, 0, 1.1, 0.16, -0.28, 0, 0); F.box(0.8, 0.03, 0.06, black, 0, 0.96, 0.19);
+  // legs, the pedals, the bench
+  for (const [gx, gz] of [[-0.62, 0.18], [0.62, 0.18], [-0.32, -1.35]]) {
+    F.cyl(0.06, 0.045, 0.6, black, gx, 0.32, gz, 12); F.box(0.15, 0.08, 0.15, black, gx, 0.6, gz); F.geo(new THREE.SphereGeometry(0.035, 8, 6), MAT.brass, gx, 0.035, gz);
+  }
+  F.box(0.24, 0.5, 0.04, black, 0, 0.37, -0.05); F.box(0.3, 0.05, 0.12, black, 0, 0.1, -0.02);
+  for (const px of [-0.08, 0, 0.08]) F.box(0.03, 0.02, 0.13, MAT.brass, px, 0.1, 0.08);
+  const bz = 1.05;
+  F.box(0.78, 0.06, 0.36, black, 0, 0.47, bz); F.box(0.74, 0.06, 0.32, MAT.velvetRed, 0, 0.53, bz);
+  for (const ax of [-1, 1]) for (const az of [-1, 1]) F.box(0.05, 0.44, 0.05, black, ax * 0.34, 0.22, bz + az * 0.14);
+  F.collide(-0.78, 0.78, 0, 1.1, -1.6, 0.58); F.collide(-0.4, 0.4, 0, 0.56, bz - 0.19, bz + 0.19);
   // the red stain over three of the keys (wiped off with the soapy handkerchief)
-  const st = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.13), new THREE.MeshStandardMaterial({ color: 0x5a0a0a, roughness: 0.4 }));
-  st.rotation.x = -Math.PI / 2; st.position.copy(F.pt(0.05, 0.793, 0.86)); st.userData.ownMat = true; room.group.add(st);
+  const st = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.12), new THREE.MeshStandardMaterial({ color: 0x5a0a0a, roughness: 0.4 }));
+  st.rotation.x = -Math.PI / 2; st.position.copy(F.pt(0.05, 0.751, 0.49)); st.userData.ownMat = true; room.group.add(st);
   return { F, stain: st };
 }
-function lamp(r, x, z, opt = {}) { return addBulb(r, x * T, WALL_H, z * T, Object.assign({ intensity: 3.6, range: 9, drop: 0.55 }, opt)); }
+// a lamp over a tile edge hangs a little off it, so it never lights a wall on that line edge-on (its shadows break up)
+const offEdge = v => (Number.isInteger(v) ? v + 0.11 : v);
+function lamp(r, x, z, opt = {}) { return addBulb(r, offEdge(x) * T, WALL_H, offEdge(z) * T, Object.assign({ intensity: 4.6, range: 13, drop: 0.7 }, opt)); }
 function interactBox(room, x, y, z, w, h, d, prompt, use, opt = {}) {
   const hit = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ visible: false }));
   hit.position.set(x, y, z); room.group.add(hit);
@@ -397,8 +488,8 @@ const FURNISH = {
   foyer(r) {
     box(r, tm(7), 0.03, T, AOM.genkan, tm(16.5), 0, tm(5.5), 0, false);   // the genkan by the front door
     box(r, T, 0.03, T, AOM.genkan, tm(16.5), 0, tm(6.5), 0, false);
-    r.spawn = { x: tm(16.2), z: tm(2.7), yaw: 0 };
-    r.friendsAt = [[tm(13.6), tm(0.9)], [tm(15.6), tm(0.4)], [tm(18.4), tm(1.0)]];
+    const sp = r.spawn = { x: tm(16.2), z: tm(2.7), yaw: 0 };
+    r.friendsAt = [[sp.x - 2.4, sp.z - 2.0], [sp.x - 0.4, sp.z - 2.8], [sp.x + 2.2, sp.z - 2.1]];   // round you, a couple of steps away
   },
   toilet(r) {
     // the toilet in the stall, a see-through shelf by the way in (the detergent is in it)
@@ -445,58 +536,64 @@ const FURNISH = {
     for (const sx of [1.05, 1.35]) isl.cyl(0.09, 0.09, 0.01, MAT.iron, sx, 0.92, 0, 12);
     isl.collide(-tm(2), tm(2), 0, 0.9, -0.37, 0.37);
     // the dining table and its four white chairs
-    const tb = new Frame(r, tm(ox + 4.55), 0, tm(oz + 4.8), 0);
+    const tcx = tm(ox + 4.55), tcz = tm(oz + 4.8), tb = new Frame(r, tcx, 0, tcz, 0);
     tb.box(2.6, 0.06, 4.6, MAT.wood, 0, 0.76, 0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) tb.box(0.08, 0.74, 0.08, MAT.darkWood, sx * 1.2, 0.37, sz * 2.2);
     tb.collide(-1.3, 1.3, 0, 0.8, -2.3, 2.3);
-    for (const [x, z, ry] of [[ox + 2.4, oz + 3.6, Math.PI / 2], [ox + 2.4, oz + 6.2, Math.PI / 2], [ox + 6.7, oz + 4.4, -Math.PI / 2], [ox + 6.7, oz + 6.4, -Math.PI / 2]]) addChairW(r, tm(x), tm(z), ry);
+    for (const [sx, dz] of [[-1, -1.3], [-1, 1.5], [1, -0.4], [1, 1.7]]) addChairW(r, tcx + sx * 1.72, tcz + dz, -sx * Math.PI / 2);
     // the broken plate
     const shards = new THREE.Group(), plate = std({ color: 0xf2efe8, roughness: 0.35 });
     for (let i = 0; i < 9; i++) { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.06 + Math.random() * 0.05, 0.04, 0.012, 3 + (i % 3)), plate); s.position.set((Math.random() - 0.5) * 0.6, 0.006, (Math.random() - 0.5) * 0.5); s.rotation.y = Math.random() * TAU; shards.add(s); }
     shards.position.set(tm(ox + 3.4), 0, tm(oz + 1.6)); r.group.add(shards); MAN.props.plate = shards;
     interactBox(r, tm(ox + 3.4), 0.15, tm(oz + 1.6), 0.9, 0.4, 0.8, () => (STORY.hasGot('shard') ? null : '割れたお皿を調べる'), () => STORY.event('plate'), { icon: 'eye' });
     // the living corner: a rug and an L-shaped sofa
-    box(r, tm(6.6), 0.012, tm(5), AOM.rug, tm(ox + 3.6), 0, tm(oz + 11), 0, false);
-    box(r, tm(6.6) - 0.3, 0.014, tm(5) - 0.3, AOM.rug, tm(ox + 3.6), 0, tm(oz + 11), 0, false);
-    addSofa(r, tm(ox + 5.7), tm(oz + 10.4), -Math.PI / 2, AOM.grey, 2.2);
-    addSofa(r, tm(ox + 3), tm(oz + 12.7), 0, AOM.grey, 2.4);
-    box(r, 1.0, 0.4, 0.6, MAT.darkWood, tm(ox + 3.5), 0, tm(oz + 10.6));
+    const lx = tm(ox + 3.6), lz = tm(oz + 11);
+    box(r, 7.4, 0.012, 5.6, AOM.rug, lx, 0, lz, 0, false);
+    box(r, 7.1, 0.014, 5.3, AOM.rug, lx, 0, lz, 0, false);
+    addSofa(r, lx + 2.3, lz - 0.66, -Math.PI / 2, AOM.grey, 2.2);
+    addSofa(r, lx - 0.66, lz + 1.9, 0, AOM.grey, 2.4);
+    box(r, 1.0, 0.4, 0.6, MAT.darkWood, lx - 0.1, 0, lz - 0.44);
   },
   library(r) {
     const ox = 17, oz = -25;
-    const shelf = (c0, z, tall = true) => addBookshelf(r, tm(ox + c0 + 1.5), tm(oz + z), 0, tm(3) - 0.15, tall ? 2.5 : 1.2);
+    const shelf = (c0, z, tall = true) => addBookshelf(r, tm(ox + c0 + 1.5), tm(oz + z), 0, tm(3) - 0.15, tall ? 3.0 : 1.2);
     for (const c of [0, 3, 10, 13]) shelf(c, 3.0);
     for (const c of [0, 10, 13]) shelf(c, 7.0);
-    shelf(7, 10.1, false); shelf(10, 10.1, false); shelf(13, 10.1, true);
-    for (const c of [7, 10, 13]) shelf(c, 14.0);
+    shelf(7, 10.1, false); shelf(10, 10.1, false);
+    shelf(7, 14.0);   // the corner by the way in is left open: from the door you see across to the middle aisle
     // the messy table
-    const tb = new Frame(r, tm(ox + 1.95), 0, tm(oz + 12.3), 0);
-    tb.box(tm(3.9) - 0.1, 0.06, tm(5.5) - 0.1, MAT.darkWood, 0, 0.78, 0);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) tb.box(0.08, 0.76, 0.08, MAT.darkWood, sx * (tm(1.95) - 0.12), 0.38, sz * (tm(2.75) - 0.12));
-    tb.collide(-tm(1.95), tm(1.95), 0, 0.82, -tm(2.75), tm(2.75));
-    for (let i = 0; i < 14; i++) { const pg = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.3), MAT.paper); pg.rotation.set(-Math.PI / 2, 0, Math.random() * TAU); pg.position.copy(tb.pt((Math.random() - 0.5) * 3.4, 0.815, (Math.random() - 0.5) * 5.4)); r.group.add(pg); }
-    for (let i = 0; i < 6; i++) { const bk = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.28), std({ color: [0x7a2a2a, 0x2a4a7a, 0x6a5a2a, 0x8a7a3a][i % 4], roughness: 0.7 })); bk.position.copy(tb.pt((Math.random() - 0.5) * 2.6, 0.835, (Math.random() - 0.5) * 4.8)); bk.rotation.y = Math.random() * TAU; r.group.add(bk); }
+    const TW = 3.2, TL = 5.4, tb = new Frame(r, tm(ox + 1.95), 0, tm(oz + 12.3), 0);
+    tb.box(TW, 0.06, TL, MAT.darkWood, 0, 0.78, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) tb.box(0.08, 0.76, 0.08, MAT.darkWood, sx * (TW / 2 - 0.12), 0.38, sz * (TL / 2 - 0.12));
+    tb.collide(-TW / 2, TW / 2, 0, 0.82, -TL / 2, TL / 2);
+    for (let i = 0; i < 14; i++) { const pg = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.3), MAT.paper); pg.rotation.set(-Math.PI / 2, 0, Math.random() * TAU); pg.position.copy(tb.pt((Math.random() - 0.5) * (TW - 0.4), 0.815, (Math.random() - 0.5) * (TL - 0.4))); r.group.add(pg); }
+    for (let i = 0; i < 6; i++) { const bk = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.28), std({ color: [0x7a2a2a, 0x2a4a7a, 0x6a5a2a, 0x8a7a3a][i % 4], roughness: 0.7 })); bk.position.copy(tb.pt((Math.random() - 0.5) * (TW - 0.8), 0.835, (Math.random() - 0.5) * (TL - 0.8))); bk.rotation.y = Math.random() * TAU; r.group.add(bk); }
     // the lone green book: the bedroom key is under it
-    const gb = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.32), std({ color: 0x2e7a3a, roughness: 0.6 })); gb.position.copy(tb.pt(1.6, 0.84, 1.6)); r.group.add(gb); MAN.props.greenBook = gb;
+    const gb = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.32), std({ color: 0x2e7a3a, roughness: 0.6 })); gb.position.copy(tb.pt(TW / 2 - 0.45, 0.84, 1.6)); r.group.add(gb); MAN.props.greenBook = gb;
     shineAt(r, gb.position.x, 0.83, gb.position.z, 'k_bedroom', false);
     interactBox(r, gb.position.x, 0.9, gb.position.z, 0.5, 0.3, 0.5, () => (STORY.hasGot('k_bedroom') ? null : (STORY.flags.bookMoved ? '寝室の鍵を拾う' : '本を調べる')), () => STORY.event('greenBook'), { icon: 'eye' });
     box(r, 0.45, 0.45, 0.45, MAT.darkWood, tm(ox + 0.5), 0, tm(oz + 15.5));
-    r.oniGlimpse = [[tm(ox + 8), tm(oz + 5)], [tm(ox + 0.8), tm(oz + 5)]];
+    // along the middle aisle, up the gap in the shelves and away behind the top row (seen from just inside the way in)
+    r.oniGlimpse = [[ox + 13.5, oz + 8.6], [ox + 8.2, oz + 8.6], [ox + 8.2, oz + 1.5], [ox + 3.8, oz + 1.5]].map(([x, z]) => [tm(x), tm(z)]);
+    r.glimpseAt = { x: tm(ox + 14.5), z: tm(oz + 16.4) };
     r.oniSpawn = [tm(ox + 4.5), tm(oz + 4.8)];
   },
   corT(r) {
-    // the slightly greyer wallpaper on the right
-    for (const x of [22, 24]) { const F = new Frame(r, cx(x), 0, tm(-32) + WT + 0.012, 0); F.box(T + 0.02, WALL_H - 0.1, 0.01, AOM.wallGrey, 0, (WALL_H - 0.1) / 2 + 0.05, 0); }
+    // the slightly greyer wallpaper on the right; the middle of it covers the door until it is cut
+    for (const x of [22, 24]) { const F = new Frame(r, cx(x), 0, tm(-32) + WT + 0.012, 0); F.box(T, WALL_H - 0.1, 0.01, AOM.wallGrey, 0, (WALL_H - 0.1) / 2 + 0.05, 0); }
+    const cover = MAN.greyCover = new THREE.Group(); r.group.add(cover);
+    const pan = new THREE.Mesh(new THREE.BoxGeometry(T, WALL_H - 0.1, 0.01), AOM.wallGrey); pan.position.set(cx(23), (WALL_H - 0.1) / 2 + 0.05, tm(-32) + WT + 0.012); cover.add(pan);
+    const sk = new THREE.Mesh(new THREE.BoxGeometry(DW + 0.02, 0.12, 0.03), MAT.trim); sk.position.set(cx(23), 0.06, tm(-32) + WT + 0.015); cover.add(sk);   // the skirting runs on over it
   },
   tatami(r) {
     // fusuma along the back: the right pair is where it comes out from; the left pair hides the lighter
     const F = new Frame(r, tm(15), 0, tm(-40) + WT + 0.02, 0);
-    F.box(tm(6), 0.35, 0.08, MAT.darkWood, 0, 2.2, 0.02); F.box(tm(6), 0.06, 0.1, MAT.darkWood, 0, 0.03, 0.02);
+    F.box(tm(6), 0.4, 0.08, MAT.darkWood, 0, 2.4, 0.02); F.box(tm(6), 0.06, 0.1, MAT.darkWood, 0, 0.03, 0.02);
     MAN.fusuma = [];
     for (let i = 0; i < 4; i++) {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(tm(1.5) - 0.03, 2.0, 0.04), AOM.fusuma); p.position.copy(F.pt(-tm(2.25) + i * tm(1.5), 1.02, 0.04 + (i % 2) * 0.05)); r.group.add(p);
+      const p = new THREE.Mesh(new THREE.BoxGeometry(tm(1.5) - 0.03, 2.14, 0.04), AOM.fusuma); p.position.copy(F.pt(-tm(2.25) + i * tm(1.5), 1.1, 0.04 + (i % 2) * 0.05)); r.group.add(p);
       p.userData.home = p.position.clone(); MAN.fusuma.push(p);
     }
-    F.box(tm(6) - 0.02, 2.0, 0.02, MAT.black, 0, 1.02, -0.02);
+    F.box(tm(6) - 0.02, 2.14, 0.02, MAT.black, 0, 1.1, -0.02);
     examine(r, tm(13.5), 1.1, tm(-40) + 0.3, tm(3) - 0.1, 2.0, 0.4, () => (STORY.hasGot('lighter') ? null : 'ふすまを調べる'), () => STORY.event('fusumaL'));
     examine(r, tm(16.5), 1.1, tm(-40) + 0.3, tm(3) - 0.1, 2.0, 0.4, () => 'ふすまを調べる', () => STORY.event('fusumaR'));
     box(r, 0.6, 0.35, 0.6, MAT.darkWood, tm(17.5) - 0.3, 0, tm(-35));
@@ -518,11 +615,15 @@ const FURNISH = {
   jail(r) {
     const ox = 30, oz = -53, z = tm(oz + 3);
     // bars across the room; the cell door is the gap at the left
-    for (let x = tm(ox) + 0.1; x < tm(ox + 7) - 0.05; x += 0.16) { if (x > tm(ox + 1) && x < tm(ox + 2)) continue; new Frame(r, x, 0, z, 0).cyl(0.02, 0.02, WALL_H, MAT.iron, 0, WALL_H / 2, 0, 6); }
+    for (let x = tm(ox) + 0.1; x < tm(ox + 7) - 0.05; x += 0.16) {
+      if (x > tm(ox + 1) && x < tm(ox + 2)) new Frame(r, x, 0, z, 0).cyl(0.02, 0.02, WALL_H - 2.5, MAT.iron, 0, (WALL_H + 2.5) / 2, 0, 6);   // over the door
+      else new Frame(r, x, 0, z, 0).cyl(0.02, 0.02, WALL_H, MAT.iron, 0, WALL_H / 2, 0, 6);
+    }
     const F = new Frame(r, 0, 0, z, 0); F.box(tm(7), 0.07, 0.07, MAT.iron, tm(ox + 3.5), 2.5, 0); F.box(tm(7), 0.06, 0.06, MAT.iron, tm(ox + 3.5), 0.1, 0);
     r.addCollider(tm(ox), tm(ox + 1), 0, WALL_H, z - 0.06, z + 0.06, 'bars'); r.addCollider(tm(ox + 2), tm(ox + 7), 0, WALL_H, z - 0.06, z + 0.06, 'bars');
     const piv = new THREE.Group(); F.dyn(piv, tm(ox + 1), 0, 0); piv.userData.baseRy = piv.rotation.y;
-    for (let i = 0; i < 7; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.4, 6), MAT.iron); b.position.set(0.08 + i * 0.15, 1.2, 0); piv.add(b); }
+    const nb = Math.round((T - 0.16) / 0.15) + 1;
+    for (let i = 0; i < nb; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.4, 6), MAT.iron); b.position.set(0.08 + i * (T - 0.16) / (nb - 1), 1.2, 0); piv.add(b); }
     for (const y of [0.1, 1.2, 2.35]) { const b = new THREE.Mesh(new THREE.BoxGeometry(T - 0.04, 0.05, 0.05), MAT.iron); b.position.set(T / 2, y, 0); piv.add(b); }
     const col = r.addCollider(tm(ox + 1), tm(ox + 2), 0, WALL_H, z - 0.06, z + 0.06, 'bars');
     const cell = MAN.cell = { piv, col, closed: false, room: r, z, x0: tm(ox), x1: tm(ox + 7) };
@@ -542,13 +643,13 @@ const FURNISH = {
   piano(r) {
     const ox = 0, oz = 2;
     const pn = addPiano(r, tm(ox + 5.5), tm(oz + 4.8), 0); MAN.pianoStain = pn.stain;
-    interactBox(r, tm(ox + 5.5), 0.85, tm(oz + 4.8) + 0.95, 1.5, 0.4, 0.5, () => 'ピアノを調べる', () => STORY.event('piano'), { icon: 'hand' });
+    interactBox(r, tm(ox + 5.5), 0.85, tm(oz + 4.8) + 0.5, 1.5, 0.4, 0.5, () => 'ピアノを調べる', () => STORY.event('piano'), { icon: 'hand' });
     // white drawers on the left (the safe is behind them), white shelves on the right
-    const dr = movable(r, tm(ox + 1), tm(oz) + 0.35, tm(2) - 0.1, 0.5, 0.9);
-    dr.add(new THREE.BoxGeometry(tm(2) - 0.1, 0.85, 0.5), AOM.white, 0, 0.425, 0);
-    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { dr.add(new THREE.BoxGeometry(tm(1) - 0.12, 0.34, 0.02), AOM.white, (j - 0.5) * tm(1), 0.22 + i * 0.4, 0.26); dr.add(new THREE.SphereGeometry(0.02, 8, 6), MAT.brass, (j - 0.5) * tm(1), 0.22 + i * 0.4, 0.28); }
+    const dr = movable(r, tm(ox + 1), tm(oz) + 0.35, 2.0, 0.5, 0.9);
+    dr.add(new THREE.BoxGeometry(2.0, 0.85, 0.5), AOM.white, 0, 0.425, 0);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { dr.add(new THREE.BoxGeometry(0.9, 0.34, 0.02), AOM.white, (j - 0.5), 0.22 + i * 0.4, 0.26); dr.add(new THREE.SphereGeometry(0.02, 8, 6), MAT.brass, (j - 0.5), 0.22 + i * 0.4, 0.28); }
     MAN.pianoDrawers = dr;
-    interactBox(r, tm(ox + 1), 0.6, tm(oz) + 0.45, tm(2), 1.0, 0.7, () => (dr.at ? null : '棚を調べる'), () => STORY.event('pianoShelf'), { icon: 'hand' });
+    interactBox(r, tm(ox + 1), 0.6, tm(oz) + 0.45, 2.0, 1.0, 0.7, () => (dr.at ? null : '棚を調べる'), () => STORY.event('pianoShelf'), { icon: 'hand' });
     addBookshelf(r, tm(ox + 10), tm(oz) + 0.3, 0, tm(2) - 0.1, 1.9, { mat: AOM.white });
     // the safe in the wall, behind the drawers
     const sf = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.3), std({ color: 0x2a2c30, metalness: 0.6, roughness: 0.4 })); body.position.y = 0.3; sf.add(body);
@@ -698,12 +799,18 @@ const nodePos = (n, out = new THREE.Vector3()) => out.set(cx(n.x), FLOORS[n.fl],
 /* ---------- build everything ---------- */
 function buildMansion() {
   aoMaterials();
-  Object.assign(MAN, { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set() });
+  Object.assign(MAN, { areas: {}, list: [], doors: {}, doorList: [], stairs: {}, hides: [], props: {}, grid: new Map(), open: new Set(), doorEdges: new Set(), veils: [] });
   AREAS.forEach((d, i) => makeArea(d, i));
   for (const s of STAIRS) buildStairs(s);
-  for (const [fl, ax, az, bx, bz] of JOINS) {
+  for (const [fl, ax, az, bx, bz] of JOINS.concat(EDGES)) {
     const side = bx > ax ? 'E' : bx < ax ? 'W' : bz > az ? 'S' : 'N';
     MAN.open.add(edgeKey(fl, ax, az, side)); MAN.open.add(edgeKey(fl, bx, bz, OPP[side]));
+  }
+  // the black across each screen edge, standing on the line between the two tiles
+  for (const [fl, ax, az, bx, bz] of EDGES) {
+    const r = MAN.grid.get(gkey(fl, ax, az)).area, lx = Math.max(ax, bx), lz = Math.max(az, bz);
+    if (ax !== bx) addVeil(r, tm(lx), tm(az), tm(lx), tm(az + 1), -0.1, WALL_H + 0.1);
+    else addVeil(r, tm(ax), tm(lz), tm(ax + 1), tm(lz), -0.1, WALL_H + 0.1);
   }
   for (const d of DOORDEFS) MAN.doorEdges.add(edgeKey(d.fl, d.x, d.z, d.side));
   for (const r of MAN.list) floorAndCeiling(r);
@@ -711,7 +818,7 @@ function buildMansion() {
   for (const r of MAN.list) buildWalls(r);
   for (const s of STAIRS) stairRails(s);
   for (const r of MAN.list) { for (const l of r.def.lamps) lamp(r, l[0], l[1]); if (FURNISH[r.id]) FURNISH[r.id](r); }
-  // rooms joined at an edge share their light; the others are shut off from each other
+  // rooms that are one screen share their light; the others (even across a screen edge) are shut off from each other
   for (const r of MAN.list) r.joined = new Set([r]);
   for (const [fl, ax, az, bx, bz] of JOINS) {
     const a = MAN.grid.get(gkey(fl, ax, az)).area, b = MAN.grid.get(gkey(fl, bx, bz)).area, all = new Set([...a.joined, ...b.joined]);
