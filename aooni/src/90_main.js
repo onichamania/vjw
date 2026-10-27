@@ -48,12 +48,18 @@ const CAST = {
     if (!this.list[id]) { const m = makePerson(PEOPLE[id]); m.visible = false; scene.add(m); this.list[id] = { m, walk: 0, shiver: 0 }; }
     return this.list[id];
   },
-  place(id, x, y, z, yaw) { const c = this.get(id); c.m.position.set(x, y, z); c.m.rotation.y = yaw; c.m.visible = true; c.base = c.m.position.clone(); return c; },
+  place(id, x, y, z, yaw) { const c = this.get(id); c.m.position.set(x, y, z); c.m.rotation.set(0, yaw, 0); c.m.visible = true; c.base = c.m.position.clone(); c.dead = false; return c; },
+  // face down on the floor, still
+  lie(id, x, y, z, yaw) {
+    const c = this.place(id, x, y + 0.13, z, yaw); c.m.rotation.order = 'YXZ'; c.m.rotation.x = Math.PI / 2; c.base = null; c.dead = true;
+    c.m.userData.arms.forEach((a, i) => { a.rotation.set(0, 0, (i ? -1 : 1) * 0.5); }); c.m.userData.legs.forEach(l => l.rotation.set(0, 0, 0)); c.m.userData.head.rotation.set(0, 0.5, 0);
+    return c;
+  },
   hide(id) { if (this.list[id]) this.list[id].m.visible = false; },
   hideAll() { for (const k in this.list) this.list[k].m.visible = false; },
   update(dt) {
     for (const k in this.list) {
-      const c = this.list[k]; if (!c.m.visible) continue;
+      const c = this.list[k]; if (!c.m.visible || c.dead) continue;
       const u = c.m.userData;
       c.walk = damp(c.walk, c.moving ? 1 : 0, 8, dt);
       const ph = GAME.time * 7;
@@ -113,8 +119,29 @@ const STORY = {
   give(id) {
     if (!this.got.includes(id)) this.got.push(id);
     if (!this.inv.includes(id)) this.inv.push(id);
-    if ((id === 'oil' && this.has('lighter')) || (id === 'lighter' && this.has('oil'))) { this.flags.oilUsed = true; this.use('oil'); GAME.later(0.1, () => GAME.say([['', 'ライターにオイルを入れた。'], ['', IS_TOUCH ? '（炎のボタンでライターをつけられる）' : '（F キー／右クリックでライターをつけられる）']])); }
     UI.inv();
+  },
+  // something used from the item screen: on another thing you carry (the only things you put together by hand),
+  // or on what you were facing when you opened it
+  useItem(id, t) {
+    const has = x => this.has(x), f = this.flags, ia = t && t.ia, tag = ia && ia.tag, door = ia && ia.ref;
+    const say = l => GAME.say(l.map(x => (typeof x === 'string' ? ['', x] : x)));
+    switch (id) {
+      case 'soap': case 'hanky':
+        if (has('soap') && has('hanky')) { this.use('soap'); this.use('hanky'); this.give('hankySoap'); SFX.pickup(); say(['ハンカチに洗剤を染み込ませた。']); this.save(); return; }
+        if (tag === 'piano' && !f.pianoClean) { EVENTS.piano(); return; }
+        break;
+      case 'hankySoap': if (tag === 'piano' && !f.pianoClean) { EVENTS.piano(); return; } break;
+      case 'oil': case 'lighter':
+        if (has('oil') && has('lighter')) { this.use('oil'); f.oilUsed = true; SFX.lighter(); say(['ライターにオイルを補給した。', IS_TOUCH ? '（炎のボタンか、アイテム欄のライターで火をつけられる）' : '（F キー・右クリックか、アイテム欄のライターで火をつけられる）']); this.save(); return; }
+        if (id === 'lighter') { if (f.oilUsed) { GAME.toggleLighter(); return; } say(['……オイルが入っていない。']); return; }
+        break;
+      case 'driver': { const hk = door && this.doorHook(door); if (hk) { hk.use(); return; } break; }
+      case 'shard': if (door && door.kind === 'hidden' && !f.wallCut) { EVENTS.greyWall(); return; } break;
+      case 'knob': if (door && door.kind === 'hidden' && f.wallCut && !f.knobOn) { EVENTS.greyWall(); return; } break;
+      default: if (door && door.lock === id) { GAME.useDoor(door); return; } break;
+    }
+    say(['ここでは使えない。']);
   },
   use(id) { this.inv = this.inv.filter(x => x !== id); UI.inv(); },
   unlock(id) { if (!this.unlocked.includes(id)) this.unlocked.push(id); },
@@ -126,7 +153,7 @@ const STORY = {
   // doors with something special about them
   doorHook(d) {
     const f = this.flags;
-    if (d.id === 'attic' && f.takuro && this.has('driver') && !this.hasGot('knob')) return { prompt: '＋ドライバーでドアノブを外す', use: () => EVENTS.knob(d) };
+    if (d.id === 'atticBack' && f.takuro && this.has('driver') && !this.hasGot('knob')) return { prompt: '＋ドライバーでドアノブを外す', use: () => EVENTS.knob(d) };
     return null;
   },
 };
@@ -143,12 +170,19 @@ function lookAtPoint(p, k = 1) {
 const EVENTS = {
   plate() {
     const f = STORY.flags;
-    if (!f.plateLook) { f.plateLook = true; GAME.say([['ひろし', 'お皿が割れている……。さっきの音はこれか。'], ['ひろし', 'でも、どうして急に……？']]); return; }
-    GAME.take('shard', null, () => GAME.say([['ひろし', '何かに使えるかもしれない。持っていこう。']]));
+    f.plateLook = true;
+    GAME.say([['ひろし', 'お皿が割れている……。さっきの音はこれか。'], ['ひろし', 'でも、どうして急に……？']], () => GAME.take('shard', null));
   },
   tkChair() {
-    const c = MAN.tkChair; if (c.at) return;
-    c.at = 1; STORY.flags.tkChair = true; c.slide(c.g.position.x + T, c.g.position.z);
+    const c = MAN.tkChair, f = STORY.flags; if (c.at) return;
+    if (!f.tkRattle && !f.takeshiGone) {   // as you go to the desk, the closet behind you rattles
+      f.tkRattle = true; const h = MAN.tkCloset, t0 = GAME.time;
+      SFX.creak(h.cam, 0.5); SFX.push(h.cam);
+      animate(() => { if (GAME.time - t0 > 1.6) { h.doors.forEach(d => (d.rotation.z = 0)); return false; } const k = Math.sin(GAME.time * 45) * 0.012; h.doors.forEach(d => (d.rotation.z = k)); return true; });
+      GAME.later(0.5, () => GAME.say([['', 'ガタッ……！'], ['ひろし', '……！？　今、クローゼットの中で何か……。']]));
+      return;
+    }
+    c.at = 1; f.tkChair = true; c.slide(c.g.position.x + T, c.g.position.z);
     GAME.later(0.6, () => { MAN.props.k_library.visible = true; GAME.say([['', 'イスを押した。'], ['ひろし', '……机の下で何か光ってる。']]); });
   },
   libraryKey() { GAME.take('k_library', MAN.props.k_library); },
@@ -240,7 +274,7 @@ const EVENTS = {
     });
   },
   knob(d) {
-    d.knobs.forEach(k => (k.visible = false));
+    d = d || MAN.doors.atticBack; d.knobs.forEach(k => (k.visible = false));
     SFX.unlock(d.center);
     GAME.take('knob', null, () => GAME.say([['ひろし', 'ドライバーでドアノブを外した。']]));
   },
@@ -259,26 +293,30 @@ const EVENTS = {
     }, () => { GAME.busy = 0; GAME.say([['ひろし', '……いてて。'], ['ひろし', 'ここは……ピアノの部屋？']]); STORY.save(); });
   },
   pianoShelf() {
-    const dr = MAN.pianoDrawers; if (dr.at) return;
-    dr.at = 1; STORY.flags.pianoShelf = true; dr.slide(dr.g.position.x + 2.1, dr.g.position.z, 800);
+    const sh = MAN.pianoShelf; if (sh.at) return;
+    sh.at = 1; STORY.flags.pianoShelf = true; sh.slide(sh.g.position.x - 1.75, sh.g.position.z, 800);
     GAME.later(0.9, () => GAME.say([['', '棚を動かした。'], ['ひろし', '……壁に金庫が埋めこまれている。']]));
   },
+  // the keys, close up: the C, D and E of the middle octave carry the numbers (or the stain over them)
   piano() {
     const f = STORY.flags;
     if (!f.pianoClean) {
-      if (STORY.has('hanky') && STORY.has('soap')) {
-        f.pianoClean = true; MAN.pianoStain.visible = false; STORY.use('soap'); STORY.use('hanky');
-        GAME.say([['', 'ハンカチに洗剤をつけて、鍵盤の赤い汚れをふきとった。']], () => EVENTS.pianoChase());
+      if (STORY.has('hankySoap')) {
+        f.pianoClean = true; MAN.pianoStain.visible = false; STORY.use('hankySoap'); STORY.save();
+        GAME.say([['', '洗剤を染み込ませたハンカチで、鍵盤の汚れを拭き取った。']], () => UI.pianoKeys(() => EVENTS.pianoChase()));
         return;
       }
-      GAME.say(STORY.has('hanky') ? [['ひろし', '鍵盤が赤く汚れている……。'], ['ひろし', 'ハンカチだけじゃ落ちないな。洗剤があれば……。']] : [['ひろし', '鍵盤の一部が、赤黒く汚れている……。'], ['ひろし', '何かでふきとれないかな。']]);
+      const hint = STORY.has('hanky') && STORY.has('soap') ? [['ひろし', 'ハンカチに洗剤を染み込ませれば、落とせるかもしれない……。']] : STORY.has('hanky') ? [['ひろし', 'ハンカチだけじゃ、落ちそうにないな……。']] : [['ひろし', '何かで拭き取れないかな……。']];
+      UI.pianoKeys(() => GAME.say(hint), true);
       return;
     }
     UI.pianoKeys();
   },
   pianoChase() {
     STORY.flags.pianoChase = true; STORY.flags.pianoUnlocked = true; STORY.save();
-    GAME.later(1.2, () => { ONI.enterVia(MAN.doors.piano, 0.01); SFX.oniSpot(); });
+    const back = new THREE.Vector3(Math.sin(PLAYER.yaw), 0, Math.cos(PLAYER.yaw)).multiplyScalar(2.6).add(PLAYER.pos), c = cellOf(back);
+    const at = c && c.area.id === 'piano' && !c.blocked ? back : MAN.doors.piano.front;
+    GAME.later(0.5, () => { ONI.spawn(at.x, FLOORS.F2, at.z, yawTo(at, PLAYER.pos), 'appear'); ONI.appearFor = 1.1; SFX.oniSpot(); POST.shake = 0.35; });
   },
   safeOpened() {
     STORY.flags.safeOpen = true; SFX.unlock(MAN.safe.position.clone().setY(FLOORS.F2 + 0.4));
@@ -311,14 +349,13 @@ const EVENTS = {
     if (!STORY.flags.tatamiChase) { EVENTS.tatamiChase(); return; }
     GAME.say([['ひろし', '押入れの中は空っぽだ……。']]);
   },
+  // the moment you step onto the tatami, the right-hand fusuma slide open and it is there
   tatamiChase() {
     STORY.flags.tatamiChase = true; STORY.save();
-    GAME.say([['ひろし', '……ん？　中から、何か音が……。']], () => {
-      openFusuma(2, 3);
-      const p = MAN.fusuma[2].userData.home.clone().lerp(MAN.fusuma[3].userData.home, 0.5);
-      ONI.spawn(p.x, FLOORS.F1, p.z + 0.5, 0, 'appear'); ONI.appearFor = 0.9; SFX.oniSpot(); POST.shake = 0.4;
-      GAME.later(2.5, () => closeFusuma(2, 3));
-    });
+    openFusuma(2, 3);
+    const p = MAN.fusuma[2].userData.home.clone().lerp(MAN.fusuma[3].userData.home, 0.5);
+    ONI.spawn(p.x, FLOORS.F1, p.z + 0.5, 0, 'appear'); ONI.appearFor = 0.8; SFX.oniSpot(); POST.shake = 0.4;
+    GAME.later(2.5, () => closeFusuma(2, 3));
   },
   greyWall() {
     const f = STORY.flags, d = MAN.doors.corT_hid;
@@ -337,8 +374,9 @@ const EVENTS = {
   candle() {
     if (MAN.candle.state === 'on') return;
     if (!GAME.canLight()) { GAME.say([['ひろし', STORY.has('lighter') ? 'ライターのオイルがない……。' : 'ろうそくだ。火をつけるものがあれば……。']]); return; }
-    MAN.candle.state = 'on'; STORY.flags.candle = true; SFX.lighter();
-    GAME.say([['', 'ろうそくに火をつけた。']]); STORY.save();
+    candleUp(); STORY.flags.candle = true; SFX.lighter(); POST.flash = 0.45;   // it catches with a whoosh and the whole room is lit
+    if (AU.ok) AU.burst({ pos: MAN.candle.pos, dur: 0.5, a: 0.02, f: 700, q: 0.5, type: 'lowpass', vol: 0.5, brown: true, rev: 0.4 });
+    GAME.say([['', 'ろうそくに火をつけた。'], ['', '部屋全体が明るく照らされた。']]); STORY.save();
   },
   jailShelf() {
     if (MAN.candle.state !== 'on' && !GAME.lighterOn) { GAME.say([['ひろし', '暗くてよく見えない……。']]); return; }
@@ -358,21 +396,33 @@ const EVENTS = {
       GAME.later(1.5, () => { if (ONI.on && ONI.state === 'bars') { ONI.sub = 0; ONI.wait = 0; } });
     });
   },
+  // as the basement door comes open, a scream from upstairs
   basementUnlocked() {
     STORY.flags.basementOpen = true; STORY.save();
-    GAME.later(1.2, () => { SFX.scream2(); POST.shake = 0.3; GAME.later(1.4, () => GAME.say([['ひろし', '……！？'], ['ひろし', '今の……みかの声……！？'], ['ひろし', '子供部屋だ……！']])); });
+    SFX.scream2(); POST.shake = 0.35;
+    GAME.later(0.9, () => GAME.say([['ひろし', '……！？'], ['ひろし', '今の声……みか！？'], ['ひろし', '２階……子供部屋の方からだ……！']]));
   },
+  // in the kids' room it is crouched over her, eating. It looks up at you, and comes
   kidsChase() {
-    STORY.flags.kidsChase = true; STORY.save();
-    CAST.hide('mika');
-    const m = MAN.areas.kids.mikaAt;
-    GAME.later(0.8, () => GAME.say([['ひろし', '……みか？'], ['ひろし', 'いない……。']], () => GAME.later(0.5, () => { ONI.spawn(m.x, FLOORS.F2, m.z, yawTo(m, PLAYER.pos), 'appear'); ONI.appearFor = 1.1; SFX.oniSpot(); POST.shake = 0.4; })));
+    const f = STORY.flags, r = MAN.areas.kids, m = r.mikaDown, o = r.oniEat;
+    f.kidsChase = true; STORY.save();
+    CAST.lie('mika', m.x, FLOORS.F2, m.z, m.yaw); MAN.blood.visible = true;
+    ONI.spawn(o.x, FLOORS.F2, o.z, yawTo(o, m), 'script'); ONI.bend = ONI.bendT = 1;
+    PLAYER.frozen = true; STORY.busy = true;
+    ONI.script = { i: 0, steps: [{ t: 'eat', d: 3.4 }, { t: 'face', toPlayer: true, bend: 0.25, turn: 1.6, d: 1.3 }, { t: 'call', fn: () => {
+      ONI.state = 'appear'; ONI.wait = 0; ONI.appearFor = 0.6; ONI.bendT = 0; SFX.oniSpot(); POST.shake = 0.4;
+      GAME.say([['ひろし', '……み……か……？']], () => { PLAYER.frozen = false; STORY.busy = false; });
+    } }] };
+    const t0 = GAME.time;
+    animate(() => { if (!PLAYER.frozen || GAME.time - t0 > 9) return false; lookAtPoint(tmpV.copy(ONI.pos).setY(ONI.pos.y + 1.3), 0.07); return true; });
   },
   downstairs() {
     if (!STORY.flags.kidsChaseDone) { GAME.say([['ひろし', '……先に、みかの様子を見に行こう。']]); return; }
     GAME.chapterEnd();
   },
 };
+// the hidden room's candle: once it burns it lights every corner of the room
+function candleUp() { const c = MAN.candle; c.state = 'on'; c.intensity = 14; c.range = 24; }
 function openFusuma(a, b) { [a, b].forEach((i, k) => { const p = MAN.fusuma[i], t0 = performance.now(), dx = (k === 0 ? -1 : 1) * 0.9; animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = p.userData.home.x + dx * u; return u < 1; }); }); SFX.slide && SFX.slide(MAN.fusuma[a].position.clone()); }
 function closeFusuma(a, b) { [a, b].forEach(i => { const p = MAN.fusuma[i], x0 = p.position.x, t0 = performance.now(); animate(() => { const u = Math.min(1, (performance.now() - t0) / 350); p.position.x = lerp(x0, p.userData.home.x, u); return u < 1; }); }); }
 function showHiddenDoor(d, knob) { d.leaf.material = AOM.door; d.trims.visible = true; d.panels.forEach(p => (p.visible = true)); d.knobs.forEach(k => (k.visible = knob)); if (MAN.greyCover) MAN.greyCover.visible = false; }
@@ -385,6 +435,7 @@ const ITEM_SVG = {
   key: c => `<svg viewBox="0 0 40 40"><circle cx="12" cy="20" r="7" fill="none" stroke="${c}" stroke-width="4"/><path d="M19 20h17M30 20v6M35 20v5" stroke="${c}" stroke-width="4" stroke-linecap="round"/></svg>`,
   shard: () => '<svg viewBox="0 0 40 40"><path d="M8 28 L20 8 L32 18 L26 32Z" fill="#eeeae0" stroke="#9a968c" stroke-width="2"/></svg>',
   cloth: () => '<svg viewBox="0 0 40 40"><path d="M8 10 L32 8 L30 32 L10 30Z" fill="#f4f4f0" stroke="#b8b8b0" stroke-width="2"/><path d="M12 14h14M12 20h12" stroke="#c8c8c0" stroke-width="1.5"/></svg>',
+  clothSoap: () => '<svg viewBox="0 0 40 40"><path d="M8 10 L32 8 L30 32 L10 30Z" fill="#dff0ff" stroke="#8ab8e0" stroke-width="2"/><path d="M12 22 Q20 14 28 22 Q20 30 12 22Z" fill="#7cc0f0" opacity=".7"/><circle cx="26" cy="13" r="2.5" fill="#fff"/><circle cx="14" cy="27" r="2" fill="#fff"/></svg>',
   driver: () => '<svg viewBox="0 0 40 40"><rect x="6" y="16" width="12" height="8" rx="3" fill="#d23a2a"/><path d="M18 20h16" stroke="#b8bcc4" stroke-width="3"/><path d="M33 17v6M30 20h6" stroke="#b8bcc4" stroke-width="2"/></svg>',
   soap: () => '<svg viewBox="0 0 40 40"><rect x="13" y="12" width="14" height="22" rx="4" fill="#3fa0e0"/><rect x="16" y="6" width="8" height="7" fill="#eee"/></svg>',
   knob: () => '<svg viewBox="0 0 40 40"><circle cx="20" cy="18" r="9" fill="#d8b84a"/><rect x="17" y="26" width="6" height="8" fill="#a88a2a"/></svg>',
@@ -395,13 +446,40 @@ const UI = {
   show(id, on = true) { $(id).classList.toggle('hidden', !on); },
   hint(text, ms = 2600) { const h = $('hint'); h.textContent = text; h.classList.add('on'); clearTimeout(h._t); h._t = setTimeout(() => h.classList.remove('on'), ms); },
   place(name) { const p = $('place'); p.textContent = name; p.style.transition = 'opacity .3s'; p.style.opacity = 1; clearTimeout(p._t); p._t = setTimeout(() => { p.style.transition = 'opacity 1.4s'; p.style.opacity = 0; }, 2000); },
+  // the button that opens the item screen (what you carry is only shown there, as in the original)
   inv() {
-    const el = $('inv'); el.innerHTML = '';
-    for (const id of STORY.inv) {
-      const d = ITEMS[id], it = document.createElement('div'); it.className = 'it';
-      it.innerHTML = (ITEM_SVG[d.icon] ? ITEM_SVG[d.icon](d.color || '#e7c264') : '') + `<span>${d.name}</span>`;
-      el.appendChild(it);
-    }
+    $('tItems').innerHTML = `<svg viewBox="0 0 40 40"><path d="M9 14h22l-2 20H11Z" fill="#c9a26a" stroke="#f0e2c4" stroke-width="2"/><path d="M15 14q0-7 5-7t5 7" fill="none" stroke="#f0e2c4" stroke-width="2.5"/></svg>アイテム<small>(I)</small>`;
+    if (GAME.modal && GAME.modal.items) UI.drawItems();
+  },
+  itemName(id) { return id === 'lighter' && GAME.lighterOn ? 'ライター（使用中）' : ITEMS[id].name; },
+  itemDesc(id) { return id === 'lighter' && STORY.flags.oilUsed ? 'オイルの入ったライター。火をつけると、暗い所を照らせる。' : ITEMS[id].desc; },
+  items() {
+    if (GAME.state !== 'play' || GAME.modal || GAME.cine || GAME.busy || !PLAYER.alive || PLAYER.hidden) return;
+    GAME.itemTarget = TARGET; GAME.modal = { items: true };
+    UI._isel = clamp(UI._isel || 0, 0, Math.max(0, STORY.inv.length - 1));
+    releaseLock();
+    UI.show('items'); UI.drawItems(); SFX.click && SFX.click();
+  },
+  drawItems() {
+    const list = $('iList'); list.innerHTML = '';
+    if (!STORY.inv.length) list.innerHTML = '<div class="iempty">何も持っていない。</div>';
+    STORY.inv.forEach((id, i) => {
+      const d = ITEMS[id], b = document.createElement('button'); b.className = 'irow' + (i === UI._isel ? ' sel' : '');
+      b.innerHTML = (ITEM_SVG[d.icon] ? ITEM_SVG[d.icon](d.color || '#e7c264') : '') + `<span class="nm">${UI.itemName(id)}</span><span class="ct">:  1</span>`;
+      b.onclick = () => { if (UI._isel === i) UI.useItem(); else { UI._isel = i; UI.drawItems(); } };   // tap to choose, tap again to use
+      list.appendChild(b);
+    });
+    const id = STORY.inv[UI._isel];
+    $('iHelp').textContent = id ? UI.itemDesc(id) : ''; $('iUse').disabled = !id;
+  },
+  closeItems() { UI.show('items', false); if (GAME.modal && GAME.modal.items) GAME.modal = null; if (!IS_TOUCH && GAME.state === 'play' && PLAYER.alive) requestLock(); },
+  useItem() { const id = STORY.inv[UI._isel]; if (!id) return; UI.closeItems(); STORY.useItem(id, GAME.itemTarget); },
+  itemKey(e) {
+    const n = STORY.inv.length, k = e.code;
+    if (/^(Escape|KeyX|KeyI|Tab|Backspace)$/.test(k)) { UI.closeItems(); return; }
+    if (/^(Enter|NumpadEnter|Space|KeyE|KeyZ)$/.test(k)) { if (!e.repeat) UI.useItem(); return; }
+    const d = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -2, ArrowDown: 2, KeyA: -1, KeyD: 1, KeyW: -2, KeyS: 2 }[k];
+    if (d && n) { UI._isel = clamp(UI._isel + d, 0, n - 1); UI.drawItems(); }
   },
   /* the message window, after the original's: a black box with a white frame, the name above it, the face on the left */
   message(lines, done) {
@@ -433,31 +511,32 @@ const UI = {
   openModal(html, opts = {}) {
     const m = $('modal'); m.innerHTML = html; m.classList.remove('hidden');
     GAME.modal = opts;
-    if (document.pointerLockElement) document.exitPointerLock();
+    releaseLock();
     m.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => UI.closeModal()));
     m.onclick = e => { if (e.target === m) UI.closeModal(); };   // a tap on the dark around it closes it
     return m;
   },
   // the cleaned keys: the numbers in red
-  pianoKeys() {
-    const dg = STORY.flags.code.piano, keys = Array.from({ length: 14 }, (_, i) => `<div class="pk">${i >= 5 && i < 9 ? `<b>${dg[i - 5]}</b>` : ''}</div>`).join('');
-    const m = UI.openModal(`<div class="pkeys"><button class="close" data-close>×</button><div class="pkrow">${keys}</div><div class="msgline">ふきとった鍵盤に、赤い数字が書かれている。</div><div class="btns"><button class="mbtn primary" data-close>閉じる</button></div></div>`);
+  pianoKeys(done, stained = false) {
+    const dg = STORY.flags.code.piano, keys = Array.from({ length: 14 }, (_, i) => `<div class="pk">${!stained && i >= 7 && i < 10 ? `<b>${dg[i - 7]}</b>` : ''}</div>`).join('');
+    const m = UI.openModal(`<div class="pkeys"><button class="close" data-close>×</button><div class="pkrow">${keys}${stained ? '<div class="pkstain"></div>' : ''}</div><div class="msgline">${stained ? '鍵盤に、赤黒い汚れがこびりついている……。' : '拭き取った鍵盤に、赤い数字が書かれている。'}</div><div class="btns"><button class="mbtn primary" data-close>閉じる</button></div></div>`, { onClose: done });
     m.querySelector('.pkrow').addEventListener('click', () => UI.closeModal());   // it is only something to look at: a tap on the keys puts it away too
   },
-  // the safe: mounted upside down; four dials
+  // the safe (6.23): four odd figures on its door, and four dials
   safe() {
     const code = STORY.flags.code.safe, v = [0, 0, 0, 0];
     let fails = 0;
-    const m = UI.openModal(`<div class="safe"><button class="close" data-close>×</button><div class="msgline">壁に埋めこまれた金庫。……なぜか、さかさまに取りつけられている。</div>
+    const figs = SAFE_FIGURES.map(([k, rot]) => `<svg viewBox="-6 -6 52 112" aria-hidden="true"><polygon points="${figurePts(k, rot).map(q => q.join(',')).join(' ')}" fill="none" stroke="#e6e6e6" stroke-width="5"/></svg>`).join('');
+    const m = UI.openModal(`<div class="safe"><button class="close" data-close>×</button><div class="msgline">壁に埋めこまれた金庫。扉に、おかしな図形が描かれている……。</div>
+      <div class="sfigs">${figs}</div>
       <div class="dials">${v.map((_, i) => `<div class="dial"><button data-u="${i}">▲</button><div class="dd" id="sd${i}">0</div><button data-d="${i}">▼</button></div>`).join('')}</div>
       <div class="btns"><button class="mbtn primary" id="sfOpen">開ける</button><button class="mbtn" data-close>やめる</button></div><div class="msgline" id="sfMsg"></div></div>`);
     const draw = () => v.forEach((d, i) => ($('sd' + i).textContent = d));
     m.querySelectorAll('[data-u]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.u; v[i] = (v[i] + 1) % 10; draw(); SFX.click && SFX.click(); }));
     m.querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.d; v[i] = (v[i] + 9) % 10; draw(); SFX.click && SFX.click(); }));
     $('sfOpen').onclick = () => {
-      // the dials read upside down: what you see from the front is the code turned 180 degrees
       if (v.join('') === code) { UI.closeModal(); EVENTS.safeOpened(); return; }
-      fails++; SFX.locked(MAN.safe.position.clone()); $('sfMsg').textContent = fails >= 3 ? '開かない……。ピアノの数字を、さかさまから読んでみたら……？' : '開かない……。';
+      fails++; SFX.locked(MAN.safe.position.clone()); $('sfMsg').textContent = fails >= 3 ? '開かない……。この図形、何かの形に似ている気がする……。' : '開かない……。';
     };
   },
   pause() {
@@ -470,7 +549,7 @@ const UI = {
   resume() { GAME.paused = false; UI.show('pause', false); AU.resume(); if (!IS_TOUCH) requestLock(); },
   title() {
     GAME.state = 'title';
-    ['hud', 'touch', 'over', 'end', 'pause', 'loading', 'settings', 'how', 'msg'].forEach(i => UI.show(i, false));
+    ['hud', 'touch', 'over', 'end', 'pause', 'loading', 'settings', 'how', 'msg', 'items'].forEach(i => UI.show(i, false));
     UI.show('title');
     $('bCont').disabled = !store.get('save', null);
     MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
@@ -501,12 +580,12 @@ const UI = {
    Game flow
    ========================================================================= */
 let materialsReady = false;
+// 6.23's five sets of numbers on the keys (left, middle, right). The safe reads them as its figures say: the right key
+// turned upside down, the middle, the right, the left turned upside down (turned over, 6 and 9 swap)
 function newCode() {
-  // four digits that still read as digits upside down; the safe takes them turned 180 degrees
-  const pool = [1, 2, 5, 6, 8, 9], rot = { 0: 0, 1: 1, 2: 2, 5: 5, 6: 9, 8: 8, 9: 6 };
-  let d, s;
-  do { d = Array.from({ length: 4 }, () => pool[(Math.random() * pool.length) | 0]); s = d.slice().reverse().map(x => rot[x]); } while (s.join('') === d.join(''));
-  return { piano: d.join(''), safe: s.join('') };
+  const sets = ['176', '239', '941', '679', '915'], rot = { 1: 1, 2: 2, 5: 5, 6: 9, 9: 6 };
+  const p = sets[(Math.random() * sets.length) | 0], [L, M, R] = p;
+  return { piano: p, safe: `${rot[R]}${M}${R}${rot[L]}` };
 }
 // put the house in the state a save describes (things moved, opened, taken)
 function applyState() {
@@ -519,14 +598,15 @@ function applyState() {
   if (f.libChaseDone && !STORY.hasGot('hanky')) MAN.props.hanky.visible = true;
   if (f.tubDrained) MAN.tubWater.visible = false;
   if (STORY.hasGot('soap')) MAN.props.soap.visible = false;
-  if (STORY.hasGot('knob')) MAN.doors.attic.knobs.forEach(k => (k.visible = false));
+  if (STORY.hasGot('knob')) MAN.doors.atticBack.knobs.forEach(k => (k.visible = false));
   if (f.bedPushed) { MAN.leftBed.at = 1; MAN.leftBed.place(MAN.leftBed.g.position.x - T, MAN.leftBed.g.position.z); MAN.hole.visible = true; }
-  if (f.pianoShelf) { MAN.pianoDrawers.at = 1; MAN.pianoDrawers.place(MAN.pianoDrawers.g.position.x + 2.1, MAN.pianoDrawers.g.position.z); }
+  if (f.pianoShelf) { MAN.pianoShelf.at = 1; MAN.pianoShelf.place(MAN.pianoShelf.g.position.x - 1.75, MAN.pianoShelf.g.position.z); }
   if (f.pianoClean) MAN.pianoStain.visible = false;
   if (f.kidsChair) { MAN.kidsChair.at = 1; MAN.kidsChair.place(tm(13.5), tm(-13) + 1.1); }
   if (STORY.hasGot('oil')) MAN.props.oil.visible = false;
   if (f.wallCut) showHiddenDoor(MAN.doors.corT_hid, !!f.knobOn);
-  if (f.candle) MAN.candle.state = 'on';
+  if (f.candle) candleUp();
+  if (f.kidsChase) MAN.blood.visible = true;
   if (f.jailShelf) { MAN.jailShelf.at = 1; MAN.jailShelf.place(MAN.jailShelf.g.position.x + tm(2), MAN.jailShelf.g.position.z); }
   for (const k of ['pianoChase', 'tatamiChase', 'kidsChase']) if (f[k]) f[k + 'Done'] = true;   // a chase you were caught in counts as over
   if (f.jailScene) f.jailDone = true;
@@ -553,6 +633,7 @@ GAME.start = async function (save = null) {
   PLAYER.reset(new THREE.Vector3(sp.x, FLOORS.F1, sp.z), sp.yaw);
   if (save) {
     STORY.inv = save.inv.slice(); STORY.got = save.got.slice(); STORY.unlocked = save.unlocked.slice(); STORY.flags = JSON.parse(JSON.stringify(save.flags));
+    if (!STORY.flags.code || String(STORY.flags.code.piano).length !== 3) STORY.flags.code = newCode();   // a save from before the 6.23 keys
     applyState();
     PLAYER.reset(new THREE.Vector3(save.pos[0], save.pos[1], save.pos[2]), save.pos[3]);
     GAME.time = save.time || 0; GAME.caughtN = save.caught || 0;
@@ -589,7 +670,15 @@ GAME.start = async function (save = null) {
       ['みか', 'きゃっ！　な、なに今の音……。'],
       ['たけし', 'ひっ……！'],
       ['ひろし', '右の奥……台所のほうからだ。ちょっと見てくるよ。'],
-    ], () => { STORY.save(); UI.hint(IS_TOUCH ? '左側で移動・右側で視点・手のボタンで調べる' : 'WASD 移動 ・ Shift 走る ・ E / クリック 調べる', 4500); }));
+    ], () => {
+      // as in the original, you set off alone: the game starts in the corridor to the right of the hall
+      GAME.busy = 1;
+      GAME.fade(0.6, () => {
+        STORY.flags.leftHall = true;
+        PLAYER.pos.set(tm(24.5), FLOORS.F1, tm(1.5)); PLAYER.camY = FLOORS.F1 + 1.58; PLAYER.yaw = -Math.PI / 2; PLAYER.pitch = 0; PLAYER.vel.set(0, 0, 0);
+        GAME.room = MAN.areas.corB; UI.place(GAME.room.name);
+      }, () => { GAME.busy = 0; STORY.save(); UI.hint(IS_TOUCH ? '左側で移動・右側で視点・手のボタンで調べる・アイテムは左上' : 'WASD 移動 ・ Shift 走る ・ E / クリック 調べる ・ I アイテム', 4500); });
+    }));
   }));
 };
 GAME.onEnterRoom = function (r, via = null, quiet = false) {
@@ -600,27 +689,26 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
   if (r.id === 'kitchen') { CAST.hide('takuro'); CAST.hide('mika'); CAST.hide('takeshi'); f.friendsLeft = true; }
   if (r.id === 'foyer' && f.friendsLeft && !f.friendsGone && f.plateLook) { f.friendsGone = true; GAME.later(0.5, () => GAME.say([['ひろし', '……あれ？　みんなは？'], ['ひろし', 'どこへ行ったんだろう……。']], () => STORY.save())); }
   if (r.id === 'library' && !f.glimpse && !quiet) EVENTS.libraryGlimpse();
-  if (r.id === 'attic' && !f.takuro) EVENTS.takuroScene();
-  if (r.id === 'kids') {
-    if (!f.basementOpen) { const m = r.mikaAt, c = CAST.place('mika', m.x, FLOORS.F2, m.z, m.yaw); if (!c.m.userData.ia) { c.m.userData.ia = { dist: 2.5, prompt: () => 'みかに話しかける', use: () => EVENTS.mika() }; c.m.traverse(o => { if (o.isMesh) o.userData.iaRoot = c.m; }); r.interactables.push(c.m); } }
-    else { CAST.hide('mika'); if (!f.kidsChase) EVENTS.kidsChase(); }
-  } else if (r.id !== 'kids') CAST.hide('mika');
-  if (r.id === 'takeshi' && !f.takeshiMet && !f.takeshiGone) {   // the closet shakes
-    const h = MAN.tkCloset;
-    h.prompt = () => (STORY.flags.takeshiGone ? 'クローゼットに隠れる' : 'クローゼットを調べる');
-    h.use = () => (STORY.flags.takeshiGone ? GAME.enterHide(h) : EVENTS.takeshiCloset());
-    const t0 = GAME.time;
-    SFX.creak(h.cam, 0.3);
-    animate(() => { if (GAME.room !== r || STORY.flags.takeshiMet || GAME.time - t0 > 6) { h.doors.forEach(d => (d.rotation.z = 0)); return false; } const k = Math.sin(GAME.time * 40) * 0.008 * (Math.sin(GAME.time * 3) > 0 ? 1 : 0); h.doors.forEach(d => (d.rotation.z = k)); return true; });
+  if (r.id === 'tatami' && !f.tatamiChase && !quiet) EVENTS.tatamiChase();
+  // until you have found what made the noise, the hall is where the others are waiting: you go on
+  if (r.id === 'foyer' && f.leftHall && !f.plateLook) {
+    PLAYER.pos.x = tm(23) + 0.9; PLAYER.vel.set(0, 0, 0); PLAYER.yaw = -Math.PI / 2; GAME.room = MAN.areas.corB;
+    GAME.say([['ひろし', '……先に、音のした方を見に行こう。']]); return;
   }
-  if (r.id === 'takeshi') { const h = MAN.tkCloset; h.prompt = () => (STORY.flags.takeshiGone ? 'クローゼットに隠れる' : 'クローゼットを調べる'); h.use = () => (STORY.flags.takeshiGone ? GAME.enterHide(h) : EVENTS.takeshiCloset()); }
+  if (r.id === 'kids') {
+    if (!f.basementOpen) { const m = r.mikaAt, c = CAST.place('mika', m.x, FLOORS.F2, m.z, m.yaw); if (!c.m.userData.ia) { c.m.userData.ia = { dist: 2.5, prompt: () => (CAST.list.mika.dead ? null : 'みかに話しかける'), use: () => EVENTS.mika() }; c.m.traverse(o => { if (o.isMesh) o.userData.iaRoot = c.m; }); r.interactables.push(c.m); } }
+    else if (!f.kidsChase) { CAST.hide('mika'); EVENTS.kidsChase(); }
+    else { const m = r.mikaDown; CAST.lie('mika', m.x, FLOORS.F2, m.z, m.yaw); MAN.blood.visible = true; }
+  } else CAST.hide('mika');
+  // Takeshi's closet: nothing to see until it rattles, as you go to the desk
+  if (r.id === 'takeshi') { const h = MAN.tkCloset; h.prompt = () => (STORY.flags.takeshiGone ? 'クローゼットに隠れる' : STORY.flags.tkRattle ? 'クローゼットを調べる' : null); h.use = () => (STORY.flags.takeshiGone ? GAME.enterHide(h) : EVENTS.takeshiCloset()); }
   if (r.dark && !GAME.lighterOn && !quiet && MAN.candle.state !== 'on') GAME.later(0.3, () => UI.hint(GAME.canLight() ? '真っ暗だ……（ライターをつけよう）' : '真っ暗だ……', 2600));
   void via;
 };
 GAME.chapterEnd = function () {
   if (GAME.state !== 'play') return;
   GAME.state = 'ending'; PLAYER.frozen = true; ONI.despawn(true); MUSIC.stop(1.5);
-  if (document.pointerLockElement) document.exitPointerLock();
+  releaseLock();
   SFX.door(MAN.doors.corC_base.center, 1.0);
   $('fxBlack').style.transition = 'opacity 1.5s'; $('fxBlack').style.opacity = 1;
   const play = GAME.time, caught = GAME.caughtN || 0;
@@ -658,6 +746,11 @@ function update(dt) {
     const r = PLAYER.alive && !GAME.busy ? WORLD.roomAt(PLAYER.pos) : null;
     if (r && r !== GAME.room) { GAME.room = r; GAME.onEnterRoom(r); }
     GAME.checkMoves();
+    // the attic: Takuro comes in behind you as you go up to the door at the back
+    if (GAME.room && GAME.room.id === 'attic' && !STORY.flags.takuro && !GAME.busy && !GAME.modal && PLAYER.alive && PLAYER.pos.distanceTo(MAN.doors.atticBack.front) < 3.6) EVENTS.takuroScene();
+    // hidden from it in a closet: once it has gone, you come out by yourself
+    const hd = PLAYER.hidden;
+    if (hd && hd.chased && !GAME.modal) { if (!ONI.on) { hd.outT = (hd.outT || 0) + dt; if (hd.outT > 1.2) { hd.chased = false; GAME.exitHide(); } } else hd.outT = 0; }
     for (const rm of WORLD.rooms) for (const fn of rm.updaters) fn(dt, GAME.time);
     const wasOn = ONI.on;
     ONI.update(dt);
@@ -677,7 +770,8 @@ function update(dt) {
   $('fxChase').style.opacity = GAME.chaseFx ? 1 : 0;
   $('fxHide').classList.toggle('dark', !!PLAYER.hidden && ONI.on);
   const dark = GAME.room && GAME.room.dark && MAN.candle && MAN.candle.state !== 'on';
-  hemi.intensity = damp(hemi.intensity, dark ? 0.02 : 0.26, 3, dt); hemi.color.setHex(0xa4accc); hemi.groundColor.setHex(0x1a1410);
+  const candleLit = GAME.room && GAME.room.id === 'hidden' && MAN.candle && MAN.candle.state === 'on';   // the candle fills the room with its light
+  hemi.intensity = damp(hemi.intensity, dark ? 0.02 : candleLit ? 0.6 : 0.26, 3, dt); hemi.color.setHex(candleLit ? 0xffc890 : 0xa4accc); hemi.groundColor.setHex(0x1a1410);
   scene.fog.color.setHex(0x040406); scene.fog.density = 0.026;
   $('fxVeil').style.opacity = GAME.state === 'play' && !PLAYER.hidden ? veilDark(camera.position, PLAYER.pos.y).toFixed(3) : 0;   // walking into a black screen edge
   renderer.toneMappingExposure = BASE_EXPOSURE * SETTINGS.bright * (1 + POST.flash * 2.5);
@@ -713,6 +807,8 @@ function boot() {
   if (IS_TOUCH) setupTouch();
   $('msg').addEventListener('click', e => { e.stopPropagation(); AU.resume(); UI.msgNext(); });
   $('bNew').onclick = () => GAME.start();
+  $('tItems').onclick = e => { e.stopPropagation(); AU.resume(); UI.items(); };
+  $('iUse').onclick = () => UI.useItem(); $('iClose').onclick = () => UI.closeItems();
   $('bCont').onclick = () => { const s = store.get('save', null); if (s && s.v === 2) GAME.start(s); else GAME.start(); };
   $('bSettings').onclick = () => UI.settings();
   $('bHow').onclick = () => UI.show('how');

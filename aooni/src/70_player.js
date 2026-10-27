@@ -14,6 +14,7 @@ addEventListener('keydown', e => {
   if (GAME.state !== 'play') return;
   if (KEYMAP[e.code]) { INPUT.keys[KEYMAP[e.code]] = true; e.preventDefault(); }
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') INPUT.run = true;
+  if (GAME.modal && GAME.modal.items) { UI.itemKey(e); e.preventDefault(); return; }
   if (GAME.modal) {
     if (GAME.modal.msg) { if (!e.repeat && /^(KeyE|Space|Enter|NumpadEnter|KeyZ)$/.test(e.code)) { UI.msgNext(); e.preventDefault(); } return; }
     if (e.code === 'Escape') UI.closeModal(); else if (GAME.modal.key) GAME.modal.key(e);
@@ -21,6 +22,7 @@ addEventListener('keydown', e => {
   }
   if ((e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') && !e.repeat) { GAME.interact(); e.preventDefault(); }
   if (e.code === 'KeyF' && !e.repeat) GAME.toggleLighter();
+  if ((e.code === 'KeyI' || e.code === 'Tab' || e.code === 'KeyX') && !e.repeat) { UI.items(); e.preventDefault(); }
   if (e.code === 'Escape' && !INPUT.locked) UI.pause();
 });
 addEventListener('keyup', e => { if (KEYMAP[e.code]) INPUT.keys[KEYMAP[e.code]] = false; if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') INPUT.run = false; });
@@ -29,6 +31,7 @@ addEventListener('blur', () => {
   if (HUB.embedded && GAME.state === 'play' && !GAME.modal && !GAME.cine && PLAYER.alive && !INPUT.locked) UI.pause();
 });
 /* Pointer lock can be refused (e.g. inside an embedded viewer). Then dragging turns the view and a click interacts. */
+function releaseLock() { if (document.pointerLockElement) { INPUT.selfUnlockT = performance.now(); document.exitPointerLock(); } }
 function requestLock() {
   if (INPUT.noLock || !canvas.requestPointerLock) return;
   try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { INPUT.noLock = true; }); } catch (e) { INPUT.noLock = true; }
@@ -52,7 +55,8 @@ addEventListener('mouseup', e => {
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('pointerlockchange', () => {
   INPUT.locked = document.pointerLockElement === canvas;
-  if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cine) UI.pause();
+  // losing the lock pauses the game, unless the game let go of it itself a moment ago (to show the item screen, the safe...)
+  if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cine && performance.now() - (INPUT.selfUnlockT || -1e9) > 600) UI.pause();
 });
 document.addEventListener('mousemove', e => {
   if (!INPUT.locked) {
@@ -281,7 +285,7 @@ GAME.take = function (id, mesh, after) {
 
 /* ---------- doors: going through one is a change of map, as in the original ---------- */
 GAME.doorShut = function (d) {   // a door the oni can't use either
-  if (d.kind === 'front' || d.kind === 'basement') return true;
+  if (d.kind === 'front' || d.kind === 'basement' || d.kind === 'back') return true;
   if (d.lock) return true;
   if (d.kind === 'hidden' && !STORY.flags.knobOn) return true;
   if (d.kind === 'shelf' && !(MAN.jailShelf && MAN.jailShelf.at)) return true;
@@ -295,6 +299,7 @@ GAME.doorPrompt = function (d) {
   const hk = STORY.doorHook(d); if (hk) return hk.prompt;
   switch (d.kind) {
     case 'front': return '玄関の扉を調べる';
+    case 'back': return '扉を調べる';
     case 'basement': return d.lock ? (STORY.has(d.lock) ? '地下室の鍵で開ける' : '扉を調べる') : '地下へ降りる';
     case 'hidden': return !STORY.flags.wallCut ? '壁を調べる' : !STORY.flags.knobOn ? 'ドアノブのない扉を調べる' : '開ける';
     case 'shelf': return MAN.jailShelf && MAN.jailShelf.at ? '開ける' : null;
@@ -313,6 +318,7 @@ GAME.useDoor = function (d) {
   const hk = STORY.doorHook(d); if (hk) { hk.use(); return; }
   if (d.kind === 'front') { SFX.locked(d.center); GAME.say(STORY.flags.frontTried ? [['ひろし', '……やっぱり開かない。']] : [['ひろし', '……あれ？　開かない。'], ['ひろし', '外から鍵をかけられたみたいだ……。']]); STORY.flags.frontTried = true; return; }
   if (d.kind === 'hidden') { STORY.event('greyWall'); return; }
+  if (d.kind === 'back') { SFX.locked(d.center); GAME.say(STORY.hasGot('knob') ? [['ひろし', 'ドアノブを外した扉だ。開きそうにない。']] : [['ひろし', '鍵がかかっている……。']]); return; }
   if (d.kind === 'stuck' && !STORY.flags.pianoUnlocked) { SFX.locked(d.center); GAME.say([['ひろし', '……開かない。鍵はかかっていないのに、何かが引っかかっているみたいだ。']]); return; }
   if (d.lock) {
     if (!STORY.has(d.lock)) {
@@ -416,7 +422,7 @@ GAME.enterHide = function (h) {
   if (PLAYER.hidden || !PLAYER.alive || GAME.modal || GAME.cine || GAME.busy) return;
   if (h.blockedUntil > GAME.time) return;
   ONI.onPlayerHide(h);
-  h.enterT = GAME.time; h.from = camera.position.clone();
+  h.enterT = GAME.time; h.from = camera.position.clone(); h.chased = ONI.on; h.outT = 0;
   PLAYER.hidden = h; PLAYER.hideLook.y = 0; PLAYER.hideLook.p = 0;
   PLAYER.yaw = h.yaw; PLAYER.pitch = 0;
   PLAYER.pos.set(h.exitP.x, h.exitP.y, h.exitP.z); PLAYER.vel.set(0, 0, 0);

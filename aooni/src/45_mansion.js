@@ -130,22 +130,25 @@ const DOORDEFS = [
   { id: 'cor2_piano', fl: 'F2', x: 14, z: 12, side: 'N', to: 'piano', kind: 'stuck' },
   { id: 'piano', fl: 'F2', x: 5, z: 11, side: 'S', to: 'cor2_piano' },
   { id: 'cor3_attic', fl: 'F3', x: 15, z: 2, side: 'N', to: 'attic' },
+  { id: 'atticBack', fl: 'F3', x: 15, z: -12, side: 'N', to: null, kind: 'back' },
   { id: 'attic', fl: 'F3', x: 15, z: -2, side: 'S', to: 'cor3_attic' },
   { id: 'cor3_bed', fl: 'F3', x: 13, z: 7, side: 'W', to: 'bed3', lock: 'k_bedroom' },
   { id: 'bed3', fl: 'F3', x: 9, z: 8, side: 'E', to: 'cor3_bed' },
 ];
+// what you can carry; desc is the line at the top of the item screen
 const ITEMS = {
-  shard: { name: '皿の破片', icon: 'shard' },
-  k_library: { name: '図書室の鍵', icon: 'key', color: '#d9b25a' },
-  k_bedroom: { name: '寝室の鍵', icon: 'key', color: '#c9c9c9' },
-  hanky: { name: 'ハンカチ', icon: 'cloth' },
-  driver: { name: '＋ドライバー', icon: 'driver' },
-  soap: { name: '洗剤', icon: 'soap' },
-  knob: { name: 'ドアノブ', icon: 'knob' },
-  k_kids: { name: '子供部屋の鍵', icon: 'key', color: '#e89ab0' },
-  oil: { name: 'ライターオイル', icon: 'oil' },
-  lighter: { name: 'ライター', icon: 'lighter' },
-  k_basement: { name: '地下室の鍵', icon: 'key', color: '#9a9a8a' },
+  shard: { name: '皿の破片', icon: 'shard', desc: '割れた皿のかけら。ふちが鋭くとがっている。' },
+  k_library: { name: '図書室の鍵', icon: 'key', color: '#d9b25a', desc: '１階・図書室の鍵。' },
+  k_bedroom: { name: '寝室の鍵', icon: 'key', color: '#c9c9c9', desc: '３階・寝室の鍵。' },
+  hanky: { name: 'ハンカチ', icon: 'cloth', desc: '白いハンカチ。汚れを拭き取るのに使えそうだ。' },
+  hankySoap: { name: 'ハンカチ（洗剤）', icon: 'clothSoap', desc: '洗剤を染み込ませたハンカチ。しつこい汚れも落とせそうだ。' },
+  driver: { name: '＋ドライバー', icon: 'driver', desc: 'プラスのドライバー。ネジを外せる。' },
+  soap: { name: '洗剤', icon: 'soap', desc: '汚れ落としの洗剤。何かに染み込ませて使う。' },
+  knob: { name: 'ドアノブ', icon: 'knob', desc: '屋根裏部屋の扉から外したドアノブ。' },
+  k_kids: { name: '子供部屋の鍵', icon: 'key', color: '#e89ab0', desc: '２階・子供部屋の鍵。' },
+  oil: { name: 'ライターオイル', icon: 'oil', desc: 'ライター用のオイル。' },
+  lighter: { name: 'ライター', icon: 'lighter', desc: 'オイルを補給して使うライター。' },
+  k_basement: { name: '地下室の鍵', icon: 'key', color: '#9a9a8a', desc: '地下室の鍵。' },
 };
 const SIDE = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] };
 const OPP = { N: 'S', S: 'N', W: 'E', E: 'W' };
@@ -270,7 +273,7 @@ function buildDoor(def) {
   door.yawIn = Math.atan2(-into.x, -into.z);         // a camera with this yaw looks into the room
   const ax = Math.abs(into.x), az = Math.abs(into.z);
   r.addCollider(px - az * T / 2 - ax * 0.06, px + az * T / 2 + ax * 0.06, 0, DR_H, pz - ax * T / 2 - az * 0.06, pz + ax * T / 2 + az * 0.06, 'door');
-  r.addInteract(leaf, { dist: 2.5, door: true, prompt: () => GAME.doorPrompt(door), use: () => GAME.useDoor(door) });
+  r.addInteract(leaf, { dist: 2.5, door: true, ref: door, prompt: () => GAME.doorPrompt(door), use: () => GAME.useDoor(door) });
   MAN.doors[def.id] = door; MAN.doorList.push(door);
   return door;
 }
@@ -345,6 +348,23 @@ function veilDark(p, feetY) {
 function stairS(s, p) { return (p.z - tm(s.entryZ)) / (tm(s.farZ) - tm(s.entryZ)); }
 function stairPoint(s, k) { return new THREE.Vector3(tm(s.x0) + tm(s.x1 - s.x0) / 2, FLOORS[s.fl] + s.rise * k, lerp(tm(s.entryZ), tm(s.farZ), k)); }
 function onStair(s, p) { return Math.abs(p.y - FLOORS[s.fl]) < 4 && p.x > tm(s.x0) && p.x < tm(s.x1) && p.z > tm(s.r[1]) && p.z < tm(s.r[1] + s.r[3]); }
+
+/* ---------- the safe's figures (6.23): white keys as the black keys leave them, two of them upside down ---------- */
+const KEY_SHAPES = {
+  C: [[0, 0], [22, 0], [22, 60], [40, 60], [40, 100], [0, 100]],
+  D: [[11, 0], [29, 0], [29, 60], [40, 60], [40, 100], [0, 100], [0, 60], [11, 60]],
+  E: [[18, 0], [40, 0], [40, 100], [0, 100], [0, 60], [18, 60]],
+};
+const SAFE_FIGURES = [['E', true], ['D', false], ['E', false], ['C', true]];   // reads: right key turned, middle, right, left key turned
+const figurePts = (k, rot) => KEY_SHAPES[k].map(([x, y]) => (rot ? [40 - x, 100 - y] : [x, y]));
+function safeFaceCanvas() {
+  const c = newCanvas(512, 256), g = c.getContext('2d');
+  g.fillStyle = '#111'; g.fillRect(0, 0, 512, 256); g.strokeStyle = '#777'; g.lineWidth = 3; g.strokeRect(12, 12, 488, 232);
+  g.fillStyle = '#555'; g.beginPath(); g.arc(88, 128, 46, 0, TAU); g.fill(); g.strokeStyle = '#333'; g.lineWidth = 3; g.beginPath(); g.arc(88, 128, 36, 0, TAU); g.stroke();
+  g.strokeStyle = '#e6e6e6'; g.lineWidth = 7; g.lineJoin = 'miter';
+  SAFE_FIGURES.forEach(([k, rot], i) => { g.beginPath(); figurePts(k, rot).forEach(([x, y], j) => (j ? g.lineTo : g.moveTo).call(g, 178 + i * 82 + x * 1.35, 60 + y * 1.36)); g.closePath(); g.stroke(); });
+  return c;
+}
 
 /* ---------- furniture of this house ---------- */
 function box(r, w, h, d, mat, x, y, z, ry = 0, collide = true) {
@@ -643,20 +663,24 @@ const FURNISH = {
   piano(r) {
     const ox = 0, oz = 2;
     const pn = addPiano(r, tm(ox + 5.5), tm(oz + 4.8), 0); MAN.pianoStain = pn.stain;
-    interactBox(r, tm(ox + 5.5), 0.85, tm(oz + 4.8) + 0.5, 1.5, 0.4, 0.5, () => 'ピアノを調べる', () => STORY.event('piano'), { icon: 'hand' });
-    // white drawers on the left (the safe is behind them), white shelves on the right
-    const dr = movable(r, tm(ox + 1), tm(oz) + 0.35, 2.0, 0.5, 0.9);
-    dr.add(new THREE.BoxGeometry(2.0, 0.85, 0.5), AOM.white, 0, 0.425, 0);
-    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { dr.add(new THREE.BoxGeometry(0.9, 0.34, 0.02), AOM.white, (j - 0.5), 0.22 + i * 0.4, 0.26); dr.add(new THREE.SphereGeometry(0.02, 8, 6), MAT.brass, (j - 0.5), 0.22 + i * 0.4, 0.28); }
-    MAN.pianoDrawers = dr;
-    interactBox(r, tm(ox + 1), 0.6, tm(oz) + 0.45, 2.0, 1.0, 0.7, () => (dr.at ? null : '棚を調べる'), () => STORY.event('pianoShelf'), { icon: 'hand' });
-    addBookshelf(r, tm(ox + 10), tm(oz) + 0.3, 0, tm(2) - 0.1, 1.9, { mat: AOM.white });
-    // the safe in the wall, behind the drawers
-    const sf = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.3), std({ color: 0x2a2c30, metalness: 0.6, roughness: 0.4 })); body.position.y = 0.3; sf.add(body);
-    const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16), MAT.steel); dial.rotation.x = Math.PI / 2; dial.position.set(-0.18, 0.3, 0.16); sf.add(dial);
-    const disp = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.12), new THREE.MeshBasicMaterial({ color: 0x0a0a0a })); disp.position.set(0.1, 0.3, 0.151); sf.add(disp);
-    sf.position.set(tm(ox + 1), 0.05, tm(oz) + 0.3); r.group.add(sf); MAN.safe = sf;
-    interactBox(r, tm(ox + 1), 0.35, tm(oz) + 0.4, 0.8, 0.7, 0.4, () => (dr.at && !STORY.flags.safeOpen ? '金庫を調べる' : null), () => UI.safe(), { icon: 'hand' });
+    interactBox(r, tm(ox + 5.5), 0.85, tm(oz + 4.8) + 0.5, 1.5, 0.4, 0.5, () => 'ピアノを調べる', () => STORY.event('piano'), { icon: 'hand', tag: 'piano' });
+    // white drawers at the top left; two shelves at the top right, and the left one of those hides the safe
+    const dF = box(r, 2.0, 0.85, 0.5, AOM.white, tm(ox + 1.2), 0, tm(oz) + 0.35);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { dF.box(0.9, 0.34, 0.02, AOM.white, j - 0.5, 0.22 + i * 0.4, 0.26); dF.box(0.04, 0.04, 0.03, MAT.brass, j - 0.5, 0.22 + i * 0.4, 0.28); }
+    const sh = movable(r, tm(ox + 9.5), tm(oz) + 0.3, 1.6, 0.45, 1.9);
+    sh.add(new THREE.BoxGeometry(1.6, 1.9, 0.04), AOM.white, 0, 0.95, -0.2);
+    for (const sx of [-1, 1]) sh.add(new THREE.BoxGeometry(0.04, 1.9, 0.45), AOM.white, sx * 0.78, 0.95, 0);
+    for (let i = 0; i < 5; i++) sh.add(new THREE.BoxGeometry(1.56, 0.03, 0.43), AOM.white, 0, 0.02 + i * 0.465, 0);
+    for (let i = 0; i < 4; i++) sh.add(new THREE.BoxGeometry(1.48, 0.34, 0.3), i % 2 ? MAT.books : MAT.books2, 0, 0.21 + i * 0.465, 0.02);
+    MAN.pianoShelf = sh;
+    interactBox(r, tm(ox + 9.5), 1.0, tm(oz) + 0.45, 1.6, 1.9, 0.6, () => (sh.at ? null : '棚を調べる'), () => STORY.event('pianoShelf'), { icon: 'hand' });
+    addBookshelf(r, tm(ox + 10.5), tm(oz) + 0.3, 0, 1.6, 1.9, { mat: AOM.white });
+    // the safe in the wall behind it: a dial, and four odd figures on its door
+    const sf = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.3), std({ color: 0x2a2c30, metalness: 0.6, roughness: 0.4 })); sf.add(body);
+    const ft = toTex(safeFaceCanvas(), true, false); r.textures.push(ft);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.84, 0.42), new THREE.MeshStandardMaterial({ map: ft, roughness: 0.6 })); face.position.z = 0.151; face.userData.ownMat = true; sf.add(face);
+    sf.position.set(tm(ox + 9.5), 0.95, tm(oz) + 0.17); r.group.add(sf); MAN.safe = sf;
+    interactBox(r, tm(ox + 9.5), 0.95, tm(oz) + 0.4, 0.95, 0.6, 0.4, () => (sh.at && !STORY.flags.safeOpen ? '金庫を調べる' : null), () => UI.safe(), { icon: 'hand' });
     const st = new Frame(r, tm(ox + 9), 0, tm(oz + 7.5), 0); st.cyl(0.02, 0.02, 1.2, MAT.brass, 0, 0.6, 0, 6); st.box(0.35, 0.25, 0.02, MAT.brass, 0, 1.25, 0, -0.4, 0, 0);
     r.landing = { x: tm(ox + 1.5), z: tm(oz + 6.5), yaw: -Math.PI / 2 };
   },
@@ -673,6 +697,11 @@ const FURNISH = {
     addRug(r, tm(ox + 5), tm(oz + 5), tm(3), tm(2), 0, 5);
     for (let i = 0; i < 5; i++) box(r, 0.16, 0.16, 0.16, std({ color: [0xd04040, 0x3a70d0, 0xe0c040, 0x40a050, 0xa060c0][i], roughness: 0.6 }), tm(ox + 4.5) + i * 0.22, 0, tm(oz + 5.3) + (i % 2) * 0.2, i, false);
     r.mikaAt = { x: tm(ox + 2.2), z: tm(oz + 6.2), yaw: Math.PI * 0.75 };
+    // where it is found eating her, after the scream
+    // (her feet; she lies with her head to the west, between the door and it, and it leans over her from the far side)
+    r.mikaDown = { x: tm(ox + 4.0), z: tm(oz + 5.4), yaw: -Math.PI / 2 }; r.oniEat = { x: tm(ox + 4.0) - 1.0, z: tm(oz + 5.4) - 1.3 };
+    const bl = MAN.blood = new THREE.Mesh(new THREE.CircleGeometry(0.85, 28), new THREE.MeshStandardMaterial({ color: 0x3a0505, roughness: 0.2, metalness: 0.1 }));
+    bl.rotation.x = -Math.PI / 2; bl.scale.set(1.6, 0.9, 1); bl.position.set(r.mikaDown.x - 0.9, 0.008, r.mikaDown.z + 0.05); bl.visible = false; bl.userData.ownMat = true; r.group.add(bl);
   },
   takeshi(r) {
     const ox = 17, oz = -13;

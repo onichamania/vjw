@@ -312,7 +312,13 @@ const ONI = {
     switch (st.t) {
       case 'go': if (this.followTo(st.p, st.sp || 2, dt)) next(); return st.sp || 2;
       case 'look': this.wait += dt; this.yaw += Math.sin(this.wait * 1.8) * dt * 1.2; if (this.wait > st.d) next(); return 0;
-      case 'face': this.yaw += clamp(angDiff(this.yaw, st.yaw), -3 * dt, 3 * dt); this.wait += dt; if (this.wait > (st.d || 0.6)) next(); return 0;
+      case 'face': { const y = st.toPlayer ? Math.atan2(PLAYER.pos.x - this.pos.x, PLAYER.pos.z - this.pos.z) : st.yaw; this.yaw += clamp(angDiff(this.yaw, y), -(st.turn || 3) * dt, (st.turn || 3) * dt); if (st.bend != null) this.bendT = st.bend; this.wait += dt; if (this.wait > (st.d || 0.6)) next(); return 0; }
+      case 'eat': {   // crouched over something, its head going down to it again and again
+        const w0 = this.wait; this.wait += dt; this.bendT = 0.95 + Math.sin(this.wait * 7) * 0.09; this.mouthT = Math.max(0, Math.sin(this.wait * 8.5)) * 0.75;
+        if (Math.floor(w0 / 0.62) !== Math.floor(this.wait / 0.62)) SFX.chew(this.pos);
+        if (this.wait > st.d) { this.mouthT = 0; next(); }
+        return 0;
+      }
       case 'call': st.fn(); next(); return 0;
       case 'gone': this.despawn(true); if (st.fn) st.fn(); return 0;
       default: next(); return 0;
@@ -452,6 +458,7 @@ SFX.piano = (midi, vol = 0.32) => {
   [[1, 1], [2, 0.42], [3, 0.2], [4, 0.1]].forEach(([h, v], i) => AU.tone({ type: i ? 'sine' : 'triangle', f: f * h * (1 + i * 0.0007), dur: 1.6 / Math.sqrt(h), a: 0.003, vol: vol * v, rev: 0.45 }));
   AU.burst({ dur: 0.03, f: 2500, q: 0.7, vol: 0.05, rev: 0.2 });
 };
+SFX.chew = pos => { if (!AU.ok) return; const p = pos.clone().setY(pos.y + 1.2); AU.burst({ pos: p, dur: 0.16, a: 0.01, f: 420, q: 0.7, type: 'lowpass', vol: 0.6, brown: true, rev: 0.3 }); AU.burst({ pos: p, t0: AU.t + 0.05, dur: 0.05, f: 1900, q: 3, vol: 0.14, rev: 0.25 }); AU.tone({ pos: p, t0: AU.t + 0.02, f: 110, f2: 70, dur: 0.12, vol: 0.25 }); };
 SFX.scream2 = pos => { if (!AU.ok) return; SFX.scream({ pos, steps: [[0, 700], [0.15, 1100], [0.7, 900], [1.2, 600]], formants: [[1000, 4, 3], [2400, 5, 2], [3300, 6, 1]], hold: 1.2, vol: 0.5, rev: 0.7 }); };
 MUSIC_DEFS.aochase = {
   bpm: 150, div: 4,
