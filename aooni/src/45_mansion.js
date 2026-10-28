@@ -124,8 +124,8 @@ const DOORDEFS = [
   { id: 'wc', fl: 'F1', x: -3, z: 1, side: 'E', to: 'corA_wc' },
   { id: 'corB_din', fl: 'F1', x: 31, z: 1, side: 'E', to: 'din' },
   { id: 'din', fl: 'F1', x: 34, z: 1, side: 'W', to: 'corB_din' },
-  { id: 'corA_bath', fl: 'F1', x: 2, z: 0, side: 'N', to: 'bath' },
-  { id: 'bath', fl: 'F1', x: 3, z: -8, side: 'S', to: 'corA_bath' },
+  { id: 'corA_bath', fl: 'F1', x: 2, z: 0, side: 'N', to: 'bath', glass: 'cool' },     // frosted glass, the lit bath behind it
+  { id: 'bath', fl: 'F1', x: 3, z: -8, side: 'S', to: 'corA_bath', glass: 'warm' },
   { id: 'corB_lib', fl: 'F1', x: 27, z: 0, side: 'N', to: 'lib', lock: 'k_library' },
   { id: 'lib', fl: 'F1', x: 31, z: -7, side: 'S', to: 'corB_lib' },
   { id: 'corC', fl: 'F1', x: 6, z: -30, side: 'S', to: 'foyerN' },
@@ -278,6 +278,7 @@ function buildDoor(def) {
     const ball = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), AOM.knob); ball.position.z = fz * 0.065; k.add(ball);
   }
   Object.assign(door, { piv, leaf, knobs, trims, panels });
+  if (def.glass) glassDoor(door, lw, lh, lt2);   // the bath's: an aluminium frame round frosted glass
   if (disguised) { leaf.material = wm; knobs.forEach(k => (k.visible = false)); trims.visible = false; panels.forEach(p => (p.visible = false)); }
   door.front = new THREE.Vector3(cx(def.x) + into.x * 0.12, FLOORS[def.fl], cx(def.z) + into.z * 0.12);
   door.center = new THREE.Vector3(px, FLOORS[def.fl] + 1.2, pz);
@@ -550,11 +551,7 @@ const FURNISH = {
   bath(r) {
     // left: the bath (pink tub, dark blue tiles); right: the washroom (washing machine, basin)
     box(r, tm(3) - 0.02, 0.01, tm(2) - 0.02, AOM.tileBlue, tm(-0.5), 0, tm(-8), 0, false);
-    const tub = new Frame(r, cx(-2), 0, tm(-8), 0);
-    tub.box(0.95, 0.6, 2.05, AOM.pink, 0, 0.3, 0); tub.box(0.75, 0.04, 1.85, MAT.black, 0, 0.42, 0); tub.collide(-0.48, 0.48, 0, 0.6, -1.03, 1.03);
-    const water = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.04, 1.84), new THREE.MeshStandardMaterial({ color: 0x5f7f92, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.8 }));
-    water.position.copy(tub.pt(0, 0.56, 0)); water.userData.ownMat = true; r.group.add(water); MAN.tubWater = water;
-    const dp = tub.pt(0, 0.45, 0.3); shineAt(r, dp.x, dp.y, dp.z, 'driver', false);   // on the bottom, once the water is out
+    buildTub(r, new Frame(r, cx(-2), 0, tm(-8), 0));   // (93_bath)
     const sw = new Frame(r, cx(-1), 0, tm(-9) + 0.12, 0); sw.cyl(0.015, 0.015, 1.2, MAT.steel, -0.2, 1.4, 0, 6); sw.cyl(0.06, 0.04, 0.05, MAT.steel, -0.2, 2.0, 0.05, 10, Math.PI / 2, 0, 0);
     sw.box(0.6, 0.8, 0.02, MAT.glass, 0.35, 1.6, 0);
     const wm = new Frame(r, cx(3), 0, tm(-9) + 0.4, 0);
@@ -562,7 +559,7 @@ const FURNISH = {
     const sk = new Frame(r, cx(4), 0, tm(-9) + 0.3, 0);
     sk.box(0.55, 0.8, 0.45, std({ color: 0xb8662a, roughness: 0.5 }), 0, 0.4, 0); sk.box(0.58, 0.08, 0.48, AOM.white, 0, 0.84, 0); sk.box(0.45, 0.6, 0.02, MAT.glass, 0, 1.45, -0.2);
     sk.collide(-0.28, 0.28, 0, 0.9, -0.24, 0.24);
-    examine(r, cx(-2), 0.6, tm(-8), 1.0, 0.7, 2.1, () => (STORY.hasGot('driver') ? null : '浴槽を調べる'), () => STORY.event('tub'));
+    examine(r, cx(-2), 0.6, tm(-8), 1.0, 0.7, 2.1, () => (STORY.hasGot('driver') || MAN.tub.draining ? null : '浴槽を調べる'), () => STORY.event('tub'));
     examine(r, cx(3), 0.6, tm(-9) + 0.4, 0.6, 1.0, 0.6, () => '洗濯機', () => GAME.say([['', '洗濯機だ。中はからっぽだ。']]));
   },
   kitchen(r) {

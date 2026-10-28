@@ -4,6 +4,7 @@
    red-haired Takuro with his ponytail, Mika's brown bob and navy uniform)
    ========================================================================= */
 const PEOPLE = {
+  hiroshi: { name: 'ひろし', hair: 0x24242a, style: 'short', top: 0xe6e5df, bottom: 0x26262e },   // (only seen from outside in the bath scene)
   takeshi: { name: 'たけし', hair: 0xd8b860, style: 'short', top: 0xf0f0ea, bottom: 0x1c1c22 },
   takuro: { name: 'たくろう', hair: 0xb8402a, style: 'pony', top: 0xf0f0ea, bottom: 0x1c1c22 },
   mika: { name: 'みか', hair: 0x6a3a22, style: 'bob', top: 0x1c2648, bottom: 0x1c2648, skirt: true },
@@ -261,14 +262,12 @@ const EVENTS = {
   hanky() { GAME.take('hanky', MAN.props.hanky); },
   tub() {
     const f = STORY.flags;
-    if (!f.tubDrained) {
-      f.tubDrained = true; SFX.drain(MAN.tubWater.position.clone());
-      const w = MAN.tubWater, y0 = w.position.y, t0 = performance.now();
-      animate(() => { const k = Math.min(1, (performance.now() - t0) / 1800); w.position.y = y0 - 0.35 * k; if (k >= 1) w.visible = false; return k < 1; });
-      GAME.later(1.9, () => { MAN.props.driver.visible = true; });
-      GAME.say([['', '浴槽の栓を抜いた。']]);
+    if (!f.tubDrained) {   // the plug is pulled once you have read it: then you watch the water go down
+      f.tubDrained = true; STORY.save();
+      GAME.say([['', '濁った水がたまっていて、底が見えない。'], ['', '浴槽の栓を抜いた。']], () => drainTub());
       return;
     }
+    if (MAN.tub.draining) return;
     GAME.take('driver', MAN.props.driver);
   },
   soap() { GAME.take('soap', MAN.props.soap); },
@@ -808,7 +807,7 @@ function applyState() {
   if (f.bookMoved) { MAN.props.greenBook.position.x -= 0.35; if (!STORY.hasGot('k_bedroom')) MAN.props.k_bedroom.visible = true; }
   if (f.libChase && !f.libChaseDone) { f.libChaseDone = true; f.takeshiGone = true; }
   if (f.libChaseDone && !STORY.hasGot('hanky')) MAN.props.hanky.visible = true;
-  if (f.tubDrained) MAN.tubWater.visible = false;
+  if (f.tubDrained) MAN.tub.set(true);
   if (STORY.hasGot('soap')) MAN.props.soap.visible = false;
   if (STORY.hasGot('knob')) MAN.doors.atticBack.knobs.forEach(k => (k.visible = false));
   if (f.bedPushed) { MAN.leftBed.at = 1; MAN.leftBed.place(MAN.leftBed.g.position.x - T, MAN.leftBed.g.position.z); MAN.hole.visible = true; }
@@ -905,7 +904,7 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
   for (const fn of ROOM_HOOKS) if (fn(r, via, quiet) === false) return;
   // the others are gone once you come back from the dining room
   if (r.id === 'kitchen') { CAST.hide('takuro'); CAST.hide('mika'); CAST.hide('takeshi'); f.friendsLeft = true; }
-  if (r.id === 'foyer' && f.friendsLeft && !f.friendsGone && f.plateLook) { f.friendsGone = true; STORY.save(); }   // the others are gone; nothing is said
+  if (r.id === 'foyer' && f.friendsLeft && !f.friendsGone && f.plateLook) { f.friendsGone = true; STORY.save(); if (!quiet) GAME.later(0.6, () => GAME.say([['ひろし', 'あれ？　みなさん？']])); }   // the others are gone
   if (r.id === 'library' && !f.glimpse && !quiet) EVENTS.libraryGlimpse();
   if (r.id === 'tatami' && !f.tatamiChase && !quiet) EVENTS.tatamiChase();
   // until you have found what made the noise, the hall is where the others are waiting: you go on
@@ -1055,4 +1054,4 @@ function boot() {
   requestAnimationFrame(frame);
 }
 boot();
-window.__AO = { NET, OCHAT, GAME, STORY, ONI, DIRECTOR, MAN, CHAIRS, PUSH, ITEMS, chairSpot, chairAway, VIEW, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };
+window.__AO = { NET, OCHAT, glassPaint, drainTub, GAME, STORY, ONI, DIRECTOR, MAN, CHAIRS, PUSH, ITEMS, chairSpot, chairAway, VIEW, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };
