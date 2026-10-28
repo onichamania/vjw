@@ -145,6 +145,7 @@ function onResize() {
   const r = $('rot');
   r.style.width = VW() + 'px'; r.style.height = VH() + 'px';
   r.style.transform = ROT.on ? 'rotate(90deg) translateY(-100%)' : 'none';
+  document.documentElement.style.setProperty('--sw', VW() / 100 + 'px'); document.documentElement.style.setProperty('--sh', VH() / 100 + 'px');
   document.body.classList.toggle('short', VH() < 520);
   camera.aspect = VW() / VH();
   camera.updateProjectionMatrix();

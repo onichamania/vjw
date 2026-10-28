@@ -349,7 +349,7 @@ GAME.useDoor = function (d) {
     STORY.use(key); d.lock = null; if (p) p.lock = null; STORY.unlock(d.id);
     SFX.unlock(d.center); UI.hint(`${ITEMS[key].name}を使った`);
     STORY.save();
-    if (d.kind === 'basement') { GAME.later(0.6, () => STORY.event('basementUnlocked')); return; }
+    if (d.kind === 'basement') { GAME.busy = 1; GAME.later(0.6, () => STORY.event('basementUnlocked')); return; }   // (held still until the scream: nothing is said before it)
     GAME.later(0.45, () => GAME.goThrough(d));
     return;
   }

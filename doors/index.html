@@ -17,6 +17,7 @@
     --ui: "Oswald","Noto Sans JP",system-ui,sans-serif;
   }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root { --sw:1vw; --sh:1vh; }   /* 1% of the stage's width / height (set from VW / VH: the hub may turn the stage sideways) */
   html, body { margin:0; height:100%; overflow:hidden; background:#000; color:var(--ink);
     font-family:var(--ui); -webkit-user-select:none; user-select:none; touch-action:none;
     overscroll-behavior:none; }
@@ -31,7 +32,7 @@
   #fxHurt { opacity:0; background:radial-gradient(ellipse at center, rgba(120,0,0,0) 35%, rgba(160,0,0,.55) 80%, rgba(90,0,0,.95) 115%); }
   #fxHide { opacity:0; transition:opacity .35s; }
   #fxHide.closet { background:
-      linear-gradient(90deg, #000 0%, #000 calc(50% - 12vw), rgba(0,0,0,.55) calc(50% - 7vw), rgba(0,0,0,0) calc(50% - 3vw), rgba(0,0,0,0) calc(50% + 3vw), rgba(0,0,0,.55) calc(50% + 7vw), #000 calc(50% + 12vw), #000 100%);
+      linear-gradient(90deg, #000 0%, #000 calc(50% - calc(12 * var(--sw))), rgba(0,0,0,.55) calc(50% - calc(7 * var(--sw))), rgba(0,0,0,0) calc(50% - calc(3 * var(--sw))), rgba(0,0,0,0) calc(50% + calc(3 * var(--sw))), rgba(0,0,0,.55) calc(50% + calc(7 * var(--sw))), #000 calc(50% + calc(12 * var(--sw))), #000 100%);
   }
   #fxHide.bed { background:
       linear-gradient(180deg, #000 0%, #000 22%, rgba(0,0,0,.5) 34%, rgba(0,0,0,0) 44%, rgba(0,0,0,0) 86%, rgba(0,0,0,.7) 94%, #000 100%);
@@ -52,9 +53,9 @@
   #prompt .key { display:inline-grid; place-items:center; min-width:24px; height:24px; padding:0 6px; border:2px solid #fff; border-radius:5px; font-size:14px; font-weight:700; background:rgba(0,0,0,.35); }
   body.touch #prompt .key { display:none; }
   #hint { position:absolute; left:50%; bottom:118px; transform:translateX(-50%); font-size:19px; color:#fff; text-align:center;
-    text-shadow:0 2px 8px #000, 0 0 3px #000; opacity:0; transition:opacity .3s; max-width:90vw; }
+    text-shadow:0 2px 8px #000, 0 0 3px #000; opacity:0; transition:opacity .3s; max-width:calc(90 * var(--sw)); }
   #hint.on { opacity:1; }
-  #bigmsg { position:absolute; left:0; right:0; top:38%; text-align:center; font-size:min(11vw,86px); font-weight:700; letter-spacing:.06em; opacity:0; }
+  #bigmsg { position:absolute; left:0; right:0; top:38%; text-align:center; font-size:min(calc(11 * var(--sw)),86px); font-weight:700; letter-spacing:.06em; opacity:0; }
   #bigmsg.halt { color:#bff4ff; text-shadow:0 0 18px #2ad0ff, 0 0 40px #0a7cff; }
   #bigmsg.hide { color:#ff2d2d; text-shadow:0 0 14px #a00, 0 0 40px #500; font-family:"Noto Serif JP",serif; }
   #roomnum { position:absolute; left:50%; top:16px; transform:translateX(-50%); font-size:15px; letter-spacing:.3em; color:rgba(255,236,200,.75); opacity:0; transition:opacity 1.2s; text-shadow:0 2px 4px #000; }
@@ -82,7 +83,7 @@
   #itemname { position:absolute; left:50%; bottom:86px; transform:translateX(-50%); font-size:15px; color:#fff; text-shadow:0 2px 4px #000; opacity:0; transition:opacity .3s; }
   #toast { position:absolute; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
   .toastItem { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--gold); padding:9px 14px; border-radius:6px; font-size:14px;
-    animation:tin .35s ease-out; max-width:70vw; }
+    animation:tin .35s ease-out; max-width:calc(70 * var(--sw)); }
   @keyframes tin { from { transform:translateX(30px); opacity:0; } to { transform:none; opacity:1; } }
   #fps { position:absolute; left:8px; top:6px; font-size:11px; color:#8f8; opacity:.7; }
   /* ---------- online ---------- */
@@ -95,7 +96,7 @@
     background:rgba(10,8,6,.72); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:15px; white-space:nowrap; }
   #specBar button { background:rgba(40,30,20,.85); color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:8px 12px; font-size:15px; }
   #specBar .lbl { color:var(--sub); font-size:13px; }
-  .olList { display:flex; flex-direction:column; gap:6px; margin:10px 0; max-height:40vh; overflow:auto; }
+  .olList { display:flex; flex-direction:column; gap:6px; margin:10px 0; max-height:calc(40 * var(--sh)); overflow:auto; }
   #online .panel, #netroom .panel { padding:16px 20px; } #online h2, #netroom h2 { margin-bottom:8px; } #netroom p { margin:6px 0; }
   .olRoom { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; background:rgba(255,255,255,.05); border:1px solid var(--line);
     border-radius:8px; padding:7px 12px; color:var(--ink); font-family:"Noto Sans JP",sans-serif; }
@@ -131,13 +132,14 @@
   #tItem.on { display:grid; }
 
   /* ---------- screens ---------- */
-  .screen { position:fixed; inset:0; z-index:4; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;
+  /* a screen taller than the stage scrolls (any swipe: turned sideways, the stage's up and down is the phone's left and right) */
+  .screen { position:fixed; inset:0; z-index:4; display:flex; flex-direction:column; align-items:center; justify-content:safe center; padding:24px; overflow-y:auto; touch-action:pan-x pan-y;
     padding-top:calc(env(safe-area-inset-top) + 24px); padding-bottom:calc(env(safe-area-inset-bottom) + 24px); }
   #title { background:
       radial-gradient(ellipse at 50% 120%, rgba(255,160,70,.25), rgba(0,0,0,0) 60%),
       radial-gradient(ellipse at center, rgba(30,20,12,.55), rgba(0,0,0,.95) 75%);
   }
-  .logo { font-family:"Oswald",sans-serif; font-weight:700; font-size:min(26vw,24vh,170px); letter-spacing:.06em; line-height:.9; color:#ece2cf;
+  .logo { font-family:"Oswald",sans-serif; font-weight:700; font-size:min(calc(26 * var(--sw)),calc(24 * var(--sh)),170px); letter-spacing:.06em; line-height:.9; color:#ece2cf;
     text-shadow:0 0 30px rgba(255,190,110,.25), 0 6px 0 #2a1d12, 0 10px 30px #000; position:relative; }
   .logo .o { position:relative; display:inline-block; }
   .logo .o::after { content:""; position:absolute; left:50%; top:52%; width:.2em; height:.2em; transform:translate(-50%,-50%); border-radius:50%;
@@ -145,7 +147,7 @@
   @keyframes blink { 0%,94%,100% { transform:translate(-50%,-50%) scaleY(1); } 96% { transform:translate(-50%,-50%) scaleY(.1); } }
   .sublogo { font-size:15px; letter-spacing:.55em; color:var(--sub); margin:6px 0 34px; text-transform:uppercase; }
   #title { overflow-y:auto; justify-content:safe center; }
-  .menu { display:flex; flex-direction:column; gap:10px; width:min(320px,86vw); }
+  .menu { display:flex; flex-direction:column; gap:10px; width:min(320px,calc(86 * var(--sw))); }
   .mbtn { background:rgba(20,15,10,.75); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:13px 18px; font-size:19px;
     letter-spacing:.08em; cursor:pointer; transition:all .15s; text-align:center; }
   .mbtn:hover { background:rgba(60,44,26,.85); border-color:rgba(255,226,170,.5); }
@@ -153,7 +155,7 @@
   .knobs { margin-top:16px; color:var(--sub); font-size:14px; display:flex; gap:6px; align-items:center; }
   .knob { display:inline-block; width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff, #c8c8c8 40%, #6a6a6a); }
   .foot { position:absolute; bottom:calc(env(safe-area-inset-bottom) + 10px); font-size:11px; color:rgba(255,255,255,.35); text-align:center; padding:0 12px; }
-  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; width:min(520px,94vw); max-height:86vh; overflow:auto; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; width:min(520px,calc(94 * var(--sw))); max-height:calc(86 * var(--sh)); overflow:auto; touch-action:pan-x pan-y; flex-shrink:0; }
   .panel h2 { margin:0 0 14px; font-size:22px; letter-spacing:.08em; color:var(--gold); font-weight:500; }
   .panel p, .panel li { font-family:"Noto Sans JP",sans-serif; font-size:14px; line-height:1.7; color:#e8dcc5; }
   .row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0; font-family:"Noto Sans JP",sans-serif; font-size:14px; }
@@ -162,13 +164,13 @@
   .seg button.on { background:var(--gold); color:#1a1006; border-color:var(--gold); }
   input[type=range] { width:160px; accent-color:var(--gold); }
   #loading { background:#000; }
-  #loading .bar { width:min(320px,70vw); height:3px; background:#222; margin-top:16px; overflow:hidden; }
+  #loading .bar { width:min(320px,calc(70 * var(--sw))); height:3px; background:#222; margin-top:16px; overflow:hidden; }
   #loading .bar i { display:block; height:100%; width:0; background:var(--gold); transition:width .2s; }
   #pause { background:rgba(0,0,0,.72); }
   #death { background:radial-gradient(ellipse at 50% 55%, rgba(30,90,170,.35), rgba(0,4,12,.98) 70%); opacity:0; transition:opacity 1.6s; }
   #death.show { opacity:1; }
-  #deathText { max-width:min(680px,90vw); text-align:center; min-height:220px; }
-  #deathText .gl { font-family:"Noto Sans JP",sans-serif; font-size:min(5vw,24px); color:#bfe6ff; line-height:1.8; margin:8px 0;
+  #deathText { max-width:min(680px,calc(90 * var(--sw))); text-align:center; min-height:220px; }
+  #deathText .gl { font-family:"Noto Sans JP",sans-serif; font-size:min(calc(5 * var(--sw)),24px); color:#bfe6ff; line-height:1.8; margin:8px 0;
     text-shadow:0 0 12px #3aa0ff, 0 0 30px #1d5cff; opacity:0; transition:opacity 1.2s; }
   #deathText .gl.on { opacity:1; }
   #deathStats, #winStats { font-size:15px; color:#9fc4e6; letter-spacing:.06em; margin:18px 0; text-align:center; line-height:1.8; }
@@ -176,7 +178,7 @@
   .btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
 
   /* ---------- modal ---------- */
-  #modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:6; overflow-y:auto; touch-action:pan-y; }
+  #modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:6; overflow-y:auto; touch-action:pan-x pan-y; }
   #modal > * { margin:auto; flex-shrink:0; }
   .paper { background:#e9dfc6 url() ; color:#2a2216; border-radius:4px; padding:26px 28px; width:min(440px,92%); box-shadow:0 20px 60px #000;
     font-family:"Noto Serif JP",serif; position:relative; }
@@ -193,7 +195,7 @@
   #libList { position:absolute; left:18px; bottom:64px; display:none; flex-direction:column; gap:3px; font-family:"Oswald"; font-size:20px; color:#efe3c4; text-shadow:0 2px 4px #000; }
   #libList > div { display:flex; align-items:center; gap:6px; } #libList svg { width:22px; height:22px; filter:drop-shadow(0 1px 2px #000); }
   .close { position:absolute; right:10px; top:6px; background:none; border:0; font-size:26px; cursor:pointer; color:inherit; }
-  .lock { background:#2a2420; border:2px solid #6d5a3f; border-radius:14px; padding:22px; text-align:center; width:min(420px,94vw); position:relative; }
+  .lock { background:#2a2420; border:2px solid #6d5a3f; border-radius:14px; padding:22px; text-align:center; width:min(420px,calc(94 * var(--sw))); position:relative; }
   .wheels { display:flex; gap:8px; justify-content:center; margin:16px 0; }
   .wheel { display:flex; flex-direction:column; align-items:center; gap:4px; }
   .wheel button { width:48px; height:34px; background:#3c332b; border:1px solid #6d5a3f; color:#e9d9b8; border-radius:6px; font-size:16px; cursor:pointer; }
@@ -213,7 +215,7 @@
   .bsw .lever { width:20px; height:40px; margin:0 auto 4px; border-radius:4px; background:#111; position:relative; }
   .bsw .lever i { position:absolute; left:2px; right:2px; height:18px; border-radius:3px; background:#c33; top:20px; transition:top .12s, background .12s; }
   .bsw.on .lever i { top:2px; background:#3c3; }
-  .shop { width:min(560px,96vw); }
+  .shop { width:min(560px,calc(96 * var(--sw))); }
   .shopgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
   .sitem { background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; cursor:pointer; }
   .sitem svg { width:44px; height:44px; }
@@ -221,7 +223,7 @@
   .sitem .pr { color:#ffe39a; font-size:14px; }
   .sitem.dis { opacity:.4; cursor:default; }
   .sitem.own { border-color:var(--gold); }
-  .heart { width:min(440px,94vw); text-align:center; position:relative; }
+  .heart { width:min(440px,calc(94 * var(--sw))); text-align:center; position:relative; }
   .heart .hb { font-size:90px; color:#d22; text-shadow:0 0 30px #f00; transition:transform .08s; }
   .heart .lane { position:relative; height:70px; margin:10px auto; width:100%; border-top:1px solid rgba(255,255,255,.2); border-bottom:1px solid rgba(255,255,255,.2); overflow:hidden; }
   .heart .lane .tgt { position:absolute; left:50%; top:0; bottom:0; width:56px; margin-left:-28px; border:2px solid #fff; border-radius:8px; }
@@ -239,7 +241,9 @@
   body.short .mbtn.primary { font-size:18px; }
   body.short .knobs { margin-top:8px; }
   body.short .foot { position:static; margin-top:10px; }
-  body.short .logo { font-size:min(26vw,22vh,120px); }
+  /* a short stage (a phone on its side): the panels a little tighter, and a list in one scroll with its panel (not a scroll inside a scroll) */
+  body.short .panel { padding:14px 18px; } body.short .panel h2 { margin-bottom:8px; } body.short .olList { max-height:none; overflow:visible; }
+  body.short .logo { font-size:min(calc(26 * var(--sw)),calc(22 * var(--sh)),120px); }
   /* the whole game sits on a stage that can be turned 90deg (3dgame's 横画面) */
   #rot { position:fixed; left:0; top:0; width:100%; height:100%; transform-origin:0 0; overflow:hidden; }
 </style>
@@ -394,7 +398,7 @@
 </div>
 
 <div id="win" class="screen hidden">
-  <div class="logo" style="font-size:min(14vw,90px)">ESCAPED</div>
+  <div class="logo" style="font-size:min(calc(14 * var(--sw)),90px)">ESCAPED</div>
   <div style="font-family:'Noto Sans JP';font-size:18px;color:#e9dcc0;margin-top:8px">ホテルから脱出した！</div>
   <div id="winStats"></div>
   <div class="btns"><button class="mbtn primary" id="wRetry">もう一度</button><button class="mbtn" id="wTitle">タイトルへ</button><button class="mbtn primary" id="wSpec" style="display:none">仲間を観戦する</button><button class="mbtn" id="wRoom" style="display:none">部屋にもどる</button></div>
@@ -553,6 +557,7 @@ function onResize() {
   const r = $('rot');
   r.style.width = VW() + 'px'; r.style.height = VH() + 'px';
   r.style.transform = ROT.on ? 'rotate(90deg) translateY(-100%)' : 'none';
+  document.documentElement.style.setProperty('--sw', VW() / 100 + 'px'); document.documentElement.style.setProperty('--sh', VH() / 100 + 'px');
   document.body.classList.toggle('short', VH() < 520);
   camera.aspect = VW() / VH();
   camera.updateProjectionMatrix();

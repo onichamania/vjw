@@ -414,7 +414,7 @@ const EVENTS = {
   basementUnlocked() {
     STORY.flags.basementOpen = true; STORY.save();
     SFX.scream2(); POST.shake = 0.35;
-    GAME.later(0.9, () => GAME.say([['', '２階から悲鳴が聞こえた。']]));
+    GAME.later(0.9, () => { GAME.busy = 0; GAME.say([['', '２階から悲鳴が聞こえた。']]); });
   },
   // in the kids' room it is crouched over her, eating. It looks up at you, and comes
   kidsChase() {
@@ -431,6 +431,7 @@ const EVENTS = {
     animate(() => { if (!PLAYER.frozen || GAME.time - t0 > 9) return false; lookAtPoint(tmpV.copy(ONI.pos).setY(ONI.pos.y + 1.3), 0.07); return true; });
   },
   downstairs() {
+    if (!STORY.flags.basementOpen) return;   // (the scream has not come yet)
     if (!STORY.flags.kidsChaseDone) { GAME.say([['', '先に、悲鳴の聞こえた子供部屋へ行こう。']]); return; }
     GAME.goThrough(MAN.doors.corC_base);
   },
