@@ -31,7 +31,7 @@ Object.assign(EVENTS, {
   b1Shelf(side) {
     const f = STORY.flags; f['b1Sh' + side] = true;
     if (!(f.b1ShL && f.b1ShR)) { say2('大きな棚だ。'); return; }
-    f.b1Shelves = true; MAN.b1ShelfL.slide(MAN.b1ShelfL.g.position.x - 1.2, MAN.b1ShelfL.g.position.z, 900); MAN.b1ShelfR.slide(MAN.b1ShelfR.g.position.x + 1.2, MAN.b1ShelfR.g.position.z, 900);
+    f.b1Shelves = true; for (const sh of [MAN.b1ShelfL, MAN.b1ShelfR]) sh.slide(sh.g.position.x + sh.dx, sh.g.position.z, 900);
     GAME.later(1.0, () => { say2('棚が動いた。', '壁にパネルがある。'); STORY.save(); });
   },
   b1Panel() {
@@ -522,7 +522,7 @@ BUILT_HOOKS.push(() => {
 });
 STATE_HOOKS.push(f => {
   const got = id => STORY.hasGot(id);
-  if (f.b1Shelves) { MAN.b1ShelfL.place(MAN.b1ShelfL.g.position.x - 1.2, MAN.b1ShelfL.g.position.z); MAN.b1ShelfR.place(MAN.b1ShelfR.g.position.x + 1.2, MAN.b1ShelfR.g.position.z); }
+  if (f.b1Shelves) for (const sh of [MAN.b1ShelfL, MAN.b1ShelfR]) sh.place(sh.g.position.x + sh.dx, sh.g.position.z);
   if (f.b1Panel) MAN.b1Panel.visible = false;
   for (const k of ['bjCandle', 'a1Candle', 'sbjCandle', 'sbdCandle']) if (f['lit_' + k]) MAN[k].state = 'on';
   if (f.statueBroken) { MAN.statue.g.visible = false; MAN.statue.col.on = false; MAN.rubble.visible = true; MAN.props.stoneBlue.visible = !got('stoneBlue'); }

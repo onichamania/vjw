@@ -438,10 +438,20 @@ const EVENTS = {
 /* ---------- chairs: lift one, put it down where you point, climb on it to reach high places ---------- */
 const CHAIRS = { held: null, from: null, ring: null };
 function chairInteract(ch, key) {
-  ch.key = key; ch.home = { x: ch.g.position.x, z: ch.g.position.z }; MAN.chairs.push(ch);
+  ch.key = key; ch.home = { x: ch.g.position.x, z: ch.g.position.z, r: ch.r }; MAN.chairs.push(ch);
   ch.r.addInteract(ch.g, { dist: 2.4, icon: 'hand', prompt: () => (CHAIRS.held || PLAYER.onChair ? null : 'イスを調べる'), use: () => EVENTS.chair(ch) });
 }
-const chairAway = ch => !!ch && Math.hypot(ch.g.position.x - ch.home.x, ch.g.position.z - ch.home.z) > 0.6;
+const chairAway = ch => !!ch && (ch.r !== ch.home.r || Math.hypot(ch.g.position.x - ch.home.x, ch.g.position.z - ch.home.z) > 0.6);
+// as in the original, a room is as it was when you come back to it: a chair left somewhere else goes back to its place
+function chairsBack(r) {
+  const f = STORY.flags;
+  for (const ch of MAN.chairs) {
+    if (ch === CHAIRS.held || ch === PLAYER.onChair || r.joined.has(ch.r) || !chairAway(ch)) continue;
+    ch.moveTo(ch.home.r); ch.place(ch.home.x, ch.home.z); ch.g.visible = true; ch.col.on = true;
+    if (f.chairs) delete f.chairs[ch.key];
+    if (ch.key === 'tk' && MAN.props.k_library) MAN.props.k_library.visible = false;
+  }
+}
 function liftChair(ch) {
   CHAIRS.held = ch; CHAIRS.from = { x: ch.g.position.x, z: ch.g.position.z, r: ch.r };
   ch.g.visible = false; ch.col.on = false; SFX.push(ch.g.position.clone().setY(ch.r.y + 0.4)); VIEW.holdChair(ch);
@@ -800,7 +810,13 @@ function applyState() {
   for (const id of STORY.unlocked) { const d = MAN.doors[id]; if (d) { d.lock = null; const p = d.to && MAN.doors[d.to]; if (p) p.lock = null; } }
   if (f.tkChair && !(f.chairs && f.chairs.tk)) MAN.tkChair.place(MAN.tkChair.g.position.x + T, MAN.tkChair.g.position.z);   // (a save from when chairs were pushed)
   if (f.kidsChair && !(f.chairs && f.chairs.kids)) MAN.kidsChair.place(tm(13.5), tm(-13) + 1.1);
-  if (f.chairs) for (const ch of MAN.chairs) { const q = f.chairs[ch.key]; if (q) { if (q[2] && MAN.areas[q[2]]) ch.moveTo(MAN.areas[q[2]]); ch.place(q[0], q[1]); } }
+  if (f.chairs) for (const ch of MAN.chairs) {
+    const q = f.chairs[ch.key]; if (!q) continue;
+    if (q[2] && MAN.areas[q[2]]) ch.moveTo(MAN.areas[q[2]]); ch.place(q[0], q[1]);
+    // (a save from before a room was rebuilt can have it standing in furniture now: then it is back in its place)
+    const c = ch.col;
+    if (ch.r.colliders.some(o => o !== c && o.on && o.tag === 'furn' && o.x0 < c.x1 && o.x1 > c.x0 && o.z0 < c.z1 && o.z1 > c.z0)) { ch.moveTo(ch.home.r); ch.place(ch.home.x, ch.home.z); delete f.chairs[ch.key]; }
+  }
   for (const fn of STATE_HOOKS) fn(f);
   MAN.props.k_library.visible = chairAway(MAN.tkChair) && !STORY.hasGot('k_library');
   if (f.tubDrained && !STORY.hasGot('driver')) MAN.props.driver.visible = true;
@@ -899,6 +915,7 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
   if (!quiet) UI.place(r.name);
   const f = STORY.flags;
   if (CHAIRS.held && r !== CHAIRS.held.r) CHAIRS.held.moveTo(r);   // you carry it with you
+  chairsBack(r);
   if (PUSH.obj && r !== PUSH.obj.r) PUSH.obj.moveTo(r);
   showFloor(r.fl);
   for (const fn of ROOM_HOOKS) if (fn(r, via, quiet) === false) return;

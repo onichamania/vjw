@@ -399,7 +399,13 @@ function movable(r, x, z, w, d, h) {
     },
     place(nx, nz) { g.position.x = nx; g.position.z = nz; col.lx0 = nx - w / 2; col.lx1 = nx + w / 2; col.lz0 = nz - d / 2; col.lz1 = nz + d / 2; this.r._colliderWorld(col); },
     // carried (or pushed) into another room: it belongs to that room now
-    moveTo(room) { if (room === this.r) return; const i = this.r.colliders.indexOf(col); if (i >= 0) this.r.colliders.splice(i, 1); room.colliders.push(col); room.group.add(g); this.r = room; room._colliderWorld(col); },
+    moveTo(room) {
+      if (room === this.r) return;
+      const i = this.r.colliders.indexOf(col); if (i >= 0) this.r.colliders.splice(i, 1); room.colliders.push(col);
+      // what you can do with it goes along too (you only reach the things of the room you are in)
+      const k = this.r.interactables.indexOf(g); if (k >= 0) { this.r.interactables.splice(k, 1); room.interactables.push(g); g.userData.ia.room = room; }
+      room.group.add(g); this.r = room; room._colliderWorld(col);
+    },
   };
 }
 // a tall two-door wardrobe (the original's closet): front is local +z

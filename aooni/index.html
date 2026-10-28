@@ -2886,7 +2886,13 @@ function movable(r, x, z, w, d, h) {
     },
     place(nx, nz) { g.position.x = nx; g.position.z = nz; col.lx0 = nx - w / 2; col.lx1 = nx + w / 2; col.lz0 = nz - d / 2; col.lz1 = nz + d / 2; this.r._colliderWorld(col); },
     // carried (or pushed) into another room: it belongs to that room now
-    moveTo(room) { if (room === this.r) return; const i = this.r.colliders.indexOf(col); if (i >= 0) this.r.colliders.splice(i, 1); room.colliders.push(col); room.group.add(g); this.r = room; room._colliderWorld(col); },
+    moveTo(room) {
+      if (room === this.r) return;
+      const i = this.r.colliders.indexOf(col); if (i >= 0) this.r.colliders.splice(i, 1); room.colliders.push(col);
+      // what you can do with it goes along too (you only reach the things of the room you are in)
+      const k = this.r.interactables.indexOf(g); if (k >= 0) { this.r.interactables.splice(k, 1); room.interactables.push(g); g.userData.ia.room = room; }
+      room.group.add(g); this.r = room; room._colliderWorld(col);
+    },
   };
 }
 // a tall two-door wardrobe (the original's closet): front is local +z
@@ -3379,7 +3385,7 @@ function showFloor(fl) { if (MAN.shownFl === fl) return; MAN.shownFl = fl; for (
    ========================================================================= */
 AREAS.push(
   // the main building's basement
-  { id: 'big', name: '大部屋', fl: 'B1', cells: [[0, 0, 12, 10]], wall: 'wallStone', floor: 'floorMoss', lamps: [[3, 3], [9, 3], [6, 7.5]] },
+  { id: 'big', name: '大部屋', fl: 'B1', cells: [[0, 0, 12, 14]], wall: 'wallStone', floor: 'floorMoss', lamps: [[3, 3.5], [3, 10.5], [9, 3], [9, 8.2], [9, 12.3]] },
   { id: 'b1left', name: '左の部屋', fl: 'B1', cells: [[-9, 1, 7, 7]], wall: 'wallStone', floor: 'floorMoss', lamps: [[-5.5, 4.5]] },
   { id: 'back', name: '裏口', fl: 'B1', cells: [[14, 1, 7, 7]], wall: 'wallStone', floor: 'floorMoss', lamps: [[17.5, 4.5]] },
   { id: 'bjail', name: '地下牢', fl: 'B1', cells: [[23, 0, 8, 8]], wall: 'wallStone', floor: 'floorMoss', dark: true, lamps: [] },
@@ -3457,10 +3463,10 @@ EDGES.push(
 );
 DOORDEFS.find(d => d.id === 'corC_base').to = 'b1_up';
 DOORDEFS.push(
-  { id: 'b1_up', fl: 'B1', x: 6, z: 9, side: 'S', to: 'corC_base' },
-  { id: 'big_left', fl: 'B1', x: 0, z: 4, side: 'W', to: 'left_big' },
+  { id: 'b1_up', fl: 'B1', x: 2, z: 13, side: 'S', to: 'corC_base' },
+  { id: 'big_left', fl: 'B1', x: 0, z: 2, side: 'W', to: 'left_big' },
   { id: 'left_big', fl: 'B1', x: -3, z: 4, side: 'E', to: 'big_left' },
-  { id: 'big_back', fl: 'B1', x: 11, z: 4, side: 'E', to: 'back_big' },
+  { id: 'big_back', fl: 'B1', x: 11, z: 2, side: 'E', to: 'back_big' },
   { id: 'back_big', fl: 'B1', x: 14, z: 4, side: 'W', to: 'big_back' },
   { id: 'back_bridge', fl: 'B1', x: 17, z: 1, side: 'N', to: 'bridge_back' },
   { id: 'bridge_back', fl: 'B1', x: 17, z: -4, side: 'S', to: 'back_bridge' },
@@ -3625,28 +3631,53 @@ const pedestalBust = (r, x, z) => {
   return m;
 };
 
+// a big storage cabinet like the original's: a pale cap, a front of dark upright planks between two posts, a plinth.
+// add(w, h, d, mat, x, y, z) puts one box on it; its front is local +z
+function bigCabinet(add, w, h, d) {
+  add(w, h - 0.12, d, MAT.darkWood, 0, h / 2 + 0.06, 0);
+  add(w + 0.1, 0.12, d + 0.08, MAT.crateWood, 0, h - 0.06, 0.01);
+  add(w + 0.02, 0.14, d + 0.03, MAT.darkWood, 0, 0.07, 0.005);
+  for (const sx of [-1, 1]) { add(0.12, h - 0.2, 0.06, MAT.crateWood, sx * (w / 2 - 0.06), h / 2, d / 2 + 0.02); add(0.16, 0.18, 0.08, MAT.crateWood, sx * (w / 2 - 0.06), 0.25, d / 2 + 0.03); }
+  const n = 4, pw = (w - 0.24) / n;
+  for (let i = 1; i < n; i++) add(0.035, h - 0.42, 0.02, MAT.black || MAT.darkWood, -w / 2 + 0.12 + i * pw, h / 2 + 0.02, d / 2 + 0.005);
+  add(w - 0.24, 0.05, 0.03, MAT.crateWood, 0, h - 0.2, d / 2 + 0.01);
+}
+const cabinetAt = (r, x, z, ry, w, h, d) => {
+  const F = new Frame(r, x, r.fy, z, ry);
+  bigCabinet((bw, bh, bd, m, px, py, pz) => F.box(bw, bh, bd, m, px, py, pz), w, h, d);
+  F.collide(-w / 2 - 0.05, w / 2 + 0.05, 0, h, -d / 2, d / 2 + 0.04);
+  return F;
+};
+
 FURNISH.big = r => {
-  // the two big shelves along the top wall; between them, behind, a panel held by four screws
-  MAN.b1ShelfL = movable(r, tm(5), tm(0) + 0.4, tm(2) - 0.1, 0.7, 3.2); MAN.b1ShelfR = movable(r, tm(7), tm(0) + 0.4, tm(2) - 0.1, 0.7, 3.2);
-  for (const sh of [MAN.b1ShelfL, MAN.b1ShelfR]) {
-    sh.add(new THREE.BoxGeometry(tm(2) - 0.1, 3.2, 0.7), MAT.crateWood, 0, 1.6, 0);
-    for (let i = 0; i < 4; i++) sh.add(new THREE.BoxGeometry(tm(2) - 0.3, 0.05, 0.02), MAT.darkWood, 0, 0.5 + i * 0.75, 0.36);
-    sh.add(new THREE.BoxGeometry(0.04, 3.0, 0.02), MAT.darkWood, 0, 1.6, 0.36);
-  }
-  examine(r, tm(5), 1.5, tm(0) + 0.8, tm(2) - 0.2, 2.6, 0.2, () => (STORY.flags.b1Shelves ? null : '棚を調べる'), () => STORY.event('b1Shelf', 'L'));
-  examine(r, tm(7), 1.5, tm(0) + 0.8, tm(2) - 0.2, 2.6, 0.2, () => (STORY.flags.b1Shelves ? null : '棚を調べる'), () => STORY.event('b1Shelf', 'R'));
+  // 6.23: a long stone room, twelve tiles across and fourteen deep. You come up from the stairs bottom left;
+  // the ways to the left room and the back way out are at the far end. Down its right half stand big cabinets
+  // in pairs: two along the top wall (they move aside, and behind them is a panel held by four screws),
+  // two more pairs further down, and a lower pair at the bottom with something on top of the right one.
+  const CW = tm(2.6), CD = 1.2, CH = 3.3, XL = tm(7.5), XR = tm(10.5);
+  MAN.b1ShelfL = movable(r, XL, tm(0) + WT + CD / 2, CW, CD, CH); MAN.b1ShelfR = movable(r, XR, tm(0) + WT + CD / 2, CW, CD, CH);
+  for (const sh of [MAN.b1ShelfL, MAN.b1ShelfR]) bigCabinet((bw, bh, bd, m, px, py, pz) => sh.add(new THREE.BoxGeometry(bw, bh, bd), m, px, py, pz), CW, CH, CD);
+  // apart: the left one well to the left, the right one up to the wall
+  MAN.b1ShelfL.dx = -1.0; MAN.b1ShelfR.dx = tm(12) - WT - 0.04 - (XR + CW / 2);
+  const gapX = (XL + CW / 2 + MAN.b1ShelfL.dx + XR - CW / 2 + MAN.b1ShelfR.dx) / 2;
+  examine(r, XL, 1.6, tm(0) + WT + CD + 0.05, CW - 0.2, 2.8, 0.2, () => (STORY.flags.b1Shelves ? null : '棚を調べる'), () => STORY.event('b1Shelf', 'L'));
+  examine(r, XR, 1.6, tm(0) + WT + CD + 0.05, CW - 0.2, 2.8, 0.2, () => (STORY.flags.b1Shelves ? null : '棚を調べる'), () => STORY.event('b1Shelf', 'R'));
   const pz = tm(0) + WT + 0.02;
-  MAN.b1Safe = wallPic(r, tm(6), 1.45, pz + 0.004, 0, 0.9, 0.7, (g, w, h) => { g.fillStyle = '#151515'; g.fillRect(0, 0, w, h); g.strokeStyle = '#666'; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16); g.fillStyle = '#444'; g.beginPath(); g.arc(70, h / 2, 34, 0, TAU); g.fill(); g.fillStyle = '#ccc'; g.font = 'bold 34px monospace'; g.fillText('■■■■', 120, h / 2 + 12); }, { cw: 256, ch: 200 });
+  MAN.b1Safe = wallPic(r, gapX, 1.45, pz + 0.004, 0, 0.9, 0.7, (g, w, h) => { g.fillStyle = '#151515'; g.fillRect(0, 0, w, h); g.strokeStyle = '#666'; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16); g.fillStyle = '#444'; g.beginPath(); g.arc(70, h / 2, 34, 0, TAU); g.fill(); g.fillStyle = '#ccc'; g.font = 'bold 34px monospace'; g.fillText('■■■■', 120, h / 2 + 12); }, { cw: 256, ch: 200 });
   MAN.b1Panel = new THREE.Group(); r.group.add(MAN.b1Panel);
-  const pn = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 0.03), MAT.metalPanel || MAT.steel); pn.position.set(tm(6), 1.45, pz + 0.02); MAN.b1Panel.add(pn);
-  for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const sc = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.02, 10), MAT.brass); sc.rotation.x = Math.PI / 2; sc.position.set(tm(6) + sx * 0.42, 1.45 + sy * 0.32, pz + 0.04); MAN.b1Panel.add(sc); }
-  interactBox(r, tm(6), 1.45, pz + 0.15, 1.0, 0.8, 0.3, () => (!STORY.flags.b1Shelves ? null : !STORY.flags.b1Panel ? 'パネルを調べる' : !STORY.hasGot('k_annex') ? '金庫を調べる' : null), () => STORY.event('b1Panel'), { icon: 'eye', tag: 'b1panel' });
-  // the cabinet bottom right, something on top of it
-  addBookshelf(r, tm(10.6), tm(10) - 0.3, Math.PI, tm(1.6), 2.6, { mat: MAT.crateWood });
-  shineAt(r, tm(10.6), 2.62, tm(10) - 0.3, 'k_bjail');
-  examine(r, tm(10.6), 1.8, tm(10) - 0.5, tm(1.6), 2.6, 0.6, () => (STORY.hasGot('k_bjail') ? null : '棚の上を調べる'), () => STORY.event('b1High', 'k_bjail'));
-  for (const [x, z, s, ry] of [[0.8, 0.8, 0.9, 0.1], [0.9, 1.9, 0.7, 0.5], [11.2, 0.8, 0.8, 0.3], [1, 8.8, 0.8, 0.2]]) addCrate(r, tm(x), tm(z), s, ry);
-  r.mikaAt = { x: tm(6), z: tm(2.2) };
+  const pn = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 0.03), MAT.metalPanel || MAT.steel); pn.position.set(gapX, 1.45, pz + 0.02); MAN.b1Panel.add(pn);
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const sc = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.02, 10), MAT.brass); sc.rotation.x = Math.PI / 2; sc.position.set(gapX + sx * 0.42, 1.45 + sy * 0.32, pz + 0.04); MAN.b1Panel.add(sc); }
+  interactBox(r, gapX, 1.45, pz + 0.15, 1.0, 0.8, 0.3, () => (!STORY.flags.b1Shelves ? null : !STORY.flags.b1Panel ? 'パネルを調べる' : !STORY.hasGot('k_annex') ? '金庫を調べる' : null), () => STORY.event('b1Panel'), { icon: 'eye', tag: 'b1panel' });
+  // two more pairs down the room, their fronts towards the stairs
+  for (const zf of [6, 11]) for (const x of [XL, XR]) cabinetAt(r, x, tm(zf) - CD / 2, 0, CW, CH, CD);
+  // the lower pair along the bottom wall; on top of the right one, in the corner, the jail key
+  const DD = 1.0, DH = 2.5, zD = tm(14) - WT - DD / 2;
+  for (const x of [XL, XR]) cabinetAt(r, x, zD, Math.PI, CW, DH, DD);
+  const kz = zD - DD / 2 + 0.25;
+  shineAt(r, XR + 0.5, DH + 0.02, kz, 'k_bjail');
+  examine(r, XR, DH - 0.6, zD - DD / 2 - 0.05, CW - 0.2, 1.2, 0.3, () => (STORY.hasGot('k_bjail') ? null : '棚の上を調べる'), () => STORY.event('b1High', 'k_bjail'));
+  // she waits at the far end, on the open side, with her back to you
+  r.mikaAt = { x: tm(3), z: tm(1.4) };
 };
 FURNISH.b1left = r => {
   addBookshelf(r, tm(-4.4), tm(1) + 0.3, 0, tm(1.6), 2.6, { mat: MAT.crateWood });
@@ -6273,10 +6304,20 @@ const EVENTS = {
 /* ---------- chairs: lift one, put it down where you point, climb on it to reach high places ---------- */
 const CHAIRS = { held: null, from: null, ring: null };
 function chairInteract(ch, key) {
-  ch.key = key; ch.home = { x: ch.g.position.x, z: ch.g.position.z }; MAN.chairs.push(ch);
+  ch.key = key; ch.home = { x: ch.g.position.x, z: ch.g.position.z, r: ch.r }; MAN.chairs.push(ch);
   ch.r.addInteract(ch.g, { dist: 2.4, icon: 'hand', prompt: () => (CHAIRS.held || PLAYER.onChair ? null : 'イスを調べる'), use: () => EVENTS.chair(ch) });
 }
-const chairAway = ch => !!ch && Math.hypot(ch.g.position.x - ch.home.x, ch.g.position.z - ch.home.z) > 0.6;
+const chairAway = ch => !!ch && (ch.r !== ch.home.r || Math.hypot(ch.g.position.x - ch.home.x, ch.g.position.z - ch.home.z) > 0.6);
+// as in the original, a room is as it was when you come back to it: a chair left somewhere else goes back to its place
+function chairsBack(r) {
+  const f = STORY.flags;
+  for (const ch of MAN.chairs) {
+    if (ch === CHAIRS.held || ch === PLAYER.onChair || r.joined.has(ch.r) || !chairAway(ch)) continue;
+    ch.moveTo(ch.home.r); ch.place(ch.home.x, ch.home.z); ch.g.visible = true; ch.col.on = true;
+    if (f.chairs) delete f.chairs[ch.key];
+    if (ch.key === 'tk' && MAN.props.k_library) MAN.props.k_library.visible = false;
+  }
+}
 function liftChair(ch) {
   CHAIRS.held = ch; CHAIRS.from = { x: ch.g.position.x, z: ch.g.position.z, r: ch.r };
   ch.g.visible = false; ch.col.on = false; SFX.push(ch.g.position.clone().setY(ch.r.y + 0.4)); VIEW.holdChair(ch);
@@ -6635,7 +6676,13 @@ function applyState() {
   for (const id of STORY.unlocked) { const d = MAN.doors[id]; if (d) { d.lock = null; const p = d.to && MAN.doors[d.to]; if (p) p.lock = null; } }
   if (f.tkChair && !(f.chairs && f.chairs.tk)) MAN.tkChair.place(MAN.tkChair.g.position.x + T, MAN.tkChair.g.position.z);   // (a save from when chairs were pushed)
   if (f.kidsChair && !(f.chairs && f.chairs.kids)) MAN.kidsChair.place(tm(13.5), tm(-13) + 1.1);
-  if (f.chairs) for (const ch of MAN.chairs) { const q = f.chairs[ch.key]; if (q) { if (q[2] && MAN.areas[q[2]]) ch.moveTo(MAN.areas[q[2]]); ch.place(q[0], q[1]); } }
+  if (f.chairs) for (const ch of MAN.chairs) {
+    const q = f.chairs[ch.key]; if (!q) continue;
+    if (q[2] && MAN.areas[q[2]]) ch.moveTo(MAN.areas[q[2]]); ch.place(q[0], q[1]);
+    // (a save from before a room was rebuilt can have it standing in furniture now: then it is back in its place)
+    const c = ch.col;
+    if (ch.r.colliders.some(o => o !== c && o.on && o.tag === 'furn' && o.x0 < c.x1 && o.x1 > c.x0 && o.z0 < c.z1 && o.z1 > c.z0)) { ch.moveTo(ch.home.r); ch.place(ch.home.x, ch.home.z); delete f.chairs[ch.key]; }
+  }
   for (const fn of STATE_HOOKS) fn(f);
   MAN.props.k_library.visible = chairAway(MAN.tkChair) && !STORY.hasGot('k_library');
   if (f.tubDrained && !STORY.hasGot('driver')) MAN.props.driver.visible = true;
@@ -6734,6 +6781,7 @@ GAME.onEnterRoom = function (r, via = null, quiet = false) {
   if (!quiet) UI.place(r.name);
   const f = STORY.flags;
   if (CHAIRS.held && r !== CHAIRS.held.r) CHAIRS.held.moveTo(r);   // you carry it with you
+  chairsBack(r);
   if (PUSH.obj && r !== PUSH.obj.r) PUSH.obj.moveTo(r);
   showFloor(r.fl);
   for (const fn of ROOM_HOOKS) if (fn(r, via, quiet) === false) return;
@@ -6923,7 +6971,7 @@ Object.assign(EVENTS, {
   b1Shelf(side) {
     const f = STORY.flags; f['b1Sh' + side] = true;
     if (!(f.b1ShL && f.b1ShR)) { say2('大きな棚だ。'); return; }
-    f.b1Shelves = true; MAN.b1ShelfL.slide(MAN.b1ShelfL.g.position.x - 1.2, MAN.b1ShelfL.g.position.z, 900); MAN.b1ShelfR.slide(MAN.b1ShelfR.g.position.x + 1.2, MAN.b1ShelfR.g.position.z, 900);
+    f.b1Shelves = true; for (const sh of [MAN.b1ShelfL, MAN.b1ShelfR]) sh.slide(sh.g.position.x + sh.dx, sh.g.position.z, 900);
     GAME.later(1.0, () => { say2('棚が動いた。', '壁にパネルがある。'); STORY.save(); });
   },
   b1Panel() {
@@ -7414,7 +7462,7 @@ BUILT_HOOKS.push(() => {
 });
 STATE_HOOKS.push(f => {
   const got = id => STORY.hasGot(id);
-  if (f.b1Shelves) { MAN.b1ShelfL.place(MAN.b1ShelfL.g.position.x - 1.2, MAN.b1ShelfL.g.position.z); MAN.b1ShelfR.place(MAN.b1ShelfR.g.position.x + 1.2, MAN.b1ShelfR.g.position.z); }
+  if (f.b1Shelves) for (const sh of [MAN.b1ShelfL, MAN.b1ShelfR]) sh.place(sh.g.position.x + sh.dx, sh.g.position.z);
   if (f.b1Panel) MAN.b1Panel.visible = false;
   for (const k of ['bjCandle', 'a1Candle', 'sbjCandle', 'sbdCandle']) if (f['lit_' + k]) MAN[k].state = 'on';
   if (f.statueBroken) { MAN.statue.g.visible = false; MAN.statue.col.on = false; MAN.rubble.visible = true; MAN.props.stoneBlue.visible = !got('stoneBlue'); }
