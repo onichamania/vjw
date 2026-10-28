@@ -20,6 +20,25 @@
     font-family:var(--ui); -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
   #c { position:fixed; inset:0; width:100%; height:100%; display:block; background:#000; }
   .hidden { display:none !important; }
+  /* online */
+  #netTags { position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden; }
+  .netTag { position:absolute; transform:translate(-50%,-100%); font-size:13px; color:#fff; background:rgba(0,0,0,.5); padding:1px 8px; border-radius:6px; white-space:nowrap; display:none; text-shadow:0 1px 2px #000; }
+  #netList { position:absolute; left:calc(env(safe-area-inset-left) + 12px); top:calc(env(safe-area-inset-top) + 98px); display:flex; flex-direction:column; gap:3px; font-size:12px; color:#dfe4f5; pointer-events:none; max-width:58vw; }
+  #netList div { background:rgba(0,0,0,.5); padding:2px 8px; border-radius:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #netList b { margin-right:6px; }
+  #netBanner { margin:2px 0 12px; padding:7px 12px; border:1px solid rgba(120,220,140,.45); background:rgba(20,60,30,.55); border-radius:8px; font-size:13px; color:#d8f5dc; max-width:min(440px,90vw); text-align:center; line-height:1.6; }
+  #online .panel p { white-space:pre-line; }
+  .olRow { display:flex; gap:8px; align-items:center; margin:10px 0; font-size:14px; }
+  .olRow input { flex:1; min-width:0; font-size:16px; padding:8px 10px; border-radius:7px; border:1px solid var(--line); background:#0b0c16; color:var(--ink); }
+  .olRoom { display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; text-align:left; background:rgba(12,14,30,.8); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin:6px 0; font:inherit; }
+  button.olRoom { cursor:pointer; }
+  .olRoom small { color:var(--sub); }
+  .olEmpty { color:var(--sub); font-size:14px; padding:10px 2px; }
+  #oWatch { display:none; }
+  #specBar { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 14px); transform:translateX(-50%); z-index:5; display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:center;
+    background:rgba(8,10,20,.82); border:1px solid var(--line); border-radius:10px; padding:8px 10px; max-width:96%; font-size:14px; }
+  #specBar b { margin-right:4px; color:#fff; }
+  #specBar button { background:rgba(36,44,96,.9); color:#fff; border:1px solid var(--line); border-radius:7px; padding:7px 11px; font-size:14px; cursor:pointer; font-family:inherit; }
   button { font-family:var(--ui); }
 
   /* ---------- fx layers ---------- */
@@ -71,7 +90,7 @@
   #iBtns .mbtn { padding:9px 22px; font-size:17px; }
   #iBtns .sp { flex:1; }
   body.short #iHelp { min-height:0; padding:6px 14px; font-size:15px; } body.short .irow { padding:3px 8px; font-size:15px; } body.short .irow svg { width:20px; height:20px; }
-  #toast { position:absolute; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+  #toast { position:absolute; right:16px; top:calc(env(safe-area-inset-top) + 62px); display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
   .toastItem { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--blue); padding:9px 14px; border-radius:6px; font-size:14px; animation:tin .35s ease-out; max-width:70vw; }
   @keyframes tin { from { transform:translateX(30px); opacity:0; } to { transform:none; opacity:1; } }
   #fps { position:absolute; right:8px; bottom:6px; font-size:11px; color:#8f8; opacity:.7; }
@@ -199,6 +218,7 @@
 <div id="fxBlack" class="fx"></div>
 <div id="fxWhite" class="fx"></div>
 
+<div id="netTags"></div>
 <div id="hud" class="hidden">
   <div id="crosshair"></div>
   <div id="prompt"><span class="key">E</span><span id="promptText"></span></div>
@@ -206,6 +226,7 @@
   <div id="hint"></div>
   <button id="tItems" aria-label="アイテム"></button>
   <div id="toast"></div>
+  <div id="netList"></div>
   <div id="fps"></div>
 </div>
 
@@ -237,14 +258,36 @@
   </svg>
   <div class="logo">青鬼</div>
   <div class="sublogo">3D　一人称版</div>
+  <div id="netBanner" class="hidden"></div>
   <div class="menu">
     <button class="mbtn primary" id="bNew">はじめから</button>
     <button class="mbtn" id="bCont">つづきから</button>
+    <button class="mbtn" id="bOnline">オンライン（みんなで）</button>
     <button class="mbtn" id="bSettings">設定</button>
     <button class="mbtn" id="bHow">遊び方</button>
   </div>
   <div class="foot">非公式のファンメイド再現作品です（原作「青鬼」noprops 様とは無関係）。すべての映像と音はコードで生成しています。</div>
 </div>
+
+<div id="online" class="screen hidden" style="background:rgba(0,0,0,.9)">
+  <div class="panel">
+    <h2>オンライン（みんなで）</h2>
+    <p id="olState"></p>
+    <div class="olRow">名前<input id="olName" maxlength="14" autocomplete="off" placeholder="プレイヤー"></div>
+    <div id="olOut">
+      <div id="olRooms"></div>
+      <div class="btns"><button class="mbtn primary" id="olHost">部屋を作る</button><button class="mbtn" id="olRetry">もう一度つなぐ</button><button class="mbtn" id="olPerm">許可の設定を開く</button></div>
+      <div class="olRow">部屋番号<input id="olCode" maxlength="9" autocomplete="off" placeholder="英数字6文字"><button class="mbtn" id="olJoin">入る</button></div>
+    </div>
+    <div id="olIn" class="hidden">
+      <div id="olMembers"></div>
+      <div class="btns"><button class="mbtn primary" id="olNew">はじめから</button><button class="mbtn" id="olCont">つづきから</button><button class="mbtn" id="olLeave">部屋を出る</button></div>
+    </div>
+    <div class="btns"><button class="mbtn" id="olBack">もどる</button></div>
+  </div>
+</div>
+
+<div id="specBar" class="hidden">観戦中 <b id="specName"></b><button id="specPrev" aria-label="前の仲間">◀</button><button id="specNext" aria-label="次の仲間">▶</button><button id="specOut" aria-label="ズームアウト">－</button><button id="specIn" aria-label="ズームイン">＋</button><button id="specView">一人称</button><button id="specCont">つづきから</button><button id="specTitle">タイトルへ</button></div>
 
 <div id="loading" class="screen hidden">
   <div style="letter-spacing:.4em;color:#9aa3bf">LOADING</div>
@@ -309,6 +352,7 @@
   <div id="overSub"></div>
   <div class="btns" id="overBtns" style="opacity:0;transition:opacity 1s">
     <button class="mbtn primary" id="oCont">つづきから</button>
+    <button class="mbtn" id="oWatch">仲間を見る</button>
     <button class="mbtn" id="oTitle">タイトルへ</button>
   </div>
 </div>

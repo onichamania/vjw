@@ -755,8 +755,8 @@ const UI = {
   resume() { GAME.paused = false; UI.show('pause', false); AU.resume(); if (!IS_TOUCH) requestLock(); },
   title() {
     GAME.state = 'title';
-    ['hud', 'touch', 'over', 'end', 'pause', 'loading', 'settings', 'how', 'msg', 'items', 'files'].forEach(i => UI.show(i, false)); UI._files = null;
-    UI.show('title');
+    ['hud', 'touch', 'over', 'end', 'pause', 'loading', 'settings', 'how', 'msg', 'items', 'files', 'specBar', 'online'].forEach(i => UI.show(i, false)); UI._files = null;
+    UI.show('title'); NET.render();
     $('bCont').disabled = !UI.anySave();
     MUSIC.stop(1); if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
     GAME.room = null; ONI.reset(); CAST.hideAll(); UI._msg = null; UI._choice = null; $('msgChs').innerHTML = ''; CHAIRS.held = null; PUSH.obj = null; VIEW.chair.visible = false; GAME.modal = null; GAME.cine = null; GAME.busy = 0; GAME.lighterOn = false;
@@ -768,7 +768,7 @@ const UI = {
     const o = $('over'); UI.show('over'); o.classList.remove('show'); void o.offsetWidth; o.classList.add('show');
     $('overSub').innerHTML = '青鬼につかまってしまった……<br><small>部屋を移れば、少し時間がかせげる。追ってこなくなるまで逃げきるか、見られていないうちにクローゼットへ。</small>';
     $('overBtns').style.opacity = 0; $('overBtns').style.pointerEvents = 'none';
-    $('oCont').disabled = !UI.anySave();
+    $('oCont').disabled = !UI.anySave(); NET.overUI();
     setTimeout(() => { $('overBtns').style.opacity = 1; $('overBtns').style.pointerEvents = 'auto'; $('fxBlack').style.transition = 'opacity .6s'; $('fxBlack').style.opacity = 0; }, 1400);
     if (GAME.amb) { GAME.amb.stop(1); GAME.amb = null; }
   },
@@ -825,7 +825,7 @@ function applyState() {
 }
 GAME.start = async function (save = null) {
   AU.init(); AU.resume();
-  ['title', 'over', 'end', 'settings', 'how', 'files'].forEach(i => UI.show(i, false));
+  ['title', 'over', 'end', 'settings', 'how', 'files', 'specBar', 'online'].forEach(i => UI.show(i, false));
   if (!materialsReady) {
     UI.show('loading');
     await buildMaterials(p => { $('loadBar').style.width = Math.round(p * 100) + '%'; });
@@ -953,7 +953,7 @@ function frame(now) {
   const real = (now - lastT) / 1000, dt = Math.min(0.05, real); lastT = now;
   fpsAcc += real; fpsN++; if (fpsAcc > 0.5) { if (SETTINGS.fps) $('fps').textContent = Math.round(fpsN / fpsAcc) + ' fps'; fpsAcc = 0; fpsN = 0; }
   stepAnims();
-  if (GAME.state !== 'play' && GAME.state !== 'ending') return;
+  if (GAME.state !== 'play' && GAME.state !== 'ending' && GAME.state !== 'watch') return;   // (watch: caught, watching a friend online)
   update(dt);
   if (composer) composer.render(dt); else renderer.render(scene, camera);
 }
@@ -984,6 +984,7 @@ function update(dt) {
     else if (!ONI.on && MUSIC.cur && MUSIC.cur.name === 'aochase') { MUSIC.stop(3); GAME.chaseFx = 0; }
     else if (!ONI.on) GAME.chaseFx = 0;
   }
+  NET.update(dt);
   PLAYER.applyCamera(dt);
   VIEW.update(dt);
   LIGHTS.update(dt, GAME.time);
@@ -1049,8 +1050,9 @@ function boot() {
   $('oTitle').onclick = () => { ONI.reset(); WORLD.reset(); UI.title(); };
   $('eTitle').onclick = () => { $('endStats').style.opacity = 0; $('endBtns').style.opacity = 0; ONI.reset(); WORLD.reset(); UI.title(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden && GAME.state === 'play') UI.pause(); });
+  NET.bind();
   UI.title();
   requestAnimationFrame(frame);
 }
 boot();
-window.__AO = { GAME, STORY, ONI, DIRECTOR, MAN, CHAIRS, PUSH, ITEMS, chairSpot, chairAway, VIEW, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };
+window.__AO = { NET, OCHAT, GAME, STORY, ONI, DIRECTOR, MAN, CHAIRS, PUSH, ITEMS, chairSpot, chairAway, VIEW, WORLD, PLAYER, UI, EVENTS, SFX, MUSIC, AU, CAST, camera, scene, POST, INPUT, LIGHTS, THREE, TILE: T, FLOORS, navPath, nearestNode, cellOf, stairPoint, veilDark, renderer: () => renderer, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) { update(step); stepAnims(); } } };

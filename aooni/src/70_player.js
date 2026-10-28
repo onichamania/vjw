@@ -59,7 +59,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('pointerlockchange', () => {
   INPUT.locked = document.pointerLockElement === canvas;
   // losing the lock pauses the game, unless the game let go of it itself a moment ago (to show the item screen, the safe...)
-  if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cine && performance.now() - (INPUT.selfUnlockT || -1e9) > 600) UI.pause();
+  if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cine && !OCHAT.isOpen && performance.now() - (INPUT.selfUnlockT || -1e9) > 600) UI.pause();   // (not when you went to chat)
 });
 document.addEventListener('mousemove', e => {
   if (!INPUT.locked) {

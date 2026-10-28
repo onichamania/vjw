@@ -278,7 +278,7 @@
   <div id="coopList"></div>
 </div>
 <div id="netTags"></div>
-<div id="specBar" class="hidden"><span class="lbl">観戦中</span><b id="specName"></b><button id="specPrev" aria-label="前の人">◀</button><button id="specNext" aria-label="次の人">▶</button><button id="specLeave">部屋にもどる</button></div>
+<div id="specBar" class="hidden"><span class="lbl">観戦中</span><b id="specName"></b><button id="specPrev" aria-label="前の人">◀</button><button id="specNext" aria-label="次の人">▶</button><button id="specOut" aria-label="ズームアウト">－</button><button id="specIn" aria-label="ズームイン">＋</button><button id="specView">一人称</button><button id="specLeave">部屋にもどる</button></div>
 
 <div id="touch" class="hidden">
   <div id="lookZone"></div>
@@ -4659,10 +4659,10 @@ addEventListener('mouseup', e => {
   if (d.button === 0 && !GAME.interact()) { const p = toStage(e.clientX, e.clientY); if (!GAME.tapAt(p.x, p.y)) GAME.useItem(); }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (GAME.state === 'play' && GAME.inv.length) GAME.select(((GAME.sel < 0 ? 0 : GAME.sel) + (e.deltaY > 0 ? 1 : -1) + GAME.inv.length) % GAME.inv.length); }, { passive: true });
+addEventListener('wheel', e => { if (NET.spec) { NET.zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18); return; } if (GAME.state === 'play' && GAME.inv.length) GAME.select(((GAME.sel < 0 ? 0 : GAME.sel) + (e.deltaY > 0 ? 1 : -1) + GAME.inv.length) % GAME.inv.length); }, { passive: true });
 document.addEventListener('pointerlockchange', () => {
   INPUT.locked = document.pointerLockElement === canvas;
-  if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cutscene) UI.pause();
+  if (!INPUT.locked && GAME.state === 'play' && !GAME.modal && !IS_TOUCH && !GAME.cutscene && !OCHAT.isOpen) UI.pause();   // (not when the chat took the pointer)
 });
 document.addEventListener('mousemove', e => {
   if (!INPUT.locked) {
@@ -4731,6 +4731,7 @@ const PLAYER = {
   toggleCrouch() { if (!this.hidden) { this.crouch = !this.crouch; $('tCrouch').classList.toggle('on', this.crouch); } },
   update(dt) {
     let lookX = INPUT.mdx, lookY = INPUT.mdy; INPUT.mdx = 0; INPUT.mdy = 0;
+    if (!this.alive && NET.spec) { NET.specCam.dx += lookX; NET.specCam.dy += lookY; }
     const sens = 0.0022 * SETTINGS.sens * HUB.sens;
     if (this.hidden) {
       const h = this.hidden, lim = h.type === 'bed' ? 0.9 : 0.55;
@@ -6443,7 +6444,7 @@ const NET = {
   st: 'off', why: '', perm: null, room: null, lobby: [], conn: false, okT: 0,
   on: false, host: false, game: null, code: '', hostPeer: null, hostName: '', gunsub: [], peers: [], joinT: 0, lostT: 0, sawLobby: false, hostSeen: false,
   H: { st: 'lobby', ep: 0, seed: 0 }, ep: -1, inRun: false, seq: 0, win: [], seen: {}, q: [], applying: false,
-  avs: new Map(), spec: null, specRi: -1, specCine: null, pump: 0, endT: 0, hudT: 0, note: '', noteT: 0, lookC: null, lobbySent: '',
+  avs: new Map(), spec: null, specRi: -1, specCine: null, specCam: { dist: 3.4, yaw: null, pitch: 0.28, dx: 0, dy: 0, for: null }, pump: 0, endT: 0, hudT: 0, note: '', noteT: 0, lookC: null, lobbySent: '',
 };
 NET.myName = () => netClean(store.get('name', '')).slice(0, 14) || 'プレイヤー';
 // your 3dgame home-screen avatar's colours if you made one, otherwise a shirt colour from your name
@@ -6791,6 +6792,14 @@ NET.dropAv = function (a) {
   if (a.light) { const i = WORLD.dyn.indexOf(a.light); if (i >= 0) WORLD.dyn.splice(i, 1); a.light = null; }
 };
 const _netV = new THREE.Vector3(), _netW = new THREE.Vector3();
+// someone else's footstep, where they are (the floor's own sound)
+NET.stepAt = function (x, y, z, room, k) {
+  if (!AU.ok) return;
+  const pos = new THREE.Vector3(x, y + 0.1, z), sf = room ? room.surface : 'wood', r = 0.85 + Math.random() * 0.3, v = 0.34 * k;
+  if (sf === 'carpet') AU.burst({ pos, dur: 0.07, f: 380 * r, q: 0.8, vol: v * 0.6, rev: 0.05 });
+  else if (sf === 'concrete' || sf === 'tile') { AU.burst({ pos, dur: 0.05, f: 1400 * r, q: 1.4, vol: v * 0.6, rev: 0.25 }); AU.tone({ pos, f: 90, f2: 50, dur: 0.06, vol: v * 0.3 }); }
+  else { AU.burst({ pos, dur: 0.06, f: 520 * r, q: 1.2, vol: v * 0.75, rev: 0.18 }); AU.tone({ pos, f: 85 * r, f2: 45, dur: 0.08, vol: v * 0.55, rev: 0.05 }); }
+};
 NET.avatars = function (dt) {
   const W = VW(), H = VH(), rt = performance.now() - 120;
   for (const a of NET.avs.values()) {
@@ -6810,8 +6819,10 @@ NET.avatars = function (dt) {
     a.yaw = p.s[3] + dy * k; a.pitch = lerp(p.s[4], n.s[4], k);
     a.spd = lerp(a.spd, Math.hypot(a.x - px, a.z - pz) / Math.max(dt, 1e-3), Math.min(1, dt * 8));
     const amp = Math.min(1, a.spd / 4.5); a.walk += dt * Math.min(a.spd, 6) * 2.2;
+    a.stepAcc = (a.stepAcc || 0) + Math.hypot(a.x - px, a.z - pz);
+    if (a.stepAcc > (a.spd > 4.6 ? 1.6 : 1.25)) { a.stepAcc = 0; if (a.spd > 0.6 && !st.hd) NET.stepAt(a.x, a.y, a.z, WORLD.room(st.ri), st.cr ? 0.5 : 1); }
     const M = a.m, P2 = M.parts, sw = Math.sin(a.walk) * amp * 0.75, cr = st.cr ? 1 : 0;
-    M.g.visible = !st.hd && NET.spec !== a.peer;   // hidden in a closet, or you are watching through their eyes
+    M.g.visible = !st.hd && (NET.spec !== a.peer || NET.specCam.dist >= 0.6);   // hidden in a closet, or you are watching through their eyes
     M.g.position.set(a.x, a.y, a.z); M.g.rotation.y = a.yaw + Math.PI;
     M.body.position.y = -0.42 * cr; M.body.rotation.x = 0;
     P2.legL.rotation.x = sw - 1.1 * cr; P2.legR.rotation.x = -sw - 1.1 * cr;
@@ -6851,7 +6862,12 @@ NET.watch = function (dir = 0) {
   NET.spec = ts[((i < 0 ? 0 : i + dir) % ts.length + ts.length) % ts.length].peer;
   UI.show('death', false); UI.show('win', false); UI.show('specBar');
   MUSIC.stop(1); $('fxBlack').style.opacity = 0; POST.hurt = 0;
+  AU.resume(); if (!GAME.amb) { GAME.amb = LOOPS.ambience(); GAME.amb.setVol(0.9, 1); }   // you hear what they hear
+  NET.specCam.yaw = null; NET.zoomUI();
 };
+// zoom the watching camera: all the way in is their own eyes
+NET.zoom = function (k) { const S = NET.specCam; S.dist = S.dist < 0.6 && k > 1 ? 1.2 : clamp(S.dist * k, 0.5, 9); if (S.dist < 0.65) S.dist = 0.5; NET.zoomUI(); };
+NET.zoomUI = function () { const b = $('specView'); if (b) b.textContent = NET.specCam.dist < 0.6 ? '三人称' : '一人称'; };
 NET.spectate = function () {
   if (!NET.spec) return;
   const a = NET.avs.get(NET.spec);
@@ -6862,10 +6878,22 @@ NET.spectate = function () {
     if (GAME.won) UI.show('win'); else { $('fxBlack').style.opacity = 1; UI.show('death'); }
     return;
   }
-  const C = NET.specCine || (NET.specCine = { pos: new THREE.Vector3(), look: new THREE.Vector3() });
-  C.pos.set(a.x, a.y + (a.st.cr ? 1.0 : 1.58), a.z);
-  const cp = Math.cos(a.pitch);
-  C.look.set(C.pos.x - Math.sin(a.yaw) * cp, C.pos.y + Math.sin(a.pitch), C.pos.z - Math.cos(a.yaw) * cp);
+  const C = NET.specCine || (NET.specCine = { pos: new THREE.Vector3(), look: new THREE.Vector3() }), S = NET.specCam;
+  const eye = new THREE.Vector3(a.x, a.y + (a.st.cr ? 1.0 : 1.58), a.z);
+  if (S.for !== a.peer) { S.for = a.peer; S.yaw = null; }
+  if (S.yaw == null) S.yaw = a.yaw;
+  const sens = 0.0028 * SETTINGS.sens * HUB.sens;
+  S.yaw -= S.dx * sens; S.pitch = clamp(S.pitch + S.dy * sens, -0.5, 1.25); S.dx = 0; S.dy = 0;
+  if (S.dist < 0.6) {   // their own eyes
+    C.pos.copy(eye); const cp = Math.cos(a.pitch);
+    C.look.set(C.pos.x - Math.sin(a.yaw) * cp, C.pos.y + Math.sin(a.pitch), C.pos.z - Math.cos(a.yaw) * cp);
+  } else {   // behind and above them, turned by your drags, pulled in so a wall never comes between
+    const head = eye.clone().setY(eye.y + 0.15), cp = Math.cos(S.pitch), dir = new THREE.Vector3(Math.sin(S.yaw) * cp, Math.sin(S.pitch), Math.cos(S.yaw) * cp);
+    let d = S.dist; const q = new THREE.Vector3();
+    for (let t = 0.3; t <= S.dist; t += 0.2) { q.copy(head).addScaledVector(dir, t); if (WORLD.blocked(head, q)) { d = Math.max(0.35, t - 0.3); break; } }
+    C.pos.copy(head).addScaledVector(dir, d); C.pos.y = Math.min(C.pos.y, a.y + 3.2);
+    C.look.copy(head);
+  }
   GAME.cine = C;
   const r = WORLD.room(a.st.ri);
   if (r) GAME.room = r;   // their room's light and sound
@@ -6963,6 +6991,15 @@ NET.bind = function () {
   $('dRoom').onclick = $('wRoom').onclick = () => NET.quitRun();
   $('specPrev').onclick = () => NET.watch(-1);
   $('specNext').onclick = () => NET.watch(1);
+  $('specIn').onclick = () => NET.zoom(1 / 1.45); $('specOut').onclick = () => NET.zoom(1.45);
+  $('specView').onclick = () => { const S = NET.specCam; S.dist = S.dist < 0.6 ? 3.4 : 0.5; NET.zoomUI(); };
+  // two fingers apart / together: zoom while watching
+  let pinch = 0, drag1 = null;
+  addEventListener('touchstart', e => { drag1 = NET.spec && e.touches.length === 1 ? toStage(e.touches[0].clientX, e.touches[0].clientY) : null; }, { passive: true });
+  addEventListener('touchmove', e => {
+    if (NET.spec && e.touches.length === 1 && drag1) { const q = toStage(e.touches[0].clientX, e.touches[0].clientY); NET.specCam.dx += (q.x - drag1.x) * 2.2; NET.specCam.dy += (q.y - drag1.y) * 2.2; drag1 = q; return; }   // one finger turns the view
+    if (!NET.spec || e.touches.length !== 2) { pinch = 0; return; } const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); if (pinch) NET.zoom(clamp(pinch / d, 0.8, 1.25)); pinch = d; }, { passive: true });
+  addEventListener('touchend', e => { if (e.touches.length < 2) pinch = 0; });
   $('specLeave').onclick = () => NET.quitRun();
   addEventListener('pagehide', () => { try { if (NET.game) NET.game.leave().catch(() => {}); if (NET.room) NET.room.presence({ dr: null }).catch(() => {}); } catch (e) { /* closing anyway */ } });
 };
@@ -7506,7 +7543,7 @@ function update(dt) {
   if (gradePass) {
     const u = gradePass.uniforms;
     u.time.value = GAME.time; u.grain.value = POST.halt ? 0.2 : 0.045; u.aberr.value = POST.aberr + POST.hurt * 0.006 + (POST.halt ? 0.004 : 0); u.warp.value = (PLAYER.hidden && ENT.hideState) ? 1 : 0;
-    u.desat.value = PLAYER.alive ? clamp((35 - PLAYER.hp) / 60, 0, 0.5) : 0.6;
+    u.desat.value = PLAYER.alive ? clamp((35 - PLAYER.hp) / 60, 0, 0.5) : NET.spec ? 0 : 0.6;   // (watching a teammate: in colour)
   }
   // audio listener
   if (AU.ok) {
@@ -7561,6 +7598,121 @@ document.addEventListener('touchend', e => { if (pressMine(e)) UI.pressEnd(true)
 document.addEventListener('mouseup', e => { if (pressMine(e)) UI.pressEnd(true); }, true);
 document.addEventListener('touchcancel', e => { if (pressMine(e)) UI.pressEnd(false); }, true);
 window.__DOORS = { AU, LOOPS, NET, GAME, WORLD, PLAYER, ENT, DIRECTOR, LIGHTS, RUN, SETTINGS, TPL, MAT, camera, scene, POST, UI, INPUT, renderer: () => renderer, flickerRoom, SFX, makeFigure: makeFigureModel, THREE_Box: THREE.Box3, THREE, ANIM, sim: (sec, step = 1 / 30) => { for (let t = 0; t < sec; t += step) update(step); } };
+
+
+/* ===================== online chat (only while you are in an online room) =====================
+   Messages travel in your presence in the game's room: your last three as [number, text] under `ocm`,
+   your name under `ocn`. A newcomer's old lines are not shown. T or Enter (PC) or 💬 opens it. */
+const OCHAT = (() => {
+  const S = { seq: 0, out: [], seen: {}, open: false, room: null, opt: null, el: {}, lines: [] };
+  const clean = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g, '').trim();
+  const CSS = `
+#ochat{position:absolute;inset:0;pointer-events:none;z-index:40;font-family:"Noto Sans JP",system-ui,sans-serif;display:none}
+#ochat.on{display:block}
+#ochatB{position:absolute;right:calc(env(safe-area-inset-right,0px) + 66px);top:calc(env(safe-area-inset-top,0px) + 12px);width:42px;height:38px;border-radius:10px;border:2px solid rgba(255,255,255,.7);background:rgba(10,12,20,.72);color:#fff;font-size:19px;line-height:1;pointer-events:auto;cursor:pointer;padding:0}
+#ochatB.new{box-shadow:0 0 0 3px #ffd34d}
+#ochatLog{position:absolute;left:calc(env(safe-area-inset-left,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 118px);width:min(420px,60vw);display:flex;flex-direction:column;gap:3px}
+#ochatLog div{background:rgba(0,0,0,.55);color:#fff;padding:3px 9px;border-radius:6px;font-size:14px;line-height:1.45;text-shadow:0 1px 2px #000;word-break:break-all;transition:opacity .5s}
+#ochatLog b{margin-right:4px}
+#ochatBox{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);width:min(520px,94%);display:none;gap:6px;pointer-events:auto;background:rgba(16,18,28,.94);border:2px solid rgba(255,255,255,.6);border-radius:10px;padding:8px;flex-wrap:wrap}
+#ochat.open #ochatBox{display:flex}
+#ochat.open #ochatLog div{opacity:1!important}
+#ochatIn{flex:1;min-width:0;font-size:16px;padding:7px 9px;border-radius:7px;border:1px solid #888;background:#0b0c12;color:#fff;outline:none;-webkit-user-select:text;user-select:text}
+#ochatBox button{font-size:15px;padding:6px 12px;border-radius:7px;border:1px solid #888;background:#2a3050;color:#fff;cursor:pointer}
+#ochatQ{display:flex;flex-wrap:wrap;gap:5px;width:100%}
+#ochatQ button{font-size:13px;padding:4px 10px;background:#1c2034}`;
+  const QUICK = ['よろしく！', 'こっち！', 'まって！', 'ありがとう', 'ナイス！', 'にげて！'];
+  function el(tag, attrs, parent) { const e = document.createElement(tag); Object.assign(e, attrs || {}); if (parent) parent.appendChild(e); return e; }
+  function mount(opt) {
+    S.opt = opt;
+    const st = el('style', { textContent: CSS + (opt.css || '') }); document.head.appendChild(st);   // (opt.css: where this game has room for it)
+    const w = S.el.w = el('div', { id: 'ochat' });
+    S.el.log = el('div', { id: 'ochatLog' }, w);
+    const b = S.el.b = el('button', { id: 'ochatB', textContent: '💬', title: 'チャット（T）' }, w);
+    const box = el('div', { id: 'ochatBox' }, w);
+    const inp = S.el.inp = el('input', { id: 'ochatIn', maxLength: 60, placeholder: 'メッセージ', autocomplete: 'off', enterKeyHint: 'send' }, box);
+    el('button', { textContent: '送信', onclick: e => { e.stopPropagation(); send(inp.value); inp.value = ''; close(); } }, box);
+    el('button', { textContent: '×', onclick: e => { e.stopPropagation(); close(); } }, box);
+    const q = el('div', { id: 'ochatQ' }, box);
+    for (const t of QUICK) el('button', { textContent: t, onclick: e => { e.stopPropagation(); send(t); close(); } }, q);
+    const stop = e => e.stopPropagation();
+    for (const ev of ['mousedown', 'mouseup', 'click', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'wheel']) box.addEventListener(ev, stop, { passive: true });
+    b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); toggle(); }, { passive: false });
+    b.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+    b.addEventListener('mousedown', stop);
+    // while typing, the game does not see the keys
+    addEventListener('keydown', e => {
+      if (document.activeElement === inp) {
+        e.stopPropagation();
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); send(inp.value); inp.value = ''; close(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(); }
+        return;
+      }
+      const ae = document.activeElement;   // (typing in another box: Enter is theirs)
+      if (S.room && !S.open && !e.repeat && !(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) && ((opt.noT ? false : e.code === 'KeyT') || (e.code === 'Enter' && opt.enterOpens)) && (!opt.canOpen || opt.canOpen())) { e.preventDefault(); e.stopPropagation(); open(); }
+    }, true);
+    addEventListener('keyup', e => { if (document.activeElement === inp) e.stopPropagation(); }, true);
+    addEventListener('keypress', e => { if (document.activeElement === inp) e.stopPropagation(); }, true);
+    (opt.parent && opt.parent() || document.body).appendChild(w);
+    setInterval(tick, 250);
+  }
+  function tick() {
+    let r = null; try { r = S.opt.room(); } catch (e) { r = null; }
+    if (r !== S.room) { S.room = r; S.seen = {}; S.out = []; if (!r && S.open) close(); }
+    S.el.w.classList.toggle('on', !!r);
+    const now = performance.now();
+    for (const L of S.lines.slice()) { const age = (now - L.t) / 1000; if (age > 12 && !S.open) { L.d.remove(); S.lines.splice(S.lines.indexOf(L), 1); } else L.d.style.opacity = S.open ? 1 : Math.min(1, 12 - age); }
+    if (!r) return;
+    let ps = []; try { ps = r.peers(); } catch (e) { ps = []; }
+    for (const p of ps) if (p && !p.sameTab && p.kind === 'viewer') read(p.peer, p.presence);
+  }
+  function read(peer, pr) {
+    const cm = pr && pr.ocm;
+    if (!Array.isArray(cm)) { if (!(peer in S.seen)) S.seen[peer] = 0; return; }   // (nothing said yet: whatever they say next is new)
+    const top = cm.reduce((m, e) => (Array.isArray(e) && e[0] > m ? e[0] : m), -1);
+    if (!(peer in S.seen)) { S.seen[peer] = top; return; }
+    for (const e of cm) {
+      if (!Array.isArray(e) || !(e[0] > S.seen[peer])) continue;
+      S.seen[peer] = e[0]; const t = clean(e[1]).slice(0, 60);
+      if (t) { line(clean(pr.ocn).slice(0, 14) || '???', t, false); if (!S.open) S.el.b.classList.add('new'); }
+    }
+  }
+  function line(name, text, mine) {
+    const d = el('div', {}, S.el.log), n = el('b', { textContent: name ? name + '：' : '' }, d); n.style.color = mine ? '#8fc4ff' : '#ffb07a';
+    d.appendChild(document.createTextNode(text));
+    S.lines.push({ d, t: performance.now() });
+    while (S.lines.length > 7) S.lines.shift().d.remove();
+    if (S.opt.sound) try { S.opt.sound(mine); } catch (e) { /* no sound */ }
+  }
+  // presence is small (4 KiB for everything the game keeps there too): at most two lines, taken out again after a while
+  function send(t) {
+    t = clean(t).slice(0, S.opt.max || 60); if (!t || !S.room) return;
+    const room = S.room, nm = clean(S.opt.name()).slice(0, 12) || 'プレイヤー';
+    S.seq++; S.out.push([S.seq, t]); if (S.out.length > 2) S.out.shift();
+    line(nm, t, true);
+    const put = list => room.presence({ ocm: list, ocn: nm });
+    try { put(S.out.slice()).catch(() => put(S.out.slice(-1)).catch(() => line('', '（送れませんでした）', true))); } catch (e) { /* not sent */ }
+    clearTimeout(S.clearT);
+    S.clearT = setTimeout(() => { S.out = []; if (S.room === room) try { room.presence({ ocm: null, ocn: null }).catch(() => {}); } catch (e) { /* gone */ } }, 8000);
+  }
+  function open() {
+    if (!S.room || S.open) return;
+    S.open = true; S.el.w.classList.add('open'); S.el.b.classList.remove('new');
+    if (S.opt.onOpen) try { S.opt.onOpen(); } catch (e) { /* game hook */ }
+    if (document.pointerLockElement) try { document.exitPointerLock(); } catch (e) { /* not locked */ }
+    try { S.el.inp.focus(); } catch (e) { /* no focus */ }
+  }
+  function close() {
+    if (!S.open) return;
+    S.open = false; S.el.w.classList.remove('open');
+    try { S.el.inp.blur(); } catch (e) { /* no focus */ }
+    if (S.opt.onClose) try { S.opt.onClose(); } catch (e) { /* game hook */ }
+  }
+  const toggle = () => (S.open ? close() : open());
+  return { mount, open, close, get isOpen() { return S.open; }, _S: S };
+})();
+
+OCHAT.mount({ room: () => (NET.on ? NET.game : null), name: () => NET.myName(), parent: () => $('rot'), onClose: () => { if (!IS_TOUCH && GAME.state === 'play' && PLAYER.alive && !GAME.modal && !GAME.paused) requestLock(); } });
 </script>
 </body>
 </html>
