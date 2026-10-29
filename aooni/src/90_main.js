@@ -869,7 +869,12 @@ GAME.start = async function (save = null) {
     GAME.time = save.time || 0; GAME.caughtN = save.caught || 0;
     DIRECTOR.enabled = !!STORY.flags.libChase; DIRECTOR.cool = 30;
   } else { STORY.flags.code = newCode(); for (const fn of BUILT_HOOKS) fn(); }
-  GAME.room = WORLD.roomAt(PLAYER.pos); if (GAME.room) showFloor(GAME.room.fl);
+  GAME.room = WORLD.roomAt(PLAYER.pos);
+  if (!GAME.room && save) {   // (a save from before a room was rebuilt can stand where there is no floor now: the nearest floor)
+    const nd = nearestNode(PLAYER.pos);
+    if (nd) { PLAYER.pos.set(cx(nd.x), FLOORS[nd.fl], cx(nd.z)); PLAYER.camY = FLOORS[nd.fl] + 1.58; GAME.room = WORLD.roomAt(PLAYER.pos); }
+  }
+  if (GAME.room) showFloor(GAME.room.fl);
   UI.inv();
   $('fxBlack').style.transition = 'none'; $('fxBlack').style.opacity = 1; $('fxHide').style.opacity = 0;
   UI.show('hud'); UI.show('touch', IS_TOUCH);

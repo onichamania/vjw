@@ -116,7 +116,7 @@ Object.assign(EVENTS, {
   },
   crate() {
     const f = STORY.flags, c = MAN.crate; if (f.crateIn || c.moving) return;
-    const [tx, tz] = c.tile || [22, 3];
+    const [tx, tz] = c.tile || [20, -1];
     let dx = c.g.position.x - PLAYER.pos.x, dz = c.g.position.z - PLAYER.pos.z;
     if (Math.abs(dx) > Math.abs(dz)) { dx = Math.sign(dx); dz = 0; } else { dz = Math.sign(dz); dx = 0; }
     const nx = tx + dx, nz = tz + dz, cell = MAN.grid.get(gkey('A3', nx, nz)), hole = MAN.crateHole;
@@ -455,7 +455,7 @@ ROOM_HOOKS.push((r, via, quiet) => {
   else if (r.fl === 'A1' && !FOLLOW.id) CAST.hide('takeshi');
   if (r.id === 'abhidB' && f.takuroWith && !f.hidChase) GAME.later(0.8, () => EVENTS.hidChase());
   // the crate goes back to where it was whenever you come in (so it can never be stuck in a corner)
-  if (r.id === 'a3crate' && !f.crateIn) { MAN.crate.place(cx(22), cx(3)); MAN.crate.tile = [22, 3]; f.crateAt = null; }
+  if (r.id === 'a3crate' && !f.crateIn) { MAN.crate.place(cx(20), cx(-1)); MAN.crate.tile = [20, -1]; f.crateAt = null; }
   // the room top left of the second annex's upper floor: it grows up out of the floor
   if (r.id === 's2tl' && !f.sproutChase && !quiet) {
     f.sproutChase = true; STORY.save();

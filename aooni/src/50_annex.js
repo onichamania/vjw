@@ -17,14 +17,14 @@ AREAS.push(
   { id: 'a1corB', name: '廊下', fl: 'A1', cells: [[3, -9, 16, 3]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[6, -7.5], [11, -7.5], [16, -7.5]] },
   { id: 'a1bl', name: '奥左の部屋', fl: 'A1', cells: [[0, -4, 8, 7]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[4, -0.5]] },
   { id: 'a1left', name: '左の部屋', fl: 'A1', cells: [[0, 5, 8, 6]], wall: 'wallBlue', floor: 'floorBlood', dark: true, lamps: [] },
-  { id: 'a1corA', name: '廊下', fl: 'A1', cells: [[19, 2, 9, 2]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[22, 3], [26, 3]] },
+  { id: 'a1corA', name: '廊下', fl: 'A1', cells: [[19, 2, 12, 1]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[21.5, 2.5], [27.5, 2.5]] },   // 6.23: twelve tiles, one tile of floor
   { id: 'a1stair', name: '階段室', fl: 'A1', cells: [[19, -4, 8, 5]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[22, -1.5]] },
   { id: 'a1br', name: '奥右の部屋', fl: 'A1', cells: [[30, -12, 8, 7]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[34, -8.5]] },
   { id: 'a2cor', name: '２階 廊下', fl: 'A2', cells: [[10, 0, 6, 3]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[13, 1.5]] },
   { id: 'a2left', name: '左の部屋', fl: 'A2', cells: [[0, -3, 8, 7]], wall: 'wallBlue', floor: 'floorBlood', lamps: [] },
   { id: 'a2fire', name: '暖炉の部屋', fl: 'A2', cells: [[18, -3, 8, 8]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[22, 1]] },
   { id: 'a3cor', name: '３階 廊下', fl: 'A3', cells: [[14, 0, 2, 6]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[15, 2.5]] },
-  { id: 'a3crate', name: '木箱の部屋', fl: 'A3', cells: [[18, 0, 9, 6], [18, -2, 1, 2]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[22.5, 3]] },
+  { id: 'a3crate', name: '木箱の部屋', fl: 'A3', cells: [[18, -4, 5, 7], [18, -6, 1, 2], [22, -6, 1, 2]], wall: 'wallBlue', floor: 'floorBlood', lamps: [[20.5, -2.5], [20.5, 1]] },   // 6.23: five by seven, a nook top left and top right
   // the first annex's basement (dark until the lever in the room bottom left)
   { id: 'abstair', name: '地下 階段室', fl: 'AB', cells: [[10, 10, 6, 5]], wall: 'wallStone', floor: 'floorMoss', dark: true, lamps: [[13, 12.5]] },
   { id: 'abcorA', name: '地下 廊下', fl: 'AB', cells: [[6, 4, 12, 3]], wall: 'wallStone', floor: 'floorMoss', dark: true, lamps: [[9, 5.5], [15, 5.5]] },
@@ -76,7 +76,7 @@ STAIRS.push(
   { id: 'stOut', fl: 'SB', area: 'sbcorC', r: [16, -25, 3, 5], dir: 'N', rise: 3.2, to: null },   // up and out
 );
 EDGES.push(
-  ...[2, 3].map(z => ['A1', 18, z, 19, z]),                       // the annex hall - corridor A
+  ['A1', 18, 2, 19, 2],                                            // the annex hall - corridor A
   ...[13, 14, 15].map(x => ['A1', x, -6, x, -7]),                 // the hall's way up - corridor B
   ...[4, 5, 6].map(z => ['AB', 17, z, 18, z]),                    // basement corridors A - B
   ...[14, 15].map(z => ['AB', 19, z, 20, z]),                     // the hidden passage turns
@@ -101,8 +101,11 @@ DOORDEFS.push(
   { id: 'bl_corB1', fl: 'A1', x: 4, z: -4, side: 'N', to: 'corB1_bl' },
   { id: 'corB1_br', fl: 'A1', x: 10, z: -7, side: 'S', to: 'br_corB1' },
   { id: 'br_corB1', fl: 'A1', x: 31, z: -12, side: 'N', to: 'corB1_br' },
-  { id: 'corA1_stair', fl: 'A1', x: 20, z: 2, side: 'N', to: 'stair1_corA', stuck: 'a1stairOpen' },
+  // corridor A's two doors up to the stairwell (they do not open from the corridor until opened from inside)
+  { id: 'corA1_stair', fl: 'A1', x: 21, z: 2, side: 'N', to: 'stair1_corA', stuck: 'a1stairOpen' },
   { id: 'stair1_corA', fl: 'A1', x: 20, z: 0, side: 'S', to: 'corA1_stair', unstick: 'a1stairOpen' },
+  { id: 'corA2_stair', fl: 'A1', x: 28, z: 2, side: 'N', to: 'stair2_corA', stuck: 'a1stairOpen' },
+  { id: 'stair2_corA', fl: 'A1', x: 26, z: 0, side: 'S', to: 'corA2_stair', unstick: 'a1stairOpen' },
   { id: 'br_cloister', fl: 'A1', x: 37, z: -9, side: 'E', to: 'k_a1', kind: 'hidden2', reveal: 'shadowCut', lock: 'k_back' },
   { id: 'a2cor_left', fl: 'A2', x: 10, z: 1, side: 'W', to: 'a2left_cor' },
   { id: 'a2left_cor', fl: 'A2', x: 7, z: 1, side: 'E', to: 'a2cor_left' },
@@ -361,7 +364,7 @@ FURNISH.a1left = r => {
   r.addInteract(MAN.statue.g, { dist: 2.4, icon: 'hand', prompt: () => (PUSH.obj || !STORY.flags.takeshiRan || STORY.flags.statueBroken ? null : '像を押す'), use: () => STORY.event('statue') });
   r.tkAt = { x: tm(6.6), z: tm(9.8), yaw: -2.4 };
 };
-FURNISH.a1corA = r => { MAN.a1Hole = floorHole(r, cx(22), cx(3)); MAN.a1Hole.m.visible = false; MAN.a1Hole.col.on = false; };
+FURNISH.a1corA = r => { MAN.a1Hole = floorHole(r, cx(24), cx(2)); MAN.a1Hole.m.visible = false; MAN.a1Hole.col.on = false; };   // (between the two doors, as on 6.23's map)
 FURNISH.a1stair = r => { addCrate(r, tm(19) + 0.5, tm(-4) + 0.5, 0.8, 0.3); };
 FURNISH.a1br = r => {
   const tb = new Frame(r, tm(34), 0, tm(-9), 0); tb.box(2.2, 0.06, 1.0, MAT.darkWood, 0, 0.78, 0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) tb.box(0.07, 0.76, 0.07, MAT.darkWood, sx * 1.0, 0.38, sz * 0.42); tb.collide(-1.1, 1.1, 0, 0.82, -0.5, 0.5);
@@ -412,16 +415,17 @@ FURNISH.a2fire = r => {
   addRug(r, tm(23), tm(1), tm(2.2), tm(3), 0, 13);
 };
 FURNISH.a3crate = r => {
-  // the crate to push, the hole in front of the nook, the oil at the back of the nook, the blank paper on the wall
-  const c = MAN.crate = movable(r, cx(22), cx(3), 0.95, 0.95, 0.95); c.key = 'crate';
+  // 6.23: the crate in the room; the nook top right has a hole in its mouth and the oil at its back ("move the crate
+  // up to the top right"); the nook top left is empty; the blank paper on the wall between them
+  const c = MAN.crate = movable(r, cx(20), cx(-1), 0.95, 0.95, 0.95); c.key = 'crate';
   c.add(new THREE.BoxGeometry(0.95, 0.95, 0.95), MAT.crateWood, 0, 0.475, 0);
   for (const y of [0.12, 0.83]) c.add(new THREE.BoxGeometry(0.97, 0.08, 0.97), MAT.darkWood, 0, y, 0);
   r.addInteract(c.g, { dist: 2.2, icon: 'hand', prompt: () => (STORY.flags.crateIn ? null : '木箱を押す'), use: () => STORY.event('crate') });
-  MAN.crateHole = floorHole(r, cx(18), cx(-1));
-  shineAt(r, cx(18), 0.05, cx(-2) - 0.2, 'oil2');
-  interactBox(r, cx(18), 0.2, cx(-2) - 0.2, 0.6, 0.4, 0.6, () => (STORY.hasGot('oil2') ? null : '光っているものを拾う'), () => GAME.take('oil2', MAN.props.oil2), { icon: 'hand' });
-  MAN.poster = wallPic(r, tm(23.5), 1.7, tm(0) + WT + 0.012, 0, 0.9, 1.2, (g, w, h) => drawPoster(g, w, h, null), { cw: 256, ch: 320 });
-  examine(r, tm(23.5), 1.7, tm(0) + 0.3, 0.9, 1.2, 0.3, () => '貼紙を調べる', () => STORY.event('poster'));
+  MAN.crateHole = floorHole(r, cx(22), cx(-5));
+  shineAt(r, cx(22), 0.05, cx(-6) - 0.2, 'oil2');
+  interactBox(r, cx(22), 0.2, cx(-6) - 0.2, 0.6, 0.4, 0.6, () => (STORY.hasGot('oil2') ? null : '光っているものを拾う'), () => GAME.take('oil2', MAN.props.oil2), { icon: 'hand' });
+  MAN.poster = wallPic(r, cx(20), 1.7, tm(-4) + WT + 0.012, 0, 0.9, 1.2, (g, w, h) => drawPoster(g, w, h, null), { cw: 256, ch: 320 });
+  examine(r, cx(20), 1.7, tm(-4) + 0.3, 0.9, 1.2, 0.3, () => '貼紙を調べる', () => STORY.event('poster'));
 };
 FURNISH.abbl = r => {
   // the plant pot top left hides a red lever; the bookshelf has the picture book
