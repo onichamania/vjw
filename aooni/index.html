@@ -7435,10 +7435,15 @@ TICK_HOOKS.push(dt => {
       GAME.later(1.0, () => { SFX.crash && SFX.crash(wq); POST.shake = 0.4; MAN.rubble.visible = true; MAN.props.stoneBlue.visible = true; say2('ガラガラガラ……ガシャーン！', '像が、階段を転げ落ちていった。'); STORY.save(); });
     }
   }
-  // the floor of corridor A gives way (once you have the basement key)
+  // the floor of corridor A gives way (once you have the basement key). In 6.23 the corridor is one tile of floor, so
+  // walking along it you are sure to step there: here it gives way under you on whichever side of the corridor you
+  // are, a little way in; after that the hole stays where it opened, to fall through again (or step round)
   if (r.id === 'a1corA' && STORY.hasGot('k_ab') && !GAME.busy && !GAME.modal) {
     const h = MAN.a1Hole;
-    if (Math.hypot(P.x - h.x, P.z - h.z) < 0.75) { h.m.visible = true; f.a1Fell = true; dropTo('abstair', cx(13), cx(12), Math.PI, f.a1FellOnce ? null : '床が抜けて、下に落ちてしまった。'); f.a1FellOnce = true; }
+    if (h.m.visible ? Math.abs(P.x - h.x) < 0.75 && Math.abs(P.z - h.z) < 0.75 : Math.abs(P.x - h.x) < 0.75) {
+      if (!h.m.visible) { f.a1HoleZ = h.z = cx(Math.floor(P.z / T)); h.m.position.z = h.z; }
+      h.m.visible = true; f.a1Fell = true; dropTo('abstair', cx(13), cx(12), Math.PI, f.a1FellOnce ? null : '床が抜けて、下に落ちてしまった。'); f.a1FellOnce = true;
+    }
   }
   // the hole in the room top left upstairs in the second annex
   if (r.id === 's2tl' && !GAME.busy && !GAME.modal) { const h = MAN.s2Hole; if (Math.hypot(P.x - h.x, P.z - h.z) < 0.6) { const L = MAN.areas.s1tl.landing; dropTo('s1tl', L.x, L.z, Math.PI, f.s2FellOnce ? null : '穴から、下の階に落ちた。'); f.s2FellOnce = true; } }
@@ -7484,7 +7489,7 @@ STATE_HOOKS.push(f => {
   if (f.a1Dark) for (const fx of MAN.areas.a1br.fixtures) if (fx !== MAN.doll3Fx) fx.state = 'off';
   a1Shadow();
   if (f.dollPanel) MAN.a1Panel.visible = false;
-  if (f.a1Fell) MAN.a1Hole.m.visible = true;
+  if (f.a1Fell) { const h = MAN.a1Hole; h.m.visible = true; if (f.a1HoleZ) h.m.position.z = h.z = f.a1HoleZ; }
   if (got('bulb')) MAN.a2Bulb.state = 'off';
   if (f.crateIn) { const c = MAN.crate, h = MAN.crateHole; c.place(h.x, h.z); c.g.position.y = -0.93; c.col.on = false; h.col.on = false; h.m.visible = false; }
   else if (f.crateAt) { MAN.crate.place(cx(f.crateAt[0]), cx(f.crateAt[1])); MAN.crate.tile = f.crateAt.slice(); }
